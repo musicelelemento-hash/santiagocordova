@@ -288,10 +288,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 }
             );
 
-            // Asegurar que content sea null para no sobrecargar la base de datos de Supabase con Base64
+            // Solo nullear content si ya existe una URL en la nube (R2/Supabase Storage).
+            // Si cayó a fallback Base64, preservamos el contenido para no perder el PDF.
             const cloudStoredFile = {
                 ...storedFile,
-                content: null // 💡 Cero base64 en la base de datos = Cero gasto innecesario de almacenamiento
+                content: storedFile.url ? null : storedFile.content
             };
 
             const existingDecls = activeCellModal.client.declarations || [];
@@ -388,7 +389,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     ...decl,
                                     proof_file: {
                                         ...cloudFile,
-                                        content: null // 💡 Eliminar base64 de la BD
+                                        content: cloudFile.url ? null : (cloudFile.content || decl.proof_file.content)
                                     }
                                 };
                             } catch (uploadErr) {

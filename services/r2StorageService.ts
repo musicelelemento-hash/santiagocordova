@@ -19,7 +19,15 @@ function getR2Config(): R2Config | null {
     const bucketName = import.meta.env.VITE_R2_BUCKET_NAME || 'santiagocordova-files';
     const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
 
-    if (!accountId || !accessKeyId || !secretAccessKey) {
+    if (
+        !accountId ||
+        !accessKeyId ||
+        !secretAccessKey ||
+        accessKeyId.includes('TU_') ||
+        secretAccessKey.includes('TU_') ||
+        accountId.includes('TU_') ||
+        accessKeyId === 'dummy'
+    ) {
         return null;
     }
 

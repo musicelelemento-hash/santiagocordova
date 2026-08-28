@@ -600,6 +600,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     ? 'Categoría: Solo Venta de Firma Electrónica'
                     : 'Categoría: Cliente Contable Completo';
 
+                const isSoloPlan = item.saveMode === 'system_only';
+                const isSoloFirma = item.saveMode === 'signature_only';
+                const clientType: 'completo' | 'solo_plan' = isSoloPlan ? 'solo_plan' : 'completo';
+                const requiresDeclarations = item.saveMode === 'create_client';
+
                 const newClient: Client = {
                     id: uuidv4(),
                     name: commonName || item.extractedNameFromCert || 'Contribuyente Nuevo',
@@ -608,8 +613,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     email: '',
                     phones: [],
                     declarations: [],
-                    notes: `${categoryNote}\nCreado automáticamente desde Subida Masiva de Firma .p12.\nEmisor: ${issuerName}`,
+                    clientType,
+                    requiresDeclarations,
+                    notes: `${categoryNote}\nCreado desde Subida Masiva de Firma .p12.\nEmisor: ${issuerName}`,
                     isActive: true,
+                    isDeleted: false,
                     regime: TaxRegime.General,
                     address: '',
                     signatureFile: signatureFileObj,
@@ -618,8 +626,8 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     signatureIssueDate: issueDate,
                     signatureProvider: issuerName,
                     taxProfile: {
-                        ivaFrequency: 'Mensual',
-                        requiresAnnualRenta: true,
+                        ivaFrequency: requiresDeclarations ? 'Mensual' : 'Ninguno',
+                        requiresAnnualRenta: requiresDeclarations,
                         requiresAnexosGastos: false,
                         hasActiveDevolucionIva: false,
                         hasActiveElderlyDevolucionIva: false,

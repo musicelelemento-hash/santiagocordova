@@ -745,9 +745,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         return incomingClient;
       });
 
-      // Añadir clientes locales que no vinieron en la sabana (prevención de borrado accidental)
+      // Añadir clientes locales que no vinieron en la sabana (prevención de borrado accidental solo si no están borrados)
       currentClients.forEach(localClient => {
-        if (!mergedClients.some(mc => mc.ruc === localClient.ruc || mc.id === localClient.id)) {
+        if (!localClient.isDeleted && !mergedClients.some(mc => mc.ruc === localClient.ruc || mc.id === localClient.id)) {
           mergedClients.push(localClient);
         }
       });
@@ -891,8 +891,8 @@ export const useAppStore = create<AppState>((set, get) => ({
               };
             });
 
-            // Solo actualizar si la nube tiene datos o para refrescar
-            if (protectedClients.length >= currentClients.length || currentClients.length === 0) {
+            // Actualizar si la nube tiene datos válidos
+            if (protectedClients.length > 0) {
               // MERGE de tasks: combinar la nube con las locales, priorizando las más recientes,
               // para no perder tasks recién creadas localmente que aún no se sincronizaron
               const localTasks = get().tasks || [];
@@ -912,7 +912,6 @@ export const useAppStore = create<AppState>((set, get) => ({
               console.log(`☁️ Fase 2 (Nube): ${protectedClients.length} clientes protegidos y sincronizados en ${(performance.now() - t1).toFixed(0)}ms`);
             } else {
               set({ auditLogs: cloudAuditLogs || [] });
-              console.log(`☁️ Fase 2: Nube tiene menos datos (${protectedClients.length} vs ${currentClients.length} local). Manteniendo local.`);
             }
           } else if (!localData) {
             // Sin datos locales ni en la nube — usar mock

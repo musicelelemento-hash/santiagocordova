@@ -293,7 +293,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
 
                     const proofFileObj: StoredFile = {
                         ...uploadedStoredFile,
-                        content: null
+                        content: uploadedStoredFile.url ? null : uploadedStoredFile.content
                     };
 
                     const type: TaxObligationType = (
@@ -391,6 +391,9 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 sriPassword: '',
                 regime: pending.regime,
                 isActive: true,
+                isDeleted: false,
+                clientType: 'completo',
+                requiresDeclarations: pending.ivaFrequency !== 'Ninguno' || pending.requiresAnnualRenta,
                 phones: pending.phone ? [pending.phone] : [''],
                 email: pending.email || '',
                 address: pending.address || '',

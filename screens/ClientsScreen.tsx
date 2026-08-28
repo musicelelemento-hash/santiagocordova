@@ -26,7 +26,7 @@ import { extractDataFromDeclarationPdf, fileToBase64, extractDataFromSriPdf } fr
 import { UnifiedStorageService } from '../services/unifiedStorageService';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
-import { BulkClientWizardModal } from '../components/features/BulkClientWizardModal';
+import { BulkClientWizardModal, CandidateClientItem } from '../components/features/BulkClientWizardModal';
 import { GlobalUploadModal } from '../components/features/GlobalUploadModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
@@ -109,7 +109,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [previewItem, setPreviewItem] = useState<{ client: Client, declaration: Declaration } | null>(null);
 
     // Bulk Wizard State
-    const [bulkWizardData, setBulkWizardData] = useState<any[]>([]);
+    const [bulkWizardData, setBulkWizardData] = useState<CandidateClientItem[]>([]);
     const [isBulkWizardOpen, setIsBulkWizardOpen] = useState(false);
 
     // Smart Tabs Logic
@@ -827,7 +827,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         if (files.length === 0) return;
 
         const results: BulkUploadResult[] = [];
-        const extractedRucs: any[] = [];
+        const candidateNewClients: CandidateClientItem[] = [];
 
         for (const file of files) {
             try {
@@ -873,7 +873,27 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 // --- MANEJO DE CERTIFICADO DE RUC ---
                 if (isRucCert) {
                     if (!targetClient) {
-                        extractedRucs.push(data);
+                        const isSemestral = data.obligaciones_tributarias === 'semestral' || data.regimen === TaxRegime.RimpeEmprendedor;
+                        const isPopular = data.regimen === TaxRegime.RimpeNegocioPopular;
+
+                        candidateNewClients.push({
+                            id: uuidv4(),
+                            name: data.apellidos_nombres || 'Contribuyente Nuevo',
+                            tradeName: data.nombre_comercial || '',
+                            ruc: data.ruc,
+                            regime: data.regimen || TaxRegime.General,
+                            phones: [data.contacto?.celular].filter(Boolean) as string[],
+                            email: data.contacto?.email || '',
+                            address: data.direccion || '',
+                            origin: 'ruc_pdf',
+                            sourceFileName: file.name,
+                            subscriptionType: 'declaraciones_completo',
+                            ivaFrequency: isPopular ? 'Ninguno' : (isSemestral ? 'Semestral' : 'Mensual'),
+                            requiresAnnualRenta: data.lista_obligaciones?.includes('Impuesto a la Renta') ?? true,
+                            isSelected: true,
+                            notes: `Importado desde Certificado de RUC SRI. Actividad: ${data.actividad_economica_principal || 'No especificada'}`
+                        });
+
                         results.push({
                             fileName: file.name,
                             status: 'new_client',
@@ -881,7 +901,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             ruc: data.ruc,
                             period: 'RUC',
                             type: 'CERTIFICADO RUC',
-                            phones: [data.contacto.celular].filter(Boolean)
+                            phones: [data.contacto?.celular].filter(Boolean) as string[]
                         });
                     } else {
                         // Actualizar cliente existente con datos frescos del RUC
@@ -916,39 +936,75 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 }
 
                 // --- MANEJO DE COMPROBANTE DE DECLARACIÓN ---
+                const period = data.period;
+                const nowIso = new Date().toISOString();
+
+                // Subir comprobante a la nube
+                const uploadedStoredFile = await UnifiedStorageService.uploadFile(
+                    file,
+                    file.name,
+                    'declaraciones',
+                    {
+                        amount: data.amount,
+                        period: period,
+                        formType: data.formType,
+                        sriId: data.id,
+                        uploadedAt: nowIso,
+                        previewText: data.previewText
+                    }
+                );
+
+                const proofFileObj: StoredFile = {
+                    ...uploadedStoredFile,
+                    content: uploadedStoredFile.url ? null : uploadedStoredFile.content
+                };
+
+                const entry: Declaration = {
+                    period,
+                    type: (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : ((data.formType?.includes('ANEXO') || data.formType === 'ANEXO_ICE') ? 'ANEXO' : (period.includes('-') ? 'IVA' : 'RENTA')))),
+                    status: DeclarationStatus.Enviada,
+                    updatedAt: nowIso,
+                    declaredAt: nowIso,
+                    is_paid: false,
+                    amount: data.amount || 0,
+                    transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
+                    proof_file: proofFileObj
+                };
+
                 if (!targetClient) {
-                    // AUTO-REGISTRO: Crear nuevo cliente desde el comprobante
-                    const newClient: Client = {
+                    // CLIENTE NUEVO DESDE COMPROBANTE: Añadir a lista de aprobación masiva con selector de suscripción
+                    candidateNewClients.push({
                         id: uuidv4(),
-                        name: data.clientName || 'NUEVO CLIENTE (AUTO)',
+                        name: data.clientName || 'NUEVO CLIENTE (SRI)',
                         ruc: data.ruc,
-                        sriPassword: '',
                         regime: TaxRegime.General,
-                        isActive: true,
                         phones: [''],
                         email: '',
                         address: '',
-                        notes: `COMPLETAR CON RUC DATOS DE CLIENTE EXTRAIDOS DE COMPROBANTES (Serie: ${data.id})`,
-                        needsVerification: true,
-                        verificationReason: 'Registrado automáticamente por Carga Rápida',
-                        taxProfile: {
-                            ivaFrequency: data.frequency,
-                            requiresAnnualRenta: true,
-                            requiresAnexosGastos: false,
-                            hasActiveDevolucionIva: false,
-                            hasActiveElderlyDevolucionIva: false,
-                            requiresIce: false,
-                            requiresAnexoPvp: false
-                        },
-                        declarations: [],
-                        vault: []
-                    };
-                    addClient(newClient);
-                    targetClient = newClient;
+                        origin: 'declaracion_pdf',
+                        sourceFileName: file.name,
+                        subscriptionType: 'declaraciones_completo',
+                        ivaFrequency: data.frequency || 'Mensual',
+                        requiresAnnualRenta: true,
+                        initialDeclaration: entry,
+                        isSelected: true,
+                        notes: `Detectado desde Comprobante de Declaración SRI (${data.formType || 'DECL'} ${data.period || ''})`
+                    });
+
+                    results.push({
+                        fileName: file.name,
+                        status: 'new_client',
+                        clientName: data.clientName || 'Nuevo Cliente Detectado',
+                        ruc: data.ruc,
+                        period: formatPeriodForDisplay(period),
+                        type: data.formType,
+                        amount: data.amount,
+                        is_paid: false,
+                        proof_file: proofFileObj
+                    });
+                    continue;
                 }
 
-                const period = data.period;
-                const nowIso = new Date().toISOString();
                 const history = [...(targetClient.declarations || [])];
                 const idx = history.findIndex(d => d.period === period);
 
@@ -974,42 +1030,16 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     continue;
                 }
 
-                // Subir comprobante a la nube
-                const uploadedStoredFile = await UnifiedStorageService.uploadFile(
-                    file,
-                    file.name,
-                    'declaraciones',
-                    {
-                        amount: data.amount,
-                        period: period,
-                        formType: data.formType,
-                        sriId: data.id,
-                        uploadedAt: nowIso,
-                        previewText: data.previewText
-                    }
-                );
-
-                const proofFileObj: StoredFile = {
-                    ...uploadedStoredFile,
-                    content: null
-                };
-
-                const entry: Declaration = {
-                    period,
-                    type: (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : ((data.formType?.includes('ANEXO') || data.formType === 'ANEXO_ICE') ? 'ANEXO' : (period.includes('-') ? 'IVA' : 'RENTA')))),
+                const updatedEntry: Declaration = {
+                    ...entry,
                     status: isAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                    updatedAt: nowIso,
-                    declaredAt: nowIso,
-                    is_paid: isAlreadyPaid,
-                    amount: data.amount || 0,
-                    transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
-                    proof_file: proofFileObj
+                    is_paid: isAlreadyPaid
                 };
 
                 if (idx > -1) {
-                    history[idx] = { ...history[idx], ...entry };
+                    history[idx] = { ...history[idx], ...updatedEntry };
                 } else {
-                    history.push(entry);
+                    history.push(updatedEntry);
                 }
 
                 const updates: Partial<Client> = { 
@@ -1044,10 +1074,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
         if (bulkFileInputRef.current) bulkFileInputRef.current.value = '';
 
-        if (extractedRucs.length > 0) {
-            setBulkWizardData(extractedRucs);
+        if (candidateNewClients.length > 0) {
+            setBulkWizardData(candidateNewClients);
             setIsBulkWizardOpen(true);
-            setBulkResults(results); // We still save results
+            setBulkResults(results);
         } else if (results.length > 0) {
             setBulkResults(results);
             setIsBulkReportOpen(true);
@@ -1800,10 +1830,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         setIsBulkReportOpen(true);
                     }
                 }}
-                extractedData={bulkWizardData}
-                onApprove={(clientData) => {
-                    addClient(clientData);
-                    toast.success(`Cliente ${clientData.name} aprobado y registrado.`);
+                candidates={bulkWizardData}
+                onApproveBatch={(approvedClients) => {
+                    approvedClients.forEach(c => addClient(c));
+                    toast.success(`🎉 ${approvedClients.length} nuevos clientes aprobados e integrados.`);
                 }}
             />
 

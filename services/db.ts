@@ -66,55 +66,64 @@ export const db = {
     },
 
     get: async function <T>(key: string): Promise<T | undefined> {
+        // 1. Try Supabase first if enabled
+        if (USE_SUPABASE) {
+            try {
+                const sbContent = await SupabaseService.getFile(`config_${key}`);
+                if (sbContent) {
+                    const parsed = JSON.parse(sbContent);
+                    await this.setLocal(key, parsed);
+                    return parsed as T;
+                }
+            } catch (sbErr) {
+                // Silently fallback to local / firestore
+            }
+        }
+
+        // 2. Check local DB
+        const localData = await this.getLocal(key);
+
+        // 3. Fallback to Firestore only if available and local is empty
         try {
             const docRef = doc(firestoreDb, "sc_pro_backup", key);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
                 const fbData = docSnap.data().data;
-                const localData = await this.getLocal(key);
-
-                // SEGURIDAD: Solo sobreescribir si la nube tiene datos o si local está vacío
-                // Si la nube tiene [] pero local tiene [81 clientes], mantenemos el local.
-                const isFbDataEmpty = !fbData || (Array.isArray(fbData) && fbData.length === 0);
-                const localHasContent = localData && (Array.isArray(localData) && localData.length > 0);
-
-                if (isFbDataEmpty && localHasContent) {
-                    console.warn(`Sincronización rechazada para ${key}: La nube está vacía pero tienes datos locales. Protegiendo local.`);
-                    // Intentar subir el local a la nube para reparar el backup
-                    try { await setDoc(docRef, { data: localData }); } catch (e) { }
-                    return localData as T;
-                }
-
-                await this.setLocal(key, fbData);
-                return fbData as T;
-            } else {
-                const localData = await this.getLocal(key);
-                if (localData !== undefined) {
-                    try {
-                        await setDoc(docRef, { data: localData });
-                    } catch (e) {
-                        console.warn("Could not migrate to Firebase:", e);
+                if (fbData !== undefined) {
+                    if (localData === undefined) {
+                        await this.setLocal(key, fbData);
+                        return fbData as T;
                     }
                 }
-                return localData as T | undefined;
             }
         } catch (firebaseErr: any) {
-            console.warn(`Firebase fetch failed for ${key}, falling back to local DB:`, firebaseErr.message);
-            const fallbackData = await this.getLocal(key);
-            return fallbackData as T | undefined;
+            // Firestore not configured or offline
         }
+
+        return localData as T | undefined;
     },
 
     set: async function (key: string, value: any): Promise<void> {
         await this.setLocal(key, value);
+
+        // 1. Persist to Supabase if enabled
+        if (USE_SUPABASE) {
+            try {
+                const jsonStr = JSON.stringify(value);
+                await SupabaseService.upsertFile(`config_${key}`, jsonStr);
+            } catch (sbErr) {
+                console.warn(`[Supabase DB] Could not persist config_${key}:`, sbErr);
+            }
+        }
+
+        // 2. Optional Firestore backup (non-blocking)
         try {
-            // STRATEGY: Split large content before sending to backup
             const safeValue = await this.splitLargeFiles("sc_pro_backup", key, value);
             const docRef = doc(firestoreDb, "sc_pro_backup", key);
             await setDoc(docRef, { data: safeValue });
         } catch (firebaseErr: any) {
-            console.warn(`Firebase sync queued/failed for ${key}:`, firebaseErr.message);
+            // Ignored if Firestore is dummy
         }
     },
 
@@ -221,8 +230,12 @@ export const db = {
                 }
             }
             
-            const docRef = doc(firestoreDb, collectionName, id);
-            await setDoc(docRef, safeValue, { merge: true });
+            try {
+                const docRef = doc(firestoreDb, collectionName, id);
+                await setDoc(docRef, safeValue, { merge: true });
+            } catch (fbErr) {
+                // Ignore Firestore errors if Supabase succeeded
+            }
             
             console.log(`✅ Cloud Sync Success: ${collectionName}/${id}`);
         } catch (err) {
@@ -238,8 +251,12 @@ export const db = {
                 await SupabaseService.deleteClient(id);
             }
             
-            const docRef = doc(firestoreDb, collectionName, id);
-            await deleteDoc(docRef);
+            try {
+                const docRef = doc(firestoreDb, collectionName, id);
+                await deleteDoc(docRef);
+            } catch (fbErr) {
+                // Ignore Firestore errors
+            }
             
             console.log(`✅ Cloud Sync Delete Success: ${collectionName}/${id}`);
         } catch (err) {
@@ -310,20 +327,24 @@ export const db = {
         }
 
         // Keep Firestore sync for legacy/backup during transition
-        const chunks = [];
-        for (let i = 0; i < records.length; i += 500) {
-            chunks.push(records.slice(i, i + 500));
-        }
-
-        for (const chunk of chunks) {
-            const batch = writeBatch(firestoreDb);
-            for (const record of chunk) {
-                const safeRecord = await this.splitLargeFiles(collectionName, record.id, record);
-                const docRef = doc(firestoreDb, collectionName, record.id);
-                batch.set(docRef, safeRecord, { merge: true });
+        try {
+            const chunks = [];
+            for (let i = 0; i < records.length; i += 500) {
+                chunks.push(records.slice(i, i + 500));
             }
-            await batch.commit();
-            console.log(`📡 Batch committed with Split support: ${chunk.length} records to ${collectionName}.`);
+
+            for (const chunk of chunks) {
+                const batch = writeBatch(firestoreDb);
+                for (const record of chunk) {
+                    const safeRecord = await this.splitLargeFiles(collectionName, record.id, record);
+                    const docRef = doc(firestoreDb, collectionName, record.id);
+                    batch.set(docRef, safeRecord, { merge: true });
+                }
+                await batch.commit();
+                console.log(`📡 Batch committed with Split support: ${chunk.length} records to ${collectionName}.`);
+            }
+        } catch (fbBatchErr) {
+            // Ignored if Firestore is not configured
         }
     },
 
