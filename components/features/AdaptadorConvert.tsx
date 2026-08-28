@@ -276,6 +276,16 @@ function toAscii(s: string): string {
     return String(s ?? '').replace(/[áéíóúñüÁÉÍÓÚÑÜäöàèç´]/g, c => map[c] || c).trim();
 }
 
+// Parsea un código numérico (IVA/ICE/IRBPNR) respetando el 0 (p. ej. IVA 0%) y usando
+// un default solo si el valor está vacío. '4' es el código de IVA 12% en Zifact.
+function numCode(value: any, fallback: number = 0): number {
+    if (typeof value === 'number') return value;
+    const s = String(value ?? '').trim();
+    if (s === '') return fallback;
+    const n = parseInt(s, 10);
+    return isNaN(n) ? fallback : n;
+}
+
 function buildProductosAOA(data: any[]): any[][] {
     const headers = ['Nombre', 'Codigo Principal', 'Codigo Auxiliar', 'Precio Unitario', 'Codigo IVA', 'Codigo ICE', 'Codigo IRBPNR', 'Estado (A/I)'];
     const rows: any[][] = [headers];
@@ -286,9 +296,9 @@ function buildProductosAOA(data: any[]): any[][] {
             toAscii(String(item['Codigo Principal'] || '1')),
             toAscii(String(item['Codigo Auxiliar'] || '')),
             typeof item['Precio Unitario'] === 'number' ? item['Precio Unitario'] : parseFloat(item['Precio Unitario'] || '0') || 0,
-            typeof item['Codigo IVA'] === 'number' ? item['Codigo IVA'] : parseInt(item['Codigo IVA'] || '4', 10) || 4,
-            typeof item['Codigo ICE'] === 'number' ? item['Codigo ICE'] : parseInt(item['Codigo ICE'] || '0', 10) || 0,
-            typeof item['Codigo IRBPNR'] === 'number' ? item['Codigo IRBPNR'] : parseInt(item['Codigo IRBPNR'] || '0', 10) || 0,
+            numCode(item['Codigo IVA'], 4),
+            numCode(item['Codigo ICE'], 0),
+            numCode(item['Codigo IRBPNR'], 0),
             String(item['Estado (A/I)'] || 'A')
         ]);
     });
@@ -379,9 +389,9 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
             toAscii(String(item['Codigo Principal'] || '1')),
             toAscii(String(item['Codigo Auxiliar'] || '')),
             typeof item['Precio Unitario'] === 'number' ? item['Precio Unitario'] : parseFloat(item['Precio Unitario'] || '0') || 0,
-            typeof item['Codigo IVA'] === 'number' ? item['Codigo IVA'] : parseInt(item['Codigo IVA'] || '4', 10) || 4,
-            typeof item['Codigo ICE'] === 'number' ? item['Codigo ICE'] : parseInt(item['Codigo ICE'] || '0', 10) || 0,
-            typeof item['Codigo IRBPNR'] === 'number' ? item['Codigo IRBPNR'] : parseInt(item['Codigo IRBPNR'] || '0', 10) || 0,
+            numCode(item['Codigo IVA'], 4),
+            numCode(item['Codigo ICE'], 0),
+            numCode(item['Codigo IRBPNR'], 0),
             String(item['Estado (A/I)'] || 'A')
         ]);
     });
@@ -395,6 +405,14 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
     const workbook = xlsx.utils.book_new();
     workbook.SheetNames = ['Plantilla'];
     workbook.Sheets = { Plantilla: worksheet };
+
+    // Mismo formato/metadata que la plantilla oficial template_Productos (1).xls de Zifact
+    // (autor "Factel", título "Plantilla Productos"), para que Zifact lo reconozca de forma natural.
+    workbook.Props = workbook.Props || {};
+    workbook.Props.Author = 'Factel';
+    workbook.Props.LastAuthor = 'Factel';
+    workbook.Props.Title = 'Plantilla Productos';
+    workbook.Props.Subject = 'Plantilla Productos';
 
     // bookSST: true => Shared String Table (SST) completo, igual que el archivo que
     // Zifact sí acepta. Junto con la transliteración a ASCII, evita el bug de memoria.
