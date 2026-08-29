@@ -15,6 +15,7 @@ import { useAppStore } from '../store/useAppStore';
 import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
 import { TaxShieldHero3D } from '../components/3d/TaxShieldHero3D';
+import { ScrollNarrative3D } from '../components/3d/ScrollNarrative3D';
 import { CinematicIntro } from '../components/hero/CinematicIntro';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 
@@ -1155,6 +1156,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     </div>
                 </div>
             </section>
+
+            {/* ════════════════════════════════════════════════════════════════
+                NARRATIVA 3D FIJADA AL SCROLL — EL SISTEMA EN 4 ESTADOS
+                (OBSIDIAN → QUANTUM → GOLD → EMERALD CORE)
+            ════════════════════════════════════════════════════════════════ */}
+            <ScrollNarrative3D theme={theme} />
 
             {/* ── GUARANTEE & CERTIFICATIONS RIBBON ── */}
             <div className={`py-6 border-b ${theme === 'dark' ? 'bg-[#020617] border-white/5' : 'bg-slate-100/80 border-slate-200'}`}>
