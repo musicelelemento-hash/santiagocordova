@@ -193,6 +193,16 @@ const REGIONS: { name: string; tag: string; desc: string }[] = [
     { name: 'Cuenca', tag: 'Nacional · Remoto', desc: 'Ingeniería tributaria para todo el Austro.' },
 ];
 
+// ─── SECTORES QUE ATENDEMOS (confianza y alcance) ───────────────────────────
+const SECTORES: { name: string; icon: React.ElementType; desc: string }[] = [
+    { name: 'Comercio & Retail', icon: Store, desc: 'Facturación y declaraciones para tiendas y comercios.' },
+    { name: 'Construcción & Inmobiliario', icon: Layers, desc: 'Rentas, retenciones y proyectos paso a paso.' },
+    { name: 'Agro & Producción', icon: Grid, desc: 'El Oro es agro: controla producción y exportación.' },
+    { name: 'Servicios & Profesionales', icon: GraduationCap, desc: 'Honorarios, IVA y firma electrónica en 24h.' },
+    { name: 'Transporte & Logística', icon: Globe, desc: 'Fluidez fiscal para el transporte que no se detiene.' },
+    { name: 'PyMEs & Emprendedores', icon: Users, desc: 'RIMPE integrado: crece sin sustos del SRI.' },
+];
+
 const Parallax = ({ children, className = "", strength = 28 }: {
     children: React.ReactNode; className?: string; strength?: number;
 }) => {
@@ -1892,6 +1902,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         ))}
                     </div>
                     </Parallax>
+                </div>
+            </section>
+
+            {/* ════════════════════════════════════════════════════════════════
+                SECTORES QUE ATENDEMOS — alcance y experiencia
+            ════════════════════════════════════════════════════════════════ */}
+            <section id="sectores" className={`py-20 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-slate-50'}`}>
+                <div className="max-w-6xl mx-auto px-6 relative z-10">
+                    <Reveal>
+                        <div className="text-center mb-12 space-y-3">
+                            <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Experiencia comprobada</div>
+                            <h2 className={`text-3xl md:text-5xl font-display tracking-tight font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+                                SECTORES QUE ATENDEMOS
+                            </h2>
+                            <p className="text-sm md:text-base font-light text-slate-400 max-w-xl mx-auto">
+                                Cada tipo de negocio tiene su régimen y su calendario. Lo dominamos todos.
+                            </p>
+                        </div>
+                    </Reveal>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {SECTORES.map((s, i) => (
+                            <Reveal key={s.name} delay={i * 60}>
+                                <SpotlightCard theme={theme} className="p-5 text-left h-full">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2.5 rounded-xl bg-[#00A896]/15 text-[#00A896]">
+                                            <s.icon size={16} />
+                                        </div>
+                                        <span className="text-lg font-bold font-display">{s.name}</span>
+                                    </div>
+                                    <p className={`text-xs font-light leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{s.desc}</p>
+                                </SpotlightCard>
+                            </Reveal>
+                        ))}
+                    </div>
                 </div>
             </section>
 

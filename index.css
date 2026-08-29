@@ -43,6 +43,16 @@
     --gradient-azure: linear-gradient(135deg, #2B6AFF 0%, #6366F1 100%);
     --gradient-emerald: linear-gradient(135deg, #04B17B 0%, #10B981 100%);
     --gradient-obsidian: linear-gradient(135deg, #020617 0%, #0F172A 100%);
+
+    /* ── Marca Santiago Córdova (referencia única para la landing) ── */
+    --brand-teal: #00A896;
+    --brand-emerald: #4edea3;
+    --brand-azure: #2B6AFF;
+    --brand-gold: #C9A96E;
+    --brand-gold-dark: #B8860B;
+    --brand-deep: #0b1326;
+    --brand-obsidian: #051424;
+    --brand-dark-teal: #028090;
     
     /* Premium Glassmorphism 2.0 */
     --glass-border: hsla(0, 0%, 100%, 0.15);
