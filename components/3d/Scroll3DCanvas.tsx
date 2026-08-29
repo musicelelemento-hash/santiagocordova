@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Float, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { usePrefersReducedMotion } from '../../hooks/useReducedMotion';
 
 interface Scroll3DCanvasProps {
     scrollProgress: number; // 0 to 1
@@ -14,6 +15,7 @@ const ParticlesField: React.FC<{ progress: number; theme?: 'light' | 'dark' }> =
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const count = isMobile ? 80 : 160;
     const pointsRef = useRef<THREE.Points>(null);
+    const prevProgressRef = useRef(progress);
 
     const [positions, colors] = useMemo(() => {
         const pos = new Float32Array(count * 3);
@@ -37,7 +39,13 @@ const ParticlesField: React.FC<{ progress: number; theme?: 'light' | 'dark' }> =
 
     useFrame((state, delta) => {
         if (pointsRef.current) {
-            pointsRef.current.rotation.y += delta * 0.05 * (1 + progress * 1.8);
+            // ⚡ Reacciona a la VELOCIDAD del scroll (efecto táctil premium)
+            const safeDelta = Math.max(delta, 0.001);
+            const vel = (progress - prevProgressRef.current) / safeDelta;
+            prevProgressRef.current = progress;
+            const velBoost = 1 + Math.min(6, Math.abs(vel) * 3);
+
+            pointsRef.current.rotation.y += delta * 0.05 * (1 + progress * 1.8) * velBoost;
             pointsRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.18) * 0.18 + progress * 0.35;
         }
     });
@@ -88,6 +96,8 @@ const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> 
     const ringGoldRef = useRef<THREE.Mesh>(null);
     const ringTealRef = useRef<THREE.Mesh>(null);
     const innerCoreRef = useRef<THREE.Mesh>(null);
+    const prevProgressRef = useRef(progress);
+    const velRef = useRef(0);
     const { pointer, viewport } = useThree();
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -96,6 +106,13 @@ const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> 
         if (!meshRef.current) return;
 
         const time = state.clock.getElapsedTime();
+
+        // ⚡ Reacciona a la VELOCIDAD del scroll (giro extra con decaimiento)
+        const safeDelta = Math.max(delta, 0.001);
+        const scrollVel = (progress - prevProgressRef.current) / safeDelta;
+        prevProgressRef.current = progress;
+        velRef.current = THREE.MathUtils.lerp(velRef.current, scrollVel * 0.6, 0.2);
+        const velSpin = velRef.current * delta * 5;
 
         // Target positions based on viewport and scroll progress
         let targetX = 0;
@@ -123,10 +140,13 @@ const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> 
         meshRef.current.rotation.x = time * 0.22 + progress * Math.PI * 1.6 + (pointer.y * 0.45);
         meshRef.current.rotation.y = time * 0.3 + progress * Math.PI * 2.2 + (pointer.x * 0.45);
         meshRef.current.rotation.z = Math.sin(time * 0.18) * 0.3;
+        meshRef.current.rotation.y += velSpin;
+        meshRef.current.rotation.x += velSpin * 0.4;
 
         if (ringGoldRef.current) {
             ringGoldRef.current.rotation.x = -time * 0.28 + progress * Math.PI * 2;
             ringGoldRef.current.rotation.y = time * 0.38;
+            ringGoldRef.current.rotation.y += velSpin;
             ringGoldRef.current.position.x = meshRef.current.position.x;
             ringGoldRef.current.position.y = meshRef.current.position.y;
             ringGoldRef.current.scale.setScalar(meshRef.current.scale.x * 1.2);
@@ -221,6 +241,10 @@ export const Scroll3DCanvas: React.FC<Scroll3DCanvasProps> = ({
     customGlbUrl,
     theme = 'dark'
 }) => {
+    // Accesibilidad: sin animación 3D si el usuario prefiere menos movimiento
+    const reduced = usePrefersReducedMotion();
+    if (reduced) return null;
+
     return (
         <div className="w-full h-full absolute inset-0 pointer-events-none z-0 overflow-hidden">
             <Canvas

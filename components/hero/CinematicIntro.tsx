@@ -49,7 +49,9 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
             split2 = new SplitText(h2Ref.current, { type: 'chars', mask: 'chars' });
             split3 = new SplitText(h3Ref.current, { type: 'chars', mask: 'chars' });
 
-            gsap.set([split1.chars, split2.chars, split3.chars], { yPercent: 115, opacity: 0 });
+            // La escena 1 se muestra de inmediato (evita pantalla en blanco al cargar).
+            // Solo las escenas 2 y 3 parten ocultas bajo el scroll.
+            gsap.set([split2.chars, split3.chars], { yPercent: 115, opacity: 0 });
             gsap.set([scene2Ref.current, scene3Ref.current], { opacity: 0 });
 
             const counters = { years: 0, clients: 0 };
@@ -58,7 +60,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                 scrollTrigger: {
                     trigger: rootRef.current,
                     start: 'top top',
-                    end: '+=300%',
+                    end: '+=180%',
                     scrub: 1,
                     pin: true,
                     anticipatePin: 1,
@@ -116,7 +118,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                 <span className="io-sub text-[11px] font-bold text-red-400/80 uppercase tracking-[0.35em] font-mono mb-5">
                     Cada mes, en Ecuador
                 </span>
-                <h1 ref={h1Ref} className={`font-display font-extrabold leading-[0.95] text-[clamp(2.3rem,7.5vw,6rem)] max-w-5xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                <h1 ref={h1Ref} className={`font-display font-extrabold leading-[1.1] text-[clamp(2.3rem,7.5vw,6rem)] max-w-5xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                     UN ERROR EN EL SRI CUESTA CARO
                 </h1>
                 <p className={`io-sub mt-6 text-base md:text-xl max-w-xl font-light ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -129,7 +131,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                 <span className="io-sub text-[11px] font-bold text-[#00A896] uppercase tracking-[0.35em] font-mono mb-5">
                     Ingeniería tributaria de precisión
                 </span>
-                <h1 ref={h2Ref} className={`font-display font-extrabold leading-[0.95] text-[clamp(2.3rem,7.5vw,6rem)] max-w-5xl text-[#00A896]`}>
+                <h1 ref={h2Ref} className={`font-display font-extrabold leading-[1.1] text-[clamp(2.3rem,7.5vw,6rem)] max-w-5xl text-[#00A896]`}>
                     NOSOTROS BLINDAMOS TU EMPRESA
                 </h1>
                 <p className={`io-sub mt-6 text-base md:text-xl max-w-xl font-light ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -142,7 +144,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                 <span className="io-sub text-[11px] font-bold text-[#C9A96E] uppercase tracking-[0.35em] font-mono mb-5">
                     Soluciones Tributarias PRO
                 </span>
-                <h1 ref={h3Ref} className="font-display font-extrabold leading-[0.95] text-[clamp(2.6rem,9vw,7rem)] text-[#C9A96E] max-w-5xl">
+                <h1 ref={h3Ref} className="font-display font-extrabold leading-[1.1] text-[clamp(2.6rem,9vw,7rem)] text-[#C9A96E] max-w-5xl">
                     SANTIAGO CÓRDOVA
                 </h1>
                 <p className={`io-sub mt-5 text-base md:text-xl max-w-xl font-light ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>

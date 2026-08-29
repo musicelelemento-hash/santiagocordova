@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Float, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { ShieldCheck, Sparkles as SparklesIcon, Zap, Lock } from 'lucide-react';
+import { usePrefersReducedMotion } from '../../hooks/useReducedMotion';
 
 interface TaxShieldHero3DProps {
     theme?: 'light' | 'dark';
@@ -328,6 +329,10 @@ export const TaxShieldHero3D: React.FC<TaxShieldHero3DProps> = ({
             setPulseMessage(null);
         }, 4000);
     };
+
+    // Accesibilidad: sin escudo 3D animado si el usuario prefiere menos movimiento
+    const reduced = usePrefersReducedMotion();
+    if (reduced) return null;
 
     return (
         <div 

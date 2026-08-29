@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import {
     Activity, AlertCircle, AlertTriangle, ArrowRight, ArrowUpRight,
     Award, BarChart3, Calculator, Calendar, CalendarClock, Check, CheckCircle2, ChevronDown,
@@ -13,9 +13,11 @@ import { Logo } from '../components/ui/Logo';
 import { PublicUser } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
-import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
-import { TaxShieldHero3D } from '../components/3d/TaxShieldHero3D';
-import { ScrollNarrative3D } from '../components/3d/ScrollNarrative3D';
+// ⚡ Code-split de los componentes 3D: three.js (~1MB) se carga en un chunk aparte,
+// NO bloquea el primer paint. Solo se descarga cuando la página lo necesita.
+const Scroll3DCanvas = React.lazy(() => import('../components/3d/Scroll3DCanvas').then(m => ({ default: m.Scroll3DCanvas })));
+const TaxShieldHero3D = React.lazy(() => import('../components/3d/TaxShieldHero3D').then(m => ({ default: m.TaxShieldHero3D })));
+const ScrollNarrative3D = React.lazy(() => import('../components/3d/ScrollNarrative3D').then(m => ({ default: m.ScrollNarrative3D })));
 import { CinematicIntro } from '../components/hero/CinematicIntro';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 
@@ -181,6 +183,16 @@ const CountUp = ({ to, prefix = "", suffix = "", duration = 1900 }: {
 };
 
 // ─── SUBTLE PARALLAX (bloques se mueven a velocidad distinta del scroll) ─────
+// ─── COBERTURA NACIONAL (social proof por región de Ecuador) ─────────────────
+const REGIONS: { name: string; tag: string; desc: string }[] = [
+    { name: 'Pasaje', tag: 'El Oro · Base', desc: 'Atención presencial y tu contabilidad siempre al día.' },
+    { name: 'Machala', tag: 'El Oro · Capital', desc: 'Gestión tributaria para comercio, servicio y agro.' },
+    { name: 'El Oro', tag: 'Provincia', desc: 'Cobertura provincial con visitas programadas.' },
+    { name: 'Guayaquil', tag: 'Nacional · Remoto', desc: 'Soporte digital y declaraciones en línea.' },
+    { name: 'Quito', tag: 'Nacional · Remoto', desc: 'Asesoría fiscal a distancia, sin fricciones.' },
+    { name: 'Cuenca', tag: 'Nacional · Remoto', desc: 'Ingeniería tributaria para todo el Austro.' },
+];
+
 const Parallax = ({ children, className = "", strength = 28 }: {
     children: React.ReactNode; className?: string; strength?: number;
 }) => {
@@ -932,6 +944,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 </div>
             </div>
 
+            {/* WhatsApp flotante — solo desktop (en móvil ya está el dock inferior) */}
+            <a
+                href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20quisiera%20agendar%20una%20consulta%20tributaria%20gratuita.`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden md:flex fixed bottom-6 right-6 z-40 items-center gap-2 px-4 py-3 rounded-full bg-[#00A896] text-white shadow-[0_0_28px_rgba(0,168,150,0.5)] hover:scale-105 transition-transform"
+                aria-label="Escríbenos por WhatsApp"
+            >
+                <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                </span>
+                <MessageCircle size={18} />
+                <span className="text-xs font-bold font-mono">WhatsApp</span>
+            </a>
+
             {/* ════════════════════════════════════════════════════════════════
                 APERTURA CINEMATOGRÁFICA (Scroll-Pinned) — Problema → Solución → Marca
             ════════════════════════════════════════════════════════════════ */}
@@ -943,7 +971,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             <section id="blindaje" className={`relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-28 pb-16 md:pt-32 md:pb-20 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
                 {/* Fondo 3D ambiental reactivo */}
                 <div className="absolute inset-0 pointer-events-none z-0 opacity-40">
-                    <Scroll3DCanvas scrollProgress={scrollProgress / 100} theme={theme} />
+                    <Suspense fallback={null}>
+                        <Scroll3DCanvas scrollProgress={scrollProgress / 100} theme={theme} />
+                    </Suspense>
                 </div>
 
                 <AuroraBackground theme={theme} />
@@ -970,7 +1000,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             {/* Main Title & Editorial Positioning */}
                             <Reveal delay={80}>
                                 <div className="space-y-2">
-                                    <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-7xl tracking-tight leading-[0.95] liquid-gold-text">
+                                    <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-7xl tracking-tight leading-[1.1] liquid-gold-text">
                                         SANTIAGO CÓRDOVA
                                     </h1>
                                     <div className="text-lg sm:text-xl font-bold font-display text-[#4edea3] flex items-center gap-2">
@@ -1070,12 +1100,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                         : 'bg-white/95 border-slate-200 shadow-xl'
                                                 }`}
                                             >
-                                                <TaxShieldHero3D 
-                                                    theme={theme}
-                                                    onActivateShield={() => {
-                                                        // Smoothly notify user
-                                                    }}
-                                                />
+                                                <Suspense fallback={<div className="min-h-[360px] flex items-center justify-center text-xs font-mono text-slate-500">Cargando escudo 3D…</div>}>
+                                                    <TaxShieldHero3D 
+                                                        theme={theme}
+                                                        onActivateShield={() => {
+                                                            // Smoothly notify user
+                                                        }}
+                                                    />
+                                                </Suspense>
                                             </motion.div>
                                         ) : (
                                             <motion.div
@@ -1161,7 +1193,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 NARRATIVA 3D FIJADA AL SCROLL — EL SISTEMA EN 4 ESTADOS
                 (OBSIDIAN → QUANTUM → GOLD → EMERALD CORE)
             ════════════════════════════════════════════════════════════════ */}
-            <ScrollNarrative3D theme={theme} />
+            <Suspense fallback={null}>
+                <ScrollNarrative3D theme={theme} />
+            </Suspense>
 
             {/* ── GUARANTEE & CERTIFICATIONS RIBBON ── */}
             <div className={`py-6 border-b ${theme === 'dark' ? 'bg-[#020617] border-white/5' : 'bg-slate-100/80 border-slate-200'}`}>
@@ -1401,7 +1435,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                             href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20he%20realizado%20la%20simulaci%C3%B3n%20para%20ingresos%20de%20$${calcIngresos.toLocaleString()}%20USD%20(${encodeURIComponent(taxDetails.regimen)}).%20Quisiera%20agendar%20el%20plan%20*${encodeURIComponent(taxDetails.planTitle)}*.`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#00A896] to-[#028090] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md font-mono text-center whitespace-nowrap"
+                                            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#00A896] to-[#028090] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md font-mono text-center whitespace-normal"
                                         >
                                             Solicitar Diagnóstico
                                         </a>
@@ -1618,7 +1652,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20mi%20RUC%20termina%20en%20d%C3%ADgito%20${selectedRucDigit}%20(vence%20el%20${deadlineInfo.label})%20y%20deseo%20asegurar%20mi%20declaraci%C3%B3n%20a%20tiempo.`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-6 py-3.5 rounded-xl bg-[#00A896] hover:bg-[#028090] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md font-mono whitespace-nowrap"
+                                        className="px-6 py-3.5 rounded-xl bg-[#00A896] hover:bg-[#028090] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md font-mono whitespace-normal"
                                     >
                                         Asegurar Declaración a Tiempo
                                     </a>
@@ -1858,6 +1892,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         ))}
                     </div>
                     </Parallax>
+                </div>
+            </section>
+
+            {/* ════════════════════════════════════════════════════════════════
+                COBERTURA NACIONAL — social proof por región
+            ════════════════════════════════════════════════════════════════ */}
+            <section id="cobertura" className={`py-20 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100/70'}`}>
+                <div className="max-w-6xl mx-auto px-6 relative z-10">
+                    <Reveal>
+                        <div className="text-center mb-12 space-y-3">
+                            <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Atención en todo el país</div>
+                            <h2 className={`text-3xl md:text-5xl font-display tracking-tight font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+                                COBERTURA NACIONAL
+                            </h2>
+                            <p className="text-sm md:text-base font-light text-slate-400 max-w-xl mx-auto">
+                                Base en El Oro y atención remota para todo el Ecuador. Tu contabilidad, estés donde estés.
+                            </p>
+                        </div>
+                    </Reveal>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {REGIONS.map((r, i) => (
+                            <Reveal key={r.name} delay={i * 60}>
+                                <SpotlightCard theme={theme} className="p-5 text-left h-full">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="p-2.5 rounded-xl bg-[#00A896]/15 text-[#00A896]">
+                                            <MapPin size={16} />
+                                        </div>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-[#C9A96E] font-mono">{r.tag}</span>
+                                    </div>
+                                    <div className={`text-lg font-bold font-display ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{r.name}</div>
+                                    <p className={`text-xs font-light mt-1 leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{r.desc}</p>
+                                </SpotlightCard>
+                            </Reveal>
+                        ))}
+                    </div>
                 </div>
             </section>
 

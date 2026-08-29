@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useInView, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 import { Scroll3DCanvas } from './Scroll3DCanvas';
+import { usePrefersReducedMotion } from '../../hooks/useReducedMotion';
 
 /**
  * ScrollNarrative3D — "EL SISTEMA EN 4 ESTADOS"
@@ -22,37 +23,37 @@ interface Stage {
 
 const STAGES: Stage[] = [
     {
-        id: 'obsidian',
+        id: 'blinda',
         num: '01',
-        title: 'OBSIDIAN',
+        title: 'BLINDAJE TOTAL',
         tag: 'CIFRADO DE DATOS',
         text: 'Tu información contable y fiscal blindada con cifrado de nivel bancario. Nadie más la toca.',
         accent: '#00A896',
         glow: 'rgba(0,168,150,0.35)',
     },
     {
-        id: 'quantum',
+        id: 'precision',
         num: '02',
-        title: 'QUANTUM',
-        tag: 'CÁLCULO ALGORÍTMICO',
+        title: 'CÁLCULO PRECISO',
+        tag: 'PRECISIÓN ALGORÍTMICA',
         text: 'Declaraciones calculadas con precisión algorítmica contra el SRI 2026. Cero redondeos, cero errores.',
         accent: '#38bdf8',
         glow: 'rgba(56,189,248,0.30)',
     },
     {
-        id: 'gold',
+        id: 'optimiza',
         num: '03',
-        title: 'GOLD',
-        tag: 'OPTIMIZACIÓN FISCAL',
+        title: 'OPTIMIZACIÓN FISCAL',
+        tag: 'RIMPE · IVA · RENTA',
         text: 'RIMPE, IVA y Renta optimizados para pagar exactamente lo correcto, ni un centavo de más.',
         accent: '#C9A96E',
         glow: 'rgba(201,169,110,0.35)',
     },
     {
-        id: 'core',
+        id: 'crecimiento',
         num: '04',
-        title: 'EMERALD CORE',
-        tag: 'CRECIMIENTO ASEGURADO',
+        title: 'CRECIMIENTO SEGURO',
+        tag: 'CONTABILIDAD SIN MULTAS',
         text: 'Cero multas, cero sorpresas. Tu contabilidad evoluciona con tu negocio, en cualquier rincón del Ecuador.',
         accent: '#00A896',
         glow: 'rgba(16,185,129,0.40)',
@@ -64,6 +65,7 @@ export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ them
     const [progress, setProgress] = useState(0);
     const [stage, setStage] = useState(0);
     const inView = useInView(sectionRef, { margin: '-15% 0px -15% 0px' });
+    const reduced = usePrefersReducedMotion();
 
     const { scrollYProgress } = useScroll({
         target: sectionRef,
@@ -82,8 +84,8 @@ export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ them
     return (
         <section ref={sectionRef} id="sistema" className="relative" style={{ height: '420vh' }}>
             <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
-                {/* ── 3D de fondo que muta con el scroll ── */}
-                {inView && (
+                {/* ── 3D de fondo que muta con el scroll (desactivado si reduce-motion) ── */}
+                {inView && !reduced && (
                     <div className="absolute inset-0 pointer-events-none z-0">
                         <Scroll3DCanvas scrollProgress={progress} theme={theme} />
                     </div>
@@ -104,7 +106,7 @@ export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ them
                         theme === 'dark' ? 'text-white/[0.04]' : 'text-slate-900/[0.05]'
                     }`}
                 >
-                    <span className="font-display font-black text-[38vw] md:text-[26vw] leading-none tracking-tighter">
+                    <span className="font-display font-black text-[24vw] md:text-[16vw] leading-[0.9] tracking-tighter whitespace-nowrap">
                         {current.num}
                     </span>
                 </motion.div>
