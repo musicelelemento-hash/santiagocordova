@@ -1943,6 +1943,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 COBERTURA NACIONAL — social proof por región
             ════════════════════════════════════════════════════════════════ */}
             <section id="cobertura" className={`py-20 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100/70'}`}>
+                {/* Mapa de Ecuador animado de fondo (bucle) */}
+                <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                    <video
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover opacity-25"
+                        src="/media/ecuador-map-loop.mp4"
+                    />
+                    <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-b from-[#051424] via-[#051424]/50 to-[#051424]' : 'bg-white/70'}`} />
+                </div>
                 <div className="max-w-6xl mx-auto px-6 relative z-10">
                     <Reveal>
                         <div className="text-center mb-12 space-y-3">

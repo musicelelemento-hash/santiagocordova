@@ -105,7 +105,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
         <div
             id="top"
             ref={rootRef}
-            className={`relative h-screen w-full overflow-hidden ${theme === 'dark' ? 'bg-[#020617]' : 'bg-[#eef2f7]'}`}
+            className={`relative h-screen-fix w-full overflow-hidden ${theme === 'dark' ? 'bg-[#020617]' : 'bg-[#eef2f7]'}`}
         >
             {/* Fondo generativo GLSL — muta de color con la narrativa del scroll, sin figuras 3D protagonistas */}
             <ShaderBackdrop progressRef={shaderProgressRef} />

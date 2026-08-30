@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useInView, useMotionValueEvent, AnimatePresence } from 'framer-motion';
-import { Scroll3DCanvas } from './Scroll3DCanvas';
 import { usePrefersReducedMotion } from '../../hooks/useReducedMotion';
 
 /**
@@ -62,7 +61,6 @@ const STAGES: Stage[] = [
 
 export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'dark' }) => {
     const sectionRef = useRef<HTMLDivElement>(null);
-    const [progress, setProgress] = useState(0);
     const [stage, setStage] = useState(0);
     const inView = useInView(sectionRef, { margin: '-15% 0px -15% 0px' });
     const reduced = usePrefersReducedMotion();
@@ -74,21 +72,34 @@ export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ them
 
     // Escucha el scroll solo mientras la sección está visible (perf)
     useMotionValueEvent(scrollYProgress, 'change', (v) => {
-        setProgress(v);
         setStage(Math.min(STAGES.length - 1, Math.floor(v * STAGES.length)));
     });
 
     const titleY = useTransform(scrollYProgress, [0, 1], [30, -30]);
+    // El vídeo de fondo reacciona al scroll (escala + desplazamiento sutiles)
+    const bgScale = useTransform(scrollYProgress, [0, 1], [1.15, 0.92]);
+    const bgY = useTransform(scrollYProgress, [0, 1], [40, -40]);
     const current = STAGES[stage];
 
     return (
         <section ref={sectionRef} id="sistema" className="relative" style={{ height: '420vh' }}>
-            <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
-                {/* ── 3D de fondo que muta con el scroll (desactivado si reduce-motion) ── */}
+            <div className="sticky top-0 h-screen-fix w-full overflow-hidden flex items-center justify-center">
+                {/* ── Fondo: cristal en video (bucle) que reacciona al scroll ── */}
                 {inView && !reduced && (
-                    <div className="absolute inset-0 pointer-events-none z-0">
-                        <Scroll3DCanvas scrollProgress={progress} theme={theme} />
-                    </div>
+                    <motion.div
+                        style={{ scale: bgScale, y: bgY }}
+                        className="absolute inset-0 pointer-events-none z-0"
+                    >
+                        <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                            className="w-full h-full object-cover opacity-70"
+                            src="/media/crystal-loop.mp4"
+                        />
+                    </motion.div>
                 )}
 
                 {/* Vigneta + glow del stage actual */}

@@ -59,6 +59,12 @@
     --glass-bg: hsla(224, 71.4%, 4.1%, 0.6);
 }
 
+/* Altura de viewport corregida para móvil/tablet (barra de dirección de iOS Safari) */
+.h-screen-fix {
+  height: 100vh;
+  height: 100svh;
+}
+
 .dark {
     /* Zenith Protocol - Midnight Obsidian v5.0 */
     --background: 224 71.4% 4.1%;    /* Deepest Obsidian Navy #020617 */
