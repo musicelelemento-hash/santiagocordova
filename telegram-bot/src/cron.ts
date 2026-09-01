@@ -1,102 +1,12 @@
 import cron from 'node-cron';
 import { Bot } from 'grammy';
 import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getDebtorClientsRaw, getCredentialStatus, convertMarkdownToTelegramHtml } from './database_ops';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
-import { OpenAI } from 'openai';
 import { searchEmails, sendEmail } from './gmail';
+import { generateAiText } from './ai';
 
-async function generateReportWithAI(prompt: string, systemInstruction?: string): Promise<string> {
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-
-    // 1. Try Google Generative AI SDK (Gemini 2.0 Flash) - PRIMARY
-    if (GEMINI_API_KEY && !GEMINI_API_KEY.includes('dummy')) {
-        try {
-            console.log("📡 [Cron AI] Attempting Google Generative AI SDK...");
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash",
-                ...(systemInstruction ? { systemInstruction } : {})
-            });
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            if (text) return text;
-        } catch (e: any) {
-            console.error("⚠️ [Cron AI] Google SDK failed:", e.message);
-        }
-    }
-
-    // 2. Try OpenRouter (Gemini 2.5 Flash / 2.0 Flash) - FALLBACK 1
-    if (OPENROUTER_API_KEY) {
-        try {
-            console.log("📡 [Cron AI] Attempting OpenRouter...");
-            const openai = new OpenAI({
-                baseURL: 'https://openrouter.ai/api/v1',
-                apiKey: OPENROUTER_API_KEY,
-            });
-            const response = await openai.chat.completions.create({
-                model: 'google/gemini-2.5-flash',
-                messages: [
-                    ...(systemInstruction ? [{ role: 'system' as const, content: systemInstruction }] : []),
-                    { role: 'user' as const, content: prompt }
-                ],
-                max_tokens: 1500
-            });
-            if (response.choices?.[0]?.message?.content) {
-                return response.choices[0].message.content;
-            }
-        } catch (e: any) {
-            console.error("⚠️ [Cron AI] OpenRouter failed:", e.message);
-        }
-    }
-
-    // 3. Try Groq (Llama 3.3 70b) - FALLBACK 2
-    if (GROQ_API_KEY) {
-        try {
-            console.log("📡 [Cron AI] Attempting Groq...");
-            const openai = new OpenAI({
-                baseURL: 'https://api.groq.com/openai/v1',
-                apiKey: GROQ_API_KEY,
-            });
-            const response = await openai.chat.completions.create({
-                model: 'llama-3.3-70b-specdec',
-                messages: [
-                    ...(systemInstruction ? [{ role: 'system' as const, content: systemInstruction }] : []),
-                    { role: 'user' as const, content: prompt }
-                ],
-                max_tokens: 1500
-            });
-            if (response.choices?.[0]?.message?.content) {
-                return response.choices[0].message.content;
-            }
-        } catch (e: any) {
-            try {
-                const openai = new OpenAI({
-                    baseURL: 'https://api.groq.com/openai/v1',
-                    apiKey: GROQ_API_KEY,
-                });
-                const response = await openai.chat.completions.create({
-                    model: 'mixtral-8x7b-32768',
-                    messages: [
-                        ...(systemInstruction ? [{ role: 'system' as const, content: systemInstruction }] : []),
-                        { role: 'user' as const, content: prompt }
-                    ],
-                    max_tokens: 1500
-                });
-                if (response.choices?.[0]?.message?.content) {
-                    return response.choices[0].message.content;
-                }
-            } catch (e2: any) {
-                console.error("⚠️ [Cron AI] Groq failed:", e2.message);
-            }
-        }
-    }
-
-    throw new Error("No AI providers available or all of them failed");
-}
+// Generación de texto con cascada unificada (ver src/ai.ts).
 
 export async function triggerProactiveReport(bot: Bot, chatId?: string) {
     const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
@@ -146,7 +56,7 @@ INSTRUCCIONES DE REDACCIÓN:
 Genera el mensaje directamente para Telegram.
 `;
 
-        const aiResponse = await generateReportWithAI(prompt, systemPrompt);
+        const aiResponse = await generateAiText({ prompt, systemInstruction: systemPrompt });
         const htmlResponse = convertMarkdownToTelegramHtml(aiResponse);
 
         try {
@@ -175,7 +85,7 @@ export function startCronJobs(bot: Bot) {
             if (!emails.includes("No se encontraron correos") && !emails.includes("no está autorizado") && !emails.includes("Error")) {
                 const systemPrompt = "Eres Baku. Analiza estos correos del SRI y haz un resumen ejecutivo súper corto y directo para Santiago. Enumera de qué clientes son y si hay algo urgente (multas, glosas, claves).";
                 const prompt = `Correos sin leer del SRI:\n${emails}\n\nResume lo más importante y dime si requiere acción inmediata.`;
-                const aiResponse = await generateReportWithAI(prompt, systemPrompt);
+                const aiResponse = await generateAiText({ prompt, systemInstruction: systemPrompt });
                 
                 const htmlResponse = convertMarkdownToTelegramHtml(`🚨 *ALERTA BUZÓN SRI*\n\n${aiResponse}`);
                 try {
@@ -243,7 +153,7 @@ Instrucciones de redacción:
 5. Mantén un formato limpio, estructurado con emojis de finanzas y negritas estratégicas.
 6. El reporte de cobranza debe ser extremadamente conciso. La longitud del reporte NO DEBE superar los 3000 caracteres.
 `;
-            const aiResponse = await generateReportWithAI(prompt, systemPrompt);
+            const aiResponse = await generateAiText({ prompt, systemInstruction: systemPrompt });
             const htmlResponse = convertMarkdownToTelegramHtml(aiResponse);
 
             try {

@@ -16,6 +16,7 @@ import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
 import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
 import { generateRidePdfBuffer } from './pdf_generator';
+import { maskSecret } from './redact';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
 
@@ -206,8 +207,8 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
     cardText += `📅 <b>Inicio Obligaciones:</b> <code>${clientStartPeriod}</code>\n`;
     cardText += `📧 <b>Email:</b> ${client.email || '<i>(vacío)</i>'}\n`;
     cardText += `📞 <b>Telf:</b> ${client.phones ? client.phones.join(', ') : '<i>(vacío)</i>'}\n`;
-    cardText += `🔑 <b>Clave SRI:</b> <code>${client.sri_password || '<i>(vacío)</i>'}</code>\n`;
-    cardText += `🔑 <b>Clave Firma:</b> <code>${client.signature_password || '<i>(vacío)</i>'}</code>\n`;
+    cardText += `🔑 <b>Clave SRI:</b> <code>${client.sri_password ? maskSecret(client.sri_password) : '<i>(vacío)</i>'}</code>\n`;
+    cardText += `🔑 <b>Clave Firma:</b> <code>${client.signature_password ? maskSecret(client.signature_password) : '<i>(vacío)</i>'}</code>\n`;
     if (client.signature_expiration) cardText += `⏳ <b>Vence Firma:</b> ${client.signature_expiration}\n`;
     if (client.notes) cardText += `📝 <b>Notas:</b> ${client.notes}\n`;
 
@@ -217,7 +218,9 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
         .text('🔐 Firma .p12 / Bóveda', `baku_hub_p12:${ruc}`)
         .text('📲 Link Portal Cliente', `baku_hub_portal:${ruc}`).row()
         .text('✏️ Editar Perfil', `baku_hub_edit:${ruc}`)
-        .text('❌ Cerrar Perfil', 'baku_cancel');
+        .text('❌ Cerrar Perfil', 'baku_cancel').row()
+        .text('👁 Ver Clave SRI', `baku_reveal_sri:${ruc}`)
+        .text('👁 Ver Clave Firma', `baku_reveal_sig:${ruc}`);
 
     await ctx.reply(convertMarkdownToTelegramHtml(cardText), {
         parse_mode: 'HTML',
@@ -1361,6 +1364,26 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_reveal_sri:')) {
+        const ruc = data.substring('baku_reveal_sri:'.length);
+        const clients = await findClients(ruc, '*');
+        if (!clients || clients.length === 0) { await ctx.reply('❌ No encontré al cliente. Baku.'); return; }
+        const pw = clients[0].sri_password;
+        if (!pw) { await ctx.reply(`🔑 <b>${clients[0].name}</b> no tiene clave SRI registrada. Baku.`, { parse_mode: 'HTML' }); return; }
+        await ctx.reply(`🔑 <b>Clave SRI de ${clients[0].name}:</b>\n<code>${pw}</code>\n\n⚠️ _Compártela solo de forma segura. Baku._`, { parse_mode: 'HTML' });
+        return;
+    }
+
+    if (data.startsWith('baku_reveal_sig:')) {
+        const ruc = data.substring('baku_reveal_sig:'.length);
+        const clients = await findClients(ruc, '*');
+        if (!clients || clients.length === 0) { await ctx.reply('❌ No encontré al cliente. Baku.'); return; }
+        const pw = clients[0].signature_password;
+        if (!pw) { await ctx.reply(`🔑 <b>${clients[0].name}</b> no tiene clave de firma registrada. Baku.`, { parse_mode: 'HTML' }); return; }
+        await ctx.reply(`🔑 <b>Clave de Firma de ${clients[0].name}:</b>\n<code>${pw}</code>\n\n⚠️ _Compártela solo de forma segura. Baku._`, { parse_mode: 'HTML' });
+        return;
+    }
+
     if (data.startsWith('baku_val_select:')) {
         const value = data.replace('baku_val_select:', '');
         const dialog = pendingDialogs.get(chatId);
@@ -1702,7 +1725,7 @@ bot.on('callback_query:data', async (ctx) => {
             const c = clients[0];
             const hasP12 = c.signature_file && c.signature_file.content;
             let msg = `🔐 <b>Firma Electrónica .p12 — ${c.name}</b>\n\n`;
-            msg += `🔑 <b>Contraseña:</b> <code>${c.signature_password || 'No asignada'}</code>\n`;
+            msg += `🔑 <b>Contraseña:</b> <code>${c.signature_password ? maskSecret(c.signature_password) : 'No asignada'}</code>\n`;
             msg += `⏳ <b>Vencimiento:</b> ${c.signature_expiration || 'No registrado'}\n`;
             msg += `📁 <b>Estado Archivo:</b> ${hasP12 ? '✅ Guardado en Bóveda (' + c.signature_file.name + ')' : '❌ No subido'}\n\n`;
             msg += `<i>Para actualizar la firma, simplemente adjunta el archivo .p12 o .pfx directamente en el chat.</i>`;

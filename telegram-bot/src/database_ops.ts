@@ -28,6 +28,7 @@ import { validateSRIPDF } from './pdf-validator';
 import { supabase } from './supabase';
 import crypto from 'crypto';
 import { getFirestore } from './firebase-admin-init';
+import { maskSecret } from './redact';
 
 async function logAuditAction(action: string, details: string, type: string, severity: string) {
     try {
@@ -175,11 +176,13 @@ export async function searchClient(query: string) {
             if (c.address) response += `📍 *Dirección:* ${c.address}\n`;
             if (c.economic_activity) response += `💼 *Actividad:* ${c.economic_activity}\n`;
 
-            if (c.sri_password) response += `🔑 *Clave SRI:* ${c.sri_password}\n`;
-            if (c.iess_password) response += `🔑 *Clave IESS:* ${c.iess_password}\n`;
-            if (c.signature_password) response += `🔑 *Clave Firma Elec:* ${c.signature_password}\n`;
+            // Las credenciales se muestran enmascaradas en la vista masiva.
+            // Para leer el valor real se usa get_client_field / get_sri_credential (peticiones puntuales).
+            if (c.sri_password) response += `🔑 *Clave SRI:* ${maskSecret(c.sri_password)}\n`;
+            if (c.iess_password) response += `🔑 *Clave IESS:* ${maskSecret(c.iess_password)}\n`;
+            if (c.signature_password) response += `🔑 *Clave Firma Elec:* ${maskSecret(c.signature_password)}\n`;
             if (c.signature_expiration) response += `⏳ *Caducidad Firma:* ${c.signature_expiration}\n`;
-            if (c.sharedAccessKey) response += `🔗 *Clave Compartida:* ${c.sharedAccessKey}\n`;
+            if (c.sharedAccessKey) response += `🔗 *Clave Compartida:* ${maskSecret(c.sharedAccessKey)}\n`;
 
             // Block 2: SRI Obligations Overview
             response += `\n⚖️ *OBLIGACIONES SRI:* ${obligations.obligationsDescription}\n`;

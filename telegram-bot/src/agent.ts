@@ -5,6 +5,7 @@ import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
 import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, downloadClientProofFile, setPrimaryPhone, setSignatureInfo, getMonthlyCollectionReport } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getGeminiApiKey, MODELS } from './ai';
 import { pendingDialogs, bot, startPaymentFlowForClient, startDeclarationFlowForClient } from './index';
 import { InputFile } from 'grammy';
 
@@ -550,7 +551,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
     let loopCount = 0;
     const MAX_LOOPS = 10; // Increased to handle complex tool chains
     const executedToolCalls = new Set<string>();
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
+    const GEMINI_API_KEY = getGeminiApiKey(); 
     while (loopCount < MAX_LOOPS) {
         loopCount++;
         console.log(`Agent Loop ${loopCount} for chat ${chatId}`);
@@ -563,7 +564,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
                 console.log("📡 Attempting Primary (Direct Google Gemini 2.0 Flash SDK)...");
                 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
                 const model = genAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash',
+                    model: MODELS.geminiPrimary,
                     systemInstruction: SYSTEM_PROMPT + memoryContext,
                     tools: convertToolsToGoogleSDK(toolDefinitions)
                 });
@@ -617,7 +618,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
                 console.log("📡 Attempting Secondary (Gemini 2.0 Flash via OpenRouter)...");
                 response = await openRouterClient.chat.completions.create({
                     messages: cleanMessages(messages, 15000, 20000) as any,
-                    model: 'google/gemini-2.0-flash-001',
+                    model: MODELS.openRouterGemini,
                     tools: toolDefinitions as any,
                     tool_choice: "auto",
                     max_tokens: 1500
@@ -636,7 +637,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
                     console.log("📡 Attempting Groq (Llama 3.3 70B via OpenAI client with tools)...");
                     response = await groqOpenAIClient.chat.completions.create({
                         messages: cleanMessages(messages, 5000, 7000) as any,
-                        model: 'llama-3.3-70b-versatile',
+                        model: MODELS.groqLlama,
                         tools: toolDefinitions as any,
                         tool_choice: "auto",
                         max_tokens: 1200,
@@ -653,9 +654,9 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         if (!response) {
             // --- 4. OPENROUTER FREE MODELS (try multiple, no credits needed) ---
             const freeModels = [
-                'meta-llama/llama-3.3-70b-instruct:free',
-                'mistralai/mistral-7b-instruct:free',
-                'google/gemma-3-27b-it:free',
+                MODELS.freeLlama,
+                MODELS.freeMistral,
+                MODELS.freeGemma,
             ];
             for (const freeModel of freeModels) {
                 if (response) break;
@@ -683,7 +684,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
                     console.log("📡 Attempting Google SDK (Gemini 1.5 Flash)...");
                     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
                     const model = genAI.getGenerativeModel({
-                        model: "gemini-1.5-flash",
+                        model: MODELS.geminiFallbackSDK,
                         systemInstruction: SYSTEM_PROMPT
                     });
                     const conversationContext = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
