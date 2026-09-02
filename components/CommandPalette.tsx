@@ -3,7 +3,7 @@ import {
     Search, Command, Globe, Users, 
     LayoutDashboard, Settings, LogOut, 
     ChevronRight, Zap, RefreshCw, PlusCircle,
-    Copy, User, FileText, KeyRound, Wallet,
+    Copy, Check, User, FileText, KeyRound, Wallet,
     Calendar, TrendingUp, ShieldCheck, FileSpreadsheet,
     DollarSign, Briefcase, FileCheck, Layers, Award,
     LayoutGrid, Box, Coins, PiggyBank, ShoppingCart, ArrowRightLeft
@@ -24,8 +24,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [placeholderIndex, setPlaceholderIndex] = useState(0);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+
+    const handleCopyRuc = (e: React.MouseEvent, ruc: string) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(ruc);
+        setCopiedRuc(ruc);
+        setTimeout(() => setCopiedRuc(null), 1800);
+    };
 
     const placeholders = [
         "Buscar cliente por nombre o RUC...",
@@ -225,6 +233,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
+                                        {item.type === 'client' && (item as any).client?.ruc && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleCopyRuc(e, (item as any).client.ruc)}
+                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold font-mono tracking-wider transition-all duration-200 border z-10 ${
+                                                    copiedRuc === (item as any).client.ruc
+                                                        ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                                                        : 'bg-white/5 hover:bg-[#00A896]/20 text-slate-300 hover:text-white border-white/10 hover:border-[#00A896]/40'
+                                                }`}
+                                                title={`Copiar RUC: ${(item as any).client.ruc}`}
+                                            >
+                                                {copiedRuc === (item as any).client.ruc ? (
+                                                    <>
+                                                        <Check size={12} className="text-emerald-400" />
+                                                        <span>¡COPIADO!</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy size={12} className="text-[#00A896]" />
+                                                        <span>COPIAR RUC</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                         <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">
                                             {item.type === 'nav' ? 'Módulo' : item.type === 'action' ? 'Acción' : 'Cliente'}
                                         </span>
