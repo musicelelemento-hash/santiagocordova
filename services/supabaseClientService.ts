@@ -472,7 +472,9 @@ export const SupabaseService = {
       hasActiveElderlyDevolucionIva: !!rawTaxProfile.hasActiveElderlyDevolucionIva,
       requiresIce: !!rawTaxProfile.requiresIce,
       requiresAnexoPvp: !!rawTaxProfile.requiresAnexoPvp,
-      clientStartPeriod: rawTaxProfile.clientStartPeriod || db.client_start_period
+      clientStartPeriod: rawTaxProfile.clientStartPeriod || db.client_start_period,
+      // Lo escribe la extensión Nueva Luz cuando el SRI rechaza la clave.
+      sriCredencial: rawTaxProfile.sriCredencial || undefined
     };
 
     // Forzar consistencia estricta según el régimen (solo si no es solo_plan)

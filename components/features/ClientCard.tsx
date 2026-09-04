@@ -200,6 +200,24 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                     </span>
                                 );
                             })()}
+                            {/* El SRI rechazó la clave al intentar declarar. Lo marca la
+                                extensión Nueva Luz; se retira solo cuando vuelve a entrar. */}
+                            {client.taxProfile?.sriCredencial && (() => {
+                                const c = client.taxProfile!.sriCredencial!;
+                                const etiqueta = c.estado === 'bloqueada' ? 'Cuenta bloqueada'
+                                               : c.estado === 'caducada' ? 'Clave vencida'
+                                               : 'Clave inválida';
+                                const cuando = c.cuando ? new Date(c.cuando).toLocaleDateString('es-EC') : '';
+                                return (
+                                    <span
+                                        title={`${c.motivo || etiqueta}${cuando ? ` · detectado el ${cuando}` : ''}`}
+                                        className="shrink-0 flex items-center gap-1 text-[9px] px-2.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider bg-red-500/15 text-red-500 border border-red-500/30"
+                                    >
+                                        <LucideIcons.KeyRound size={10} className="text-red-500" />
+                                        <span>{etiqueta}</span>
+                                    </span>
+                                );
+                            })()}
                             {client.signatureFile ? (() => {
                                 const expDate = client.signatureExpirationDate ? new Date(client.signatureExpirationDate) : null;
                                 let daysLeft = null;

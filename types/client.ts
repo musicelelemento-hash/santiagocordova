@@ -119,6 +119,18 @@ export interface FinancialItem {
     isVirtual?: boolean;
 }
 
+/**
+ * Estado de la clave del SRI, escrito por la extensión Nueva Luz cuando el
+ * portal la rechaza. Sirve para ver desde la ficha que ese cliente no se puede
+ * declarar hasta arreglar la credencial. Nunca contiene la clave en sí.
+ */
+export interface SriCredencialEstado {
+    estado: 'incorrecta' | 'caducada' | 'bloqueada';
+    motivo?: string;
+    cuando?: string;      // ISO
+    marcado_por?: string;
+}
+
 export interface TaxProfile {
     ivaFrequency: IvaFrequency;
     requiresAnnualRenta: boolean;
@@ -127,6 +139,7 @@ export interface TaxProfile {
     hasActiveElderlyDevolucionIva: boolean;
     requiresIce: boolean;
     requiresAnexoPvp: boolean;
+    sriCredencial?: SriCredencialEstado;
 }
 
 export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito';
