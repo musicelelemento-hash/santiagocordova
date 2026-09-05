@@ -260,11 +260,27 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                     );
 
                     if (existingDecl && existingDecl.proof_file) {
+                        let wasFixed = false;
+                        // Si ya existía el PDF pero estaba erróneamente marcado como Pagada, Cobrado o Notificado, corregirlo
+                        if (existingDecl.status === DeclarationStatus.Pagada || existingDecl.is_paid || existingDecl.isNotifiedWhatsApp) {
+                            existingDecl.status = DeclarationStatus.Enviada;
+                            existingDecl.is_paid = false;
+                            existingDecl.paidAt = undefined;
+                            existingDecl.isNotifiedWhatsApp = false;
+                            existingDecl.notifiedWhatsAppAt = undefined;
+                            existingDecl.notificationCount = 0;
+                            existingDecl.updatedAt = new Date().toISOString();
+                            await updateClient(targetClient.id, { declarations: history });
+                            wasFixed = true;
+                        }
+
                         newResults.push({
                             fileName: file.name,
-                            category: 'duplicate',
-                            status: 'duplicate',
-                            message: `Duplicado omitido: ya existe comprobante oficial para ${period}. (0 Bytes consumidos)`,
+                            category: wasFixed ? 'declaracion' : 'duplicate',
+                            status: wasFixed ? 'success' : 'duplicate',
+                            message: wasFixed 
+                                ? `Comprobante corregido a Pendiente de Cobro y Notificación para ${period}. (0 Bytes consumidos)`
+                                : `Duplicado omitido: ya existe comprobante oficial para ${period}. (0 Bytes consumidos)`,
                             clientName: targetClient.name,
                             ruc: cleanRuc,
                             period: formatPeriodForDisplay(period),
@@ -307,11 +323,14 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                     const entry: Declaration = {
                         period,
                         type,
-                        status: DeclarationStatus.Pagada,
+                        status: DeclarationStatus.Enviada,
                         updatedAt: new Date().toISOString(),
                         declaredAt: declData.declarationDate || new Date().toISOString(),
-                        is_paid: true,
-                        paidAt: new Date().toISOString(),
+                        is_paid: false,
+                        paidAt: undefined,
+                        isNotifiedWhatsApp: false,
+                        notifiedWhatsAppAt: undefined,
+                        notificationCount: 0,
                         amount: declData.amount || 0,
                         transactionId: declData.id || `PDF-${Date.now().toString().slice(-4)}`,
                         proof_file: proofFileObj
@@ -335,7 +354,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                         fileName: file.name,
                         category: 'declaracion',
                         status: 'success',
-                        message: `Declaración ${declData.formType || 'IVA'} liquidada y archivada en la nube`,
+                        message: `Declaración ${declData.formType || 'IVA'} archivada en la nube (Pendiente de cobro y notificación)`,
                         clientName: targetClient.name,
                         ruc: cleanRuc,
                         period: formatPeriodForDisplay(period),
@@ -495,7 +514,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                             <CheckCircle2 size={14} className="text-[#00A896]" />
                         </div>
                         <div className="text-2xl font-black text-white font-mono">{declCount}</div>
-                        <span className="text-[9px] font-bold text-[#00A896]">Liquidadas en Nube</span>
+                        <span className="text-[9px] font-bold text-[#00A896]">Archivadas en Nube</span>
                     </button>
 
                     <button 

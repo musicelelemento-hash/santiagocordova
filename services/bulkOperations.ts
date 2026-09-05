@@ -188,12 +188,12 @@ export const processBulkPdfs = async (
                     type = 'PVP';
                 }
 
-                const existingDec = (client.declarations ?? []).find(d => arePeriodsEqual(d.period, decPeriod));
+                const existingDec = (client.declarations ?? []).find(d => arePeriodsEqual(d.period, decPeriod) && (d.type === type || !d.type));
                 
                 let shouldReplace = true;
                 
                 // SMART OVERWRITE LOGIC
-                // Los PDFs originales del SRI tienen nombres de solo nmeros (ej. "873083870866.pdf").
+                // Los PDFs originales del SRI tienen nombres de solo números (ej. "873083870866.pdf").
                 // Los PDFs generados por el bot se llaman "Declaracion_IVA_0707018438001_2026-07.pdf".
                 if (existingDec && existingDec.proof_file) {
                     const existingName = existingDec.proof_file.name || '';
@@ -206,22 +206,22 @@ export const processBulkPdfs = async (
                 }
 
                 if (shouldReplace) {
-                    const wasAlreadyPaid = existingDec ? !!existingDec.is_paid : false;
                     const newDec = {
                         period: decPeriod,
                         type,
-                        status: wasAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        status: DeclarationStatus.Enviada,
                         updatedAt: new Date().toISOString(),
                         declaredAt: (data as any).declarationDate || new Date().toISOString(),
                         amount: (data as any).amount || 0,
                         proof_file: storedFile,
-                        is_paid: wasAlreadyPaid,
-                        paidAt: wasAlreadyPaid ? existingDec?.paidAt : undefined,
-                        isNotifiedWhatsApp: existingDec ? !!existingDec.isNotifiedWhatsApp : false,
-                        notifiedWhatsAppAt: existingDec?.notifiedWhatsAppAt
+                        is_paid: false,
+                        paidAt: undefined,
+                        isNotifiedWhatsApp: false,
+                        notifiedWhatsAppAt: undefined,
+                        notificationCount: 0
                     };
 
-                    const newHistory = [...(client.declarations ?? []).filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
+                    const newHistory = [...(client.declarations ?? []).filter(d => !(arePeriodsEqual(d.period, decPeriod) && (d.type === type || !d.type))), newDec];
                     updates.declarations = newHistory;
                     
                     if (existingDec && existingDec.proof_file) {

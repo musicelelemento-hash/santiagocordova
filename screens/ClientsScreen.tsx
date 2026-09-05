@@ -790,6 +790,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 declaredAt: nowIso,
                 is_paid: isCortesia ? true : false,
                 paidAt: isCortesia ? nowIso : undefined,
+                isNotifiedWhatsApp: false,
+                notifiedWhatsAppAt: undefined,
+                notificationCount: 0,
                 amount: data.amount || 0,
                 transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
                 proof_file: proofFileObj
@@ -966,6 +969,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     updatedAt: nowIso,
                     declaredAt: nowIso,
                     is_paid: false,
+                    paidAt: undefined,
+                    isNotifiedWhatsApp: false,
+                    notifiedWhatsAppAt: undefined,
+                    notificationCount: 0,
                     amount: data.amount || 0,
                     transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
                     proof_file: proofFileObj
@@ -1006,14 +1013,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 }
 
                 const history = [...(targetClient.declarations || [])];
-                const idx = history.findIndex(d => d.period === period);
+                const targetType = entry.type;
+                const idx = history.findIndex(d => arePeriodsEqual(d.period, period) && (d.type === targetType || !d.type));
 
                 // Detección de Duplicados
-                const isDuplicate = history.some(d => arePeriodsEqual(d.period, period) && d.proof_file?.metadata?.sriId === data.id);
-
-                // Determine payment status
-                const existingDecl = history.find(d => d.period === period);
-                const isAlreadyPaid = existingDecl ? !!existingDecl.is_paid : false;
+                const isDuplicate = history.some(d => arePeriodsEqual(d.period, period) && (d.type === targetType || !d.type) && d.proof_file?.metadata?.sriId === data.id);
 
                 if (isDuplicate) {
                     results.push({
@@ -1024,7 +1028,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         period: formatPeriodForDisplay(period),
                         type: data.formType,
                         amount: data.amount,
-                        is_paid: isAlreadyPaid,
+                        is_paid: false,
                         phones: targetClient.phones
                     });
                     continue;
@@ -1032,8 +1036,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                 const updatedEntry: Declaration = {
                     ...entry,
-                    status: isAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                    is_paid: isAlreadyPaid
+                    status: DeclarationStatus.Enviada,
+                    is_paid: false,
+                    paidAt: undefined,
+                    isNotifiedWhatsApp: false,
+                    notifiedWhatsAppAt: undefined,
+                    notificationCount: 0
                 };
 
                 if (idx > -1) {
@@ -1057,7 +1065,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     period: formatPeriodForDisplay(period),
                     type: data.formType,
                     amount: data.amount,
-                    is_paid: isAlreadyPaid,
+                    is_paid: false,
                     phones: targetClient.phones,
                     proof_file: proofFileObj
                 });
