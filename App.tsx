@@ -21,6 +21,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
 import { authService } from './services/authService';
+import { sendFullClientsMatrixToExtension } from './services/extensionBridge';
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
@@ -470,6 +471,9 @@ const App: React.FC = () => {
 
   const handleManualSave = () => {
     saveData();
+    if (clients && clients.length > 0) {
+      sendFullClientsMatrixToExtension(clients);
+    }
   };
 
   // Sincronización automática a la nube (Solo si hay datos para proteger el respaldo)

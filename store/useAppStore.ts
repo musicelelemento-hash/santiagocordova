@@ -356,6 +356,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // FAST LOCAL PERSISTENCE
     await db.setLocal('clients', newClients);
+    sendFullClientsMatrixToExtension(newClients);
 
     // CLOUD SYNC
     get().setCloudStatus('saving');
