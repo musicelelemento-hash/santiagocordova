@@ -8,6 +8,46 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 
+/**
+ * De donde salio una cifra.
+ *
+ *  'sri'       la mando la extension, leida del portal.
+ *  'estimado'  no vino y se calculo con una regla de proporcion.
+ *
+ * La distincion importa. Sin ella la ficha mostraba el honorario del cliente
+ * multiplicado por cuatro como "ventas del periodo", con la misma tipografia
+ * y el mismo color que un dato real del SRI. Los respaldos siguen: sirven
+ * para que la ficha no quede vacia. Lo que cambia es que ahora se ven.
+ */
+type OrigenCifra = 'sri' | 'estimado';
+
+/** Toma el primer candidato que sea un numero de verdad; si no hay, estima. */
+const leerCifra = (
+    candidatos: unknown[],
+    estimar: () => number
+): { valor: number; origen: OrigenCifra } => {
+    for (const c of candidatos) {
+        if (typeof c === 'number' && Number.isFinite(c)) {
+            return { valor: c, origen: 'sri' };
+        }
+    }
+    return { valor: estimar(), origen: 'estimado' };
+};
+
+/** Marca discreta para una cifra que no vino del SRI. */
+const SelloEstimado: React.FC<{ origen: OrigenCifra; que: string }> = ({ origen, que }) => {
+    if (origen === 'sri') return null;
+    return (
+        <span
+            title={`No hay dato del SRI para ${que} en este periodo. Este numero es una estimacion, no una lectura del portal.`}
+            className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded
+                       bg-amber-500/15 text-amber-500 border border-amber-500/40 whitespace-nowrap"
+        >
+            estimado
+        </span>
+    );
+};
+
 interface FinancialMetricsOverviewProps {
     client: Client;
     theme?: 'dark' | 'light';
@@ -133,19 +173,32 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
     const metrics = useMemo(() => {
         const meta = (activeDeclaration?.proof_file?.metadata as any) || {};
 
-        const ventas15 = meta.ventas15 ?? meta.base15 ?? (activeDeclaration?.amount ? activeDeclaration.amount * 4 : 0);
-        const ventas0 = meta.ventas0 ?? meta.base0 ?? 0;
-        const montoIvaVentas = meta.montoIvaVentas ?? (ventas15 * 0.15);
+        // Cada bloque recuerda si lo dijo el SRI o si lo calculamos nosotros.
+        const rVentas = leerCifra(
+            [meta.ventas15, meta.base15],
+            () => (activeDeclaration?.amount ? activeDeclaration.amount * 4 : 0)
+        );
+        const ventas15 = rVentas.valor;
+        const ventas0 = leerCifra([meta.ventas0, meta.base0], () => 0).valor;
+        const montoIvaVentas = leerCifra([meta.montoIvaVentas], () => ventas15 * 0.15).valor;
         const totalVentas = ventas15 + ventas0 + montoIvaVentas;
 
-        const compras15 = meta.compras15 ?? (ventas15 * 0.4);
-        const compras0 = meta.compras0 ?? 0;
-        const montoIvaCompras = meta.montoIvaCompras ?? (compras15 * 0.15);
+        const rCompras = leerCifra([meta.compras15], () => ventas15 * 0.4);
+        const compras15 = rCompras.valor;
+        const compras0 = leerCifra([meta.compras0], () => 0).valor;
+        const montoIvaCompras = leerCifra([meta.montoIvaCompras], () => compras15 * 0.15).valor;
         const totalCompras = compras15 + compras0 + montoIvaCompras;
 
-        const retIva = meta.retIva ?? (montoIvaVentas * 0.3);
-        const retRenta = meta.retRenta ?? (ventas15 * 0.0175);
+        const rRetIva = leerCifra([meta.retIva], () => montoIvaVentas * 0.3);
+        const retIva = rRetIva.valor;
+        const rRetRenta = leerCifra([meta.retRenta], () => ventas15 * 0.0175);
+        const retRenta = rRetRenta.valor;
         const totalRetenciones = retIva + retRenta;
+
+        const origenVentas: OrigenCifra = rVentas.origen;
+        const origenCompras: OrigenCifra = rCompras.origen;
+        const origenRetenciones: OrigenCifra =
+            (rRetIva.origen === 'sri' && rRetRenta.origen === 'sri') ? 'sri' : 'estimado';
 
         const nc15 = meta.nc15 ?? 0;
         const nc0 = meta.nc0 ?? 0;
@@ -171,7 +224,13 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
             nc0,
             totalNC,
             resultadoNetoIva: Math.abs(resultadoNetoIva),
-            esCreditoFavor
+            esCreditoFavor,
+            origenVentas,
+            origenCompras,
+            origenRetenciones,
+            hayEstimados: origenVentas === 'estimado'
+                       || origenCompras === 'estimado'
+                       || origenRetenciones === 'estimado'
         };
     }, [activeDeclaration]);
 
@@ -182,17 +241,23 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 
     const handleExportCSV = () => {
         let csv = `\uFEFFHISTORIAL Y METRICAS IMPOSITIVAS - ${client.name} (${client.ruc})\n`;
-        csv += `Período Seleccionado,${selectedPeriod}\n\n`;
+        csv += `Período Seleccionado,${selectedPeriod}\n`;
+        // Una estimación no puede viajar en una hoja como si fuera un dato
+        // del portal: quien la reciba no tiene forma de saberlo.
+        if (metrics.hayEstimados) {
+            csv += `ATENCION,"Este período no tiene todos los datos del SRI. Las filas marcadas (estimado) son cálculos aproximados, no lecturas del portal."\n`;
+        }
+        csv += `\n`;
         csv += `CONCEPTO,VALOR ($)\n`;
-        csv += `Ventas Base 15%,${metrics.ventas15.toFixed(2)}\n`;
+        csv += `Ventas Base 15%${metrics.origenVentas === 'estimado' ? ' (estimado)' : ''},${metrics.ventas15.toFixed(2)}\n`;
         csv += `Ventas Base 0%,${metrics.ventas0.toFixed(2)}\n`;
         csv += `Monto IVA Ventas (15%),${metrics.montoIvaVentas.toFixed(2)}\n`;
         csv += `TOTAL VENTAS BRUTAS,${metrics.totalVentas.toFixed(2)}\n\n`;
-        csv += `Compras Base 15%,${metrics.compras15.toFixed(2)}\n`;
+        csv += `Compras Base 15%${metrics.origenCompras === 'estimado' ? ' (estimado)' : ''},${metrics.compras15.toFixed(2)}\n`;
         csv += `Compras Base 0%,${metrics.compras0.toFixed(2)}\n`;
         csv += `Crédito IVA Compras,${metrics.montoIvaCompras.toFixed(2)}\n`;
         csv += `TOTAL COMPRAS,${metrics.totalCompras.toFixed(2)}\n\n`;
-        csv += `Retenciones IVA Recibidas (609),${metrics.retIva.toFixed(2)}\n`;
+        csv += `Retenciones IVA Recibidas (609)${metrics.origenRetenciones === 'estimado' ? ' (estimado)' : ''},${metrics.retIva.toFixed(2)}\n`;
         csv += `Retenciones Renta Recibidas (610),${metrics.retRenta.toFixed(2)}\n`;
         csv += `TOTAL RETENCIONES,${metrics.totalRetenciones.toFixed(2)}\n\n`;
         csv += `RESULTADO IMPOSITIVO,${metrics.esCreditoFavor ? 'Crédito a Favor: $' : 'Saldo a Pagar: $'}${metrics.resultadoNetoIva.toFixed(2)}\n`;
@@ -428,7 +493,10 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             VENTAS
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">Ventas Brutas Totales</div>
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                        <span>Ventas Brutas Totales</span>
+                        <SelloEstimado origen={metrics.origenVentas} que="las ventas" />
+                    </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalVentas.toFixed(2)}
                     </div>
@@ -455,7 +523,10 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             COMPRAS
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">Compras Facturadas SRI</div>
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                        <span>Compras Facturadas SRI</span>
+                        <SelloEstimado origen={metrics.origenCompras} que="las compras" />
+                    </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalCompras.toFixed(2)}
                     </div>
@@ -482,7 +553,10 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             RETENCIONES
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">Retenciones Recibidas</div>
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
+                        <span>Retenciones Recibidas</span>
+                        <SelloEstimado origen={metrics.origenRetenciones} que="las retenciones" />
+                    </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalRetenciones.toFixed(2)}
                     </div>

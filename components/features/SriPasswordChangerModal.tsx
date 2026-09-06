@@ -26,6 +26,26 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
 
     const csvInputRef = React.useRef<HTMLInputElement>(null);
 
+    /**
+     * Lo que el CSV cambiaria, antes de tocar nada.
+     *
+     * Antes el import aplicaba los cambios de una y solo avisaba despues. Si
+     * el archivo traia una clave vieja, pisaba una buena sin que nadie
+     * pudiera verlo venir.
+     *
+     * `cambian` no guarda la clave, solo a quien le cambiaria: el archivo de
+     * Chrome ya es texto plano, no hace falta volver a pintarlo en pantalla.
+     */
+    /** Las claves leídas del archivo, fuera del estado de React. */
+    const claves = React.useRef<Record<string, string>>({});
+
+    const [propuesta, setPropuesta] = useState<{
+        leidas: number;
+        cambian: { id: string; ruc: string; name: string; teniaClave: boolean }[];
+        sinCambio: number;
+        noEstan: string[];
+    } | null>(null);
+
     const activeClients = useMemo(() => {
         return clients.filter(c => !c.isDeleted && (c.isActive ?? true));
     }, [clients]);
@@ -38,25 +58,49 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
             const content = evt.target?.result as string;
             if (!content) return;
             const creds = parseCredentialsCSV(content);
+            claves.current = creds;   // en una ref, no en el estado de React
             const credKeys = Object.keys(creds);
             if (credKeys.length === 0) {
                 toast.error("No se encontraron claves de usuario/RUC válidas en el archivo CSV.");
                 return;
             }
 
-            let updated = 0;
+            // Se arma la propuesta y se muestra. Nada se toca hasta que el
+            // usuario lo confirme.
+            const cambian: { id: string; ruc: string; name: string; teniaClave: boolean }[] = [];
+            let sinCambio = 0;
+            const rucsUsados = new Set<string>();
+
             clients.forEach(c => {
-                const matchedPass = creds[c.ruc] || creds[c.ruc.slice(0, 10)];
-                if (matchedPass && c.sriPassword !== matchedPass) {
-                    updateClient(c.id, { sriPassword: matchedPass, sriPasswordUpdatedAt: new Date().toISOString() });
-                    updated++;
-                }
+                const clave = creds[c.ruc] || creds[c.ruc.slice(0, 10)];
+                if (!clave) return;
+                rucsUsados.add(c.ruc);
+                rucsUsados.add(c.ruc.slice(0, 10));
+                if (c.sriPassword === clave) { sinCambio++; return; }
+                cambian.push({ id: c.id, ruc: c.ruc, name: c.name, teniaClave: !!c.sriPassword });
             });
 
-            toast.success(`🎉 ¡${credKeys.length} claves leídas del CSV! Se vincularon/actualizaron ${updated} contraseñas a tus clientes.`);
+            const noEstan = credKeys.filter(k => !rucsUsados.has(k));
+            setPropuesta({ leidas: credKeys.length, cambian, sinCambio, noEstan });
         };
         reader.readAsText(file);
         if (csvInputRef.current) csvInputRef.current.value = '';
+    };
+
+    /** Aplica lo que el usuario acaba de aprobar. */
+    const aplicarPropuesta = () => {
+        if (!propuesta) return;
+        const cuando = new Date().toISOString();
+        propuesta.cambian.forEach(c => {
+            const cliente = clients.find(x => x.id === c.id);
+            const clave = claves.current[c.ruc] || claves.current[c.ruc.slice(0, 10)];
+            if (cliente && clave) {
+                updateClient(c.id, { sriPassword: clave, sriPasswordUpdatedAt: cuando });
+            }
+        });
+        toast.success(`✅ ${propuesta.cambian.length} clave(s) actualizada(s).`);
+        setPropuesta(null);
+        claves.current = {};
     };
 
     const filteredClients = useMemo(() => {
@@ -183,6 +227,71 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
                         </button>
                     </div>
                 </div>
+
+                {/* Lo que el CSV cambiaría, antes de tocar nada */}
+                {propuesta && (
+                    <div className="mx-6 mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/[0.07] overflow-hidden">
+                        <div className="px-5 py-4 border-b border-amber-500/20">
+                            <div className="text-sm font-black text-amber-200">
+                                Leí {propuesta.leidas} clave{propuesta.leidas === 1 ? '' : 's'} del archivo. Todavía no cambié nada.
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] font-bold">
+                                <span className="text-amber-300">
+                                    {propuesta.cambian.length} cliente{propuesta.cambian.length === 1 ? '' : 's'} cambiaría{propuesta.cambian.length === 1 ? '' : 'n'} de clave
+                                </span>
+                                {propuesta.sinCambio > 0 && (
+                                    <span className="text-slate-400">{propuesta.sinCambio} ya la tenía{propuesta.sinCambio === 1 ? '' : 'n'} igual</span>
+                                )}
+                                {propuesta.noEstan.length > 0 && (
+                                    <span className="text-slate-400">
+                                        {propuesta.noEstan.length} RUC{propuesta.noEstan.length === 1 ? '' : 's'} del archivo no {propuesta.noEstan.length === 1 ? 'está' : 'están'} en el sistema
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {propuesta.cambian.length > 0 && (
+                            <div className="max-h-52 overflow-y-auto px-5 py-3 space-y-1.5">
+                                {propuesta.cambian.map(c => (
+                                    <div key={c.id} className="flex items-center gap-3 text-xs py-1.5 border-b border-white/5 last:border-0">
+                                        <span className="flex-1 font-bold text-slate-200 truncate">{c.name}</span>
+                                        <span className="font-mono text-[11px] text-slate-400">{c.ruc}</span>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                                            c.teniaClave
+                                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                        }`}>
+                                            {c.teniaClave ? 'reemplaza la actual' : 'clave nueva'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="px-5 py-4 flex flex-wrap items-center gap-3 border-t border-amber-500/20">
+                            <button
+                                onClick={aplicarPropuesta}
+                                disabled={propuesta.cambian.length === 0}
+                                className="px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all"
+                            >
+                                {propuesta.cambian.length === 0
+                                    ? 'No hay nada que actualizar'
+                                    : `Actualizar ${propuesta.cambian.length} clave${propuesta.cambian.length === 1 ? '' : 's'}`}
+                            </button>
+                            <button
+                                onClick={() => { setPropuesta(null); claves.current = {}; }}
+                                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-bold transition-all"
+                            >
+                                No cambiar nada
+                            </button>
+                            {propuesta.cambian.some(c => c.teniaClave) && (
+                                <span className="text-[11px] text-amber-300/80">
+                                    Las marcadas «reemplaza la actual» pisan una clave que ya tenías guardada.
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Table list */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-3 no-scrollbar">
