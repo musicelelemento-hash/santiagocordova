@@ -6,7 +6,8 @@ import {
     AlertCircle, AlertTriangle, ArrowUpDown, Briefcase, Check, CheckCircle2, Clock, DollarSign, FileText,
     Filter, LayoutGrid, LayoutList, MessageCircle, Plus, PlusCircle, Search,
     Shield, ShieldCheck, Sparkles, Store, Trash2, UploadCloud, Users, X, Zap,
-    Download, Copy, FileSpreadsheet, Building2
+    Download, Copy, FileSpreadsheet, Building2,
+    KeyRound
 } from 'lucide-react';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
@@ -28,6 +29,7 @@ import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
 import { BulkClientWizardModal, CandidateClientItem } from '../components/features/BulkClientWizardModal';
 import { GlobalUploadModal } from '../components/features/GlobalUploadModal';
+import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { ClientsDashboard } from '../components/features/ClientsDashboard';
@@ -111,6 +113,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     // Bulk Wizard State
     const [bulkWizardData, setBulkWizardData] = useState<CandidateClientItem[]>([]);
     const [isBulkWizardOpen, setIsBulkWizardOpen] = useState(false);
+    // Claves del SRI: verlas, cambiarlas, y actualizarlas en lote desde el
+    // CSV de contraseñas de Chrome.
+    const [isClavesOpen, setIsClavesOpen] = useState(false);
 
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
@@ -1180,6 +1185,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         SUBIR PDFs / RUCs
                     </motion.button>
                     
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setIsClavesOpen(true)}
+                        title="Ver y cambiar las claves del SRI, e importar el CSV de contraseñas de Chrome"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium cursor-pointer"
+                    >
+                        <KeyRound size={16} className="text-amber-400" />
+                        CLAVES SRI
+                    </motion.button>
+
                     <motion.button 
                         whileHover={{ scale: 1.02, y: -2 }}
                         whileTap={{ scale: 0.98 }}
@@ -1773,6 +1789,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 accept="application/pdf"
                 multiple
                 className="sr-only"
+            />
+
+            <SriPasswordChangerModal
+                isOpen={isClavesOpen}
+                onClose={() => setIsClavesOpen(false)}
             />
 
             <Modal
