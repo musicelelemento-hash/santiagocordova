@@ -425,12 +425,48 @@ export const fetchSRIPublicData = async (identifier: string): Promise<SRIPublicD
 
     try {
         const targetUrl = `https://srienlinea.sri.gob.ec/movil-servicios/api/v1.0/contribuyente/${rucToQuery}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
-        const response = await fetchWithTimeout(proxyUrl);
+        // Rutas, en orden. La directa solo funciona donde no hay CORS —una
+        // extensión sobre el propio portal, por ejemplo—; desde el navegador
+        // hace falta un proxy.
+        //
+        // El proxy anónimo de corsproxy.io dejó de existir: desde 2026 devuelve
+        // HTTP 403 `keyless_legacy_url` y pide API key. Se dejó configurable en
+        // vez de cablear otro servicio gratuito que mañana haga lo mismo.
+        const proxyKey = (import.meta as any)?.env?.VITE_CORS_PROXY_KEY;
+        const rutas = [
+            targetUrl,
+            proxyKey
+                ? `https://corsproxy.io/?key=${proxyKey}&url=${encodeURIComponent(targetUrl)}`
+                : null
+        ].filter(Boolean) as string[];
 
-        if (response.ok) {
-            const data = await response.json();
+        let response: Response | null = null;
+        for (const url of rutas) {
+            try {
+                const r = await fetchWithTimeout(url);
+                if (r.ok) { response = r; break; }
+            } catch (e) { /* se prueba la siguiente */ }
+        }
+
+        if (!response) {
+            console.warn(
+                '[SRI] No se pudo consultar el padrón público. Desde el navegador hace falta un proxy: ' +
+                'definí VITE_CORS_PROXY_KEY, o hacé la consulta desde la extensión, que corre en el propio portal.'
+            );
+            return null;
+        }
+
+        {
+            // El WAF del SRI responde HTTP 200 con una página HTML de rechazo
+            // («Request Rejected»), así que `response.ok` no alcanza para saber
+            // si contestó de verdad.
+            const cuerpo = await response.text();
+            if (!cuerpo.trim().startsWith('{')) {
+                console.warn('[SRI] El padrón devolvió algo que no es JSON (probablemente el WAF rechazó la consulta).');
+                return null;
+            }
+            const data = JSON.parse(cuerpo);
             if (data && (data.razonSocial || data.nombreComercial)) {
                 let activity = data.actividadEconomicaPrincipal;
                 if (!activity && data.actividadesEconomicas && Array.isArray(data.actividadesEconomicas)) {
