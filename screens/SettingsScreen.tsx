@@ -1,14 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-    BellRing, Briefcase, Calendar, CalendarClock, Check, CheckCircle,
-    ChevronDown, ChevronRight, ChevronUp, Clock, Cloud, Crown, Database,
-    DatabaseBackup, DollarSign, Download, Edit, Edit3, ExternalLink, FileEdit,
-    FileSearch, Fingerprint, Globe, History, Info, Key, Link, Loader, Loader2,
-    Lock, MessageSquare, Package, Palette, Pencil, Plus, RefreshCw, RotateCw,
-    Save, Settings as SettingsIcon, Share2, ShieldCheck, ShoppingBag, Target,
-    ToggleLeft, ToggleRight, Trash2, Upload, UploadCloud, UserX, Wrench, Zap
-} from 'lucide-react';
+import { BellRing, Briefcase, Calendar, CalendarClock, Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clock, Cloud, Crown, Database, DatabaseBackup, DollarSign, Download, Edit, Edit3, ExternalLink, FileEdit, FileSearch, Fingerprint, Globe, History, Info, Key, Link, Loader, Loader2, Lock, MessageSquare, Package, Palette, Pencil, Plus, RefreshCw, RotateCw, Save, Settings as SettingsIcon, Share2, ShieldCheck, ShoppingBag, Target, ToggleLeft, ToggleRight, Trash2, Upload, UploadCloud, UserX, Wrench, Zap, FileText, CreditCard } from 'lucide-react';
 import { Client, TaxRegime, ServiceFeesConfig, Screen, Task, DeclarationStatus, Declaration, ReminderConfig, WebOrder, SystemSettings, SystemComboConfig } from '../types';
 import { exportClientsToCSV, parseClientsFromCSV, parseBrowserPasswordsCSV, parseCredentialsCSV } from '../services/csv';
 import { getClientServiceFee } from '../services/clientService';
@@ -81,6 +73,8 @@ const importBrowserPasswordsToClients = (
 };
 
 import { useAppStore } from '../store/useAppStore';
+import { TaxCertificateGeneratorModal } from '../components/features/TaxCertificateGeneratorModal';
+import { DigitalBusinessCardModal } from '../components/features/DigitalBusinessCardModal';
 
 interface SettingsScreenProps {
     navigate: (screen: Screen, options?: { clientIdToView?: string }) => void;
@@ -195,6 +189,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
     const passwordFileInputRef = useRef<HTMLInputElement>(null);
     const bulkPdfInputRef = useRef<HTMLInputElement>(null);
     const [fees, setFees] = useState<ServiceFeesConfig>(serviceFees);
+    // Dos herramientas que existian sin forma de abrirse.
+    const [isCertOpen, setIsCertOpen] = useState(false);
+    const [isTarjetaOpen, setIsTarjetaOpen] = useState(false);
     const [isEditingFees, setIsEditingFees] = useState(false);
     const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
     const [pdfUploadResults, setPdfUploadResults] = useState<{ total: number, success: number, error: number, existed: number } | null>(null);
@@ -712,6 +709,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden font-mono">
                         <div className="relative z-10">
                             <div className="flex justify-between items-center mb-6">
+                                {/* Herramientas del estudio: dos entregables que ya
+                                    existían y no tenían desde dónde abrirse. */}
+                                <div className="mb-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-7">
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="p-3.5 bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 rounded-2xl text-[#2B6AFF]">
+                                            <FileText size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">Herramientas del Estudio</h3>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#2B6AFF] mt-0.5">Documentos que se entregan al cliente</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-300 text-xs sm:text-sm mb-5 leading-relaxed font-sans max-w-2xl">
+                                        Genere el certificado de paz y salvo de un contribuyente, o comparta sus datos bancarios para transferencias.
+                                    </p>
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            onClick={() => setIsCertOpen(true)}
+                                            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-[#2B6AFF]/15 hover:bg-[#2B6AFF]/25 text-[#7DA6FF] border border-[#2B6AFF]/40 transition-all cursor-pointer"
+                                        >
+                                            <FileText size={14} />
+                                            <span>Certificado de paz y salvo</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setIsTarjetaOpen(true)}
+                                            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] border border-[#00A896]/40 transition-all cursor-pointer"
+                                        >
+                                            <CreditCard size={14} />
+                                            <span>Datos bancarios</span>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="flex items-center gap-4">
                                     <div className="p-3.5 bg-[#C9A96E]/15 border border-[#C9A96E]/30 rounded-2xl text-[#C9A96E]">
                                         <DollarSign size={24} />
@@ -1108,6 +1138,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     </button>
                 </div>
             </Modal>
+        <TaxCertificateGeneratorModal isOpen={isCertOpen} onClose={() => setIsCertOpen(false)} />
+        <DigitalBusinessCardModal isOpen={isTarjetaOpen} onClose={() => setIsTarjetaOpen(false)} />
         </div>
     );
 };
