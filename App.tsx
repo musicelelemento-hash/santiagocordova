@@ -53,7 +53,6 @@ const ThreeDStudioScreen = React.lazy(() => import('./screens/ThreeDStudioScreen
 const AdaptadorConvert = React.lazy(() => import('./components/features/AdaptadorConvert').then(m => ({ default: m.AdaptadorConvert })));
 const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalUploadModal').then(m => ({ default: m.GlobalUploadModal })));
 const SalesComboModal = React.lazy(() => import('./components/features/SalesComboModal').then(m => ({ default: m.SalesComboModal })));
-const SriPasswordChangerModal = React.lazy(() => import('./components/features/SriPasswordChangerModal').then(m => ({ default: m.SriPasswordChangerModal })));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 
 const ScreenLoader = () => (
