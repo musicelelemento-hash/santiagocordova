@@ -11,12 +11,25 @@ export const SupabaseService = {
   // --- Clients ---
   
   async getClients(): Promise<Client[]> {
-    const { data, error } = await supabase
+    // Intentar primero select completo con sri_declaraciones (sin billing_plans que no existe en DB)
+    let { data, error } = await supabase
       .from('clients')
-      .select('*, sri_declaraciones(*), billing_plans(*)')
+      .select('*, sri_declaraciones(*)')
       .eq('is_deleted', false);
 
-    if (error) throw error;
+    // Si falló por RLS/permisos de columnas para rol anon (401/42501), fallback a columnas públicas permitidas
+    if (error) {
+      console.warn('[SupabaseService] getClients query completo falló, usando columnas públicas accesibles:', error.message);
+      const fallbackQuery = await supabase
+        .from('clients')
+        .select('id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*)');
+      
+      if (fallbackQuery.error) {
+        throw fallbackQuery.error;
+      }
+      data = fallbackQuery.data;
+    }
+
     return (data || []).map(d => this.mapClientFromDb(d));
   },
 
@@ -271,7 +284,7 @@ export const SupabaseService = {
   async getFacturadoresPaginated(page: number, limit: number, search: string, filterCategory: string): Promise<{clients: Client[], count: number}> {
     let query = supabase
       .from('clients')
-      .select('*, billing_plans(*), sri_declaraciones(*)', { count: 'exact' })
+      .select('*, sri_declaraciones(*)', { count: 'exact' })
       .eq('is_deleted', false);
 
     // Aplicar el filtro de categoría a nivel SQL para que la paginación y el count sean correctos
