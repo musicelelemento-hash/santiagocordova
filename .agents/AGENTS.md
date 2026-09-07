@@ -41,7 +41,7 @@ Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema),
 | **Venta de Planes & Combos** | 🟢 **100% Completado** | Registro de .p12, credenciales y emisión comprobante SRI. |
 | **Matriz de Cumplimiento SRI** | 🟡 **95% (Casi Listo)** | Funcional. Pendiente: Exportador masivo de reportes en Excel/PDF para auditoría. |
 | **Extensiones Web SRI (Chrome/Edge)** | 🟡 **80% (En Proceso)** | Inyección funcional. Pendiente: Empaquetador `manifest.json` v3 listo para distribución e importador 1-click de facturas recibidas del SRI. |
-| **Automatización WhatsApp** | 🟡 **85%** | Mensajería por etapas lista. Pendiente: Envío programado masivo con 1-clic. |
+| **Automatización WhatsApp** | 🟢 **95%** | Sala de envío (`SalaDeEnvio.tsx`): de a uno, con el enlace al comprobante en el mensaje. Pendiente: envío 100% automático (ver §5). |
 | **Generador de Anexos (ATS / RDEP)** | 🔴 **Pendiente (Fase 2)** | Generación automática de XMLs de Anexos a partir de comprobantes guardados. |
 
 ---
@@ -58,3 +58,98 @@ Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema),
 1. **Componentes Glassmorphism**: Usar `.glass-card-premium` y transiciones suaves.
 2. **Tipografía Contable**: Nombres en `Manrope`, RUC/Cédulas en `JetBrains Mono` (`font-mono`).
 3. **No Token Wasting**: No realizar lecturas de archivos innecesarias; consultar este mapa para ubicar archivos clave al instante.
+
+
+---
+
+## 🧰 5. La sala de envío, y lo que sigue
+
+### Lo que hay (07-sep-2026)
+
+`components/features/SalaDeEnvio.tsx`. El botón «💬 Notificar WhatsApp» de la
+matriz la abre con los clientes seleccionados.
+
+**Por qué existe.** El envío masivo llamaba a `window.open` una vez por cliente
+en el mismo tick. El navegador deja pasar dos o tres y **bloquea el resto sin
+avisar** — y el código marcaba a los veintisiete como notificados igual. O sea:
+clientes registrados como avisados sin haber recibido nada. Por eso el trabajo
+se venía haciendo a mano.
+
+Tres cosas que la sala hace y el masivo no:
+
+1. **Una pestaña por vez.** Dos teclas por cliente (Enter abre, Enter confirma,
+   S saltea): veintisiete salen en un par de minutos.
+2. **El mensaje lleva el enlace al comprobante.** Eso era el hueco: el texto
+   decía «le adjunto el comprobante» y no adjuntaba nada, y había un campo
+   `fileUrl` declarado y nunca usado esperando justo eso. El enlace se firma
+   por 30 días (`linkDelComprobante` en `services/fileService.ts`) — la hora
+   que usa `signPublicStorageUrl` no sobrevive a un chat.
+3. **Abrir WhatsApp no es haber enviado.** El código viejo marcaba
+   `isNotifiedWhatsApp` al abrir la pestaña, aunque nadie pulsara enviar. Acá
+   ese paso lo confirma la persona.
+
+Y los que **no** se pueden mandar no desaparecen de la lista: quedan al final
+con el motivo escrito. Un contribuyente que desaparece es uno que nadie vuelve
+a mirar.
+
+`notification_count` ahora se guarda en Supabase. Antes se reseteaba al
+recargar y todos volvían a recibir el mensaje de bienvenida aunque llevaran
+tres avisos.
+
+### Lo que sigue
+
+**Email automático con el PDF adjunto** — decidido con el usuario el
+07-sep-2026, para después de la sala. Lo caro ya está hecho:
+`telegram-bot/src/gmail.ts:100` envía por la API de Gmail y
+`telegram-bot/src/database_ops.ts` ya lee `sri_declaraciones`. Gmail da 500
+envíos por día, de sobra para 500 contribuyentes una vez al mes. Es el único
+canal donde el comprobante viaja **adjunto** y sin que nadie haga clic.
+
+**WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
+los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta
+Business, número dedicado y plantilla aprobada. Meta cobra por mensaje y sus
+condiciones se mueven seguido: **verificar el precio actual antes de
+comprometerse**, no confiar en lo que recuerde una IA.
+
+> ⚠️ **`whatsapp-web.js` / Baileys quedan descartados.** Son clientes no
+> oficiales que se hacen pasar por WhatsApp Web. Funcionan, son gratis, y son
+> la respuesta de cualquier tutorial. Pero violan los términos y el número que
+> se banea es **el del estudio**, por donde escriben 500 contribuyentes. No
+> construir esto salvo pedido explícito del usuario sabiendo el riesgo.
+
+---
+
+## 💡 6. Ideas del usuario para construir en ocio
+
+> Anotadas el 07-sep-2026, con sus palabras. Son pedidos de producto, no
+> conclusiones de una IA: no reinterpretarlas ni recortarlas.
+
+Le gustó mucho la vista previa del comprobante que aparece en el menú de
+declaraciones, con su botón para abrir credenciales:
+
+> «me di cuenta que cuando veo el comprobante en menú declaraciones se abre una
+> pequeña vista previa y sale un botón de abrir credenciales. Me sorprendió,
+> eso me ayudó mucho, me encanta. ¿Podemos hacer más, o un botón así desde el
+> cliente, con distintas funcionalidades?»
+
+Las que nombró:
+
+| Idea | Qué haría |
+| :--- | :--- |
+| **Certificado de RUC** | Sacar el certificado del contribuyente desde el portal |
+| **Probar la clave** | Comprobar si la contraseña guardada todavía sirve, sin declarar nada |
+| **Traer lo ya declarado** | Buscar y bajar las declaraciones que ya están presentadas |
+
+El patrón que le gustó —y que conviene conservar— es **una acción de un clic,
+en contexto, sin salir de donde está**. La ficha del cliente es el lugar
+natural para eso.
+
+Dos cuidados al construirlas:
+
+- **Probar la clave toca la bóveda.** El blindaje anti-bloqueo de la extensión
+  existe porque el SRI bloquea cuentas por intentos fallidos. Una función de
+  «probar clave» que corra sola sobre 500 contribuyentes es una forma rápida
+  de bloquearlos a todos. Tiene que ser de a uno y pedido a mano.
+- **Traer lo ya declarado ya existe en la extensión**
+  (`bajarTodosLosComprobantes()`, botón 🧾). Antes de escribirlo de nuevo en la
+  web, mirar si alcanza con dispararlo desde acá por el puente.

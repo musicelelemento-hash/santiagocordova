@@ -45,6 +45,7 @@ import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart
 import { useToast } from '../../context/ToastContext';
 
 import { SriCampaignWidget } from './SriCampaignWidget';
+import { SalaDeEnvio } from './SalaDeEnvio';
 import { getNinthDigit } from '../../services/sri';
 
 import { db } from '../../services/db';
@@ -1253,30 +1254,22 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         toast.success(`✅ ${selectedClientsList.length} clientes marcados como NOTIFICADOS.`);
     };
 
+    // Abre la sala de envío, que atiende de a uno.
+    //
+    // Antes esto llamaba a `window.open` una vez por cliente seleccionado, en
+    // el mismo tick. El navegador deja pasar dos o tres y bloquea el resto SIN
+    // avisar — y el código marcaba a los veintisiete como notificados igual.
+    // O sea: los clientes quedaban registrados como avisados sin haber
+    // recibido nada, que es la peor forma posible de fallar.
     const handleBulkWhatsAppNotify = () => {
-        const selectedClientsList = clients.filter(c => selectedClientIds.includes(c.id));
-        if (selectedClientsList.length === 0) {
+        if (selectedClientIds.length === 0) {
             toast.info("Seleccione al menos un cliente.");
             return;
         }
-
-        const activePeriod = periods[0] || '';
-        const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
-
-        let count = 0;
-        selectedClientsList.forEach(client => {
-            const decls = client.declarations || [];
-            const d = findDeclarationForOb(decls, activePeriod, mainObType);
-            if (d?.proof_file) {
-                handleSendWhatsAppNotification(client, activePeriod, mainObType, d);
-                count++;
-            }
-        });
-
-        if (count === 0) {
-            toast.warning("Ninguno de los clientes seleccionados tiene comprobante PDF listo para notificar.");
-        }
+        setSalaAbierta(true);
     };
+
+    const [salaAbierta, setSalaAbierta] = useState(false);
 
     const totalFiltered = filteredClients.length;
     const activePeriodForKpi = periods[0] || '';
@@ -1304,6 +1297,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     return (
         <div className="space-y-6 animate-fade-in">
+            {salaAbierta && (
+                <SalaDeEnvio
+                    clients={clients.filter(c => selectedClientIds.includes(c.id))}
+                    period={periods[0] || ''}
+                    obType={matrixMode === 'RENTA' ? 'RENTA' : 'IVA'}
+                    onClose={() => setSalaAbierta(false)}
+                />
+            )}
             {/* Executive Stitch Glassmorphic KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Card 1: Total Clientes */}
@@ -1871,7 +1872,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-emerald-500/25 cursor-pointer'
                                 : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border-white/5'
                         }`}
-                        title="Enviar notificación por WhatsApp con enlace al comprobante de Supabase"
+                        title="Abre la sala de envío: de a uno, con el enlace al comprobante en el mensaje"
                     >
                         <LucideIcons.Send size={13} />
                         <span>💬 Notificar WhatsApp</span>

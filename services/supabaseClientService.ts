@@ -68,6 +68,11 @@ export const SupabaseService = {
                 proof_file: sanitizedProofFile,
                 is_notified_whatsapp: !!dec.isNotifiedWhatsApp,
                 notified_whatsapp_at: dec.notifiedWhatsAppAt || null,
+                // Sin esto, la etapa del mensaje (1 = envío del comprobante,
+                // 2 = recordatorio de cobro, 3+ = seguimiento) se reseteaba al
+                // recargar, y todo el mundo volvía a recibir el mensaje de
+                // «su declaración ya está hecha» aunque llevara tres avisos.
+                notification_count: dec.notificationCount ?? 0,
                 created_at: dec.declaredAt || new Date().toISOString(),
                 updated_at: dec.updatedAt || new Date().toISOString()
             };
@@ -512,7 +517,8 @@ export const SupabaseService = {
           period: d.period,
           is_paid: isPaid,
           isNotifiedWhatsApp: d.is_notified_whatsapp ?? d.isNotifiedWhatsApp ?? false,
-          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? null
+          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? null,
+          notificationCount: d.notification_count ?? d.notificationCount ?? 0
         });
       } else {
         const finalProof = (dHasUrl || !existingHasUrl) ? (d.proof_file || existing.proof_file) : existing.proof_file;
@@ -527,7 +533,13 @@ export const SupabaseService = {
           proof_file: finalProof,
           is_paid: isPaid || existing.is_paid,
           isNotifiedWhatsApp: d.is_notified_whatsapp ?? d.isNotifiedWhatsApp ?? existing.isNotifiedWhatsApp,
-          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? existing.notifiedWhatsAppAt
+          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? existing.notifiedWhatsAppAt,
+          // Se queda con el MAYOR: dos filas de la misma declaración no pueden
+          // hacer que un cliente al que ya se le insistió tres veces vuelva a
+          // recibir el mensaje de bienvenida.
+          notificationCount: Math.max(
+            d.notification_count ?? d.notificationCount ?? 0,
+            existing.notificationCount ?? 0)
         });
       }
     });

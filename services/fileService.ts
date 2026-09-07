@@ -32,6 +32,72 @@ export async function signPublicStorageUrl(url: string): Promise<string> {
 }
 
 /**
+ * Cuánto vive un link que se manda por WhatsApp.
+ *
+ * Una hora —lo que usa `signPublicStorageUrl`— sirve para abrir un PDF en la
+ * pestaña de al lado, y no sirve para nada que viaje por un chat: el cliente
+ * lo abre a la noche, o al día siguiente, y encuentra un error. Treinta días
+ * es el plazo en el que alguien todavía busca el comprobante del mes.
+ */
+export const DIAS_QUE_VIVE_UN_LINK = 30;
+
+/**
+ * El link del comprobante de una declaración, listo para pegar en un mensaje.
+ *
+ * Devuelve `null` cuando no hay nada que compartir, y eso **no** es un error:
+ * un comprobante que sólo existe como base64 en la base no tiene dirección
+ * pública, y mandar un mensaje diciendo «le adjunto el comprobante» sin
+ * adjuntar nada es peor que no mandarlo.
+ *
+ * @param proof El `proof_file` de la declaración.
+ * @returns La URL, o `null` si no hay uno compartible.
+ */
+export async function linkDelComprobante(proof: StoredFile | null | undefined): Promise<string | null> {
+  if (!proof) return null;
+
+  // Supabase Storage: el bucket es privado, así que la URL pública no abre.
+  // Hay que firmarla, y con un plazo que aguante el viaje por un chat.
+  const desdeBucket = proof.bucketPath;
+  const url = proof.url || '';
+
+  if (url.includes('/storage/v1/object/public/')) {
+    const m = url.match(SUPABASE_PUBLIC_URL_RE);
+    if (m) {
+      try {
+        const { data, error } = await supabase.storage
+          .from(m[1])
+          .createSignedUrl(m[2], DIAS_QUE_VIVE_UN_LINK * 24 * 3600);
+        if (!error && data?.signedUrl) return data.signedUrl;
+      } catch (err) {
+        console.warn('[Comprobante] No se pudo firmar el link:', err);
+      }
+    }
+    // Si no se pudo firmar, la URL pública de un bucket privado NO sirve:
+    // devolverla sería mandarle al cliente un link que da error.
+    return null;
+  }
+
+  if (desdeBucket) {
+    try {
+      const { data, error } = await supabase.storage
+        .from('clients-vault')
+        .createSignedUrl(desdeBucket, DIAS_QUE_VIVE_UN_LINK * 24 * 3600);
+      if (!error && data?.signedUrl) return data.signedUrl;
+    } catch (err) {
+      console.warn('[Comprobante] No se pudo firmar el bucketPath:', err);
+    }
+  }
+
+  // R2 y cualquier otra URL http(s) ya son direcciones que abren solas.
+  // Desde el 07-sep-2026 las de R2 llevan un tramo imposible de adivinar, así
+  // que el link es la credencial y no se deduce del RUC de nadie.
+  if (/^https?:\/\//i.test(url)) return url;
+
+  // Sólo hay base64 (o nada): no hay link que mandar.
+  return null;
+}
+
+/**
  * Resolves a StoredFile, checking if its content is split (__SPLIT__:)
  * and fetching the real content from Supabase/Firestore if needed.
  */
