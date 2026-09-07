@@ -1,5 +1,10 @@
 # Soluciones Contables Pro - Mapa Neuronal, Visión de Vara Alta y Reglas de Desarrollo
 
+> 🧭 **El tablero de pendientes de TODO el ecosistema está en el
+> `.agents/AGENTS.md` de la raíz del workspace, sección §0b.** La mayor parte
+> del trabajo pendiente vive en la extensión Nueva Luz 3.0, no acá. Lo que
+> se cierra desde ESTE repositorio está en la §7, al final.
+
 Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema), Estado de Módulos y Reglas Operativas** para la plataforma **Soluciones Contables Pro / SantiagoCordova.com**. Sirve como punto de entrada de contexto ultrarrápido para Agentes de IA y desarrolladores, optimizando el consumo de tokens y la velocidad de ejecución.
 
 ---
@@ -41,7 +46,8 @@ Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema),
 | **Venta de Planes & Combos** | 🟢 **100% Completado** | Registro de .p12, credenciales y emisión comprobante SRI. |
 | **Matriz de Cumplimiento SRI** | 🟡 **95% (Casi Listo)** | Funcional. Pendiente: Exportador masivo de reportes en Excel/PDF para auditoría. |
 | **Extensiones Web SRI (Chrome/Edge)** | 🟡 **80% (En Proceso)** | Inyección funcional. Pendiente: Empaquetador `manifest.json` v3 listo para distribución e importador 1-click de facturas recibidas del SRI. |
-| **Automatización WhatsApp** | 🟢 **95%** | Sala de envío (`SalaDeEnvio.tsx`): de a uno, con el enlace al comprobante en el mensaje. Pendiente: envío 100% automático (ver §5). |
+| **Automatización WhatsApp** | 🟡 **95%** | Sala de envío (`SalaDeEnvio.tsx`): de a uno, con el enlace al comprobante en el mensaje. **Nunca se verificó en pantalla con datos reales.** Pendiente: envío 100% automático (§5) y el email con PDF adjunto, que es lo siguiente (§7). |
+| **Autocompletado de RUC desde el SRI** | 🔴 **ROTO en producción** | `corsproxy.io` dejó de ser gratuito: `fetchSRIPublicData()` devuelve HTTP 403. Ver §7. |
 | **Generador de Anexos (ATS / RDEP)** | 🔴 **Pendiente (Fase 2)** | Generación automática de XMLs de Anexos a partir de comprobantes guardados. |
 
 ---
@@ -153,3 +159,62 @@ Dos cuidados al construirlas:
 - **Traer lo ya declarado ya existe en la extensión**
   (`bajarTodosLosComprobantes()`, botón 🧾). Antes de escribirlo de nuevo en la
   web, mirar si alcanza con dispararlo desde acá por el puente.
+
+## 📋 7. Pendientes de la web — tablero
+
+> Actualizado el **07-sep-2026**.
+>
+> **El tablero maestro del ecosistema está en el `.agents/AGENTS.md` de la raíz
+> del workspace, sección §0b.** Ahí está todo lo de la extensión Nueva Luz 3.0,
+> que es donde vive la mayor parte del trabajo pendiente. Esta sección cubre
+> sólo lo que se cierra desde este repositorio.
+
+### Lo que está roto en producción
+
+| Qué | Síntoma | Dónde |
+| :--- | :--- | :--- |
+| **`corsproxy.io` dejó de ser gratuito** | `fetchSRIPublicData()` devuelve **HTTP 403** (`keyless_legacy_url`). Autocompletar al crear un cliente y validar un RUC no funcionan. | `services/sri.ts` |
+| **Supabase rechaza la llave anon (401)** | La extensión declara bien y guarda el comprobante, pero **las métricas del panel no llegan**. Hubo además 500 y 521. Revisar el estado del proyecto antes de tocar credenciales. | raíz §0b.2 |
+
+> Sobre el 401: una llave guardada en los Ajustes de la extensión **pisa a la
+> del código**. Una llave de repuesto rota tapa a la buena en silencio, y el
+> arreglo suele ser **borrarla**, no salir a buscar una nueva. Regla general:
+> *una credencial de repuesto que no anda es peor que no tener repuesto.*
+
+### Lo que falta construir
+
+| Qué | Estado | Detalle |
+| :--- | :--- | :--- |
+| **Email automático con el PDF adjunto** | decidido, no empezado | §5 · **es lo siguiente** |
+| **WhatsApp Cloud API (Meta)** | evaluado, no empezado | §5 · necesita cuenta y plantilla |
+| **Verificar la sala de envío en pantalla** | nunca se hizo | necesita sesión para llegar a la matriz |
+| **Botones de un clic desde la ficha del cliente** | ideas anotadas | §6 |
+| **Exportador masivo de la matriz (Excel/PDF)** | pendiente | §3, único hueco de ese módulo |
+| **Generador de Anexos (ATS / RDEP)** | fase 2 | §3 |
+
+### Por qué el email va antes que WhatsApp
+
+Lo caro ya está hecho: `telegram-bot/src/gmail.ts:100` envía por la API de
+Gmail y `telegram-bot/src/database_ops.ts` ya lee `sri_declaraciones`. Gmail da
+**500 envíos por día**, de sobra para 500 contribuyentes una vez al mes. Y es
+el único canal donde el comprobante viaja **adjunto**, sin que nadie haga clic.
+
+WhatsApp Cloud API es el único camino oficial a «un botón y salieron los 500»,
+pero necesita cuenta de Meta Business, número dedicado y plantilla aprobada, y
+Meta cobra por mensaje. **Verificar el precio actual antes de comprometerse**;
+no confiar en lo que recuerde una IA.
+
+### Lo que ya está y no hay que reconstruir
+
+- **La sala de envío** (`components/features/SalaDeEnvio.tsx`) — de a uno, con
+  el enlace al comprobante firmado por 30 días. Ver §5 para por qué existe.
+- **`linkDelComprobante()`** en `services/fileService.ts` — firma el enlace y
+  devuelve `null` cuando no hay nada compartible, que **no es un error**:
+  mandar «le adjunto el comprobante» sin adjuntar nada es peor que no mandarlo.
+- **`notification_count` se guarda en Supabase** — antes se reseteaba al
+  recargar y todos volvían a recibir el mensaje de bienvenida.
+- **Traer lo ya declarado ya existe en la extensión**
+  (`bajarTodosLosComprobantes()`, botón 🧾). Antes de escribirlo de nuevo acá,
+  mirar si alcanza con dispararlo por el puente.
+
+---
