@@ -14,7 +14,7 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
-import { FACTURACION_API_TOKEN } from '../services/facturacionApi';
+import { FACTURACION_API_TOKEN, getFacturacionApiToken, setFacturacionApiToken } from '../services/facturacionApi';
 import { SalesComboModal } from '../components/features/SalesComboModal';
 import { VentaOcasionalForm } from '../components/features/VentaOcasionalForm';
 import { useToast } from '../context/ToastContext';
@@ -163,6 +163,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   });
   const [apiPrefix, setApiPrefix] = useState('/api/v1');
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [apiToken, setApiToken] = useState(() => getFacturacionApiToken());
+  const [showApiToken, setShowApiToken] = useState(false);
   
   // Emisor Defaults (Ecuador Company Details)
   const [emisorRuc, setEmisorRuc] = useState(() => localStorage.getItem('sc_emisor_ruc') || '0705787745001');
@@ -704,7 +706,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Check connection status to backend usando el endpoint público /ping con resiliencia ante Cold Start
-  const checkBackendConnection = async (urlToCheck = apiUrl) => {
+  const checkBackendConnection = async (urlToCheck = apiUrl, tokenToCheck = (apiToken || getFacturacionApiToken()).trim()) => {
     setConnectionStatus('checking');
     try {
       const controller = new AbortController();
@@ -714,7 +716,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         method: 'GET', 
         mode: 'cors',
         headers: {
-          'Authorization': FACTURACION_API_TOKEN
+          'Authorization': tokenToCheck
         },
         signal: controller.signal
       });
@@ -732,7 +734,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           const retryRes = await fetch(`${urlToCheck}${apiPrefix}/ping`, {
             method: 'GET',
             mode: 'cors',
-            headers: { 'Authorization': FACTURACION_API_TOKEN }
+            headers: { 'Authorization': tokenToCheck }
           });
           if (retryRes.ok) {
             setConnectionStatus('connected');
@@ -750,11 +752,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     if (!storedBase64) return;
     
     try {
+      const activeToken = (apiToken || getFacturacionApiToken()).trim();
       const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/firma/vigencia`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': FACTURACION_API_TOKEN
+          'Authorization': activeToken
         },
         body: JSON.stringify({
           certificado_p12_base64: storedBase64,
@@ -820,10 +823,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // Se dispara una vez al cargar la pantalla de Facturación SRI, así el servidor
   // de Render ya está activo cuando el usuario presione "Emitir Factura".
   useEffect(() => {
+    const token = (apiToken || getFacturacionApiToken()).trim();
     fetch(`${DEFAULT_API_URL}/api/v1/ping`, {
       method: 'GET',
       mode: 'cors',
-      headers: { 'Authorization': FACTURACION_API_TOKEN }
+      headers: { 'Authorization': token }
     }).catch(() => {}); // silencioso — solo para despertar
   }, []); // [] = solo al montar, una vez
 
@@ -832,11 +836,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // antes de que presione cualquier botón — así ya está despierto cuando lo necesita.
   useEffect(() => {
     if (activeTab === 'factura' || activeTab === 'retencion') {
+      const token = (apiToken || getFacturacionApiToken()).trim();
       fetch(`${apiUrl}${apiPrefix}/ping`, { 
         method: 'GET', 
         mode: 'cors',
         headers: {
-          'Authorization': FACTURACION_API_TOKEN
+          'Authorization': token
         }
       })
       .catch(() => {}); // silencioso — solo para despertar el servidor
@@ -1507,6 +1512,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     await new Promise(r => setTimeout(r, 800));
 
     let currentXml = '';
+    const activeToken = (apiToken || getFacturacionApiToken()).trim();
     try {
       
       // Step 1: Generate XML
@@ -1538,7 +1544,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           headers: { 
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': FACTURACION_API_TOKEN
+            'Authorization': activeToken
           },
           body: JSON.stringify(payload)
         });
@@ -1590,7 +1596,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': FACTURACION_API_TOKEN
+            'Authorization': activeToken
           },
           body: JSON.stringify({
             tipo: docType,
@@ -1640,7 +1646,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': FACTURACION_API_TOKEN
+            'Authorization': activeToken
           },
           body: JSON.stringify({
             xml: currentXml,
@@ -1714,7 +1720,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': FACTURACION_API_TOKEN
+                'Authorization': activeToken
               },
               body: JSON.stringify({
                 clave_acceso: key,
@@ -3232,6 +3238,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     localStorage.setItem('sc_emisor_ambiente', ambiente);
     localStorage.setItem('sc_software_provider_ruc', softwareProviderRuc);
     localStorage.setItem('sc_facturacion_api_url', apiUrl);
+    localStorage.setItem('sc_facturacion_api_token', apiToken);
+    setFacturacionApiToken(apiToken);
+    await db.setLocal('sc_facturacion_api_token', apiToken);
     localStorage.setItem('sc_emisor_logo', emisorLogo);
     
     await saveEmisorConfigToSupabase();
@@ -3781,6 +3790,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
                       placeholder="/api/v1"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1 flex items-center justify-between">
+                      <span>Token de Autorización API (ACCEPTED_SECRETS)</span>
+                      <span className="text-[8px] text-brand-teal font-mono font-bold">Header: Authorization</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showApiToken ? 'text' : 'password'}
+                        value={apiToken}
+                        onChange={(e) => {
+                          setApiToken(e.target.value);
+                          setFacturacionApiToken(e.target.value);
+                        }}
+                        className="w-full pl-3 pr-10 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
+                        placeholder="0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiToken(!showApiToken)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      >
+                        {showApiToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="pt-2">

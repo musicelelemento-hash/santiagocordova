@@ -22,7 +22,7 @@ import { useCampaignContext } from '../hooks/useCampaignContext';
 import { CampaignBanner } from '../components/ui/CampaignBanner';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
-import { FACTURACION_API_TOKEN } from '../services/facturacionApi';
+import { getFacturacionApiToken } from '../services/facturacionApi';
 
 interface CobranzaScreenProps {
     reminderConfigProp?: ReminderConfig;
@@ -134,11 +134,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             const ambiente = localStorage.getItem('sc_emisor_ambiente') || '1'; // 1 = Pruebas
             const apiUrl = localStorage.getItem('sc_facturacion_api_url') || 'https://facturador-sri-api.onrender.com';
             const apiPrefix = '/api/v1';
+            const apiToken = getFacturacionApiToken();
 
             // Validar que la API responda / ping
             addLog(`Verificando conectividad con servidor de firmas: ${apiUrl}...`);
             const pingRes = await fetch(`${apiUrl}${apiPrefix}/ping`, {
-                headers: { 'Authorization': FACTURACION_API_TOKEN }
+                headers: { 'Authorization': apiToken }
             }).catch(() => null);
 
             const isMock = !pingRes || !pingRes.ok;
@@ -281,7 +282,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     headers: { 
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'Authorization': FACTURACION_API_TOKEN 
+                        'Authorization': apiToken 
                     },
                     body: JSON.stringify(payload)
                 });
@@ -321,7 +322,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                 const signRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
                     body: JSON.stringify({
                         tipo: 'factura',
                         xml: currentXml,
@@ -354,7 +355,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 const sendRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
                     body: JSON.stringify({ xml: currentXml, ambiente })
                 });
                 if (!sendRes.ok) throw new Error("Fallo de conexión al SRI Recepción.");
@@ -373,7 +374,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 const authRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
                     body: JSON.stringify({ clave_acceso: key, ambiente })
                 });
                 if (!authRes.ok) throw new Error("Fallo consulta de autorización.");

@@ -27,9 +27,10 @@ class AuthenticateApp
         }
 
         $validSecrets = array_map('trim', explode(',', $secretsEnv));
-        $tokenRecibido = $request->header('Authorization', '');
+        $rawToken = $request->header('Authorization', '');
+        $tokenRecibido = trim(preg_replace('/^Bearer\s+/i', '', $rawToken));
 
-        if (in_array($tokenRecibido, $validSecrets, true)) {
+        if (in_array($rawToken, $validSecrets, true) || in_array($tokenRecibido, $validSecrets, true)) {
             return $next($request);
         }
 
