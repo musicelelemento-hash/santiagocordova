@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX, Key } from 'lucide-react';
+import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX, Key, Tag, Edit2 } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue, isSriPasswordUpdated } from '../../../services/sri';
+import { useAppStore } from '../../../store/useAppStore';
+import { useToast } from '../../../context/ToastContext';
 
 interface ClientHeaderProps {
     client: Client;
@@ -102,6 +104,22 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
     onDelete,
     nextDeadline
 }) => {
+    const { updateClientAlias } = useAppStore();
+    const { toast } = useToast();
+    const [isEditingAlias, setIsEditingAlias] = useState(false);
+    const currentAlias = client.taxProfile?.alias || client.tradeName || '';
+    const [aliasInput, setAliasInput] = useState(currentAlias);
+
+    const handleSaveAlias = async () => {
+        try {
+            await updateClientAlias(client.id, aliasInput);
+            setIsEditingAlias(false);
+            toast.success("Alias de reconocimiento guardado.");
+        } catch (e) {
+            toast.error("Error al guardar alias.");
+        }
+    };
+
     return (
         <div className="relative mb-6">
             {/* ── Barra de Acción y Navegación Minimalista ───────────────────── */}
@@ -317,7 +335,62 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                             <CopyClipButton text={client.name} label="Nombre" />
                         </div>
 
-                        {client.tradeName && (
+                        {/* ── Reconocimiento Rápido / Alias del Cliente ── */}
+                        <div className="flex items-center justify-center gap-2 pt-1">
+                            {isEditingAlias ? (
+                                <div className="flex items-center gap-2 bg-[#020b14]/90 p-1.5 px-3 rounded-2xl border border-[#00A896]/40 shadow-lg animate-in fade-in zoom-in-95 duration-200">
+                                    <Tag size={13} className="text-[#00A896]" />
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={aliasInput}
+                                        onChange={(e) => setAliasInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSaveAlias();
+                                            if (e.key === 'Escape') setIsEditingAlias(false);
+                                        }}
+                                        placeholder="Ej: Don Pepe de la ferretería / Mecánica El Chino"
+                                        className="bg-transparent text-xs font-bold text-white placeholder-slate-500 outline-none w-64 sm:w-80"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveAlias}
+                                        className="p-1 text-[#00A896] hover:bg-[#00A896]/20 rounded-lg transition-all"
+                                        title="Guardar alias"
+                                    >
+                                        <Check size={14} strokeWidth={3} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setAliasInput(currentAlias); setIsEditingAlias(false); }}
+                                        className="p-1 text-slate-400 hover:bg-white/10 rounded-lg transition-all"
+                                        title="Cancelar"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div 
+                                    onClick={() => { setAliasInput(currentAlias); setIsEditingAlias(true); }}
+                                    className="group/alias inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition-all bg-[#0b1326]/60 hover:bg-[#00A896]/15 border border-white/10 hover:border-[#00A896]/30 text-slate-300 hover:text-white"
+                                    title="Haz clic para editar el alias o nota de reconocimiento"
+                                >
+                                    <Tag size={13} className={currentAlias ? "text-[#00A896]" : "text-slate-500"} />
+                                    {currentAlias ? (
+                                        <span className="font-bold text-[#00A896] font-display">
+                                            "{currentAlias}"
+                                        </span>
+                                    ) : (
+                                        <span className="text-slate-400 text-[11px] italic">
+                                            + Asignar apodo / alias de reconocimiento (ej. Don Pepe Mecánica)
+                                        </span>
+                                    )}
+                                    <Edit2 size={11} className="text-slate-500 group-hover/alias:text-white transition-colors ml-1 opacity-60 group-hover/alias:opacity-100" />
+                                </div>
+                            )}
+                        </div>
+
+                        {client.tradeName && client.tradeName !== currentAlias && (
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{client.tradeName}</p>
                         )}
                     </div>

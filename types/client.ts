@@ -63,8 +63,16 @@ export interface StoredFile {
         slot?: string;
         ventas15?: number;
         ventas0?: number;
+        montoIvaVentas?: number;
         compras15?: number;
+        compras5?: number;
+        compras0?: number;
+        montoIvaCompras?: number;
         retIva?: number;
+        retRenta?: number;
+        impuestoCausado?: number;
+        totalPagar?: number;
+        saldoFavor?: number;
         [key: string]: any;
     };
 }
@@ -140,6 +148,8 @@ export interface TaxProfile {
     requiresIce: boolean;
     requiresAnexoPvp: boolean;
     sriCredencial?: SriCredencialEstado;
+    alias?: string;
+    quickNote?: string;
 }
 
 export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito';

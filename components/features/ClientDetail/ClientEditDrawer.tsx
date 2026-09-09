@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     X, Save, User, ShieldCheck, Key, DollarSign, Building, Phone, Mail, MapPin,
-    BadgePercent, Calendar, Lock, CheckCircle2, AlertCircle, FileText, Activity, Zap, Sparkles
+    BadgePercent, Calendar, Lock, CheckCircle2, AlertCircle, FileText, Activity, Zap, Sparkles, Tag
 } from 'lucide-react';
 import { Client, TaxRegime, IvaFrequency } from '../../../types';
 import { validateIdentifier } from '../../../services/sri';
@@ -223,6 +223,34 @@ export const ClientEditDrawer: React.FC<ClientEditDrawerProps> = ({
                                         className="w-full px-4 py-3 bg-[#0b1326]/80 border border-white/10 rounded-2xl text-sm font-medium text-white focus:border-[#00A896] outline-none transition-all font-sans"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-[#00A896] uppercase tracking-wider mb-1.5 flex items-center gap-1.5 font-mono">
+                                    <Tag size={13} />
+                                    <span>Alias / Apodo de Reconocimiento Rápido</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.taxProfile?.alias || formData.tradeName || ''}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            tradeName: val || prev.tradeName,
+                                            taxProfile: {
+                                                ...(prev.taxProfile || {} as any),
+                                                alias: val,
+                                                quickNote: val
+                                            }
+                                        }));
+                                    }}
+                                    placeholder="Ej: El señor de la ferretería / Mecánica El Chino / Tía de Juan"
+                                    className="w-full px-4 py-3 bg-[#0b1326]/80 border border-[#00A896]/30 rounded-2xl text-sm font-bold text-white focus:border-[#00A896] outline-none transition-all font-sans placeholder-slate-500 shadow-inner"
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                    Este apodo aparecerá en las tarjetas, tabla y cabecera para identificar al cliente al instante.
+                                </p>
                             </div>
 
                             <div>

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Client, TaxRegime, Declaration, StoredFile, ClientNote } from '../../../../types';
+import { Client, TaxRegime, Declaration, DeclarationStatus, StoredFile, ClientNote } from '../../../../types';
 import { getPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
@@ -10,6 +10,7 @@ import { extractP12Metadata } from '../../../../utils/p12Reader';
 import { useDropzone } from 'react-dropzone';
 import { SupabaseService } from '../../../../services/supabaseClientService';
 import { useToast } from '../../../../context/ToastContext';
+import { extractDeclarationCifras, formatDeclarationSummary } from '../../../../utils/declarationFormatter';
 
 interface VaultTabProps {
     client: Client;
@@ -47,6 +48,252 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     const [vaultSaved, setVaultSaved] = React.useState(false);
     const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
     const { toast } = useToast();
+
+    // Estado para gestión y copia de cifras de declaración en Bóveda
+    const [editingDeclPeriod, setEditingDeclPeriod] = React.useState<string | null>(null);
+    const [declEditForm, setDeclEditForm] = React.useState<{
+        period: string;
+        cep: string;
+        ventas15: number | string;
+        ventas0: number | string;
+        montoIvaVentas: number | string;
+        compras15: number | string;
+        compras5: number | string;
+        compras0: number | string;
+        montoIvaCompras: number | string;
+        retIva: number | string;
+        retRenta: number | string;
+        impuestoCausado: number | string;
+        totalPagar: number | string;
+        saldoFavor: number | string;
+    }>({
+        period: '',
+        cep: '',
+        ventas15: 0,
+        ventas0: 0,
+        montoIvaVentas: 0,
+        compras15: 0,
+        compras5: 0,
+        compras0: 0,
+        montoIvaCompras: 0,
+        retIva: 0,
+        retRenta: 0,
+        impuestoCausado: 0,
+        totalPagar: 0,
+        saldoFavor: 0,
+    });
+    const [copiedDeclPeriod, setCopiedDeclPeriod] = React.useState<string | null>(null);
+    const [copiedDeclCep, setCopiedDeclCep] = React.useState<string | null>(null);
+
+    const handleCopyCifras = (decl: Declaration) => {
+        try {
+            const text = formatDeclarationSummary(client, decl);
+            navigator.clipboard.writeText(text);
+            setCopiedDeclPeriod(decl.period);
+            toast.success(`📋 Cifras de ${formatPeriodForDisplay(decl.period)} copiadas para WhatsApp/Respaldo`);
+            setTimeout(() => setCopiedDeclPeriod(null), 2500);
+        } catch (e) {
+            toast.error('No se pudo copiar las cifras');
+        }
+    };
+
+    const handleCopyCep = (cep: string, period: string) => {
+        try {
+            navigator.clipboard.writeText(cep);
+            setCopiedDeclCep(period);
+            toast.success(`🧾 CEP ${cep} copiado`);
+            setTimeout(() => setCopiedDeclCep(null), 2500);
+        } catch (e) {
+            toast.error('No se pudo copiar el CEP');
+        }
+    };
+
+    const handleOpenEditDecl = (decl: Declaration) => {
+        const cifras = extractDeclarationCifras(decl);
+        setDeclEditForm({
+            period: decl.period,
+            cep: cifras.sriId || '',
+            ventas15: cifras.ventas15 || 0,
+            ventas0: cifras.ventas0 || 0,
+            montoIvaVentas: cifras.montoIvaVentas || 0,
+            compras15: cifras.compras15 || 0,
+            compras5: cifras.compras5 || 0,
+            compras0: cifras.compras0 || 0,
+            montoIvaCompras: cifras.montoIvaCompras || 0,
+            retIva: cifras.retIva || 0,
+            retRenta: cifras.retRenta || 0,
+            impuestoCausado: cifras.impuestoCausado || 0,
+            totalPagar: cifras.totalPagar ?? decl.amount ?? 0,
+            saldoFavor: Number(decl.proof_file?.metadata?.saldoFavor || 0),
+        });
+        setEditingDeclPeriod(decl.period);
+    };
+
+    const handleOpenNewPeriodDecl = () => {
+        const now = new Date();
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const defPeriod = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+
+        setDeclEditForm({
+            period: defPeriod,
+            cep: '',
+            ventas15: 0,
+            ventas0: 0,
+            montoIvaVentas: 0,
+            compras15: 0,
+            compras5: 0,
+            compras0: 0,
+            montoIvaCompras: 0,
+            retIva: 0,
+            retRenta: 0,
+            impuestoCausado: 0,
+            totalPagar: 0,
+            saldoFavor: 0,
+        });
+        setEditingDeclPeriod(defPeriod);
+    };
+
+    const handleAutoCalculateDeclFigures = () => {
+        const v15 = Number(declEditForm.ventas15) || 0;
+        const c15 = Number(declEditForm.compras15) || 0;
+        const c5 = Number(declEditForm.compras5) || 0;
+        const rIva = Number(declEditForm.retIva) || 0;
+
+        const ivaV = +(v15 * 0.15).toFixed(2);
+        const ivaC = +(c15 * 0.15 + c5 * 0.05).toFixed(2);
+        const impCausado = Math.max(0, +(ivaV - ivaC).toFixed(2));
+        const pagar = Math.max(0, +(impCausado - rIva).toFixed(2));
+        const saldo = pagar === 0 && (ivaC + rIva > ivaV) ? +(ivaC + rIva - ivaV).toFixed(2) : 0;
+
+        setDeclEditForm(prev => ({
+            ...prev,
+            montoIvaVentas: ivaV,
+            montoIvaCompras: ivaC,
+            impuestoCausado: impCausado,
+            totalPagar: pagar,
+            saldoFavor: saldo
+        }));
+        toast.info('⚡ Cifras de IVA y Pagar calculadas automáticamente');
+    };
+
+    const handleSaveDeclCifras = async () => {
+        if (!editingDeclPeriod) return;
+
+        const v15 = Number(declEditForm.ventas15) || 0;
+        const v0 = Number(declEditForm.ventas0) || 0;
+        const mIvaV = Number(declEditForm.montoIvaVentas) || 0;
+        const c15 = Number(declEditForm.compras15) || 0;
+        const c5 = Number(declEditForm.compras5) || 0;
+        const c0 = Number(declEditForm.compras0) || 0;
+        const mIvaC = Number(declEditForm.montoIvaCompras) || 0;
+        const rIva = Number(declEditForm.retIva) || 0;
+        const rRenta = Number(declEditForm.retRenta) || 0;
+        const impCaus = Number(declEditForm.impuestoCausado) || 0;
+        const totPag = Number(declEditForm.totalPagar) || 0;
+        const saldFav = Number(declEditForm.saldoFavor) || 0;
+        const cepClean = (declEditForm.cep || '').trim();
+
+        const currentDecls = [...(editedClient.declarations || client.declarations || [])];
+        let found = false;
+
+        const updatedDeclarations = currentDecls.map((d) => {
+            if (d.period === editingDeclPeriod) {
+                found = true;
+                const existingMeta = d.proof_file?.metadata || {};
+                const newMeta = {
+                    ...existingMeta,
+                    period: d.period,
+                    sriId: cepClean || existingMeta.sriId,
+                    ventas15: v15,
+                    ventas0: v0,
+                    montoIvaVentas: mIvaV,
+                    compras15: c15,
+                    compras5: c5,
+                    compras0: c0,
+                    montoIvaCompras: mIvaC,
+                    retIva: rIva,
+                    retRenta: rRenta,
+                    impuestoCausado: impCaus,
+                    totalPagar: totPag,
+                    saldoFavor: saldFav,
+                    amount: totPag
+                };
+
+                const updatedProofFile: StoredFile = d.proof_file ? {
+                    ...d.proof_file,
+                    metadata: newMeta
+                } : {
+                    name: `Declaracion_${d.period}.pdf`,
+                    type: 'pdf',
+                    size: 0,
+                    lastModified: Date.now(),
+                    metadata: newMeta
+                };
+
+                return {
+                    ...d,
+                    amount: totPag,
+                    transactionId: cepClean || d.transactionId,
+                    proof_file: updatedProofFile,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            return d;
+        });
+
+        if (!found) {
+            const newMeta = {
+                period: editingDeclPeriod,
+                sriId: cepClean,
+                ventas15: v15,
+                ventas0: v0,
+                montoIvaVentas: mIvaV,
+                compras15: c15,
+                compras5: c5,
+                compras0: c0,
+                montoIvaCompras: mIvaC,
+                retIva: rIva,
+                retRenta: rRenta,
+                impuestoCausado: impCaus,
+                totalPagar: totPag,
+                saldoFavor: saldFav,
+                amount: totPag
+            };
+
+            const newDecl: Declaration = {
+                period: editingDeclPeriod,
+                type: 'IVA',
+                status: DeclarationStatus.Enviada,
+                amount: totPag,
+                transactionId: cepClean,
+                updatedAt: new Date().toISOString(),
+                declaredAt: new Date().toISOString(),
+                proof_file: {
+                    name: `Declaracion_${editingDeclPeriod}.pdf`,
+                    type: 'pdf',
+                    size: 0,
+                    lastModified: Date.now(),
+                    metadata: newMeta
+                }
+            };
+
+            updatedDeclarations.push(newDecl);
+        }
+
+        setEditedClient(prev => ({
+            ...prev,
+            declarations: updatedDeclarations
+        }));
+
+        if (onUpdateClientDirect) {
+            await onUpdateClientDirect({
+                declarations: updatedDeclarations
+            }, true);
+        }
+
+        toast.success(`✓ Cifras de ${formatPeriodForDisplay(editingDeclPeriod)} guardadas en Bóveda`);
+        setEditingDeclPeriod(null);
+    };
 
     // Estado para calculadora de facturación gestionada por despacho
     const [managedInvoicesCount, setManagedInvoicesCount] = React.useState<number>(0);
@@ -733,6 +980,212 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 </div>
             </div>
 
+            {/* Sección de Cifras y Comprobantes de Declaraciones en Bóveda */}
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl transition-all duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
+                    <div>
+                        <h3 className="text-xl sm:text-2xl font-display font-black text-white tracking-tight flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-br from-[#00A896]/20 to-[#2B6AFF]/20 rounded-2xl text-[#00A896] border border-[#00A896]/30">
+                                <LucideIcons.ReceiptText size={24} />
+                            </div>
+                            Cifras y Comprobantes de Declaraciones
+                        </h3>
+                        <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">
+                            Desglose contable financiero (Ventas, Compras, IVA, Retenciones), CEP y copia rápida de cifras
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={handleOpenNewPeriodDecl}
+                            className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-[#00A896]/20 border border-white/10 active:scale-95 transition-all"
+                        >
+                            <LucideIcons.Plus size={16} />
+                            <span>+ Registrar Cifras</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Lista de declaraciones con cifras */}
+                {(() => {
+                    const declList = [...(editedClient.declarations || client.declarations || [])]
+                        .sort((a, b) => (b.period || '').localeCompare(a.period || ''));
+
+                    if (declList.length === 0) {
+                        return (
+                            <div className="p-8 sm:p-12 rounded-3xl border-2 border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center text-center gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-[#00A896]/10 border border-[#00A896]/20 flex items-center justify-center text-[#00A896]">
+                                    <LucideIcons.ReceiptText size={32} />
+                                </div>
+                                <div className="max-w-md">
+                                    <h4 className="text-white font-bold text-base mb-1">Sin declaraciones registradas en la Bóveda</h4>
+                                    <p className="text-xs text-slate-400">
+                                        Aún no hay cifras o comprobantes guardados para este cliente. Puedes registrar las cifras contables del último período para generar reportes y copiarlas a WhatsApp.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleOpenNewPeriodDecl}
+                                    className="px-5 py-2.5 bg-[#00A896] hover:bg-[#00A896]/80 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition-all"
+                                >
+                                    <LucideIcons.Plus size={16} />
+                                    Registrar Primer Período
+                                </button>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div className="space-y-4">
+                            {declList.map((decl, idx) => {
+                                const cifras = extractDeclarationCifras(decl);
+                                const isCopied = copiedDeclPeriod === decl.period;
+                                const isCepCopied = copiedDeclCep === decl.period;
+                                const displayPeriod = formatPeriodForDisplay(decl.period);
+
+                                return (
+                                    <div
+                                        key={decl.period || idx}
+                                        className="bg-[#0b1326]/70 hover:bg-[#0b1326] border border-white/10 hover:border-[#00A896]/40 rounded-2xl p-5 sm:p-6 transition-all duration-300 shadow-lg group relative overflow-hidden"
+                                    >
+                                        {/* Header de la tarjeta */}
+                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <span className="px-3 py-1 bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] font-mono font-bold text-xs rounded-xl uppercase tracking-wider">
+                                                    {displayPeriod}
+                                                </span>
+                                                <span className="px-2.5 py-0.5 bg-white/5 border border-white/10 text-slate-300 font-mono text-[10px] font-bold rounded-lg uppercase">
+                                                    {cifras.formType}
+                                                </span>
+
+                                                {cifras.sriId ? (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/30 rounded-xl text-[11px] font-mono font-bold text-blue-300">
+                                                        <span>CEP: {cifras.sriId}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCopyCep(cifras.sriId, decl.period)}
+                                                            className="p-1 hover:bg-white/10 rounded text-blue-300 hover:text-white transition-all ml-1"
+                                                            title="Copiar número de CEP / Trámite SRI"
+                                                        >
+                                                            {isCepCopied ? <LucideIcons.Check size={12} className="text-emerald-400" /> : <LucideIcons.Copy size={12} />}
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-mono text-slate-500 italic">Sin CEP registrado</span>
+                                                )}
+                                            </div>
+
+                                            {/* Botones de acción */}
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopyCifras(decl)}
+                                                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 border ${
+                                                        isCopied
+                                                            ? 'bg-emerald-600 text-white border-emerald-400'
+                                                            : 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white border-white/10'
+                                                    }`}
+                                                    title="Copiar todas las cifras formateadas para WhatsApp"
+                                                >
+                                                    {isCopied ? <LucideIcons.Check size={14} /> : <LucideIcons.Copy size={14} />}
+                                                    <span>{isCopied ? "¡Copiado!" : "Copiar Cifras"}</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEditDecl(decl)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 rounded-xl font-mono text-xs font-semibold tracking-wider transition-all"
+                                                    title="Editar o registrar cifras contables"
+                                                >
+                                                    <LucideIcons.Edit3 size={13} />
+                                                    <span>Editar Cifras</span>
+                                                </button>
+
+                                                {decl.proof_file && (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPreviewItem(decl)}
+                                                            className="p-2 bg-white/5 hover:bg-[#2B6AFF]/20 text-slate-400 hover:text-[#2B6AFF] border border-white/10 rounded-xl transition-all"
+                                                            title="Ver comprobante oficial"
+                                                        >
+                                                            <LucideIcons.Eye size={15} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => decl.proof_file && onDownloadFile?.(decl.proof_file)}
+                                                            className="p-2 bg-white/5 hover:bg-[#00A896]/20 text-slate-400 hover:text-[#00A896] border border-white/10 rounded-xl transition-all"
+                                                            title="Descargar comprobante"
+                                                        >
+                                                            <LucideIcons.Download size={15} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Desglose contable en píldoras */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 font-mono">
+                                            {/* Ventas */}
+                                            <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col">
+                                                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Ventas 15%</span>
+                                                <span className="text-sm font-black text-white mt-1">${cifras.ventas15.toFixed(2)}</span>
+                                                {cifras.ventas0 > 0 && (
+                                                    <span className="text-[9px] text-slate-400 mt-0.5">0%: ${cifras.ventas0.toFixed(2)}</span>
+                                                )}
+                                            </div>
+
+                                            {/* Compras */}
+                                            <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col">
+                                                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Compras 15%</span>
+                                                <span className="text-sm font-black text-white mt-1">${cifras.compras15.toFixed(2)}</span>
+                                                {(cifras.compras5 > 0 || cifras.compras0 > 0) && (
+                                                    <span className="text-[9px] text-slate-400 mt-0.5">
+                                                        {cifras.compras5 > 0 && `5%: $${cifras.compras5.toFixed(2)} `}
+                                                        {cifras.compras0 > 0 && `0%: $${cifras.compras0.toFixed(2)}`}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* IVA Compras */}
+                                            <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col">
+                                                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">IVA Compras</span>
+                                                <span className="text-sm font-black text-[#00A896] mt-1">${cifras.montoIvaCompras.toFixed(2)}</span>
+                                            </div>
+
+                                            {/* Retenciones */}
+                                            <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col">
+                                                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Retenciones</span>
+                                                <span className="text-sm font-black text-[#2B6AFF] mt-1">IVA: ${cifras.retIva.toFixed(2)}</span>
+                                                {cifras.retRenta > 0 && (
+                                                    <span className="text-[9px] text-purple-300 mt-0.5">Renta: ${cifras.retRenta.toFixed(2)}</span>
+                                                )}
+                                            </div>
+
+                                            {/* Total a Pagar */}
+                                            <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col">
+                                                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Total a Pagar</span>
+                                                <span className={`text-sm font-black mt-1 ${cifras.totalPagar > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                                                    ${cifras.totalPagar.toFixed(2)}
+                                                </span>
+                                            </div>
+
+                                            {/* Saldo a Favor */}
+                                            <div className="p-3 bg-white/[0.03] rounded-xl border border-white/5 flex flex-col">
+                                                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Saldo a Favor</span>
+                                                <span className="text-sm font-black text-emerald-400 mt-1">
+                                                    ${Number(decl.proof_file?.metadata?.saldoFavor || 0).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
+            </div>
+
             {/* Document Repository - Modularized Section (Stitch Obsidian Container) */}
             <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl transition-all duration-500">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
@@ -924,6 +1377,239 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     </div>
                 )}
             </div>
+            {/* Modal de Registro / Edición de Cifras de Declaración */}
+            {editingDeclPeriod !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-[#051424] border border-white/20 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-[#00A896]/20 text-[#00A896] rounded-xl border border-[#00A896]/30">
+                                    <LucideIcons.ReceiptText size={22} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-white font-display">
+                                        Cifras de Declaración — {formatPeriodForDisplay(editingDeclPeriod)}
+                                    </h3>
+                                    <p className="text-[11px] font-mono text-slate-400">
+                                        Registra los valores contables para que se reflejen en la Bóveda y reportes de WhatsApp
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setEditingDeclPeriod(null)}
+                                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-all"
+                            >
+                                <LucideIcons.X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Formulario */}
+                        <div className="space-y-4 font-mono text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Período (AAAA-MM)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={declEditForm.period}
+                                        onChange={(e) => {
+                                            const newP = e.target.value;
+                                            setDeclEditForm(prev => ({ ...prev, period: newP }));
+                                            setEditingDeclPeriod(newP);
+                                        }}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                        placeholder="Ej: 2026-08"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Número de Trámite / CEP / Serie SRI
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={declEditForm.cep}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, cep: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                        placeholder="Ej: 0706482023001 o serie SRI"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between">
+                                <span className="text-[11px] text-slate-300">¿Quieres calcular el IVA y Pagar automáticamente?</span>
+                                <button
+                                    type="button"
+                                    onClick={handleAutoCalculateDeclFigures}
+                                    className="px-3 py-1.5 bg-[#2B6AFF]/20 hover:bg-[#2B6AFF]/30 text-[#2B6AFF] border border-[#2B6AFF]/40 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all"
+                                >
+                                    ⚡ Auto-Calcular
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Ventas 15% ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.ventas15}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, ventas15: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Ventas 0% ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.ventas0}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, ventas0: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        IVA Ventas ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.montoIvaVentas}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, montoIvaVentas: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Compras 15% ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.compras15}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, compras15: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Compras 5% ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.compras5}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, compras5: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Compras 0% ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.compras0}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, compras0: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        IVA Compras ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.montoIvaCompras}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, montoIvaCompras: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Retención IVA ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.retIva}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, retIva: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Retención Renta ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.retRenta}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, retRenta: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:border-[#00A896] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Total a Pagar SRI ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.totalPagar}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, totalPagar: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-amber-400/40 rounded-xl text-amber-300 font-bold font-mono focus:border-amber-400 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 font-bold uppercase text-[10px] mb-1.5">
+                                        Saldo a Favor ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={declEditForm.saldoFavor}
+                                        onChange={(e) => setDeclEditForm(prev => ({ ...prev, saldoFavor: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-emerald-400/40 rounded-xl text-emerald-300 font-bold font-mono focus:border-emerald-400 outline-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Acciones */}
+                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                            <button
+                                type="button"
+                                onClick={() => setEditingDeclPeriod(null)}
+                                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-mono text-xs uppercase tracking-wider transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveDeclCifras}
+                                className="px-6 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl font-mono text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#00A896]/20 transition-all border border-white/10"
+                            >
+                                Guardar Cifras en Bóveda
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

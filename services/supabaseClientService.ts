@@ -71,7 +71,7 @@ export const SupabaseService = {
                 }
             }
 
-            const record = {
+            let record: Record<string, any> = {
                 client_id: client.id,
                 type: decType,
                 period: dec.period,
@@ -81,50 +81,80 @@ export const SupabaseService = {
                 proof_file: sanitizedProofFile,
                 is_notified_whatsapp: !!dec.isNotifiedWhatsApp,
                 notified_whatsapp_at: dec.notifiedWhatsAppAt || null,
-                // Sin esto, la etapa del mensaje (1 = envío del comprobante,
-                // 2 = recordatorio de cobro, 3+ = seguimiento) se reseteaba al
-                // recargar, y todo el mundo volvía a recibir el mensaje de
-                // «su declaración ya está hecha» aunque llevara tres avisos.
-                notification_count: dec.notificationCount ?? 0,
                 created_at: dec.declaredAt || new Date().toISOString(),
                 updated_at: dec.updatedAt || new Date().toISOString()
             };
 
+            // Solo enviar notification_count si tiene valor
+            if (dec.notificationCount !== undefined && dec.notificationCount !== null) {
+                record.notification_count = dec.notificationCount;
+            }
+
             try {
-                // Intento 1: upsert con constraint (client_id, type, period)
-                const { error: e1 } = await supabase
-                    .from('sri_declaraciones')
-                    .upsert(record, { onConflict: 'client_id,type,period' });
-
-                if (e1) {
-                    console.warn(`[sri_declaraciones] upsert (3-col) failed for ${dec.period}/${decType}:`, e1.message);
-                    // Intento 2: upsert con constraint (client_id, period)
-                    const { error: e2 } = await supabase
+                const executeUpsert = async (payload: any) => {
+                    // Intento 1: upsert con constraint (client_id, type, period)
+                    let { error: e1 } = await supabase
                         .from('sri_declaraciones')
-                        .upsert(record, { onConflict: 'client_id,period' });
+                        .upsert(payload, { onConflict: 'client_id,type,period' });
 
-                    if (e2) {
-                        console.warn(`[sri_declaraciones] upsert (2-col) failed for ${dec.period}:`, e2.message);
-                        // Intento 3: SELECT + UPDATE manual (máxima compatibilidad)
-                        const { data: existing } = await supabase
+                    // Si falla por columna inexistente (42703 / notification_count), reintentar sin ella
+                    if (e1 && (e1.code === '42703' || e1.message?.includes('notification_count'))) {
+                        const { notification_count, ...stripped } = payload;
+                        payload = stripped;
+                        const retry = await supabase
                             .from('sri_declaraciones')
-                            .select('id')
-                            .eq('client_id', client.id)
-                            .eq('period', dec.period)
-                            .eq('type', decType)
-                            .maybeSingle();
+                            .upsert(payload, { onConflict: 'client_id,type,period' });
+                        e1 = retry.error;
+                    }
 
-                        if (existing?.id) {
-                            // Preservar proof_file existente si el nuevo es null
-                            const updatePayload = sanitizedProofFile
-                                ? record
-                                : { ...record, proof_file: undefined };
-                            await supabase.from('sri_declaraciones').update(updatePayload).eq('id', existing.id);
-                        } else {
-                            await supabase.from('sri_declaraciones').insert(record);
+                    if (e1) {
+                        console.warn(`[sri_declaraciones] upsert (3-col) failed for ${dec.period}/${decType}:`, e1.message);
+                        // Intento 2: upsert con constraint (client_id, period)
+                        let { error: e2 } = await supabase
+                            .from('sri_declaraciones')
+                            .upsert(payload, { onConflict: 'client_id,period' });
+
+                        if (e2 && (e2.code === '42703' || e2.message?.includes('notification_count'))) {
+                            const { notification_count, ...stripped } = payload;
+                            payload = stripped;
+                            const retry = await supabase
+                                .from('sri_declaraciones')
+                                .upsert(payload, { onConflict: 'client_id,period' });
+                            e2 = retry.error;
+                        }
+
+                        if (e2) {
+                            console.warn(`[sri_declaraciones] upsert (2-col) failed for ${dec.period}:`, e2.message);
+                            // Intento 3: SELECT + UPDATE manual (máxima compatibilidad)
+                            const { data: existing } = await supabase
+                                .from('sri_declaraciones')
+                                .select('id')
+                                .eq('client_id', client.id)
+                                .eq('period', dec.period)
+                                .eq('type', decType)
+                                .maybeSingle();
+
+                            if (existing?.id) {
+                                const updatePayload = sanitizedProofFile
+                                    ? payload
+                                    : { ...payload, proof_file: undefined };
+                                const { error: uErr } = await supabase.from('sri_declaraciones').update(updatePayload).eq('id', existing.id);
+                                if (uErr && (uErr.code === '42703' || uErr.message?.includes('notification_count'))) {
+                                    const { notification_count, ...cleanUpdate } = updatePayload;
+                                    await supabase.from('sri_declaraciones').update(cleanUpdate).eq('id', existing.id);
+                                }
+                            } else {
+                                const { error: iErr } = await supabase.from('sri_declaraciones').insert(payload);
+                                if (iErr && (iErr.code === '42703' || iErr.message?.includes('notification_count'))) {
+                                    const { notification_count, ...cleanInsert } = payload;
+                                    await supabase.from('sri_declaraciones').insert(cleanInsert);
+                                }
+                            }
                         }
                     }
-                }
+                };
+
+                await executeUpsert(record);
             } catch (decErr) {
                 console.error(`[sri_declaraciones] Error crítico sincronizando ${dec.period}/${decType}:`, decErr);
             }
@@ -529,8 +559,8 @@ export const SupabaseService = {
           type: decType,
           period: d.period,
           is_paid: isPaid,
-          isNotifiedWhatsApp: d.is_notified_whatsapp ?? d.isNotifiedWhatsApp ?? false,
-          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? null,
+          isNotifiedWhatsApp: Boolean(d.is_notified_whatsapp || d.isNotifiedWhatsApp),
+          notifiedWhatsAppAt: d.notified_whatsapp_at || d.notifiedWhatsAppAt || undefined,
           notificationCount: d.notification_count ?? d.notificationCount ?? 0
         });
       } else {
@@ -545,11 +575,9 @@ export const SupabaseService = {
           status: finalStatus,
           proof_file: finalProof,
           is_paid: isPaid || existing.is_paid,
-          isNotifiedWhatsApp: d.is_notified_whatsapp ?? d.isNotifiedWhatsApp ?? existing.isNotifiedWhatsApp,
-          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? existing.notifiedWhatsAppAt,
-          // Se queda con el MAYOR: dos filas de la misma declaración no pueden
-          // hacer que un cliente al que ya se le insistió tres veces vuelva a
-          // recibir el mensaje de bienvenida.
+          // CRITICAL FIX: Preservar la marca de notificado si CUALQUIERA de las fuentes la tiene en true
+          isNotifiedWhatsApp: Boolean(d.is_notified_whatsapp || d.isNotifiedWhatsApp || existing.isNotifiedWhatsApp),
+          notifiedWhatsAppAt: d.notified_whatsapp_at || d.notifiedWhatsAppAt || existing.notifiedWhatsAppAt || undefined,
           notificationCount: Math.max(
             d.notification_count ?? d.notificationCount ?? 0,
             existing.notificationCount ?? 0)

@@ -212,13 +212,13 @@ export const processBulkPdfs = async (
                         status: DeclarationStatus.Enviada,
                         updatedAt: new Date().toISOString(),
                         declaredAt: (data as any).declarationDate || new Date().toISOString(),
-                        amount: (data as any).amount || 0,
+                        amount: (data as any).amount || existingDec?.amount || 0,
                         proof_file: storedFile,
-                        is_paid: false,
-                        paidAt: undefined,
-                        isNotifiedWhatsApp: false,
-                        notifiedWhatsAppAt: undefined,
-                        notificationCount: 0
+                        is_paid: existingDec?.is_paid ?? false,
+                        paidAt: existingDec?.paidAt,
+                        isNotifiedWhatsApp: existingDec?.isNotifiedWhatsApp ?? false,
+                        notifiedWhatsAppAt: existingDec?.notifiedWhatsAppAt,
+                        notificationCount: existingDec?.notificationCount ?? 0
                     };
 
                     const newHistory = [...(client.declarations ?? []).filter(d => !(arePeriodsEqual(d.period, decPeriod) && (d.type === type || !d.type))), newDec];

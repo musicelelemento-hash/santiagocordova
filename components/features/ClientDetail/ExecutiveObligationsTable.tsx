@@ -1,12 +1,14 @@
 import React from 'react';
 import {
     ShieldCheck, AlertTriangle, Send, DollarSign, MessageCircle, FileText,
-    UploadCloud, Eye, RotateCcw, XCircle, CheckCircle2, Clock, Activity, Zap
+    UploadCloud, Eye, RotateCcw, XCircle, CheckCircle2, Clock, Activity, Zap,
+    Copy, Check, Tag
 } from 'lucide-react';
 import { Client, DeclarationStatus, TaxObligationType, Declaration } from '../../../types';
 import { formatPeriodForDisplay } from '../../../services/sri';
 import { getClientServiceFee } from '../../../services/clientService';
 import { useToast } from '../../../context/ToastContext';
+import { extractDeclarationCifras, formatDeclarationSummary } from '../../../utils/declarationFormatter';
 
 interface ExecutiveObligationsTableProps {
     client: Client;
@@ -59,6 +61,102 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
         setTimeout(() => {
             if (proofInputRef.current) proofInputRef.current.click();
         }, 50);
+    };
+
+    const DeclaredCifrasBar = ({ decl }: { decl?: Declaration }) => {
+        const [copiedSummary, setCopiedSummary] = React.useState(false);
+        const [copiedCep, setCopiedCep] = React.useState(false);
+
+        if (!decl) return null;
+        const cifras = extractDeclarationCifras(decl);
+        if (!cifras.hasRealCifras && !cifras.sriId && !decl.proof_file) return null;
+
+        const handleCopyAll = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const summary = formatDeclarationSummary(client, decl);
+            navigator.clipboard.writeText(summary);
+            setCopiedSummary(true);
+            toast.success("Cifras de declaración copiadas al portapapeles");
+            setTimeout(() => setCopiedSummary(false), 2500);
+        };
+
+        const handleCopyCep = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!cifras.sriId) return;
+            navigator.clipboard.writeText(cifras.sriId);
+            setCopiedCep(true);
+            toast.success(`CEP ${cifras.sriId} copiado`);
+            setTimeout(() => setCopiedCep(false), 2000);
+        };
+
+        return (
+            <tr className="bg-[#020b14]/70 border-b border-white/5 font-mono text-[11px]">
+                <td colSpan={5} className="py-2.5 px-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-[#0b1326]/90 p-3.5 rounded-2xl border border-white/10 shadow-inner">
+                        <div className="flex flex-wrap items-center gap-3">
+                            {cifras.sriId && (
+                                <div className="flex items-center gap-1.5 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 px-2.5 py-1 rounded-xl font-bold">
+                                    <span>CEP: {cifras.sriId}</span>
+                                    <button
+                                        type="button"
+                                        onClick={handleCopyCep}
+                                        className="p-0.5 hover:bg-[#00A896]/20 rounded text-[#00A896] transition-all ml-1"
+                                        title="Copiar número CEP"
+                                    >
+                                        {copiedCep ? <Check size={11} strokeWidth={3} /> : <Copy size={11} />}
+                                    </button>
+                                </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 text-slate-300 text-[10px]">
+                                {(cifras.ventas15 > 0 || cifras.ventas0 > 0) && (
+                                    <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
+                                        Vtas 15%: <strong className="text-white">${cifras.ventas15.toFixed(2)}</strong>
+                                        {cifras.ventas0 > 0 && ` | 0%: $${cifras.ventas0.toFixed(2)}`}
+                                    </span>
+                                )}
+                                {(cifras.compras15 > 0 || cifras.compras5 > 0 || cifras.compras0 > 0) && (
+                                    <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
+                                        Cmps 15%: <strong className="text-white">${cifras.compras15.toFixed(2)}</strong>
+                                        {cifras.compras5 > 0 && ` | 5%: $${cifras.compras5.toFixed(2)}`}
+                                        {cifras.compras0 > 0 && ` | 0%: $${cifras.compras0.toFixed(2)}`}
+                                    </span>
+                                )}
+                                {cifras.montoIvaCompras > 0 && (
+                                    <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
+                                        IVA Compras: <strong className="text-[#00A896]">${cifras.montoIvaCompras.toFixed(2)}</strong>
+                                    </span>
+                                )}
+                                {cifras.retIva > 0 && (
+                                    <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
+                                        Ret. IVA: <strong className="text-[#2B6AFF]">${cifras.retIva.toFixed(2)}</strong>
+                                    </span>
+                                )}
+                                {cifras.retRenta > 0 && (
+                                    <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
+                                        Ret. Renta: <strong className="text-purple-400">${cifras.retRenta.toFixed(2)}</strong>
+                                    </span>
+                                )}
+                                <span className="px-2 py-0.5 bg-white/5 rounded-lg border border-white/5">
+                                    Pagar SRI: <strong className={cifras.totalPagar > 0 ? "text-amber-400" : "text-emerald-400"}>${cifras.totalPagar.toFixed(2)}</strong>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
+                            <button
+                                type="button"
+                                onClick={handleCopyAll}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all shadow-md active:scale-95 border border-white/10"
+                                title="Copiar desglose completo para WhatsApp o notas"
+                            >
+                                {copiedSummary ? <Check size={12} strokeWidth={3} /> : <Copy size={12} />}
+                                <span>{copiedSummary ? "¡Copiado!" : "Copiar Cifras"}</span>
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        );
     };
 
     return (
@@ -203,6 +301,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
                             </tr>
                         )}
+                        {ivaPeriod && ivaDeclItem && <DeclaredCifrasBar decl={ivaDeclItem} />}
 
                         {/* FILA 2: IMPUESTO A LA RENTA (Si aplica) */}
                         {rentaData?.needed && (
@@ -291,6 +390,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
                             </tr>
                         )}
+                        {rentaData?.needed && rentaDeclItem && <DeclaredCifrasBar decl={rentaDeclItem} />}
                     </tbody>
                 </table>
             </div>

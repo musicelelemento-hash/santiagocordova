@@ -342,6 +342,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
             setActiveCellModal({
                 ...activeCellModal,
+                client: { ...activeCellModal.client, declarations: updatedDecls },
                 declaration: updatedDecl
             });
 
@@ -640,19 +641,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     // Alternar estado de Notificado WhatsApp manualmente
     const handleToggleWhatsAppNotification = (client: Client, period: string, obType: string, decl?: Declaration) => {
-        const declarations = client.declarations || [];
-        const existingDecl = findDeclarationForOb(declarations, period, obType);
+        const freshClient = useAppStore.getState().clients.find(c => c.id === client.id) || client;
+        const declarations = freshClient.declarations || [];
+        const existingDecl = decl || findDeclarationForOb(declarations, period, obType);
         
         const nowIso = new Date().toISOString();
-        const currentNotified = !!existingDecl?.isNotifiedWhatsApp;
+        const currentNotified = !!(existingDecl?.isNotifiedWhatsApp || decl?.isNotifiedWhatsApp);
         const newNotifiedStatus = !currentNotified;
 
         let updatedDeclarations: Declaration[];
         if (existingDecl) {
             updatedDeclarations = declarations.map(d => {
-                const matchPeriod = arePeriodsEqual(d.period, period) || d.period === period;
-                const matchType = d.type === obType || (!d.type && (obType === 'IVA' || obType === 'RENTA'));
-                if (matchPeriod && matchType) {
+                const isMatch = (existingDecl && d === existingDecl) || 
+                    ((arePeriodsEqual(d.period, period) || d.period === period) && 
+                     (d.type === obType || (!d.type && (obType === 'IVA' || obType === 'RENTA'))));
+                if (isMatch) {
                     return {
                         ...d,
                         isNotifiedWhatsApp: newNotifiedStatus,
@@ -679,14 +682,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         useAppStore.getState().updateClient(client.id, { declarations: updatedDeclarations });
 
         if (activeCellModal && activeCellModal.client.id === client.id) {
-            const updatedDecl = updatedDeclarations.find(d => findDeclarationForOb([d], period, obType));
-            if (updatedDecl) {
-                setActiveCellModal({
-                    ...activeCellModal,
-                    client: { ...client, declarations: updatedDeclarations },
-                    declaration: updatedDecl
-                });
-            }
+            const updatedDecl = updatedDeclarations.find(d => Boolean(findDeclarationForOb([d], period, obType))) || {
+                ...activeCellModal.declaration,
+                isNotifiedWhatsApp: newNotifiedStatus,
+                notifiedWhatsAppAt: newNotifiedStatus ? nowIso : undefined,
+                updatedAt: nowIso
+            };
+            setActiveCellModal({
+                ...activeCellModal,
+                client: { ...freshClient, declarations: updatedDeclarations },
+                declaration: updatedDecl
+            });
         }
 
         if (newNotifiedStatus) {
@@ -737,17 +743,19 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         window.open(whatsappUrl, '_blank');
 
         // Actualizar el estado de notificación e incrementar el contador de notificaciones
-        const declarations = client.declarations || [];
-        const existingDecl = findDeclarationForOb(declarations, period, obType);
+        const freshClient = useAppStore.getState().clients.find(c => c.id === client.id) || client;
+        const declarations = freshClient.declarations || [];
+        const existingDecl = decl || findDeclarationForOb(declarations, period, obType);
         const nowIso = new Date().toISOString();
         const nextCount = currentCount + 1;
 
         let updatedDeclarations: Declaration[];
         if (existingDecl) {
             updatedDeclarations = declarations.map(d => {
-                const matchPeriod = arePeriodsEqual(d.period, period) || d.period === period;
-                const matchType = d.type === obType || (!d.type && (obType === 'IVA' || obType === 'RENTA'));
-                if (matchPeriod && matchType) {
+                const isMatch = (existingDecl && d === existingDecl) || 
+                    ((arePeriodsEqual(d.period, period) || d.period === period) && 
+                     (d.type === obType || (!d.type && (obType === 'IVA' || obType === 'RENTA'))));
+                if (isMatch) {
                     return {
                         ...d,
                         isNotifiedWhatsApp: true,
@@ -776,14 +784,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         useAppStore.getState().updateClient(client.id, { declarations: updatedDeclarations });
 
         if (activeCellModal && activeCellModal.client.id === client.id) {
-            const updatedDecl = updatedDeclarations.find(d => findDeclarationForOb([d], period, obType));
-            if (updatedDecl) {
-                setActiveCellModal({
-                    ...activeCellModal,
-                    client: { ...client, declarations: updatedDeclarations },
-                    declaration: updatedDecl
-                });
-            }
+            const updatedDecl = updatedDeclarations.find(d => Boolean(findDeclarationForOb([d], period, obType))) || {
+                ...activeCellModal.declaration,
+                isNotifiedWhatsApp: true,
+                notifiedWhatsAppAt: nowIso,
+                notificationCount: nextCount,
+                updatedAt: nowIso
+            };
+            setActiveCellModal({
+                ...activeCellModal,
+                client: { ...freshClient, declarations: updatedDeclarations },
+                declaration: updatedDecl
+            });
         }
 
         toast.success(`Notificación Etapa ${nextCount} enviada a ${clientName}`);

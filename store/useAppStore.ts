@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { db } from '../services/db';
 import { loadDataFromSheet } from '../services/sheetApi';
-import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemplates, BusinessProfile, TaxRegime, DeclarationStatus, Declaration, AuditLog, ClientNote, NoteCategory, SystemSettings } from '../types';
+import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemplates, BusinessProfile, TaxRegime, DeclarationStatus, Declaration, StoredFile, AuditLog, ClientNote, NoteCategory, SystemSettings } from '../types';
 import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
@@ -246,6 +246,7 @@ interface AppState {
   getClientByRuc: (ruc: string) => Client | undefined;
   addClientNote: (clientId: string, note: Omit<ClientNote, 'id' | 'createdAt'>) => void;
   removeClientNote: (clientId: string, noteId: string) => void;
+  updateClientAlias: (clientId: string, alias: string) => Promise<void>;
   syncFromFirebase: () => void;
   syncFromSheets: () => Promise<void>;
   resetApp: () => Promise<void>;
@@ -592,6 +593,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updatedNotes = (client.structuredNotes || []).filter(n => n.id !== noteId);
     get().updateClient(clientId, { structuredNotes: updatedNotes });
   },
+
+  updateClientAlias: async (clientId: string, alias: string) => {
+    const client = get().clients.find(c => c.id === clientId);
+    if (!client) return;
+    const cleanAlias = alias.trim();
+    const updatedTaxProfile = {
+      ...(client.taxProfile || {}),
+      alias: cleanAlias,
+      quickNote: cleanAlias
+    };
+    await get().updateClient(clientId, {
+      tradeName: cleanAlias || client.tradeName,
+      taxProfile: updatedTaxProfile as any
+    });
+  },
   
   syncFromFirebase: () => {
     return db.syncCollection('sc_pro_clients', (changes) => {
@@ -619,7 +635,44 @@ export const useAppStore = create<AppState>((set, get) => ({
           }
 
           if (idx !== -1) {
-            currentClients[idx] = item;
+            const existingClient = currentClients[idx];
+            const existingDecls = existingClient.declarations || [];
+            const incomingDecls = item.declarations || [];
+
+            const declMap = new Map<string, Declaration>();
+            existingDecls.forEach(d => {
+              if (d && d.period) {
+                const decType = (d.type || (d.period.includes('ANEXO') ? 'ANEXO' : (d.period.length === 7 ? 'IVA' : 'RENTA'))).toUpperCase();
+                declMap.set(`${decType}_${d.period}`, d);
+              }
+            });
+
+            incomingDecls.forEach(incDecl => {
+              if (!incDecl || !incDecl.period) return;
+              const decType = (incDecl.type || (incDecl.period.includes('ANEXO') ? 'ANEXO' : (incDecl.period.length === 7 ? 'IVA' : 'RENTA'))).toUpperCase();
+              const key = `${decType}_${incDecl.period}`;
+              const existingDecl = declMap.get(key);
+              if (existingDecl) {
+                declMap.set(key, {
+                  ...existingDecl,
+                  ...incDecl,
+                  isNotifiedWhatsApp: Boolean(existingDecl.isNotifiedWhatsApp || incDecl.isNotifiedWhatsApp),
+                  notifiedWhatsAppAt: existingDecl.notifiedWhatsAppAt || incDecl.notifiedWhatsAppAt || undefined,
+                  notificationCount: Math.max(existingDecl.notificationCount || 0, incDecl.notificationCount || 0),
+                  is_paid: incDecl.is_paid ?? existingDecl.is_paid,
+                  proof_file: incDecl.proof_file || existingDecl.proof_file,
+                  status: (incDecl.status === 'Pagada' || existingDecl.status === 'Pagada') ? DeclarationStatus.Pagada : (incDecl.status || existingDecl.status)
+                });
+              } else {
+                declMap.set(key, incDecl);
+              }
+            });
+
+            currentClients[idx] = {
+              ...existingClient,
+              ...item,
+              declarations: Array.from(declMap.values())
+            };
           } else {
             currentClients.push(item);
             // Actualizar mapas para el resto de cambios en este lote
@@ -718,6 +771,9 @@ export const useAppStore = create<AppState>((set, get) => ({
                 transactionId: existingDecl.transactionId || incDecl.transactionId,
                 amount: existingDecl.amount || incDecl.amount,
                 proof_file: existingDecl.proof_file || incDecl.proof_file,
+                isNotifiedWhatsApp: Boolean(existingDecl.isNotifiedWhatsApp || incDecl.isNotifiedWhatsApp),
+                notifiedWhatsAppAt: existingDecl.notifiedWhatsAppAt || incDecl.notifiedWhatsAppAt || undefined,
+                notificationCount: Math.max(existingDecl.notificationCount || 0, incDecl.notificationCount || 0),
                 status: (existingDecl.status === DeclarationStatus.Pagada ? DeclarationStatus.Pagada : existingDecl.proof_file ? (existingDecl.status || incDecl.status) : incDecl.status) as DeclarationStatus,
                 reminders: existingDecl.reminders || incDecl.reminders,
               };
@@ -878,18 +934,60 @@ export const useAppStore = create<AppState>((set, get) => ({
                 const cloudMissingProof = !existing?.proof_file || (!existing.proof_file.url && !existing.proof_file.content);
                 if (!existing) {
                   declMap.set(key, d);
-                } else if (localHasRealProof && cloudMissingProof) {
-                  declMap.set(key, { ...existing, proof_file: d.proof_file, status: d.status || existing.status });
+                } else {
+                  const mergedMeta = {
+                    ...(existing.proof_file?.metadata || {}),
+                    ...(d.proof_file?.metadata || {})
+                  };
+                  let finalProof: StoredFile | undefined = undefined;
+                  if (localHasRealProof && cloudMissingProof && d.proof_file) {
+                    finalProof = { ...d.proof_file, metadata: mergedMeta };
+                  } else if (existing.proof_file) {
+                    finalProof = { ...existing.proof_file, metadata: mergedMeta };
+                  } else if (d.proof_file) {
+                    finalProof = d.proof_file;
+                  }
+
+                  declMap.set(key, {
+                    ...existing,
+                    ...d,
+                    status: (d.status === 'Enviada' || d.status === 'Pagada' || !existing.status) ? d.status : existing.status,
+                    is_paid: d.is_paid ?? existing.is_paid,
+                    isNotifiedWhatsApp: Boolean(d.isNotifiedWhatsApp || existing.isNotifiedWhatsApp),
+                    notifiedWhatsAppAt: d.notifiedWhatsAppAt || existing.notifiedWhatsAppAt || undefined,
+                    notificationCount: Math.max(d.notificationCount || 0, existing.notificationCount || 0),
+                    amount: d.amount ?? existing.amount,
+                    proof_file: finalProof
+                  });
                 }
               });
 
               return {
+                ...localMatch,
                 ...cloudClient,
+                // Proteger campos locales contra consultas de nube restringidas (RLS/anon):
+                tradeName: cloudClient.tradeName || localMatch.tradeName,
+                notes: cloudClient.notes || localMatch.notes,
+                structuredNotes: (cloudClient.structuredNotes && cloudClient.structuredNotes.length > 0)
+                  ? cloudClient.structuredNotes
+                  : (localMatch.structuredNotes || []),
+                sriPassword: cloudClient.sriPassword || localMatch.sriPassword,
+                electronicSignaturePassword: cloudClient.electronicSignaturePassword || localMatch.electronicSignaturePassword,
+                phones: (cloudClient.phones && cloudClient.phones.length > 0) ? cloudClient.phones : localMatch.phones,
+                email: cloudClient.email || localMatch.email,
+                address: cloudClient.address || localMatch.address,
+                taxProfile: {
+                  ...(localMatch.taxProfile || {}),
+                  ...(cloudClient.taxProfile || {}),
+                  ivaFrequency: cloudClient.taxProfile?.ivaFrequency || localMatch.taxProfile?.ivaFrequency || 'Mensual',
+                  alias: cloudClient.taxProfile?.alias || localMatch.taxProfile?.alias || cloudClient.tradeName || localMatch.tradeName,
+                  quickNote: cloudClient.taxProfile?.quickNote || localMatch.taxProfile?.quickNote || cloudClient.notes || localMatch.notes
+                },
                 declarations: Array.from(declMap.values()),
                 vault: (localMatch.vault ?? []).length > 0 && (!cloudClient.vault || cloudClient.vault.length === 0) 
                   ? localMatch.vault 
                   : (cloudClient.vault || localMatch.vault || [])
-              };
+              } as Client;
             });
 
             // Actualizar si la nube tiene datos válidos

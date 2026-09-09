@@ -175,8 +175,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
                             <h3 className="font-display font-black text-lg sm:text-xl truncate text-slate-900 dark:text-white tracking-tight group-hover/card:text-[#00A896] transition-colors" title={client.name}>
-                                {client.tradeName || client.name}
+                                {client.name}
                             </h3>
+                            {(client.taxProfile?.alias || client.tradeName) && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-display bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 shadow-sm" title="Alias / Reconocimiento">
+                                    <LucideIcons.Tag size={10} />
+                                    <span>"{client.taxProfile?.alias || client.tradeName}"</span>
+                                </span>
+                            )}
                             <span className="shrink-0 text-[9px] px-2.5 py-0.5 bg-[#2B6AFF]/10 text-[#2B6AFF] dark:text-[#bfc6e0] border border-[#2B6AFF]/20 rounded-full font-mono font-bold tracking-wider uppercase">
                                 {client.regime.replace('RIMPE - ', 'R-').substring(0, 15)}
                             </span>

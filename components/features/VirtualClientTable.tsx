@@ -128,8 +128,14 @@ const TableRow = memo(({ index, style, clients, serviceFees, onView, onQuickActi
                         className="font-premium font-bold text-on-surface text-[15px] truncate group-hover/row:text-primary transition-colors tracking-tight" 
                         title={client.name}
                     >
-                        {client.tradeName || client.name}
+                        {client.name}
                     </span>
+                    {(client.taxProfile?.alias || client.tradeName) && (
+                        <span className="text-[11px] font-bold text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/30 px-2 py-0.5 rounded-lg shrink-0 flex items-center gap-1 font-display" title="Alias / Reconocimiento">
+                            <LucideIcons.Tag size={10} />
+                            <span>"{client.taxProfile?.alias || client.tradeName}"</span>
+                        </span>
+                    )}
                     {client.isActive === false && (
                         <span className="text-[10px] font-bold bg-surface-low text-on-surface-variant px-2 py-0.5 rounded-full uppercase flex items-center gap-1.5">
                             <LucideIcons.UserX size={10} strokeWidth={3} />

@@ -785,6 +785,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             const history = [...(freshClient.declarations || [])];
             const idx = history.findIndex(d => arePeriodsEqual(d.period, period) && (d.type === type || !d.type));
+            const existingDecl = idx > -1 ? history[idx] : undefined;
 
             const isCortesia = isCourtesyClient(freshClient);
             const entry: Declaration = {
@@ -793,13 +794,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                 updatedAt: nowIso,
                 declaredAt: nowIso,
-                is_paid: isCortesia ? true : false,
-                paidAt: isCortesia ? nowIso : undefined,
-                isNotifiedWhatsApp: false,
-                notifiedWhatsAppAt: undefined,
-                notificationCount: 0,
-                amount: data.amount || 0,
-                transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
+                is_paid: isCortesia ? true : (existingDecl?.is_paid ?? false),
+                paidAt: isCortesia ? nowIso : existingDecl?.paidAt,
+                isNotifiedWhatsApp: existingDecl?.isNotifiedWhatsApp ?? false,
+                notifiedWhatsAppAt: existingDecl?.notifiedWhatsAppAt,
+                notificationCount: existingDecl?.notificationCount ?? 0,
+                amount: data.amount || existingDecl?.amount || 0,
+                transactionId: data.id || existingDecl?.transactionId || `PDF-${Date.now().toString().slice(-4)}`,
                 proof_file: proofFileObj
             };
 
@@ -1039,14 +1040,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     continue;
                 }
 
+                const existingDecl = idx > -1 ? history[idx] : undefined;
                 const updatedEntry: Declaration = {
                     ...entry,
                     status: DeclarationStatus.Enviada,
-                    is_paid: false,
-                    paidAt: undefined,
-                    isNotifiedWhatsApp: false,
-                    notifiedWhatsAppAt: undefined,
-                    notificationCount: 0
+                    is_paid: existingDecl?.is_paid ?? false,
+                    paidAt: existingDecl?.paidAt,
+                    isNotifiedWhatsApp: existingDecl?.isNotifiedWhatsApp ?? false,
+                    notifiedWhatsAppAt: existingDecl?.notifiedWhatsAppAt,
+                    notificationCount: existingDecl?.notificationCount ?? 0
                 };
 
                 if (idx > -1) {
