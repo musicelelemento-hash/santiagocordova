@@ -61,10 +61,125 @@ export async function generateRidePdfBuffer(
     .totales-table { width: 100%; border-collapse: collapse; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
     .totales-table td { padding: 5px 10px; font-size: 9px; font-weight: 600; border-bottom: 1px solid #f1f5f9; }
     .totales-table tr.total-row td { font-size: 11px; font-weight: 900; color: #2b6aff; background: #eff6ff; border-bottom: none; }
+    
+    /* Encabezado Editorial Tecnológico - Soluciones Tributarias PRO */
+    .ride-editorial-header {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f0fdf9 100%);
+      border: 1px solid #cbd5e1;
+      border-top: 3.5px solid #2b6aff;
+      border-radius: 10px;
+      padding: 7px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ride-brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ride-brand-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #0b2149;
+      color: #ffffff;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 900;
+      font-size: 10.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(11, 33, 73, 0.12);
+    }
+    .ride-brand-title {
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 900;
+      color: #0b2149;
+      letter-spacing: 0.5px;
+      line-height: 1.15;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ride-pro-pill {
+      background: #2b6aff;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.6px;
+    }
+    .ride-brand-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 7px;
+      font-weight: 600;
+      color: #64748b;
+      letter-spacing: 0.25px;
+      margin-top: 1px;
+    }
+    .ride-tech-meta-box {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .ride-tech-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 2.5px solid #00a896;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 0.3px;
+    }
+    .ride-tech-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #00a896;
+      display: inline-block;
+    }
+    .ride-tech-norma {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 6.8px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
   <div class="invoice-card">
+    <div class="ride-editorial-header">
+      <div class="ride-brand-group">
+        <div class="ride-brand-badge">ST<span style="color: #00a896;">+</span></div>
+        <div>
+          <div class="ride-brand-title">SOLUCIONES TRIBUTARIAS <span class="ride-pro-pill">PRO</span></div>
+          <div class="ride-brand-sub">SISTEMA INTEGRAL DE GESTIÓN TRIBUTARIA & FACTURACIÓN ELECTRÓNICA · SRI ECUADOR</div>
+        </div>
+      </div>
+      <div class="ride-tech-meta-box">
+        <div class="ride-tech-chip">
+          <span class="ride-tech-dot"></span>
+          <span>COMPROBANTE ELECTRÓNICO OFICIAL · RIDE</span>
+        </div>
+        <div class="ride-tech-norma">RESOLUCIÓN NAC-027 · SISTEMA AUTORIZADO</div>
+      </div>
+    </div>
     <div class="header-grid">
       <div class="emisor-box">
         ${logoHtml}

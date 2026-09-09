@@ -2194,10 +2194,125 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     .totals-table { width: 100%; border-collapse: collapse; }
     .totals-table td { padding: 4px 2px; border-bottom: 1px dashed #e2e8f0; font-size: 9px; color: #475569; font-weight: 600; }
     .totals-table tr.total-row td { background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11.5px; padding: 8px 6px; border-radius: 6px; }
+    
+    /* Encabezado Editorial Tecnológico - Soluciones Tributarias PRO */
+    .ride-editorial-header {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f0fdf9 100%);
+      border: 1px solid #cbd5e1;
+      border-top: 3.5px solid #2b6aff;
+      border-radius: 10px;
+      padding: 7px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ride-brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ride-brand-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #0b2149;
+      color: #ffffff;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 900;
+      font-size: 10.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(11, 33, 73, 0.12);
+    }
+    .ride-brand-title {
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 900;
+      color: #0b2149;
+      letter-spacing: 0.5px;
+      line-height: 1.15;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ride-pro-pill {
+      background: #2b6aff;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.6px;
+    }
+    .ride-brand-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 7px;
+      font-weight: 600;
+      color: #64748b;
+      letter-spacing: 0.25px;
+      margin-top: 1px;
+    }
+    .ride-tech-meta-box {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .ride-tech-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 2.5px solid #00a896;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 0.3px;
+    }
+    .ride-tech-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #00a896;
+      display: inline-block;
+    }
+    .ride-tech-norma {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 6.8px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
     `;
 
     const cardContentHtml = `
   <div class="invoice-card">
+    <div class="ride-editorial-header">
+      <div class="ride-brand-group">
+        <div class="ride-brand-badge">ST<span style="color: #00a896;">+</span></div>
+        <div>
+          <div class="ride-brand-title">SOLUCIONES TRIBUTARIAS <span class="ride-pro-pill">PRO</span></div>
+          <div class="ride-brand-sub">SISTEMA INTEGRAL DE GESTIÓN TRIBUTARIA & FACTURACIÓN ELECTRÓNICA · SRI ECUADOR</div>
+        </div>
+      </div>
+      <div class="ride-tech-meta-box">
+        <div class="ride-tech-chip">
+          <span class="ride-tech-dot"></span>
+          <span>COMPROBANTE ELECTRÓNICO OFICIAL · RIDE</span>
+        </div>
+        <div class="ride-tech-norma">RESOLUCIÓN NAC-027 · SISTEMA AUTORIZADO</div>
+      </div>
+    </div>
     <div class="header-grid">
       <div class="emisor-box">
         ${logoHtml}
@@ -3133,16 +3248,20 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-brand-teal uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
+                <span className="text-[10px] font-bold text-brand-teal uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse" />
                   SRI Ecosistema v4.0
                 </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  â€¢ {ambiente === '2' ? 'PRODUCCIÃ“N' : 'PRUEBAS'}
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                  • {ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-display font-semibold text-slate-900 dark:text-white tracking-tight">
-                FacturaciÃ³n <span className="text-brand-teal">ElectrÃ³nica SRI</span>
+              <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5 mt-0.5">
+                Soluciones Tributarias <span className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-mono font-black tracking-wider shadow-sm border border-blue-400/30">PRO</span>
               </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Facturación Electrónica & Suite SRI Ecuador · Cumplimiento Res. NAC-027
+              </p>
             </div>
           </div>
 
