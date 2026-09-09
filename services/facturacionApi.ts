@@ -7,6 +7,8 @@ export const DEFAULT_FACTURACION_API_TOKEN = '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir';
 export const isValidApiToken = (token: any): boolean => {
   if (!token || typeof token !== 'string') return false;
   const cleaned = token.trim();
+  // 'Santiago2026' es la contraseña de administrador, NO el secreto del facturador en Render
+  if (cleaned === 'Santiago2026') return false;
   return cleaned.length >= 10 && cleaned !== 'undefined' && cleaned !== 'null' && cleaned !== '[object Object]';
 };
 
