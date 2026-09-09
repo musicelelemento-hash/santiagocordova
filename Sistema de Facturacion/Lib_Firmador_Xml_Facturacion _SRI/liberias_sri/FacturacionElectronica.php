@@ -475,6 +475,9 @@ private function getOpenSslErrors()
 
       }
 
+      // INFORMACION ADICIONAL (incluye RUC Proveedor según Resolución SRI NAC-DGERCGC26-00000027)
+      $this->agregarInfoAdicional($xml, $Factura, $data->infoAdicional ?? ($data['infoAdicional'] ?? null));
+
       $xml->formatOutput = true;
       $strings_xml = $xml->saveXML();
       return $strings_xml;
@@ -593,22 +596,8 @@ private function getOpenSslErrors()
       }
 
 
-      $infoAdicionalRetencion =$data["infoAdicional"];
-
-      $infoAdicional =  $xml->createElement('infoAdicional');
-      $infoAdicional = $COMPROBANTE_RETENCION->appendChild($infoAdicional);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalRetencion["telefono"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Telefono';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalRetencion["email"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Email';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
+      // INFORMACION ADICIONAL (incluye RUC Proveedor según Resolución SRI NAC-DGERCGC26-00000027)
+      $this->agregarInfoAdicional($xml, $COMPROBANTE_RETENCION, $data['infoAdicional'] ?? ($data->infoAdicional ?? null));
 
 
       $xml->formatOutput = true;
@@ -747,22 +736,8 @@ private function getOpenSslErrors()
 
 
 
-      $infoAdicionalGuia =$data["infoAdicional"];
-
-      $infoAdicional =  $xml->createElement('infoAdicional');
-      $infoAdicional = $GUIA->appendChild($infoAdicional);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalGuia["telefono"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Telefono';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalGuia["email"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Email';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
+      // INFORMACION ADICIONAL (incluye RUC Proveedor según Resolución SRI NAC-DGERCGC26-00000027)
+      $this->agregarInfoAdicional($xml, $GUIA, $data['infoAdicional'] ?? ($data->infoAdicional ?? null));
 
 
       $xml->formatOutput = true;
@@ -928,22 +903,8 @@ private function getOpenSslErrors()
 
       }
 
-      $infoAdicionalNotaDebito =$data["infoAdicional"];
-
-      $infoAdicional =  $xml->createElement('infoAdicional');
-      $infoAdicional = $NotaCredito->appendChild($infoAdicional);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalNotaDebito["telefono"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Telefono';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalNotaDebito["email"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Email';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
+      // INFORMACION ADICIONAL (incluye RUC Proveedor según Resolución SRI NAC-DGERCGC26-00000027)
+      $this->agregarInfoAdicional($xml, $NotaCredito, $data['infoAdicional'] ?? ($data->infoAdicional ?? null));
 
 
       $xml->formatOutput = true;
@@ -1139,22 +1100,8 @@ private function getOpenSslErrors()
                 $cbc = $impuesto->appendChild($cbc);
 
       }
-      $infoAdicionalNotaCredito =$data->infoAdicional;
-
-      $infoAdicional =  $xml->createElement('infoAdicional');
-      $infoAdicional = $NotaCredito->appendChild($infoAdicional);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalNotaCredito["telefono"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Telefono';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalNotaCredito["email"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Email';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
+      // INFORMACION ADICIONAL (incluye RUC Proveedor según Resolución SRI NAC-DGERCGC26-00000027)
+      $this->agregarInfoAdicional($xml, $NotaCredito, $data->infoAdicional ?? ($data['infoAdicional'] ?? null));
 
 
       $xml->formatOutput = true;
@@ -1339,22 +1286,8 @@ private function getOpenSslErrors()
                 $cbc = $impuesto->appendChild($cbc);
 
       }
-      $infoAdicionalLiquidacion =$data->infoAdicional;
-
-      $infoAdicional =  $xml->createElement('infoAdicional');
-      $infoAdicional = $Liquidacion->appendChild($infoAdicional);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalLiquidacion["telefono"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Telefono';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
-
-      $cbc = $xml->createElement('campoAdicional', $infoAdicionalLiquidacion["email"]);
-      $domAttribute = $xml->createAttribute('nombre');
-      $domAttribute->value = 'Email';
-      $cbc->appendChild($domAttribute);
-      $cbc = $infoAdicional->appendChild($cbc);
+      // INFORMACION ADICIONAL (incluye RUC Proveedor según Resolución SRI NAC-DGERCGC26-00000027)
+      $this->agregarInfoAdicional($xml, $Liquidacion, $data->infoAdicional ?? ($data['infoAdicional'] ?? null));
 
 
       $xml->formatOutput = true;
@@ -1510,6 +1443,65 @@ private function getOpenSslErrors()
             'cn' => $certData['subject']['CN'] ?? null,
             'o' => $certData['subject']['O'] ?? null
         ];
+    }
+
+    /**
+     * Agrega el nodo <infoAdicional> a cualquier comprobante electrónico.
+     * Soporta formato asociativo (clave => valor) o formato array de objetos [{name, value}],
+     * y garantiza el cumplimiento de la Resolución SRI NAC-DGERCGC26-00000027 ("RUC Proveedor").
+     */
+    public function agregarInfoAdicional(&$xml, &$parentDoc, $infoAdicionalData)
+    {
+        if (empty($infoAdicionalData)) {
+            return;
+        }
+
+        $infoAdic = (array) $infoAdicionalData;
+        $infoAdicionalNode = $xml->createElement('infoAdicional');
+        $hasCampos = false;
+
+        // Formato 1: array campoAdicional => [ ['name' => ..., 'value' => ...], ... ]
+        if (isset($infoAdic['campoAdicional']) && (is_array($infoAdic['campoAdicional']) || is_object($infoAdic['campoAdicional']))) {
+            foreach ((array)$infoAdic['campoAdicional'] as $ca) {
+                $caArr = (array) $ca;
+                $nombre = $caArr['name'] ?? $caArr['nombre'] ?? $caArr['@attributes']['nombre'] ?? null;
+                $valor = $caArr['value'] ?? $caArr['valor'] ?? null;
+                if ($nombre && $valor !== null && $valor !== '') {
+                    $nombreAttr = (string)$nombre;
+                    if (strtolower($nombreAttr) === 'ruc proveedor' || strtolower($nombreAttr) === 'rucproveedor') {
+                        $nombreAttr = 'RUC Proveedor';
+                    }
+                    $campo = $xml->createElement('campoAdicional', htmlspecialchars((string)$valor, ENT_XML1, 'UTF-8'));
+                    $domAttr = $xml->createAttribute('nombre');
+                    $domAttr->value = $nombreAttr;
+                    $campo->appendChild($domAttr);
+                    $infoAdicionalNode->appendChild($campo);
+                    $hasCampos = true;
+                }
+            }
+        } else {
+            // Formato 2: Key-Value directo => { "RUC Proveedor": "...", "telefono": "...", "email": "..." }
+            foreach ($infoAdic as $nombre => $valor) {
+                if ($valor !== null && $valor !== '' && !is_array($valor) && !is_object($valor)) {
+                    $nombreAttr = (string)$nombre;
+                    if (strtolower($nombre) === 'telefono') $nombreAttr = 'Telefono';
+                    elseif (strtolower($nombre) === 'email') $nombreAttr = 'Email';
+                    elseif (strtolower($nombre) === 'direccion') $nombreAttr = 'Direccion';
+                    elseif (strtolower($nombre) === 'ruc proveedor' || strtolower($nombre) === 'rucproveedor') $nombreAttr = 'RUC Proveedor';
+
+                    $campo = $xml->createElement('campoAdicional', htmlspecialchars((string)$valor, ENT_XML1, 'UTF-8'));
+                    $domAttr = $xml->createAttribute('nombre');
+                    $domAttr->value = $nombreAttr;
+                    $campo->appendChild($domAttr);
+                    $infoAdicionalNode->appendChild($campo);
+                    $hasCampos = true;
+                }
+            }
+        }
+
+        if ($hasCampos) {
+            $parentDoc->appendChild($infoAdicionalNode);
+        }
     }
 
 }

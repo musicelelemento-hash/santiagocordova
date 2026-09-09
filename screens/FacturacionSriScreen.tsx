@@ -180,6 +180,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     if (stored === '2' || stored === '3') return stored;
     return '0'; // General (valor por defecto seguro, IVA 15%)
   });
+  const [softwareProviderRuc, setSoftwareProviderRuc] = useState(() => localStorage.getItem('sc_software_provider_ruc') || '0705787745001');
   const [ambiente, setAmbienteState] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '2'); // Default a 2 (ProducciÃ³n) si el usuario ya estÃ¡ facturando
 
   const setAmbiente = (newAmbiente: '1' | '2') => {
@@ -206,6 +207,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         emisorEstab,
         emisorPtoEmi,
         emisorRegimen,
+        softwareProviderRuc,
         ambiente,
         p12ExpiryDate,
         p12SubjectName,
@@ -250,6 +252,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           if (remote.lastSeqFactura) { setLastSeqFactura(remote.lastSeqFactura); localStorage.setItem('sc_sri_last_seq_factura', String(remote.lastSeqFactura)); }
           if (remote.lastSeqRetencion) { setLastSeqRetencion(remote.lastSeqRetencion); localStorage.setItem('sc_sri_last_seq_retencion', String(remote.lastSeqRetencion)); }
           if (remote.emisorLogo) { setEmisorLogo(remote.emisorLogo); localStorage.setItem('sc_emisor_logo', remote.emisorLogo); }
+          if (remote.softwareProviderRuc) { setSoftwareProviderRuc(remote.softwareProviderRuc); localStorage.setItem('sc_software_provider_ruc', remote.softwareProviderRuc); }
 
           if (remote.p12Base64) return; // Si vino de la nube, finalizamos exitosamente
         }
@@ -266,6 +269,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const expiry = (await db.getLocal('sc_sri_p12_expiry')) || localStorage.getItem('sc_sri_p12_expiry') || '';
         const subject = (await db.getLocal('sc_sri_p12_subject')) || localStorage.getItem('sc_sri_p12_subject') || '';
         const owner = (await db.getLocal('sc_sri_p12_owner')) || localStorage.getItem('sc_sri_p12_owner') || '';
+        const localSoftwareProviderRuc = (await db.getLocal('sc_software_provider_ruc')) || localStorage.getItem('sc_software_provider_ruc') || '0705787745001';
+        setSoftwareProviderRuc(localSoftwareProviderRuc);
         
         setP12FileBase64(base64);
         setP12FileName(name);
@@ -1428,9 +1433,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           regimen: emisorRegimen
         },
         infoAdicional: {
+          'RUC Proveedor': softwareProviderRuc || '0705787745001',
           telefono: buyerPhone || '0999999999',
           email: buyerEmail || 'cliente@example.com',
-          direccion: buyerAddress
+          direccion: buyerAddress || ''
         }
       }
     };
@@ -1531,15 +1537,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'Authorization': FACTURACION_API_TOKEN
           },
           body: JSON.stringify(payload)
         });
-        if (!response.ok) throw new Error(`Error en API al generar XML: ${response.statusText}`);
-        const data = await response.json();
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok || (data && data.status === false)) {
+          let errDetail = '';
+          if (data) {
+            errDetail = data.message || data.error || data.msg || (typeof data.data === 'string' ? data.data : '');
+            if (data.errors && typeof data.errors === 'object') {
+              errDetail += ' -> ' + Object.entries(data.errors)
+                .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+                .join(' | ');
+            }
+          }
+          if (!errDetail) {
+            errDetail = response.statusText || `Código HTTP ${response.status}`;
+          }
+          throw new Error(`Error en API al generar XML: ${errDetail}`);
+        }
         // Controller returns: { status: true, data: { xml: '...', xml_base64: '...' } }
         currentXml = data.data?.xml || data.xml;
-        if (!currentXml) throw new Error('La API no devolviÃ³ el XML generado. Revise los logs del servidor.');
+        if (!currentXml) throw new Error('La API no devolvió el XML generado. Revise los logs del servidor.');
         setGeneratedXml(currentXml);
         addLog(`XML generado correctamente en el backend (${currentXml.length} bytes)`, 'success');
       }
@@ -3090,6 +3113,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     localStorage.setItem('sc_emisor_pto', emisorPtoEmi);
     localStorage.setItem('sc_emisor_regimen', emisorRegimen);
     localStorage.setItem('sc_emisor_ambiente', ambiente);
+    localStorage.setItem('sc_software_provider_ruc', softwareProviderRuc);
     localStorage.setItem('sc_facturacion_api_url', apiUrl);
     localStorage.setItem('sc_emisor_logo', emisorLogo);
     
@@ -3485,6 +3509,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <option value="1">1 - PRUEBAS</option>
                       <option value="2">2 - PRODUCCIÃ“N</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-1.5">
+                      RUC Proveedor Software
+                      <span className="text-[8px] bg-amber-500/10 text-amber-500 font-bold px-1.5 py-0.5 rounded border border-amber-500/20">SRI Res. NAC-027</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={softwareProviderRuc}
+                      onChange={(e) => {
+                        setSoftwareProviderRuc(e.target.value);
+                        localStorage.setItem('sc_software_provider_ruc', e.target.value);
+                      }}
+                      placeholder="0705787745001"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
                   </div>
 
                   <div>

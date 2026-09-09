@@ -260,6 +260,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     ],
                     infoAdicional: {
                         campoAdicional: [
+                            { name: 'RUC Proveedor', value: localStorage.getItem('sc_software_provider_ruc') || '0705787745001' },
                             { name: 'Email', value: buyerEmail },
                             { name: 'Telefono', value: buyerPhone || '0999999999' }
                         ]
@@ -277,11 +278,27 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/xml`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': FACTURACION_API_TOKEN 
+                    },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error("Error en API al generar XML.");
-                const resData = await response.json();
+                const resData = await response.json().catch(() => null);
+                if (!response.ok || (resData && resData.status === false)) {
+                    let errDetail = '';
+                    if (resData) {
+                        errDetail = resData.message || resData.error || resData.msg || '';
+                        if (resData.errors && typeof resData.errors === 'object') {
+                            errDetail += ' -> ' + Object.entries(resData.errors)
+                                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                                .join(' | ');
+                        }
+                    }
+                    if (!errDetail) errDetail = response.statusText || `Código HTTP ${response.status}`;
+                    throw new Error(`Error en API al generar XML: ${errDetail}`);
+                }
                 currentXml = resData.data?.xml || resData.xml;
                 setFastBillingXml(currentXml);
                 addLog("XML generado exitosamente en el backend.");
