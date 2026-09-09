@@ -14,7 +14,7 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
-import { FACTURACION_API_TOKEN, getFacturacionApiToken, setFacturacionApiToken } from '../services/facturacionApi';
+import { DEFAULT_FACTURACION_API_TOKEN, FACTURACION_API_TOKEN, getFacturacionApiToken, setFacturacionApiToken, isValidApiToken } from '../services/facturacionApi';
 import { SalesComboModal } from '../components/features/SalesComboModal';
 import { VentaOcasionalForm } from '../components/features/VentaOcasionalForm';
 import { useToast } from '../context/ToastContext';
@@ -752,7 +752,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     if (!storedBase64) return;
     
     try {
-      const activeToken = (apiToken || getFacturacionApiToken()).trim();
+      let activeToken = (apiToken?.trim() || getFacturacionApiToken() || DEFAULT_FACTURACION_API_TOKEN).trim();
+      if (!isValidApiToken(activeToken)) activeToken = DEFAULT_FACTURACION_API_TOKEN;
       const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/firma/vigencia`, {
         method: 'POST',
         headers: {
@@ -1512,7 +1513,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     await new Promise(r => setTimeout(r, 800));
 
     let currentXml = '';
-    const activeToken = (apiToken || getFacturacionApiToken()).trim();
+    let activeToken = (apiToken?.trim() || getFacturacionApiToken() || DEFAULT_FACTURACION_API_TOKEN).trim();
+    if (!isValidApiToken(activeToken)) {
+      activeToken = DEFAULT_FACTURACION_API_TOKEN;
+    }
+    addLog(`Autenticación API: Token verificado (${activeToken.substring(0, 4)}...${activeToken.substring(activeToken.length - 4)}).`);
     try {
       
       // Step 1: Generate XML
