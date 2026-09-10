@@ -353,16 +353,56 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             if (isMock) {
                 addLog("SRI Recepción: RECIBIDO / DEVUELTA (SIMULADO).");
             } else {
-                const sendRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
-                    body: JSON.stringify({ xml: currentXml, ambiente })
-                });
-                if (!sendRes.ok) throw new Error("Fallo de conexión al SRI Recepción.");
-                addLog(`SRI Recepción Respuesta: RECIBIDO.`);
+                let sendSuccess = false;
+                let lastSendError = '';
+
+                for (let sendAttempt = 1; sendAttempt <= 3; sendAttempt++) {
+                    if (sendAttempt > 1) {
+                        addLog(`Reintentando envío a Recepción SRI (Intento ${sendAttempt}/3)...`);
+                        await new Promise(r => setTimeout(r, 2500));
+                    }
+
+                    try {
+                        const sendRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
+                            body: JSON.stringify({ xml: currentXml, ambiente })
+                        });
+
+                        if (!sendRes.ok) {
+                            let errorDetail = '';
+                            try {
+                                const errJson = await sendRes.json();
+                                errorDetail = errJson.message || errJson.error || JSON.stringify(errJson);
+                            } catch {
+                                errorDetail = await sendRes.text();
+                            }
+                            throw new Error(errorDetail || sendRes.statusText || `HTTP ${sendRes.status}`);
+                        }
+
+                        const sendData = await sendRes.json();
+                        sendSuccess = true;
+                        addLog(`SRI Recepción: Recibido satisfactoriamente.`);
+
+                        const sendResultStr = JSON.stringify(sendData).toUpperCase();
+                        if (sendResultStr.includes('"ESTADO":"DEVUELTA"') || sendResultStr.includes('ESTADO:DEVUELTA')) {
+                            if (sendResultStr.includes('REGISTRADA') || sendResultStr.includes('PROCESO') || sendResultStr.includes('AUTORIZADO')) {
+                                addLog("ℹ️ Comprobante ya registrado previamente en SRI. Procediendo a autorizar...");
+                            }
+                        }
+                        break;
+                    } catch (e: any) {
+                        lastSendError = e.message || 'Error de conexión con Recepción SRI';
+                        addLog(`⚠️ Recepción SRI intento ${sendAttempt}/3: ${lastSendError}`);
+                    }
+                }
+
+                if (!sendSuccess) {
+                    throw new Error(`Fallo de conexión al SRI Recepción: ${lastSendError}`);
+                }
             }
 
-            // 8. Paso 4: Autorizar
+            // 8. Paso 4: Autorizar con sondeo
             setFastBillingStep('authorizing');
             addLog("Solicitando autorización de comprobante al SRI...");
             let isAuthorized = false;
@@ -372,22 +412,41 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 isAuthorized = true;
                 addLog("SRI Autorización: AUTORIZADO (SIMULADO).");
             } else {
-                const authRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
-                    body: JSON.stringify({ clave_acceso: key, ambiente })
-                });
-                if (!authRes.ok) throw new Error("Fallo consulta de autorización.");
-                const authData = await authRes.json();
-                const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
-                const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
-                isAuthorized = authData.status && uppercaseData.includes('ESTADO:AUTORIZADO');
+                for (let attempt = 1; attempt <= 5; attempt++) {
+                    if (attempt > 1) {
+                        addLog(`Esperando procesamiento del SRI (Intento ${attempt}/5)...`);
+                        await new Promise(r => setTimeout(r, 2500));
+                    }
+
+                    try {
+                        const authRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
+                            body: JSON.stringify({ clave_acceso: key, ambiente })
+                        });
+
+                        if (authRes.ok) {
+                            const authData = await authRes.json();
+                            const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
+                            const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
+
+                            if (authData.status && uppercaseData.includes('ESTADO:AUTORIZADO')) {
+                                isAuthorized = true;
+                                addLog("SRI Autorización: AUTORIZADO.");
+                                break;
+                            } else if (uppercaseData.includes('ESTADO:NOAUTORIZADO') || uppercaseData.includes('ESTADO:DEVUELTA')) {
+                                errorMsg = 'No autorizado por el SRI';
+                                break;
+                            }
+                        }
+                    } catch (e: any) {
+                        addLog(`⚠️ Intento ${attempt}/5 consulta SRI: ${e.message}`);
+                    }
+                }
 
                 if (!isAuthorized) {
-                    errorMsg = 'No autorizado por el SRI (Estado no AUTORIZADO)';
-                    addLog("SRI Autorización: RECHAZADO / ERROR.");
-                } else {
-                    addLog("SRI Autorización: AUTORIZADO.");
+                    errorMsg = errorMsg || 'No autorizado por el SRI (Tiempo de espera agotado o en proceso)';
+                    addLog("SRI Autorización: PENDIENTE / ERROR.");
                 }
             }
 

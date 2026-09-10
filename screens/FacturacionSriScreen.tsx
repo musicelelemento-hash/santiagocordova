@@ -1647,19 +1647,53 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         addLog(`Respuesta del SRI Recepción: RECIBIDA`, 'success');
         addLog(`Estado de recepción: DEVUELTA / RECIBIDO`);
       } else {
-        const sendResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': activeToken
-          },
-          body: JSON.stringify({
-            xml: currentXml,
-            ambiente
-          })
-        });
-        if (!sendResponse.ok) throw new Error(`Fallo de conexión al SRI: ${sendResponse.statusText}`);
-        const sendData = await sendResponse.json();
+        let sendSuccess = false;
+        let sendData: any = null;
+        let lastSendError = '';
+
+        for (let sendAttempt = 1; sendAttempt <= 3; sendAttempt++) {
+          if (sendAttempt > 1) {
+            addLog(`Reintentando envío a Recepción SRI (Intento ${sendAttempt}/3 en 2.5s)...`, 'warn');
+            await new Promise(r => setTimeout(r, 2500));
+          }
+
+          try {
+            const sendResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': activeToken
+              },
+              body: JSON.stringify({
+                xml: currentXml,
+                ambiente
+              })
+            });
+
+            if (!sendResponse.ok) {
+              let errorDetail = '';
+              try {
+                const errJson = await sendResponse.json();
+                errorDetail = errJson.message || errJson.error || JSON.stringify(errJson);
+              } catch {
+                errorDetail = await sendResponse.text();
+              }
+              throw new Error(errorDetail || sendResponse.statusText || `HTTP ${sendResponse.status}`);
+            }
+
+            sendData = await sendResponse.json();
+            sendSuccess = true;
+            break;
+          } catch (e: any) {
+            lastSendError = e.message || 'Error de conexión con el Web Service del SRI';
+            addLog(`⚠️ Conexión con Recepción SRI no completada (Intento ${sendAttempt}/3): ${lastSendError}`, 'warn');
+          }
+        }
+
+        if (!sendSuccess) {
+          throw new Error(`Fallo de conexión al SRI en Recepción: ${lastSendError}`);
+        }
+
         addLog(`Respuesta Recepción SRI: ${JSON.stringify(sendData.data || sendData.respuesta || sendData)}`, 'success');
         
         const sendResultStr = JSON.stringify(sendData).toUpperCase();
@@ -1678,7 +1712,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           } catch (e) {
             errMsg += JSON.stringify(sendData);
           }
-          throw new Error(errMsg);
+
+          // Si el comprobante ya fue recibido previamente, avanzamos directamente a autorizar
+          if (sendResultStr.includes('REGISTRADA') || sendResultStr.includes('PROCESO') || sendResultStr.includes('AUTORIZADO')) {
+            addLog(`ℹ️ El comprobante ya fue registrado por el SRI (${errMsg}). Procediendo a consultar estado de autorización...`, 'info');
+          } else {
+            throw new Error(errMsg);
+          }
         }
       }
 
@@ -1715,9 +1755,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         let authData: any = null;
         let errorMsg = '';
 
-        // Reintento automático de consulta de autorización (3 intentos espaciados 3 segundos)
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          addLog(`Solicitando autorización de comprobante para clave de acceso (Intento ${attempt}/3): ${key}...`);
+        // Reintento automático de consulta de autorización (hasta 5 intentos espaciados 2.5 - 3 segundos)
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          addLog(`Solicitando autorización de comprobante para clave de acceso (Intento ${attempt}/5): ${key}...`);
           await new Promise(r => setTimeout(r, attempt === 1 ? 2500 : 3000));
 
           try {
@@ -1744,17 +1784,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 isAuthorized = true;
                 addLog(`✅ Comprobante AUTORIZADO con éxito por el SRI el ${new Date().toLocaleString()}`, 'success');
                 break;
-              } else if (uppercaseData.includes('PROCESO') || uppercaseData.includes('ENPROCESO')) {
-                addLog(`⌛ SRI procesando comprobante... Reintentando en 3s (Intento ${attempt}/3)...`, 'warn');
+              } else if (uppercaseData.includes('PROCESO') || uppercaseData.includes('ENPROCESO') || uppercaseData.includes('PENDIENTE')) {
+                addLog(`⌛ SRI procesando comprobante... Reintentando en 3s (Intento ${attempt}/5)...`, 'warn');
               } else {
                 // If SRI gave a definitive rejection error, don't wait further
                 break;
               }
             } else {
-              addLog(`⚠️ Respuesta HTTP ${authResponse.status} consultando autorización SRI (Intento ${attempt}/3)`, 'warn');
+              addLog(`⚠️ Respuesta HTTP ${authResponse.status} consultando autorización SRI (Intento ${attempt}/5)`, 'warn');
             }
           } catch (e: any) {
-            addLog(`⚠️ Conexión temporal reintentando consulta SRI (Intento ${attempt}/3): ${e.message}`, 'warn');
+            addLog(`⚠️ Conexión temporal reintentando consulta SRI (Intento ${attempt}/5): ${e.message}`, 'warn');
           }
         }
 
@@ -2015,6 +2055,28 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     return `${mName} ${year}`;
   };
 
+  const generateBarcodeBars = (clave: string) => {
+    if (!clave) return '';
+    const bars: string[] = [];
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+
+    for (let i = 0; i < clave.length; i++) {
+      const digit = parseInt(clave[i], 10) || 0;
+      const w1 = (digit % 3) + 1;
+      const w2 = ((digit + 1) % 2) + 1;
+      bars.push(`<span style="display:inline-block;width:${w1}px;height:100%;background:#0f172a;"></span>`);
+      bars.push(`<span style="display:inline-block;width:${w2}px;height:100%;background:#ffffff;"></span>`);
+    }
+
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    return bars.join('');
+  };
+
   const generateRideParts = (comprobante: HistoricComprobante) => {
     let emisor = {
       razonSocial: emisorRazonSocial,
@@ -2045,6 +2107,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     let formaPagoDesc = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
     let formaPagoTotal = comprobante.total;
 
+    // Campos adicionales extraídos del XML o del contexto
+    const xmlCamposAdicionales: { nombre: string; valor: string }[] = [];
+
     try {
       if (comprobante.xml) {
         const parser = new DOMParser();
@@ -2062,12 +2127,34 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const ptoEmi = xmlDoc.getElementsByTagName("ptoEmi")[0]?.textContent;
         if (ptoEmi) emisor.ptoEmi = ptoEmi;
 
-        const razonSocialComprador = xmlDoc.getElementsByTagName("razonSocialComprador")[0]?.textContent;
-        if (razonSocialComprador) receptor.razonSocial = razonSocialComprador;
-        const identificacionComprador = xmlDoc.getElementsByTagName("identificacionComprador")[0]?.textContent;
-        if (identificacionComprador) receptor.identificacion = identificacionComprador;
-        const direccionComprador = xmlDoc.getElementsByTagName("direccionComprador")[0]?.textContent;
-        if (direccionComprador) receptor.direccion = direccionComprador;
+        // Comprador (Factura) o Sujeto Retenido (Retención) o Proveedor (Liquidación)
+        const razonSocialReceptor = xmlDoc.getElementsByTagName("razonSocialComprador")[0]?.textContent
+          || xmlDoc.getElementsByTagName("razonSocialSujetoRetenido")[0]?.textContent
+          || xmlDoc.getElementsByTagName("razonSocialProveedor")[0]?.textContent;
+        if (razonSocialReceptor) receptor.razonSocial = razonSocialReceptor;
+
+        const identificacionReceptor = xmlDoc.getElementsByTagName("identificacionComprador")[0]?.textContent
+          || xmlDoc.getElementsByTagName("identificacionSujetoRetenido")[0]?.textContent
+          || xmlDoc.getElementsByTagName("identificacionProveedor")[0]?.textContent;
+        if (identificacionReceptor) receptor.identificacion = identificacionReceptor;
+
+        const direccionReceptor = xmlDoc.getElementsByTagName("direccionComprador")[0]?.textContent
+          || xmlDoc.getElementsByTagName("direccionProveedor")[0]?.textContent;
+        if (direccionReceptor) receptor.direccion = direccionReceptor;
+
+        // Extracción de infoAdicional oficial
+        const infoAdicionalNode = xmlDoc.getElementsByTagName("infoAdicional")[0];
+        if (infoAdicionalNode) {
+          const campos = infoAdicionalNode.getElementsByTagName("campoAdicional");
+          for (let k = 0; k < campos.length; k++) {
+            const c = campos[k];
+            const nombre = c.getAttribute("nombre") || `Dato ${k + 1}`;
+            const valor = c.textContent?.trim() || '';
+            if (valor) {
+              xmlCamposAdicionales.push({ nombre, valor });
+            }
+          }
+        }
 
         const detalles = xmlDoc.getElementsByTagName("detalle");
         if (detalles.length > 0) {
@@ -2173,26 +2260,90 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     };
     const regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">' + (regimeLabels[emisorRegimen] || 'CONTRIBUYENTE RÉGIMEN GENERAL') + '</div>';
 
+    // RUC Proveedor Software (Obligatorio Res. SRI NAC-DGERCGC26-00000027)
+    let softwareProviderRucVal = softwareProviderRuc || localStorage.getItem('sc_software_provider_ruc') || '0705787745001';
+    const rucProvXml = xmlCamposAdicionales.find(c =>
+      c.nombre.toLowerCase().replace(/[\s_]+/g, '').includes('rucproveedor') ||
+      (c.nombre.toLowerCase().includes('proveedor') && c.valor.length === 13)
+    );
+    if (rucProvXml && rucProvXml.valor) {
+      softwareProviderRucVal = rucProvXml.valor;
+    }
+
+    // Prevención de redundancia en nombres de emisor
+    const isCommercialSameAsRazon = !emisor.nombreComercial || 
+      emisor.nombreComercial.trim().toUpperCase() === emisor.razonSocial.trim().toUpperCase() ||
+      emisor.nombreComercial.trim().toUpperCase() === 'SOLUCIONES TRIBUTARIAS';
+
     const logoHtml = emisorLogo 
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
-      : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES TRIBUTARIAS') + "</div>";
+      : (!isCommercialSameAsRazon ? "<div class='emisor-title'>" + emisor.nombreComercial + "</div>" : "");
+
+    // Construcción limpia de Información Adicional (sin repetir Dirección ya mostrada en el bloque receptor)
+    const infoAdicionalRows: { label: string; value: string; isMono?: boolean }[] = [];
+    infoAdicionalRows.push({ label: 'RUC Proveedor:', value: softwareProviderRucVal, isMono: true });
+
+    // Email
+    const xmlEmail = xmlCamposAdicionales.find(c => c.nombre.toLowerCase().includes('email') || c.nombre.toLowerCase().includes('correo'))?.valor;
+    const emailVal = xmlEmail || (receptor.identificacion === buyerRuc ? buyerEmail : '') || '';
+    if (emailVal) {
+      infoAdicionalRows.push({ label: 'Email:', value: emailVal });
+    }
+
+    // Teléfono
+    const xmlPhone = xmlCamposAdicionales.find(c => c.nombre.toLowerCase().includes('tel') || c.nombre.toLowerCase().includes('celular') || c.nombre.toLowerCase().includes('movil'))?.valor;
+    const phoneVal = xmlPhone || (receptor.identificacion === buyerRuc ? buyerPhone : '') || '';
+    if (phoneVal) {
+      infoAdicionalRows.push({ label: 'Teléfono:', value: phoneVal });
+    }
+
+    // Periodo Fiscal
+    if (smartPeriodoFiscal) {
+      infoAdicionalRows.push({ label: 'Periodo Fiscal:', value: smartPeriodoFiscal });
+    }
+
+    // Otros campos adicionales no redundantes del XML
+    for (const c of xmlCamposAdicionales) {
+      const lowerName = c.nombre.toLowerCase();
+      const isRucProv = lowerName.replace(/[\s_]+/g, '').includes('rucproveedor');
+      const isEmail = lowerName.includes('email') || lowerName.includes('correo');
+      const isTel = lowerName.includes('tel') || lowerName.includes('celular');
+      const isDir = lowerName.includes('dir') || lowerName.includes('direccion');
+      const isPeriodo = lowerName.includes('periodo');
+
+      if (!isRucProv && !isEmail && !isTel && !isDir && !isPeriodo) {
+        infoAdicionalRows.push({ label: `${c.nombre}:`, value: c.valor });
+      }
+    }
+
+    const infoAdicionalHtml = infoAdicionalRows.map(row => `
+      <tr>
+        <td style="width: 110px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">${row.label}</td>
+        <td style="color: #0f172a; font-weight: 700; font-size: 9px; ${row.isMono ? "font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #2b6aff;" : ''}">${row.value}</td>
+      </tr>
+    `).join('');
+
+    const isRetencion = comprobante.tipo === 'retencion';
+    const docTitleLabel = comprobante.tipo === 'factura' 
+      ? 'FACTURA' 
+      : (isRetencion ? 'COMPROBANTE DE RETENCIÓN' : 'LIQUIDACIÓN DE COMPRA');
 
     const cssStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@700;800;900&display=swap');
     @page { size: A4 portrait; margin: 8mm 10mm 10mm 10mm; }
     * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
     body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 9.5px; line-height: 1.3; }
     .invoice-card { border: 1.5px solid #0f172a; border-radius: 14px; padding: 16px; background: #ffffff; width: 794px; margin: 0 auto; }
     .header-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 16px; }
     .emisor-box { padding-right: 8px; }
-    .logo-img { max-height: 60px; max-width: 220px; object-fit: contain; margin-bottom: 8px; }
-    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 4px; }
+    .logo-img { max-height: 55px; max-width: 220px; object-fit: contain; margin-bottom: 8px; }
+    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 4px; }
     .emisor-name { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 4px; }
-    .auth-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 14px; background: #f8fafc; }
-    .auth-title { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
-    .auth-doc-type { font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 900; color: #0f172a; margin: 2px 0 4px 0; }
-    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #2b6aff; margin-bottom: 8px; }
-    .barcode-container { border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 8px; text-align: center; }
+    .auth-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 12px 14px; background: #f8fafc; }
+    .auth-title { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 2px; }
+    .auth-doc-type { font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 900; color: #0f172a; margin: 2px 0; }
+    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #2b6aff; margin-bottom: 6px; }
+    .barcode-container { border-top: 1px solid #cbd5e1; padding-top: 6px; margin-top: 6px; text-align: center; }
     .receptor-box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; background: #fafafa; }
     .receptor-val { font-size: 10px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
     .items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; }
@@ -2206,7 +2357,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     .totals-table td { padding: 4px 2px; border-bottom: 1px dashed #e2e8f0; font-size: 9px; color: #475569; font-weight: 600; }
     .totals-table tr.total-row td { background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11.5px; padding: 8px 6px; border-radius: 6px; }
     
-    /* Encabezado Editorial Tecnológico - Soluciones Tributarias PRO */
+    /* Encabezado Editorial Tecnológico */
     .ride-editorial-header {
       background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f0fdf9 100%);
       border: 1px solid #cbd5e1;
@@ -2301,8 +2452,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     .ride-tech-norma {
       font-family: 'JetBrains Mono', monospace;
       font-size: 6.8px;
-      color: #94a3b8;
-      font-weight: 600;
+      color: #0f172a;
+      font-weight: 700;
     }
     `;
 
@@ -2321,39 +2472,43 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <span class="ride-tech-dot"></span>
           <span>COMPROBANTE ELECTRÓNICO OFICIAL · RIDE</span>
         </div>
-        <div class="ride-tech-norma">RESOLUCIÓN NAC-027 · SISTEMA AUTORIZADO</div>
+        <div class="ride-tech-norma">RUC PROVEEDOR: ${softwareProviderRucVal} · RES. SRI NAC-027</div>
       </div>
     </div>
     <div class="header-grid">
       <div class="emisor-box">
         ${logoHtml}
         <div class="emisor-name">${emisor.razonSocial}</div>
-        <div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase;">${emisor.nombreComercial}</div>
+        ${(!isCommercialSameAsRazon && emisorLogo) ? `<div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-bottom: 3px;">${emisor.nombreComercial}</div>` : ''}
         <div style="margin-top: 4px; font-size: 9px; color: #475569;"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
         <div style="font-size: 9px; color: #475569;"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
         ${regimeLabel}
       </div>
       <div class="auth-box">
         <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
-        <div class="auth-doc-type">${comprobante.tipo === 'factura' ? 'FACTURA' : 'COMPROBANTE DE RETENCIÓN'}</div>
+        <div class="auth-doc-type">${docTitleLabel}</div>
         <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
-        <div style="font-size: 8.5px; margin-bottom: 6px;"><strong>AUTORIZACIÓN:</strong> <br/><span style="font-family: monospace; font-size: 8px;">${comprobante.claveAcceso}</span></div>
-        <div style="font-size: 8.5px;"><strong>FECHA/HORA:</strong> ${authDateStr}</div>
-        <div style="font-size: 8.5px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente}</span></div>
+        <div style="font-size: 8px; margin-bottom: 2px;"><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
+        <div style="font-size: 8px; margin-bottom: 2px;"><strong>FECHA/HORA AUTORIZACIÓN:</strong> ${authDateStr}</div>
+        <div style="font-size: 8px; margin-bottom: 2px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente}</span></div>
+        <div style="font-size: 8px; margin-bottom: 4px;"><strong>EMISIÓN:</strong> NORMAL</div>
         <div class="barcode-container">
-          <div style="font-size: 7.5px; font-weight: 800; color: #64748b; text-transform: uppercase;">Clave de Acceso SRI</div>
-          <div style="font-family: monospace; font-size: 8px; margin-top: 2px;">${comprobante.claveAcceso}</div>
+          <div style="font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">CLAVE DE ACCESO SRI</div>
+          <div style="height: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 3px; background: #ffffff; padding: 1px 4px; border-radius: 2px;">
+            ${generateBarcodeBars(comprobante.claveAcceso)}
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; color: #0f172a; word-break: break-all;">${comprobante.claveAcceso}</div>
         </div>
       </div>
     </div>
 
     <div class="receptor-box">
       <div>
-        <strong style="color: #64748b; font-size: 8px;">RAZÓN SOCIAL / CLIENTE:</strong>
+        <strong style="color: #64748b; font-size: 8px;">${isRetencion ? 'RAZÓN SOCIAL / SUJETO RETENIDO (PROVEEDOR):' : 'RAZÓN SOCIAL / CLIENTE:'}</strong>
         <div class="receptor-val">${receptor.razonSocial}</div>
       </div>
       <div>
-        <strong style="color: #64748b; font-size: 8px;">RUC / CÉDULA:</strong>
+        <strong style="color: #64748b; font-size: 8px;">${isRetencion ? 'RUC / CÉDULA PROVEEDOR:' : 'RUC / CÉDULA:'}</strong>
         <div class="receptor-val" style="font-family: 'JetBrains Mono', monospace;">${receptor.identificacion}</div>
       </div>
       <div style="margin-top: 4px;">
@@ -2365,7 +2520,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         <div style="font-weight: 700; color: #0f172a;">S/N</div>
       </div>
       <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
-        <strong style="color: #64748b; font-size: 8px;">DIRECCIÓN DEL COMPRADOR:</strong>
+        <strong style="color: #64748b; font-size: 8px;">${isRetencion ? 'DIRECCIÓN DEL PROVEEDOR:' : 'DIRECCIÓN DEL COMPRADOR:'}</strong>
         <div style="font-weight: 700; color: #0f172a; text-transform: uppercase;">${receptor.direccion}</div>
       </div>
     </div>
@@ -2390,22 +2545,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         <div class="info-box">
           <div class="box-title">Información Adicional</div>
           <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="width: 90px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Dirección:</td>
-              <td style="color: #0f172a; font-weight: 700; text-transform: uppercase; font-size: 9px;">${receptor.direccion}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Email:</td>
-              <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerEmail || 'cliente@example.com' : 'cliente@example.com'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Teléfono:</td>
-              <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
-            </tr>
-            <tr>
-              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Periodo Fiscal:</td>
-              <td style="color: #2b6aff; font-weight: 800; text-transform: uppercase; font-size: 9px;">${smartPeriodoFiscal}</td>
-            </tr>
+            ${infoAdicionalHtml}
           </table>
         </div>
 

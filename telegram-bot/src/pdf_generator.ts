@@ -1,5 +1,27 @@
 import puppeteer from 'puppeteer';
 
+function generateBarcodeBars(clave: string): string {
+    if (!clave) return '';
+    const bars: string[] = [];
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+
+    for (let i = 0; i < clave.length; i++) {
+        const digit = parseInt(clave[i], 10) || 0;
+        const w1 = (digit % 3) + 1;
+        const w2 = ((digit + 1) % 2) + 1;
+        bars.push(`<span style="display:inline-block;width:${w1}px;height:100%;background:#0f172a;"></span>`);
+        bars.push(`<span style="display:inline-block;width:${w2}px;height:100%;background:#ffffff;"></span>`);
+    }
+
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
+    return bars.join('');
+}
+
 export async function generateRidePdfBuffer(
     comprobante: any,
     emisor: any,
@@ -7,6 +29,8 @@ export async function generateRidePdfBuffer(
     items: any[],
     totals: any
 ): Promise<Buffer> {
+    const softwareProviderRuc = emisor.softwareProviderRuc || process.env.SOFTWARE_PROVIDER_RUC || '0705787745001';
+
     const logoHtml = emisor.emisorLogo 
         ? `<img src="${emisor.emisorLogo}" class="logo-img" alt="Logo" />` 
         : '';
@@ -21,7 +45,7 @@ export async function generateRidePdfBuffer(
     for (const item of items) {
         itemsHtml += `
         <tr>
-            <td style="font-family: monospace;">${item.codigoPrincipal}</td>
+            <td style="font-family: monospace;">${item.codigoPrincipal || '001'}</td>
             <td style="text-align: center;">${item.cantidad}</td>
             <td>${item.descripcion}</td>
             <td style="text-align: right; font-family: monospace;">$${item.precioUnitario}</td>
@@ -32,11 +56,11 @@ export async function generateRidePdfBuffer(
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>RIDE_${comprobante.tipo}_${emisor.emisorEstab}_${emisor.emisorPtoEmi}_${comprobante.secuencial}</title>
+  <title>RIDE_${comprobante.tipo || 'Factura'}_${emisor.emisorEstab}_${emisor.emisorPtoEmi}_${comprobante.secuencial}</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@700;800;900&display=swap');
     @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
     * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
     body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 10px; line-height: 1.3; }
@@ -52,12 +76,14 @@ export async function generateRidePdfBuffer(
     .auth-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
     .auth-title { font-size: 11px; font-weight: 900; color: #2b6aff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
-    .barcode-container { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; text-align: center; word-break: break-all; margin-top: 6px; }
+    .barcode-container { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; text-align: center; margin-top: 6px; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
     .items-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
     .items-table th { background: #f1f5f9; color: #475569; font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-bottom: 1px solid #cbd5e1; text-align: left; }
     .items-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; font-weight: 500; }
     .bottom-grid { display: grid; grid-template-columns: 1fr 240px; gap: 16px; }
+    .info-box { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; background: #ffffff; }
+    .box-title { font-family: 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; margin-bottom: 6px; font-size: 8.5px; color: #0f172a; }
     .totales-table { width: 100%; border-collapse: collapse; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
     .totales-table td { padding: 5px 10px; font-size: 9px; font-weight: 600; border-bottom: 1px solid #f1f5f9; }
     .totales-table tr.total-row td { font-size: 11px; font-weight: 900; color: #2b6aff; background: #eff6ff; border-bottom: none; }
@@ -157,8 +183,8 @@ export async function generateRidePdfBuffer(
     .ride-tech-norma {
       font-family: 'JetBrains Mono', monospace;
       font-size: 6.8px;
-      color: #94a3b8;
-      font-weight: 600;
+      color: #0f172a;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -177,28 +203,37 @@ export async function generateRidePdfBuffer(
           <span class="ride-tech-dot"></span>
           <span>COMPROBANTE ELECTRÓNICO OFICIAL · RIDE</span>
         </div>
-        <div class="ride-tech-norma">RESOLUCIÓN NAC-027 · SISTEMA AUTORIZADO</div>
+        <div class="ride-tech-norma">RUC PROVEEDOR: ${softwareProviderRuc} · RES. SRI NAC-027</div>
       </div>
     </div>
     <div class="header-grid">
       <div class="emisor-box">
         ${logoHtml}
         <div class="emisor-razon">${emisor.emisorRazonSocial}</div>
+        ${(emisor.emisorNombreComercial && emisor.emisorNombreComercial.trim().toUpperCase() !== emisor.emisorRazonSocial?.trim().toUpperCase() && emisor.emisorNombreComercial !== 'SOLUCIONES TRIBUTARIAS') ? `<div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-bottom: 4px;">${emisor.emisorNombreComercial}</div>` : ''}
         <div><strong>RUC:</strong> <span style="font-family: monospace;">${emisor.emisorRuc}</span></div>
         <div><strong>Matriz:</strong> ${emisor.emisorDirMatriz}</div>
         ${regimeLabel}
       </div>
       <div class="auth-box">
-        <div class="auth-title">${comprobante.tipo === 'factura' ? 'FACTURA ELECTRÓNICA' : 'COMPROBANTE DE RETENCIÓN'}</div>
+        <div class="auth-title">${comprobante.tipo === 'factura' ? 'FACTURA ELECTRÓNICA' : (comprobante.tipo === 'retencion' ? 'COMPROBANTE DE RETENCIÓN' : 'LIQUIDACIÓN DE COMPRA')}</div>
         <div class="auth-secuencial">No. ${emisor.emisorEstab}-${emisor.emisorPtoEmi}-${comprobante.secuencial}</div>
-        <div><strong>CLAVE DE ACCESO SRI:</strong></div>
-        <div class="barcode-container">${comprobante.claveAcceso}</div>
-        <div style="margin-top: 6px;"><strong>ESTADO:</strong> <span style="color: #04b17b; font-weight: 800;">${comprobante.estado.toUpperCase()}</span></div>
+        <div style="font-size: 8px; margin-bottom: 2px;"><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
+        <div style="font-size: 8px; margin-bottom: 2px;"><strong>FECHA/HORA:</strong> ${comprobante.fechaAutorizacion || comprobante.fechaEmision || ''}</div>
+        <div style="font-size: 8px; margin-bottom: 2px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span></div>
+        <div style="font-size: 8px; margin-bottom: 4px;"><strong>EMISIÓN:</strong> NORMAL</div>
+        <div class="barcode-container">
+          <div style="font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">CLAVE DE ACCESO SRI</div>
+          <div style="height: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 3px; background: #ffffff; padding: 1px 4px; border-radius: 2px;">
+            ${generateBarcodeBars(comprobante.claveAcceso)}
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; color: #0f172a; word-break: break-all;">${comprobante.claveAcceso}</div>
+        </div>
       </div>
     </div>
     <div class="info-grid">
-      <div><strong>Razon Social / Nombre Comprador:</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.razonSocial}</span></div>
-      <div><strong>RUC / CI:</strong> <span style="font-family: monospace; font-weight: 700;">${receptor.identificacion}</span></div>
+      <div><strong>${comprobante.tipo === 'retencion' ? 'Razón Social / Sujeto Retenido (Proveedor):' : 'Razón Social / Comprador:'}</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.razonSocial}</span></div>
+      <div><strong>${comprobante.tipo === 'retencion' ? 'RUC / Cédula Proveedor:' : 'RUC / Cédula:'}</strong> <span style="font-family: monospace; font-weight: 700;">${receptor.identificacion}</span></div>
       <div style="grid-column: span 2;"><strong>Dirección:</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.direccion}</span></div>
     </div>
     <table class="items-table">
@@ -216,7 +251,19 @@ export async function generateRidePdfBuffer(
       </tbody>
     </table>
     <div class="bottom-grid">
-      <div></div>
+      <div>
+        <div class="info-box">
+          <div class="box-title">Información Adicional</div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="width: 110px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">RUC Proveedor:</td>
+              <td style="color: #2b6aff; font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 9px;">${softwareProviderRuc}</td>
+            </tr>
+            ${receptor.email ? `<tr><td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Email:</td><td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.email}</td></tr>` : ''}
+            ${receptor.telefono ? `<tr><td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Teléfono:</td><td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.telefono}</td></tr>` : ''}
+          </table>
+        </div>
+      </div>
       <div>
         <table class="totales-table">
           <tr><td>SUBTOTAL 15%</td><td style="text-align: right; font-family: monospace;">$${totals.subtotal15.toFixed(2)}</td></tr>
