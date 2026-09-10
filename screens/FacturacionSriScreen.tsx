@@ -61,6 +61,7 @@ interface HistoricComprobante {
   xml?: string;
   ambiente: '1' | '2';
   mensajeError?: string;
+  numeroAutorizacion?: string;
 }
 
 const mapDescriptionToProduct = (desc: string) => {
@@ -2057,24 +2058,29 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const generateBarcodeBars = (clave: string) => {
     if (!clave) return '';
-    const bars: string[] = [];
-    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
-    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
-    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
-    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
+    let x = 10;
+    const height = 30;
+    const rects: string[] = [];
+    
+    // Guard bars
+    rects.push(`<rect x="${x}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 3.5;
+    rects.push(`<rect x="${x}" y="0" width="1.2" height="${height}" fill="#000000"/>`); x += 2.5;
+    rects.push(`<rect x="${x}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 3.5;
 
     for (let i = 0; i < clave.length; i++) {
       const digit = parseInt(clave[i], 10) || 0;
-      const w1 = (digit % 3) + 1;
-      const w2 = ((digit + 1) % 2) + 1;
-      bars.push(`<span style="display:inline-block;width:${w1}px;height:100%;background:#0f172a;"></span>`);
-      bars.push(`<span style="display:inline-block;width:${w2}px;height:100%;background:#ffffff;"></span>`);
+      const w = ((digit * 7 + i) % 3) * 0.8 + 1.2;
+      const space = ((digit * 3 + i) % 2) * 0.8 + 1.5;
+      rects.push(`<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${height}" fill="#000000"/>`);
+      x += w + space;
     }
 
-    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
-    bars.push('<span style="display:inline-block;width:1px;height:100%;background:#ffffff;"></span>');
-    bars.push('<span style="display:inline-block;width:2px;height:100%;background:#0f172a;"></span>');
-    return bars.join('');
+    // End guard bars
+    rects.push(`<rect x="${x.toFixed(1)}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 3.5;
+    rects.push(`<rect x="${x.toFixed(1)}" y="0" width="1.2" height="${height}" fill="#000000"/>`); x += 2.5;
+    rects.push(`<rect x="${x.toFixed(1)}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 10;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${Math.ceil(x)} ${height}" width="100%" height="28" style="display:block;max-width:320px;margin:0 auto;" preserveAspectRatio="none">${rects.join('')}</svg>`;
   };
 
   const generateRideParts = (comprobante: HistoricComprobante) => {
@@ -2217,11 +2223,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       itemsHtml = `<tr><td style="font-family: monospace;">001</td><td style="text-align: center;">1.00</td><td style="text-transform: uppercase;">Servicios Contables Profesionales</td><td style="text-align: right; font-family: monospace;">$${comprobante.total.toFixed(2)}</td><td style="text-align: right; font-family: monospace; font-weight: bold;">$${comprobante.total.toFixed(2)}</td></tr>`;
     }
 
+    let numAutorizacion = comprobante.numeroAutorizacion || comprobante.claveAcceso || '';
     let authDateStr = '';
     try {
       if (comprobante.xml) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
+        const numAutXml = xmlDoc.getElementsByTagName("numeroAutorizacion")[0]?.textContent;
+        if (numAutXml && numAutXml.trim()) {
+          numAutorizacion = numAutXml.trim();
+        }
         const fechaAutorizacion = xmlDoc.getElementsByTagName("fechaAutorizacion")[0]?.textContent;
         if (fechaAutorizacion) {
           if (fechaAutorizacion.includes('T')) {
@@ -2258,7 +2269,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       '2': 'CONTRIBUYENTE RÉGIMEN RIMPE - EMPRENDEDOR',
       '3': 'CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE',
     };
-    const regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">' + (regimeLabels[emisorRegimen] || 'CONTRIBUYENTE RÉGIMEN GENERAL') + '</div>';
+    const regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background-color: #f1f5f9 !important; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">' + (regimeLabels[emisorRegimen] || 'CONTRIBUYENTE RÉGIMEN GENERAL') + '</div>';
 
     // RUC Proveedor Software (Obligatorio Res. SRI NAC-DGERCGC26-00000027)
     let softwareProviderRucVal = softwareProviderRuc || localStorage.getItem('sc_software_provider_ruc') || '0705787745001';
@@ -2330,91 +2341,296 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     const cssStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@700;800;900&display=swap');
-    @page { size: A4 portrait; margin: 8mm 10mm 10mm 10mm; }
-    * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
-    body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 9.5px; line-height: 1.3; }
-    .invoice-card { border: 1.5px solid #0f172a; border-radius: 14px; padding: 16px; background: #ffffff; width: 794px; margin: 0 auto; }
-    .header-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 16px; }
-    .emisor-box { padding-right: 8px; }
-    .logo-img { max-height: 55px; max-width: 220px; object-fit: contain; margin-bottom: 8px; }
-    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 4px; }
-    .emisor-name { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 4px; }
-    .auth-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 12px 14px; background: #f8fafc; }
-    .auth-title { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 2px; }
-    .auth-doc-type { font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 900; color: #0f172a; margin: 2px 0; }
-    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #2b6aff; margin-bottom: 6px; }
-    .barcode-container { border-top: 1px solid #cbd5e1; padding-top: 6px; margin-top: 6px; text-align: center; }
-    .receptor-box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; background: #fafafa; }
-    .receptor-val { font-size: 10px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
-    .items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; }
-    .items-table th { background: #0f172a; color: #ffffff; font-family: 'Manrope', sans-serif; text-transform: uppercase; font-size: 8px; font-weight: 800; padding: 8px 10px; text-align: left; }
-    .items-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; }
-    .bottom-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; }
-    .info-box, .pago-box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 12px; background: #ffffff; }
-    .box-title { font-family: 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin-bottom: 8px; font-size: 9px; color: #0f172a; }
-    .totals-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 12px 14px; background: #f8fafc; }
-    .totals-table { width: 100%; border-collapse: collapse; }
-    .totals-table td { padding: 4px 2px; border-bottom: 1px dashed #e2e8f0; font-size: 9px; color: #475569; font-weight: 600; }
-    .totals-table tr.total-row td { background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11.5px; padding: 8px 6px; border-radius: 6px; }
     
+    @page { 
+      size: A4 portrait; 
+      margin: 8mm 10mm; 
+    }
+    
+    *, *::before, *::after { 
+      box-sizing: border-box; 
+      -webkit-print-color-adjust: exact !important; 
+      print-color-adjust: exact !important; 
+      color-adjust: exact !important; 
+    }
+    
+    body { 
+      margin: 0; 
+      padding: 12px; 
+      background: #f1f5f9; 
+      color: #0f172a; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; 
+      font-size: 9.5px; 
+      line-height: 1.3; 
+    }
+
+    .no-print {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      margin: 0 auto 14px auto;
+      max-width: 720px;
+      font-family: system-ui, sans-serif;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    }
+    .no-print button {
+      background: #2b6aff;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .no-print button:hover {
+      background: #1d4ed8;
+    }
+
+    .invoice-card { 
+      border: 1.5px solid #0f172a; 
+      border-radius: 12px; 
+      padding: 14px 16px; 
+      background-color: #ffffff !important; 
+      width: 100%; 
+      max-width: 720px; 
+      margin: 0 auto; 
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+    
+    .header-grid { 
+      display: grid; 
+      grid-template-columns: 1.15fr 1fr; 
+      gap: 14px; 
+      margin-bottom: 14px; 
+    }
+    .emisor-box { 
+      padding-right: 6px; 
+    }
+    .logo-img { 
+      max-height: 55px; 
+      max-width: 220px; 
+      object-fit: contain; 
+      margin-bottom: 8px; 
+    }
+    .emisor-title { 
+      font-family: 'Manrope', sans-serif; 
+      font-size: 14px; 
+      font-weight: 900; 
+      color: #0f172a; 
+      text-transform: uppercase; 
+      margin-bottom: 4px; 
+    }
+    .emisor-name { 
+      font-family: 'Manrope', sans-serif; 
+      font-size: 11px; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      color: #0f172a; 
+      margin-bottom: 4px; 
+    }
+    .auth-box { 
+      border: 1.5px solid #0f172a; 
+      border-radius: 12px; 
+      padding: 10px 12px; 
+      background-color: #f8fafc !important; 
+    }
+    .auth-title { 
+      font-family: 'Manrope', sans-serif; 
+      font-size: 11px; 
+      font-weight: 800; 
+      color: #0f172a; 
+      margin-bottom: 2px; 
+    }
+    .auth-doc-type { 
+      font-family: 'Manrope', sans-serif; 
+      font-size: 13px; 
+      font-weight: 900; 
+      color: #0f172a; 
+      margin: 2px 0; 
+    }
+    .auth-secuencial { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-size: 12px; 
+      font-weight: 700; 
+      color: #2b6aff; 
+      margin-bottom: 6px; 
+    }
+    .barcode-container { 
+      border-top: 1px solid #cbd5e1; 
+      padding-top: 6px; 
+      margin-top: 6px; 
+      text-align: center; 
+    }
+    .receptor-box { 
+      border: 1px solid #cbd5e1; 
+      border-radius: 10px; 
+      padding: 10px 12px; 
+      margin-bottom: 14px; 
+      display: grid; 
+      grid-template-columns: 1.3fr 1fr; 
+      gap: 6px; 
+      background-color: #fafafa !important; 
+    }
+    .receptor-val { 
+      font-size: 9.5px; 
+      font-weight: 700; 
+      color: #0f172a; 
+      text-transform: uppercase; 
+    }
+    
+    .items-table { 
+      width: 100%; 
+      border-collapse: separate; 
+      border-spacing: 0; 
+      margin-bottom: 14px; 
+      border: 1.5px solid #0f172a; 
+      border-radius: 8px; 
+      overflow: hidden; 
+    }
+    .items-table th { 
+      background-color: #0f172a !important; 
+      color: #ffffff !important; 
+      font-family: 'Manrope', sans-serif; 
+      text-transform: uppercase; 
+      font-size: 8px; 
+      font-weight: 800; 
+      padding: 7px 10px; 
+      text-align: left; 
+      border-right: 1px solid #334155;
+      border-bottom: 2px solid #0f172a;
+    }
+    .items-table th:last-child {
+      border-right: none;
+    }
+    .items-table td { 
+      padding: 7px 10px; 
+      border-bottom: 1px solid #e2e8f0; 
+      border-right: 1px solid #f1f5f9;
+      font-size: 9px; 
+      color: #0f172a; 
+    }
+    .items-table td:last-child {
+      border-right: none;
+    }
+    .items-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .bottom-grid { 
+      display: grid; 
+      grid-template-columns: 1.15fr 1fr; 
+      gap: 14px; 
+    }
+    .info-box, .pago-box { 
+      border: 1px solid #cbd5e1; 
+      border-radius: 10px; 
+      padding: 10px 12px; 
+      margin-bottom: 10px; 
+      background-color: #ffffff !important; 
+    }
+    .box-title { 
+      font-family: 'Manrope', sans-serif; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      border-bottom: 1px solid #f1f5f9; 
+      padding-bottom: 4px; 
+      margin-bottom: 6px; 
+      font-size: 8.5px; 
+      color: #0f172a; 
+    }
+    
+    .totals-box { 
+      border: 1.5px solid #0f172a; 
+      border-radius: 12px; 
+      padding: 10px 12px; 
+      background-color: #f8fafc !important; 
+    }
+    .totals-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+    }
+    .totals-table td { 
+      padding: 3.5px 2px; 
+      border-bottom: 1px dashed #cbd5e1; 
+      font-size: 9px; 
+      color: #475569; 
+      font-weight: 600; 
+    }
+    .totals-table tr.total-row td { 
+      background-color: #0f172a !important; 
+      color: #ffffff !important; 
+      font-weight: 800; 
+      font-size: 11px; 
+      padding: 7px 6px; 
+      border: 1.5px solid #0f172a !important;
+    }
+
     /* Encabezado Editorial Tecnológico */
     .ride-editorial-header {
-      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f0fdf9 100%);
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f0fdf9 100%) !important;
       border: 1px solid #cbd5e1;
       border-top: 3.5px solid #2b6aff;
-      border-radius: 10px;
-      padding: 7px 14px;
+      border-radius: 8px;
+      padding: 6px 12px;
       margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
     }
     .ride-brand-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     .ride-brand-badge {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      background: #0b2149;
-      color: #ffffff;
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      background-color: #0b2149 !important;
+      color: #ffffff !important;
       font-family: 'Manrope', sans-serif;
       font-weight: 900;
-      font-size: 10.5px;
+      font-size: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       letter-spacing: 0.5px;
       flex-shrink: 0;
-      box-shadow: 0 1px 3px rgba(11, 33, 73, 0.12);
     }
     .ride-brand-title {
       font-family: 'Manrope', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 900;
       color: #0b2149;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
       line-height: 1.15;
       display: flex;
       align-items: center;
       gap: 6px;
     }
     .ride-pro-pill {
-      background: #2b6aff;
-      color: #ffffff;
+      background-color: #2b6aff !important;
+      color: #ffffff !important;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 800;
       padding: 1px 5px;
-      border-radius: 4px;
-      letter-spacing: 0.6px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
     }
     .ride-brand-sub {
       font-family: 'Inter', sans-serif;
-      font-size: 7px;
+      font-size: 6.8px;
       font-weight: 600;
       color: #64748b;
       letter-spacing: 0.25px;
@@ -2430,14 +2646,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     .ride-tech-chip {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      background: #f1f5f9;
+      gap: 4px;
+      background-color: #f1f5f9 !important;
       border: 1px solid #cbd5e1;
       border-left: 2.5px solid #00a896;
-      padding: 2px 7px;
+      padding: 2px 6px;
       border-radius: 4px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 7.5px;
+      font-size: 7.2px;
       font-weight: 700;
       color: #1e293b;
       letter-spacing: 0.3px;
@@ -2446,7 +2662,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       width: 5px;
       height: 5px;
       border-radius: 50%;
-      background: #00a896;
+      background-color: #00a896 !important;
       display: inline-block;
     }
     .ride-tech-norma {
@@ -2454,6 +2670,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       font-size: 6.8px;
       color: #0f172a;
       font-weight: 700;
+    }
+
+    @media print {
+      body {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .invoice-card {
+        border: 1.5px solid #0f172a !important;
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        padding: 12px 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
     }
     `;
 
@@ -2488,16 +2723,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
         <div class="auth-doc-type">${docTitleLabel}</div>
         <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
-        <div style="font-size: 8px; margin-bottom: 2px;"><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
+        <div style="font-size: 8px; margin-bottom: 1px; color: #475569;"><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 7.8px; font-weight: 800; color: #0f172a; word-break: break-all; margin-bottom: 4px; line-height: 1.15;">${numAutorizacion}</div>
         <div style="font-size: 8px; margin-bottom: 2px;"><strong>FECHA/HORA AUTORIZACIÓN:</strong> ${authDateStr}</div>
         <div style="font-size: 8px; margin-bottom: 2px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente}</span></div>
         <div style="font-size: 8px; margin-bottom: 4px;"><strong>EMISIÓN:</strong> NORMAL</div>
         <div class="barcode-container">
-          <div style="font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">CLAVE DE ACCESO SRI</div>
-          <div style="height: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 3px; background: #ffffff; padding: 1px 4px; border-radius: 2px;">
+          <div style="margin-bottom: 4px;">
             ${generateBarcodeBars(comprobante.claveAcceso)}
           </div>
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 800; letter-spacing: 0.5px; color: #0f172a; word-break: break-all;">${comprobante.claveAcceso}</div>
+          <div style="font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px;">CLAVE DE ACCESO</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 7.8px; font-weight: 800; letter-spacing: 0.4px; color: #0f172a; word-break: break-all; line-height: 1.15;">${comprobante.claveAcceso}</div>
         </div>
       </div>
     </div>
@@ -2600,12 +2836,22 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     const fullDocHtml = `<!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
+  <title>RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>${cssStyles}</style>
 </head>
 <body>
+  <div class="no-print">
+    <div>
+      <div style="font-weight: 800; font-size: 12.5px; letter-spacing: 0.3px;">Vista Previa Oficial del RIDE · SRI Ecuador</div>
+      <div style="font-size: 10px; opacity: 0.85; margin-top: 2px;">Listo para imprimir o guardar en PDF con fondos, gráficos y código de barras intactos.</div>
+    </div>
+    <button onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+      Guardar como PDF / Imprimir
+    </button>
+  </div>
   ${cardContentHtml}
 </body>
 </html>`;
