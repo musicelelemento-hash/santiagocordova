@@ -4,6 +4,69 @@ import { Task, TaskStatus } from '../types/task';
 import { AuditLog } from '../types';
 
 /**
+ * Columnas REALES de `public.clients`, verificadas una por una contra el
+ * proyecto (08-sep-2026). Cualquier clave que no esté acá hace que PostgREST
+ * rechace el payload ENTERO:
+ *
+ *   400 PGRST204  Could not find the 'client_type' column of 'clients'
+ *                 in the schema cache
+ *
+ * No descarta el campo malo: aborta la operación completa. Por eso el guardado,
+ * el borrado a papelera, la restauración y la purga no llegaban nunca a la
+ * nube (el cliente solo vivía en el IndexedDB del navegador).
+ *
+ * Las columnas que NO existen en la tabla (client_type, requires_declarations,
+ * facturador_config, facturador_activation_status, signature_provider,
+ * id_card_front/back/selfie, ecuafact_signed_request) viajan dentro de
+ * `tax_profile`, que sí existe y que la extensión Nueva Luz ya sabe leer
+ * (`c.client_type || c.clientType || tp.clientType`).
+ *
+ * Si algún día se crea una columna nueva en la base, sumarla también acá.
+ */
+const CLIENT_TABLE_COLUMNS: readonly string[] = [
+  'id', 'ruc', 'name', 'trade_name', 'sri_password', 'phones', 'email', 'address',
+  'notes', 'regime', 'is_vip', 'renta_category', 'economic_activity', 'is_active',
+  'is_deleted', 'tax_profile', 'fee_structure', 'custom_service_fee', 'is_artisan',
+  'establishment_count', 'jurisdiction', 'signature_password', 'iess_password',
+  'signature_expiration', 'advance_credits', 'declaration_history', 'vault',
+  'structured_notes', 'signature_file', 'ruc_pdf', 'ruc_certificate',
+  'has_renta_refund', 'renta_refund_amount', 'renta_refund_status',
+  'renta_refund_requested_at', 'renta_refund_paid', 'renta_refund_proof',
+  'has_elderly_devolucion_iva', 'elderly_devolucion_iva_status',
+  'elderly_devolucion_iva_paid', 'elderly_devolucion_iva_resolution_file',
+  'renta_refund_resolution_file', 'renta_refund_confirmation_started_at',
+  'renta_refund_confirmation_deadline', 'created_at', 'updated_at',
+];
+
+/**
+ * Deja solo claves que existen en la tabla. Es la red que impide que una
+ * columna inventada (o una columna borrada en la base) tumbe el guardado
+ * completo en silencio. Lo que se omite queda GRITADO en consola.
+ */
+const sanitizeClientPayload = (payload: Record<string, any>, contexto: string): Record<string, any> => {
+  const limpio: Record<string, any> = {};
+  const omitidas: string[] = [];
+  for (const clave of Object.keys(payload)) {
+    if (CLIENT_TABLE_COLUMNS.includes(clave)) limpio[clave] = payload[clave];
+    else omitidas.push(clave);
+  }
+  if (omitidas.length > 0) {
+    console.warn(
+      `[clients] ${contexto}: se omiten claves que no existen en la tabla ` +
+      `(romperían el guardado con 400 PGRST204): ${omitidas.join(', ')}`
+    );
+  }
+  return limpio;
+};
+
+/** Mensaje legible de un error de Supabase/PostgREST, con su código. */
+const describirError = (err: any): string => {
+  if (!err) return 'error desconocido';
+  const code = err.code ? `${err.code} · ` : '';
+  return `${code}${err.message || err.details || String(err)}`;
+};
+
+/**
  * Service to handle data operations with Supabase.
  * Maps between frontend CamelCase types and DB snake_case tables.
  */
@@ -11,37 +74,80 @@ export const SupabaseService = {
   // --- Clients ---
   
   async getClients(): Promise<Client[]> {
-    // Intentar primero select completo con sri_declaraciones (sin billing_plans que no existe en DB)
+    // Intento 1: consulta ideal — todas las columnas + declaraciones, sin las bajas.
     let { data, error } = await supabase
       .from('clients')
       .select('*, sri_declaraciones(*)')
       .eq('is_deleted', false);
 
-    // Si falló por RLS/permisos de columnas para rol anon (401/42501), fallback a columnas públicas permitidas
+    // Intento 2+: el rol `anon` no tiene permiso sobre varias columnas de
+    // `clients` (sri_password, notes, structured_notes, is_deleted…), así que
+    // `select('*')` responde 401/42501 SIEMPRE. Se degrada a pedir solo lo que
+    // sí puede leer, intentando conservar `is_deleted`/`is_active`: sin ellos
+    // las bajas de la papelera vuelven a la lista como si estuvieran activas.
     if (error) {
-      console.warn('[SupabaseService] getClients query completo falló, usando columnas públicas accesibles:', error.message);
-      const fallbackQuery = await supabase
-        .from('clients')
-        .select('id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*)');
-      
-      if (fallbackQuery.error) {
-        throw fallbackQuery.error;
+      console.warn('[SupabaseService] getClients: la consulta completa falló, se degrada la lectura:', describirError(error));
+
+      const lecturasDegradadas = [
+        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, is_deleted, is_active, sri_declaraciones(*)',
+        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, is_deleted, sri_declaraciones(*)',
+        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*)',
+      ];
+
+      for (const columnas of lecturasDegradadas) {
+        const intento = await supabase.from('clients').select(columnas);
+        if (!intento.error) {
+          data = intento.data;
+          error = null;
+          console.warn(`[SupabaseService] getClients: lectura degradada aceptada (${columnas.includes('is_deleted') ? 'con' : 'SIN'} is_deleted).`);
+          break;
+        }
       }
-      data = fallbackQuery.data;
+
+      if (error) throw error;
     }
 
     return (data || []).map(d => this.mapClientFromDb(d));
   },
 
   async upsertClient(client: Client): Promise<void> {
-    const mappedClient = this.mapClientToDb(client);
+    const mappedClient = sanitizeClientPayload(this.mapClientToDb(client), `guardando ${client.ruc || client.id}`);
 
-    const { error } = await supabase
+    // Intento 1 (camino normal): upsert por RUC.
+    let { error } = await supabase
       .from('clients')
       .upsert(mappedClient, { onConflict: 'ruc' });
 
     if (error) {
-      console.error(`[Supabase Error] FAILED upsert for client ${client.ruc}:`, error);
+      const code = (error as any).code || '';
+      const msg = error.message || '';
+      const conflictoInvalido = code === '42P10' || /no unique or exclusion constraint/i.test(msg);
+      const columnaDesconocida = code === 'PGRST204' || code === '42703' || /schema cache|does not exist/i.test(msg);
+
+      if (conflictoInvalido) {
+        // La base no tiene un único sobre `ruc`: se resuelve a mano sin perder el guardado.
+        console.warn(`[clients] ${client.ruc}: upsert por RUC no soportado (${describirError(error)}); se usa UPDATE + INSERT.`);
+        const { data: existente } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('ruc', client.ruc)
+          .maybeSingle();
+
+        const reintento = existente?.id
+          ? await supabase.from('clients').update(mappedClient).eq('id', existente.id)
+          : await supabase.from('clients').insert(mappedClient);
+        error = reintento.error;
+      } else if (columnaDesconocida) {
+        console.error(
+          `[clients] ${client.ruc}: el payload trae una columna fuera de CLIENT_TABLE_COLUMNS. ` +
+          `Revisar mapClientToDb() — la base no la conoce y rechaza el guardado completo.`,
+          describirError(error)
+        );
+      }
+    }
+
+    if (error) {
+      console.error(`[Supabase Error] FAILED upsert for client ${client.ruc}:`, describirError(error));
       throw error;
     }
 
@@ -189,28 +295,103 @@ export const SupabaseService = {
   },
 
   async bulkUpsertClients(clients: Client[]): Promise<void> {
-    const dbClients = clients.map(c => this.mapClientToDb(c));
+    if (!clients || clients.length === 0) return;
+
+    const dbClients = clients.map(c => sanitizeClientPayload(this.mapClientToDb(c), `guardando ${c.ruc || c.id}`));
     const { error } = await supabase
       .from('clients')
-      .upsert(dbClients);
-    if (error) throw error;
+      .upsert(dbClients, { onConflict: 'ruc' });
+
+    if (!error) return;
+
+    // Sin único sobre `ruc`, o con una fila problemática dentro del lote, la
+    // ráfaga entera se perdía en silencio. Se reintenta registro por registro
+    // para que uno malo no tumbe a los otros 156.
+    console.warn(`[clients] bulk upsert falló (${describirError(error)}); se reintenta por registro.`);
+    const fallos: string[] = [];
+    for (const c of clients) {
+      try {
+        await this.upsertClient(c);
+      } catch (e: any) {
+        fallos.push(`${c.ruc || c.id}: ${describirError(e)}`);
+      }
+    }
+
+    if (fallos.length === clients.length) {
+      throw new Error(`No se pudo guardar ningún cliente (${fallos.length} intentos). Primer error → ${fallos[0]}`);
+    }
+    if (fallos.length > 0) {
+      console.warn(`[clients] ${fallos.length} de ${clients.length} clientes no se guardaron en la nube:`, fallos);
+    }
   },
 
   async deleteClient(id: string): Promise<void> {
     console.log(`[Supabase] Eliminando cliente y registros dependientes: ${id}...`);
-    try {
-      await supabase.from('sri_declaraciones').delete().eq('client_id', id);
-      await supabase.from('billing_plans').delete().eq('client_id', id);
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-      console.log(`✅ [Supabase] Cliente ${id} eliminado permanentemente.`);
-    } catch (err) {
-      console.error(`[Supabase Error] Error al eliminar cliente ${id}:`, err);
+
+    // Las tablas dependientes se limpian best-effort: pueden no tener filas o
+    // no permitir DELETE según el rol, y eso no debe impedir borrar al cliente.
+    const dependientes: Array<[string, PromiseLike<{ error: any }>]> = [
+      ['sri_declaraciones', supabase.from('sri_declaraciones').delete().eq('client_id', id)],
+      ['billing_plans', supabase.from('billing_plans').delete().eq('client_id', id)],
+    ];
+    for (const [tabla, operacion] of dependientes) {
+      try {
+        const { error } = await operacion;
+        if (error) console.warn(`[Supabase] ${tabla} no se pudo limpiar para ${id}: ${describirError(error)}`);
+      } catch (e) {
+        console.warn(`[Supabase] ${tabla} no se pudo limpiar para ${id}:`, e);
+      }
+    }
+
+    // El borrado del cliente SÍ se verifica. PostgREST responde 204 sin error
+    // cuando una política RLS filtra la fila, así que "sin error" no significa
+    // "borrado": antes se cantaba éxito y el cliente seguía vivo en la nube.
+    const conFilas = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id)
+      .select('id');
+
+    if (conFilas.error) {
+      // Puede ser que el rol no tenga permiso para pedir la representación
+      // (return=representation exige SELECT sobre las columnas devueltas).
+      // Se reintenta a secas y se verifica por AUSENCIA, que solo necesita
+      // permiso de lectura sobre `id`.
+      console.warn(`[Supabase] Borrado con representación no permitido (${describirError(conFilas.error)}); se reintenta y se verifica por ausencia.`);
+
+      const simple = await supabase.from('clients').delete().eq('id', id);
+      if (simple.error) {
+        console.error(`[Supabase Error] Error al eliminar cliente ${id}: ${describirError(simple.error)}`);
+        throw simple.error;
+      }
+
+      const chequeo = await supabase.from('clients').select('id').eq('id', id).limit(1);
+      if (chequeo.error) {
+        console.warn(`[Supabase] No se pudo verificar el borrado de ${id} (${describirError(chequeo.error)}); se da por hecho.`);
+        return;
+      }
+      if ((chequeo.data?.length ?? 0) > 0) {
+        const err = new Error(
+          `La nube no borró el cliente ${id} (la fila sigue existiendo). ` +
+          `Suele ser la política RLS / GRANT DELETE del rol que usa la sesión.`
+        );
+        console.error(`[Supabase Error] ${err.message}`);
+        throw err;
+      }
+      console.log(`✅ [Supabase] Cliente ${id} eliminado permanentemente (verificado por ausencia).`);
+      return;
+    }
+
+    if ((conFilas.data?.length ?? 0) === 0) {
+      const err = new Error(
+        `La nube no borró ninguna fila de clients (id ${id}). ` +
+        `Suele ser la política RLS / GRANT DELETE del rol que usa la sesión, o un id que ya no existe.`
+      );
+      console.error(`[Supabase Error] ${err.message}`);
       throw err;
     }
+
+    console.log(`✅ [Supabase] Cliente ${id} eliminado permanentemente.`);
   },
 
   // --- Tasks ---
@@ -312,55 +493,72 @@ export const SupabaseService = {
 
   // --- Paginated Fetch for Facturadores ---
   async getFacturadoresPaginated(page: number, limit: number, search: string, filterCategory: string): Promise<{clients: Client[], count: number}> {
-    let query = supabase
-      .from('clients')
-      .select('*, sri_declaraciones(*)', { count: 'exact' })
-      .eq('is_deleted', false);
-
-    // Aplicar el filtro de categoría a nivel SQL para que la paginación y el count sean correctos
+    // Los filtros de categoría apuntaban a columnas que NO existen en la tabla
+    // (facturador_config, client_type, requires_declarations,
+    // facturador_activation_status) y PostgREST devolvía 400 en cada carga.
+    // Esos datos viven en `tax_profile` (JSONB), así que se filtran ahí.
     const cat = (filterCategory || '').toLowerCase();
     let catFilter: string | null = null;
     if (cat === 'particulares') {
-      catFilter = '(client_type.eq.solo_plan,requires_declarations.eq.false)';
+      catFilter = '(tax_profile->>clientType.eq.solo_plan,tax_profile->>requiresDeclarations.eq.false)';
     } else if (cat === 'clientes') {
-      catFilter = '(and(client_type.neq.solo_plan,requires_declarations.neq.false,facturador_config.not.isnull))';
+      catFilter = '(and(tax_profile->>clientType.neq.solo_plan,tax_profile->>requiresDeclarations.neq.false,tax_profile->facturadorConfig.not.isnull))';
     } else if (cat === 'recursos_listos') {
-      catFilter = '(facturador_config.not.isnull,and(facturador_activation_status.is.null,facturador_activation_status.eq.recursos_listos))';
+      // OJO: la condición original era `is.null AND eq.recursos_listos`
+      // (imposible de cumplir). La intención, según los KPI de la pantalla,
+      // es "sin estado o recursos_listos".
+      catFilter = '(and(tax_profile->facturadorConfig.not.isnull,or(tax_profile->>facturadorActivationStatus.is.null,tax_profile->>facturadorActivationStatus.eq.recursos_listos)))';
     } else if (cat === 'subido_plataforma') {
-      catFilter = 'facturador_activation_status.eq.subido_plataforma';
+      catFilter = 'tax_profile->>facturadorActivationStatus.eq.subido_plataforma';
     } else if (cat === 'activado') {
-      catFilter = 'facturador_activation_status.eq.activado';
+      catFilter = 'tax_profile->>facturadorActivationStatus.eq.activado';
     } else if (cat === 'sin_firma') {
-      catFilter = '(and(facturador_config.not.isnull,signature_file.is.null))';
+      catFilter = '(and(tax_profile->facturadorConfig.not.isnull,signature_file.is.null))';
     }
 
-    if (catFilter) {
-      query = query.or(catFilter);
+    const desde = (page - 1) * limit;
+    const hasta = desde + limit - 1;
+
+    // El rol `anon` no puede leer varias columnas de `clients` (401/42501), así
+    // que `select('*')` y el filtro por `is_deleted` fallan siempre. Se intenta
+    // la consulta completa y, si no, una degradada que sí es legible.
+    const perfiles = [
+      { select: '*, sri_declaraciones(*)', filtrarBajas: true, buscarPorRazonSocial: true },
+      { select: 'id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*)', filtrarBajas: false, buscarPorRazonSocial: false },
+    ];
+
+    let ultimoError: any = null;
+    for (const perfil of perfiles) {
+      let query = supabase
+        .from('clients')
+        .select(perfil.select, { count: 'exact' });
+
+      // Con `is_deleted` legible se excluyen las bajas en SQL; si no, el filtro
+      // local de la pantalla (storeClients) es el que las descarta.
+      if (perfil.filtrarBajas) query = query.eq('is_deleted', false);
+      if (catFilter) query = query.or(catFilter);
+      if (search) {
+        const campos = perfil.buscarPorRazonSocial
+          ? `name.ilike.%${search}%,trade_name.ilike.%${search}%,ruc.ilike.%${search}%`
+          : `name.ilike.%${search}%,ruc.ilike.%${search}%`;
+        query = query.or(campos);
+      }
+
+      const { data, error, count } = await query.range(desde, hasta).order('name', { ascending: true });
+
+      if (!error) {
+        if (!perfil.filtrarBajas) {
+          console.warn('[SupabaseService] getFacturadoresPaginated: lectura degradada (sin is_deleted ni trade_name).');
+        }
+        const mappedClients = (data || []).map(d => this.mapClientFromDb(d));
+        return { clients: mappedClients, count: count || mappedClients.length };
+      }
+
+      ultimoError = error;
     }
 
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,trade_name.ilike.%${search}%,ruc.ilike.%${search}%`);
-    }
-
-    // Pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-    
-    query = query.range(from, to).order('name', { ascending: true });
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error("[Supabase Error] getFacturadoresPaginated:", error);
-      throw error;
-    }
-
-    const mappedClients = (data || []).map(d => this.mapClientFromDb(d));
-
-    return {
-      clients: mappedClients,
-      count: count || mappedClients.length
-    };
+    console.error("[Supabase Error] getFacturadoresPaginated:", ultimoError);
+    throw ultimoError;
   },
 
   // --- Real-time Sync ---
@@ -431,22 +629,25 @@ export const SupabaseService = {
       economic_activity: client.economicActivity,
       is_active: typeof client.isActive === 'boolean' ? client.isActive : true,
       is_deleted: !!client.isDeleted,
-      client_type: clientType,
-      requires_declarations: requiresDeclarations,
-      facturador_config: facturadorConfigObj,
-      facturador_activation_status: client.facturadorActivationStatus || 'recursos_listos',
-      signature_provider: client.signatureProvider,
-      id_card_front: client.idCardFront,
-      id_card_back: client.idCardBack,
-      id_card_selfie: client.idCardSelfie,
-      ecuafact_signed_request: client.ecuafactSignedRequest,
+      // OJO: client_type / requires_declarations / facturador_config /
+      // facturador_activation_status / signature_provider / id_card_* /
+      // ecuafact_signed_request NO son columnas de `clients` en esta base.
+      // Mandarlas aquí hacía que PostgREST rechazara el guardado COMPLETO
+      // (400 PGRST204). Van dentro de tax_profile, que sí existe y que la
+      // extensión ya lee con fallback (`c.client_type || tp.clientType`).
       tax_profile: {
         ...(client.taxProfile || {}),
         clientStartPeriod: client.clientStartPeriod,
         clientType: clientType,
         requiresDeclarations: requiresDeclarations,
         facturadorConfig: facturadorConfigObj,
-        facturadorActivationStatus: client.facturadorActivationStatus
+        facturadorActivationStatus: client.facturadorActivationStatus ?? (client.taxProfile as any)?.facturadorActivationStatus,
+        // Identidad y firma: sin columna propia, se guardan acá para no perderlas.
+        signatureProvider: client.signatureProvider ?? (client.taxProfile as any)?.signatureProvider,
+        idCardFront: client.idCardFront ?? (client.taxProfile as any)?.idCardFront,
+        idCardBack: client.idCardBack ?? (client.taxProfile as any)?.idCardBack,
+        idCardSelfie: client.idCardSelfie ?? (client.taxProfile as any)?.idCardSelfie,
+        ecuafactSignedRequest: client.ecuafactSignedRequest ?? (client.taxProfile as any)?.ecuafactSignedRequest,
       },
       fee_structure: client.fee_structure,
       custom_service_fee: client.customServiceFee,
@@ -506,6 +707,10 @@ export const SupabaseService = {
     const requiresDeclarations = isSoloPlan ? false : (typeof db.requires_declarations === 'boolean' ? db.requires_declarations : (rawTaxProfile.requiresDeclarations ?? true));
 
     const taxProfile = {
+      // Conservar TODO lo que vive en el JSON (alias/quickNote, sriCredencial
+      // que escribe la extensión, clientType, facturadorConfig, identidad…).
+      // Antes se reconstruía campo por campo y lo demás se perdía al leer.
+      ...rawTaxProfile,
       ivaFrequency: isSoloPlan ? 'Ninguno' : (rawTaxProfile.ivaFrequency || (
         normalizedRegime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
         (normalizedRegime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual')
@@ -617,11 +822,12 @@ export const SupabaseService = {
       facturadorConfig,
       billingPlan: facturadorConfig,
       facturadorActivationStatus: db.facturador_activation_status || rawTaxProfile.facturadorActivationStatus || 'recursos_listos',
-      signatureProvider: db.signature_provider,
-      idCardFront: db.id_card_front,
-      idCardBack: db.id_card_back,
-      idCardSelfie: db.id_card_selfie,
-      ecuafactSignedRequest: db.ecuafact_signed_request,
+      // Identidad/firma: la columna no existe en `clients`, viven en tax_profile.
+      signatureProvider: db.signature_provider || rawTaxProfile.signatureProvider,
+      idCardFront: db.id_card_front || rawTaxProfile.idCardFront,
+      idCardBack: db.id_card_back || rawTaxProfile.idCardBack,
+      idCardSelfie: db.id_card_selfie || rawTaxProfile.idCardSelfie,
+      ecuafactSignedRequest: db.ecuafact_signed_request || rawTaxProfile.ecuafactSignedRequest,
       rentaCategory: db.renta_category as RentaCategory,
       economicActivity: db.economic_activity,
       isActive: db.is_active,

@@ -76,7 +76,9 @@ const App: React.FC = () => {
     loadFromDB,
     syncFromFirebase,
     syncFromSheets,
-    updateClient
+    updateClient,
+    cloudStatus: storeCloudStatus,
+    cloudErrorMessage,
   } = useAppStore();
 
   const [appState, setAppState] = useState<AppState>(() => {
@@ -485,6 +487,15 @@ const App: React.FC = () => {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+  // El indicador de sync refleja los DOS caminos de guardado: el respaldo de
+  // Sheets (estado local de App) y las escrituras a Supabase (store). Si la
+  // nube rechazó un guardado, se ve en rojo con el motivo real en el tooltip.
+  const syncStatusForUi: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline' =
+    cloudStatus === 'loading' || cloudStatus === 'saving' ? cloudStatus
+      : cloudStatus === 'error' || storeCloudStatus === 'error' ? 'error'
+        : cloudStatus !== 'idle' ? cloudStatus
+          : storeCloudStatus;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isK = e.key === 'k' || e.key === 'K' || e.code === 'KeyK';
@@ -753,7 +764,8 @@ const App: React.FC = () => {
           onQuickManagement={() => setIsUploadModalOpen(true)}
           onOpenSalesModal={() => setIsSalesModalOpen(true)}
           onLogout={() => setShowLogoutConfirm(true)}
-          cloudStatus={cloudStatus}
+          cloudStatus={syncStatusForUi}
+          cloudErrorMessage={cloudErrorMessage}
           onManualSave={handleManualSave}
           userName="Santiago Cordova"
           role="ADMINISTRADOR"

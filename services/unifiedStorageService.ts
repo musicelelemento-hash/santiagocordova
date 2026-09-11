@@ -9,6 +9,28 @@ export interface UploadResult {
 }
 
 /**
+ * Huella del contenido, para que subir DOS VECES el mismo archivo no cree DOS
+ * objetos en R2. Con el plan gratuito de GB eso importa: el path anterior
+ * (`categoria/<timestamp>_<nombre>`) guardaba una copia nueva en cada intento
+ * —reintentos de subida, volver a subir la misma firma o el mismo RUC— y la
+ * cuota se llenaba de duplicados. Con la huella, re-subir lo mismo REESCRIBE el
+ * mismo objeto (misma URL), así que no crece el almacenamiento.
+ * Si el navegador no expone crypto.subtle, se usa el esquema anterior.
+ */
+async function huellaDeContenido(fileData: File | Blob | string): Promise<string | null> {
+    try {
+        if (!globalThis.crypto?.subtle) return null;
+        const bytes = typeof fileData === 'string'
+            ? new TextEncoder().encode(fileData)
+            : new Uint8Array(await fileData.arrayBuffer());
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Unified Storage Service
  * Intelligently manages uploads across Cloudflare R2, Supabase Storage, and local fallbacks.
  */
@@ -27,7 +49,10 @@ export const UnifiedStorageService = {
     ): Promise<StoredFile> {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const cleanName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const path = `${category}/${timestamp}_${cleanName}`;
+        const huella = await huellaDeContenido(fileData);
+        const path = huella
+            ? `${category}/${huella}_${cleanName}`
+            : `${category}/${timestamp}_${cleanName}`;
 
         let mimeType = 'application/octet-stream';
         if (fileName.endsWith('.pdf')) mimeType = 'application/pdf';

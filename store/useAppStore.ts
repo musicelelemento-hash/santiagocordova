@@ -11,6 +11,17 @@ import { sendFullClientsMatrixToExtension } from '../services/extensionBridge';
 
 import { isPeriodBeforeClientStart } from '../services/complianceEngine';
 
+/**
+ * Mensaje legible de un fallo de escritura en la nube (código + detalle de
+ * PostgREST). Se muestra en el indicador de sync para que un guardado que no
+ * llegó nunca más se vea como "guardado".
+ */
+const describirFalloNube = (err: any): string => {
+  if (!err) return 'Fallo de sincronización con la nube (sin detalle).';
+  const code = err.code ? `${err.code} · ` : '';
+  return `${code}${err.message || err.details || String(err)}`.slice(0, 300);
+};
+
 const sanitizeSingleClient = (c: any): Client => {
   // Normalizar el régimen de forma robusta
   let normalizedRegime = c.regime as TaxRegime;
@@ -28,6 +39,10 @@ const sanitizeSingleClient = (c: any): Client => {
   // Pre-calcular el taxProfile con fallbacks correctos
   const rawTaxProfile = c.taxProfile || {};
   const taxProfile = {
+    // Conservar el resto del JSON (alias/quickNote, sriCredencial de la
+    // extensión, clientType, facturadorConfig, identidad/firma…): antes se
+    // perdía todo lo que no estuviera listado acá.
+    ...rawTaxProfile,
     ivaFrequency: rawTaxProfile.ivaFrequency || (
       normalizedRegime === TaxRegime.RimpeEmprendedor || c.category?.includes('Semestral') 
         ? 'Semestral' 
@@ -238,9 +253,10 @@ interface AppState {
   importData: (jsonData: any) => Promise<void>;
   updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
   addClient: (client: Client) => void;
-  removeClient: (id: string, permanent?: boolean) => void;
-  restoreClient: (id: string) => void;
-  purgeTrash: () => void;
+  /** Rechaza si la nube no pudo registrar el borrado/restauración. */
+  removeClient: (id: string, permanent?: boolean) => Promise<void>;
+  restoreClient: (id: string) => Promise<void>;
+  purgeTrash: () => Promise<void>;
   bulkAddClients: (clients: Client[]) => void;
   bulkUpdateClients: (ids: string[], updates: Partial<Client>) => void;
   getClientByRuc: (ruc: string) => Client | undefined;
@@ -253,7 +269,9 @@ interface AppState {
   systemSettings: SystemSettings;
   setSystemSettings: (settings: SystemSettings) => void;
   cloudStatus: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline';
-  setCloudStatus: (status: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline') => void;
+  /** Motivo real del último fallo de sincronización (código + mensaje de PostgREST). */
+  cloudErrorMessage: string;
+  setCloudStatus: (status: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline', message?: string) => void;
 }
 
 const defaultBusinessProfile: BusinessProfile = {
@@ -291,7 +309,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   reminderConfig: defaultReminderConfig,
   auditLogs: [],
   isLoaded: false,
-  cloudStatus: 'idle',
+  cloudStatus: 'idle' as const,
+  cloudErrorMessage: '',
   systemSettings: {
     combos: [
       { id: 'combo-ecuafact-60', name: 'Combo ECUAFACT 60 docs', price: 45, category: 'ecuafact', isActive: true, accessUrl: 'https://www.ecuafact.com', notes: 'Plan anual 60 documentos' },
@@ -305,7 +324,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     fingerprintDeviceId: '',
   },
 
-  setCloudStatus: (status) => set({ cloudStatus: status }),
+  setCloudStatus: (status, message) => set({
+    cloudStatus: status,
+    cloudErrorMessage: status === 'error'
+      ? (message || 'Fallo de sincronización con la nube (sin detalle).')
+      : ''
+  }),
 
   setClients: (value) => {
     const currentClients = get().clients;
@@ -365,8 +389,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       await db.updateRecord('sc_pro_clients', id, updatedClient);
       get().setCloudStatus('saved');
     } catch (err) {
+      // El cambio local ya está aplicado (optimista), pero se dice la verdad:
+      // la nube NO tiene este guardado y hay que verlo en el indicador de sync.
       console.error("Cloud sync failed for client:", id, err);
-      get().setCloudStatus('error');
+      get().setCloudStatus('error', `No se guardó en la nube: ${describirFalloNube(err)}`);
     }
 
     get().addAuditLog({
@@ -399,7 +425,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // SYNC
     db.updateRecord('sc_pro_clients', newClient.id, newClient)
-      .catch(e => console.error("Cloud sync failed for new client:", e));
+      .catch(e => {
+        console.error("Cloud sync failed for new client:", e);
+        get().setCloudStatus('error', `No se guardó en la nube: ${describirFalloNube(e)}`);
+      });
     db.setLocal('clients', newClients);
 
     get().addAuditLog({
@@ -419,7 +448,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       const newClients = currentClients.filter(c => c.id !== id);
       set({ clients: newClients });
       await db.setLocal('clients', newClients);
-      // Actual deletion from Cloud to stop the "ghost" sync
+      // Borrado real en la nube: si no borra, se SABE (antes se cantaba éxito
+      // aunque RLS / GRANT hubieran filtrado la fila y el cliente siguiera vivo).
       try {
         await (db as any).deleteRecord('sc_pro_clients', id);
         get().setCloudStatus('saved');
@@ -431,7 +461,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
       } catch (err) {
         console.error("Cloud delete failed for client:", id, err);
-        get().setCloudStatus('error');
+        get().setCloudStatus('error', `No se borró en la nube: ${describirFalloNube(err)}`);
+        get().addAuditLog({
+          type: 'client',
+          action: 'Eliminación Permanente FALLÓ en la nube',
+          details: `${clientName} — quedó borrado solo en este equipo. ${describirFalloNube(err)}`,
+          severity: 'warning'
+        });
+        throw err;
       }
     } else {
       // Soft deletion
@@ -447,20 +484,27 @@ export const useAppStore = create<AppState>((set, get) => ({
       await db.setLocal('clients', newClients);
 
       get().setCloudStatus('saving');
-      db.updateRecord('sc_pro_clients', id, updatedClient)
-        .then(() => {
-          get().setCloudStatus('saved');
-          get().addAuditLog({
-            type: 'client',
-            action: 'Movido a Papelera',
-            details: `${clientName}`,
-            severity: 'info'
-          });
-        })
-        .catch(err => {
-          console.error("Cloud sync failed for client deletion:", id, err);
-          get().setCloudStatus('error');
+      try {
+        // Se ESPERA la nube: si no llega, el borrado no puede reportarse como hecho.
+        await db.updateRecord('sc_pro_clients', id, updatedClient);
+        get().setCloudStatus('saved');
+        get().addAuditLog({
+          type: 'client',
+          action: 'Movido a Papelera',
+          details: `${clientName}`,
+          severity: 'info'
         });
+      } catch (err) {
+        console.error("Cloud sync failed for client deletion:", id, err);
+        get().setCloudStatus('error', `El cliente no se marcó como baja en la nube: ${describirFalloNube(err)}`);
+        get().addAuditLog({
+          type: 'client',
+          action: 'Baja solo local',
+          details: `${clientName} — la nube no registró la baja (${describirFalloNube(err)}).`,
+          severity: 'warning'
+        });
+        throw err;
+      }
     }
   },
 
@@ -478,37 +522,63 @@ export const useAppStore = create<AppState>((set, get) => ({
     await db.setLocal('clients', newClients);
 
     get().setCloudStatus('saving');
-    db.updateRecord('sc_pro_clients', id, updatedClient)
-      .then(() => get().setCloudStatus('saved'))
-      .catch(err => {
-        console.error("Cloud sync failed for client restoration:", id, err);
-        get().setCloudStatus('error');
-      });
+    try {
+      await db.updateRecord('sc_pro_clients', id, updatedClient);
+      get().setCloudStatus('saved');
+    } catch (err) {
+      console.error("Cloud sync failed for client restoration:", id, err);
+      get().setCloudStatus('error', `La restauración no llegó a la nube: ${describirFalloNube(err)}`);
+      throw err;
+    }
   },
 
   purgeTrash: async () => {
     const currentClients = get().clients;
     const clientsToDelete = currentClients.filter(c => c.isDeleted);
-    const newClients = currentClients.filter(c => !c.isDeleted);
-    
-    set({ clients: newClients });
-    await db.setLocal('clients', newClients);
+    if (clientsToDelete.length === 0) return;
 
-    // Bulk delete from Cloud
+    // Se borra en la nube PRIMERO y solo se saca de la lista local lo que la
+    // nube confirmó. Así la papelera no se vacía en pantalla mientras los
+    // clientes siguen existiendo arriba (los "fantasmas" que reaparecían).
+    const borrados: string[] = [];
+    const fallidos: Array<{ nombre: string; motivo: string }> = [];
+
     for (const client of clientsToDelete) {
       try {
         await (db as any).deleteRecord('sc_pro_clients', client.id);
+        borrados.push(client.id);
       } catch (err) {
         console.error("Failed to purge client from cloud:", client.id, err);
+        fallidos.push({ nombre: client.name || client.id, motivo: describirFalloNube(err) });
       }
     }
-    get().setCloudStatus('saved');
-    get().addAuditLog({
-      type: 'system',
-      action: 'Limpieza de Papelera',
-      details: `Se eliminaron permanentemente ${clientsToDelete.length} registros.`,
-      severity: 'warning'
-    });
+
+    if (borrados.length > 0) {
+      const idsBorrados = new Set(borrados);
+      const newClients = get().clients.filter(c => !idsBorrados.has(c.id));
+      set({ clients: newClients });
+      await db.setLocal('clients', newClients);
+
+      get().addAuditLog({
+        type: 'system',
+        action: 'Limpieza de Papelera',
+        details: `Se eliminaron permanentemente ${borrados.length} registro(s) en la nube.` +
+          (fallidos.length > 0 ? ` ${fallidos.length} NO se pudieron borrar y siguen en la papelera.` : ''),
+        severity: fallidos.length > 0 ? 'warning' : 'info'
+      });
+    }
+
+    if (fallidos.length > 0) {
+      get().setCloudStatus('error', `La papelera no se vació del todo: ${fallidos[0].motivo}`);
+      get().addAuditLog({
+        type: 'system',
+        action: 'Purga incompleta',
+        details: `Siguen en la papelera porque la nube no los borró: ${fallidos.map(f => f.nombre).join(', ')}`,
+        severity: 'warning'
+      });
+    } else {
+      get().setCloudStatus('saved');
+    }
   },
 
   addAuditLog: (log) => {
@@ -535,6 +605,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // SYNC: Use granular bulk update
     db.bulkUpdate('sc_pro_clients', newClientsList).catch(err => {
       console.error("Bulk add cloud sync failed:", err);
+      get().setCloudStatus('error', `Alta masiva no sincronizada: ${describirFalloNube(err)}`);
     });
   },
 
@@ -558,6 +629,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (clientsToSync.length > 0) {
       db.bulkUpdate('sc_pro_clients', clientsToSync).catch(err => {
         console.error("Bulk update cloud sync failed:", err);
+        get().setCloudStatus('error', `Cambio masivo no sincronizado: ${describirFalloNube(err)}`);
       });
     }
   },
@@ -965,6 +1037,13 @@ export const useAppStore = create<AppState>((set, get) => ({
               return {
                 ...localMatch,
                 ...cloudClient,
+                // PROTECCIÓN DE ESTADO: si la nube NO pudo leer estas columnas
+                // (permiso de columna para el rol `anon`), llegan undefined y
+                // pisaban el estado local. Era lo que resucitaba en cada
+                // refresco a los clientes de la papelera y a los desactivados.
+                // La nube manda solo cuando dice algo de verdad (booleano).
+                isDeleted: typeof cloudClient.isDeleted === 'boolean' ? cloudClient.isDeleted : localMatch.isDeleted,
+                isActive: typeof cloudClient.isActive === 'boolean' ? cloudClient.isActive : localMatch.isActive,
                 // Proteger campos locales contra consultas de nube restringidas (RLS/anon):
                 tradeName: cloudClient.tradeName || localMatch.tradeName,
                 notes: cloudClient.notes || localMatch.notes,

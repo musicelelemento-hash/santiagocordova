@@ -554,14 +554,16 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             return;
         }
         if (action === 'restore') {
-            restoreClient(client.id);
-            toast.success(`${client.name} restaurado correctamente`);
+            restoreClient(client.id)
+                .then(() => toast.success(`${client.name} restaurado correctamente`))
+                .catch((err: any) => toast.error(`No se pudo restaurar en la nube: ${err?.message || err}`));
             return;
         }
         if (action === 'purge') {
             if (window.confirm(`¿Está seguro de eliminar permanentemente a ${client.name}? Esta acción no se puede deshacer.`)) {
-                removeClient(client.id, true);
-                toast.success(`${client.name} eliminado permanentemente`);
+                removeClient(client.id, true)
+                    .then(() => toast.success(`${client.name} eliminado permanentemente`))
+                    .catch((err: any) => toast.error(`No se borró en la nube: ${err?.message || err}`));
             }
             return;
         }

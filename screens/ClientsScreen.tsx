@@ -623,15 +623,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         }
 
         if (action === 'restore') {
-            restoreClient(client.id);
-            toast.success(`${client.name} restaurado correctamente`);
+            restoreClient(client.id)
+                .then(() => toast.success(`${client.name} restaurado correctamente`))
+                .catch((err: any) => toast.error(`No se pudo restaurar en la nube: ${err?.message || err}`));
             return;
         }
 
         if (action === 'purge') {
             if (window.confirm(`¿Está seguro de eliminar permanentemente a ${client.name}? Esta acción no se puede deshacer.`)) {
-                removeClient(client.id, true);
-                toast.success(`${client.name} eliminado permanentemente`);
+                removeClient(client.id, true)
+                    .then(() => toast.success(`${client.name} eliminado permanentemente`))
+                    .catch((err: any) => toast.error(`No se borró en la nube: ${err?.message || err}`));
             }
             return;
         }
@@ -1556,8 +1558,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <button
                         onClick={() => {
                             if (window.confirm("¿Está seguro de eliminar permanentemente todos los clientes en la papelera? Esta acción no se puede deshacer.")) {
-                                purgeTrash();
-                                toast.success("Papelera vaciada por completo");
+                                purgeTrash()
+                                    .then(() => toast.success("Papelera vaciada por completo"))
+                                    .catch((err: any) => toast.error(`La papelera no se vació: ${err?.message || err}`));
                             }
                         }}
                         className="px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all"

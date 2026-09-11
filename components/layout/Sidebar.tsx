@@ -22,6 +22,8 @@ interface SidebarProps {
     onQuickManagement: () => void;
     onLogout: () => void;
     cloudStatus: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline';
+    /** Motivo real del último fallo de guardado en la nube (se muestra como tooltip). */
+    cloudErrorMessage?: string;
     onManualSave?: () => void;
     userName?: string;
     role?: string;
@@ -47,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onQuickManagement,
     onLogout,
     cloudStatus,
+    cloudErrorMessage,
     onManualSave,
     userName,
     role,
@@ -352,7 +355,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {onManualSave && (
                         <button
                             onClick={onManualSave}
-                            title="Sincronizar Manualmente con la Nube"
+                            title={cloudErrorMessage
+                                ? `⚠️ El último guardado NO llegó a la nube\n${cloudErrorMessage}`
+                                : 'Sincronizar Manualmente con la Nube'}
                             className={`
                                 flex items-center justify-center gap-2 h-9 rounded-xl border transition-all duration-300 group
                                 ${isCollapsed ? 'w-10 h-10 flex-none' : 'flex-1'}

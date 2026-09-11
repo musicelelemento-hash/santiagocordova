@@ -219,29 +219,45 @@ export const db = {
 
     updateRecord: async function (collectionName: string, id: string, value: any): Promise<void> {
         console.log(`📡 Cloud Sync [Supabase=${USE_SUPABASE}]: Updating ${collectionName}/${id}...`);
+        let safeValue: any;
         try {
-            const safeValue = await this.splitLargeFiles(collectionName, id, value);
-            
-            if (USE_SUPABASE) {
+            safeValue = await this.splitLargeFiles(collectionName, id, value);
+        } catch (splitErr) {
+            console.error(`❌ No se pudo preparar ${collectionName}/${id} para la nube:`, splitErr);
+            throw splitErr;
+        }
+
+        // 1) Supabase (fuente de verdad). El error NO se traga: quien llama debe
+        //    enterarse de que el guardado no llegó a la nube.
+        let supabaseError: any = null;
+        if (USE_SUPABASE) {
+            try {
                 if (collectionName === 'sc_pro_clients') {
                     await SupabaseService.upsertClient(safeValue);
                 } else if (collectionName === 'sc_pro_tasks') {
                     await SupabaseService.upsertTask(safeValue);
                 }
+            } catch (err) {
+                supabaseError = err;
             }
-            
-            try {
-                const docRef = doc(firestoreDb, collectionName, id);
-                await setDoc(docRef, safeValue, { merge: true });
-            } catch (fbErr) {
-                // Ignore Firestore errors if Supabase succeeded
-            }
-            
-            console.log(`✅ Cloud Sync Success: ${collectionName}/${id}`);
-        } catch (err) {
-            console.error(`❌ Cloud Sync Error in ${collectionName}/${id}:`, err);
-            throw err;
         }
+
+        // 2) Respaldo Firestore SIEMPRE, incluso si Supabase falló. Antes el
+        //    throw de Supabase saltaba antes de este bloque y el cambio se
+        //    quedaba sin ninguna copia remota: solo vivía en el IndexedDB local.
+        try {
+            const docRef = doc(firestoreDb, collectionName, id);
+            await setDoc(docRef, safeValue, { merge: true });
+        } catch (fbErr) {
+            // Ignore Firestore errors if Supabase succeeded
+        }
+
+        if (supabaseError) {
+            console.error(`❌ Cloud Sync Error in ${collectionName}/${id}:`, supabaseError);
+            throw supabaseError;
+        }
+
+        console.log(`✅ Cloud Sync Success: ${collectionName}/${id}`);
     },
 
     deleteRecord: async function (collectionName: string, id: string): Promise<void> {

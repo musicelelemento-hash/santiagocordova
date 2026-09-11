@@ -908,9 +908,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             toast.success(`Cliente ${client.name} enviado a la papelera.`);
             setIsDeleteConfirmOpen(false);
             onBack();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error deleting client:", err);
-            toast.error("Error al enviar el cliente a la papelera.");
+            toast.error(`No se pudo registrar la baja en la nube: ${err?.message || err}. El cliente sigue en la lista hasta que se sincronice.`);
         }
     }, [client.id, client.name, removeClient, toast, onBack]);
 

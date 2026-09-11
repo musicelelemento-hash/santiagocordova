@@ -303,8 +303,12 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
     };
 
     const handleDeleteClient = async (client: Client) => {
-        removeClient(client.id);
-        toast.success(`Cliente ${client.name} movido a la Papelera de reciclaje.`);
+        try {
+            await removeClient(client.id);
+            toast.success(`Cliente ${client.name} movido a la Papelera de reciclaje.`);
+        } catch (err: any) {
+            toast.error(`No se pudo borrar en la nube: ${err?.message || err}`);
+        }
         setDepurationTargetClient(null);
     };
 
@@ -321,10 +325,19 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
     };
 
     const handleBulkDeleteClients = async () => {
+        const fallidos: string[] = [];
         for (const id of selectedClientIds) {
-            removeClient(id);
+            try {
+                await removeClient(id);
+            } catch {
+                fallidos.push(id);
+            }
         }
-        toast.success(`Se eliminaron ${selectedClientIds.length} clientes del sistema.`);
+        if (fallidos.length > 0) {
+            toast.error(`${fallidos.length} de ${selectedClientIds.length} no se pudieron borrar en la nube (siguen en la lista).`);
+        } else {
+            toast.success(`Se eliminaron ${selectedClientIds.length} clientes del sistema.`);
+        }
         setSelectedClientIds([]);
         setIsBulkDeleteModalOpen(false);
         setBulkConfirmText('');
