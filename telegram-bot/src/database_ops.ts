@@ -1735,6 +1735,45 @@ export async function downloadClientProofFile(
     }
 }
 
+/** Junta cliente + comprobante y arma los datos listos para mandar por Gmail. No envía nada: eso lo hace agent.ts con sendEmailWithAttachment. */
+export async function prepareProofEmailForClient(
+    ruc: string,
+    period: string,
+    type?: 'IVA' | 'RENTA'
+): Promise<{ to: string; subject: string; body: string; fileName: string; contentBase64: string; clientName: string; error?: string }> {
+    try {
+        const { data: rawClients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
+        if (error) throw error;
+        if (!rawClients || rawClients.length === 0) {
+            return { to: '', subject: '', body: '', fileName: '', contentBase64: '', clientName: '', error: `No encontré cliente con RUC ${ruc}.` };
+        }
+
+        const client = rawClients[0];
+        if (!client.email) {
+            return { to: '', subject: '', body: '', fileName: '', contentBase64: '', clientName: client.name, error: `${client.name} no tiene un email registrado. Agregalo antes de reintentar.` };
+        }
+
+        const proof = await downloadClientProofFile(ruc, period, type);
+        if (!proof || proof.error || !proof.contentBase64) {
+            return { to: '', subject: '', body: '', fileName: '', contentBase64: '', clientName: client.name, error: proof?.error || 'No encontré el comprobante para ese período.' };
+        }
+
+        const subject = `Comprobante de declaración ${type || ''} - Periodo ${period} - ${client.name}`.replace(/\s+/g, ' ').trim();
+        const body = `Estimado/a ${client.name},\n\nAdjunto el comprobante oficial de su declaración${type ? ' de ' + type : ''} correspondiente al período ${period}, presentada ante el SRI.\n\nSaludos cordiales,\nSoluciones Contables Pro`;
+
+        return {
+            to: client.email,
+            subject,
+            body,
+            fileName: proof.fileName,
+            contentBase64: proof.contentBase64,
+            clientName: client.name
+        };
+    } catch (e: any) {
+        return { to: '', subject: '', body: '', fileName: '', contentBase64: '', clientName: '', error: `Error preparando el email: ${e.message}` };
+    }
+}
+
 /**
 
  * Sets a specific phone number as the PRIMARY (first in the list) for a client.

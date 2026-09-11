@@ -1,8 +1,8 @@
 import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
-import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, downloadClientProofFile, setPrimaryPhone, setSignatureInfo, getMonthlyCollectionReport } from './database_ops';
+import { searchEmails, sendEmail, getUnreadEmails, sendEmailWithAttachment } from './gmail';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, downloadClientProofFile, setPrimaryPhone, setSignatureInfo, getMonthlyCollectionReport, prepareProofEmailForClient } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getGeminiApiKey, MODELS } from './ai';
@@ -100,7 +100,9 @@ HABILIDAD: TELÉFONO PRINCIPAL: Cuando Santiago diga "pon este número como prin
 
 HABILIDAD: FIRMA ELECTRÓNICA: Cuando Santiago diga "actualiza la firma de [cliente]", "la firma de [cliente] vence el [fecha]", "la clave de firma de [cliente] es [clave]", usa 'set_signature_info'. Acepta clave nueva, fecha de caducidad o ambas.
 
-HABILIDAD: REPORTE DE COBRANZA MENSUAL: Cuando Santiago pregunte "¿cuánto he cobrado este mes?", "dame el reporte de cobros", "¿quién me debe?", usa 'get_monthly_collection_report'. Genera un resumen con total recaudado, pendiente, eficiencia y lista de deudores.`;
+HABILIDAD: REPORTE DE COBRANZA MENSUAL: Cuando Santiago pregunte "¿cuánto he cobrado este mes?", "dame el reporte de cobros", "¿quién me debe?", usa 'get_monthly_collection_report'. Genera un resumen con total recaudado, pendiente, eficiencia y lista de deudores.
+
+HABILIDAD: COMPROBANTE POR EMAIL: Cuando Santiago diga "mándale el comprobante de [cliente] por correo/email", "envía por mail la declaración de [cliente] del periodo [X]" o similar, usa 'send_proof_email' con el RUC y el período. Si el cliente no tiene email registrado, la herramienta te lo va a decir — pídele a Santiago que te dé un email o que lo agregue al perfil, no inventes uno.`;
 
 
 
@@ -120,6 +122,21 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
             return `✅ Comprobante *${result.fileName}* enviado con éxito a tu chat de Telegram. Baku.`;
         } catch (e: any) {
             return `❌ Error al enviar el archivo comprobante: ${e.message}`;
+        }
+    },
+    send_proof_email: async ({ ruc, period, type }: { ruc: string; period: string; type?: 'IVA' | 'RENTA' }, chatId: string) => {
+        try {
+            console.log(`📧 Baku Tool | Sending proof email for RUC: ${ruc}, Period: ${period}`);
+            const data = await prepareProofEmailForClient(ruc, period, type);
+            if (data.error) return `❌ ${data.error}`;
+            const result = await sendEmailWithAttachment(chatId, data.to, data.subject, data.body, {
+                filename: data.fileName,
+                contentBase64: data.contentBase64,
+                mimeType: 'application/pdf'
+            });
+            return `📧 ${result} (${data.clientName}, periodo ${period}) Baku.`;
+        } catch (e: any) {
+            return `❌ Error al enviar el comprobante por email: ${e.message}`;
         }
     },
     get_current_time: async ({ timezone }: { timezone?: string }, chatId: string) => {
@@ -394,6 +411,7 @@ const toolDefinitions = [
     { type: "function", function: { name: "read_unread_emails", description: "Lee Gmail unread.", parameters: { type: "object", properties: { maxResults: { type: "number" } } } } },
     { type: "function", function: { name: "search_emails", description: "Busca Gmail.", parameters: { type: "object", properties: { query: { type: "string" }, maxResults: { type: "number" } }, required: ["query"] } } },
     { type: "function", function: { name: "send_email", description: "Envía Gmail.", parameters: { type: "object", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, required: ["to", "subject", "body"] } } },
+    { type: "function", function: { name: "send_proof_email", description: "Envía por Gmail, con el PDF adjunto, el comprobante oficial de declaración de un cliente para un período. Úsalo cuando Santiago pida mandar/enviar por correo/email el comprobante de un cliente. Requiere que el cliente tenga email registrado.", parameters: { type: "object", properties: { ruc: { type: "string" }, period: { type: "string", description: "YYYY-MM" }, type: { type: "string", enum: ["IVA", "RENTA"] } }, required: ["ruc", "period"] } } },
     { type: "function", function: { name: "search_client", description: "Busca cliente x RUC/nombre.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
     { type: "function", function: { name: "update_client_note", description: "Nota en expediente.", parameters: { type: "object", properties: { ruc: { type: "string" }, note: { type: "string" } }, required: ["ruc", "note"] } } },
     { type: "function", function: { name: "get_debtor_clients", description: "Lista deudores." } },

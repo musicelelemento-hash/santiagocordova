@@ -104,12 +104,20 @@ tres avisos.
 
 ### Lo que sigue
 
-**Email automático con el PDF adjunto** — decidido con el usuario el
-07-sep-2026, para después de la sala. Lo caro ya está hecho:
-`telegram-bot/src/gmail.ts:100` envía por la API de Gmail y
-`telegram-bot/src/database_ops.ts` ya lee `sri_declaraciones`. Gmail da 500
-envíos por día, de sobra para 500 contribuyentes una vez al mes. Es el único
-canal donde el comprobante viaja **adjunto** y sin que nadie haga clic.
+**Email automático con el PDF adjunto** — HECHA el 11-sep-2026. Decidido con
+el usuario el 07-sep-2026. `telegram-bot/src/gmail.ts` sumó
+`sendEmailWithAttachment()` (arma el MIME multipart con el adjunto);
+`telegram-bot/src/database_ops.ts` sumó `prepareProofEmailForClient(ruc,
+period, type)`, que reutiliza `downloadClientProofFile` (ya probado, con su
+manejo de `__SPLIT__:STORAGE:` y firma de URL) para juntar cliente + email +
+comprobante. `agent.ts` conecta las dos con la tool `send_proof_email`,
+mismo patrón que `download_client_proof`: Santiago se lo pide a Baku por
+chat ("mándale el comprobante de [cliente] del periodo [X] por correo"), de
+a uno — **no es un cron masivo**, sigue el mismo criterio de la sala de envío
+de WhatsApp (§5, arriba): nunca sin que alguien lo pida en el momento.
+`npx tsc --noEmit` limpio. Falta la primera prueba real (con un cliente que
+tenga email cargado) antes de confiar en esto para el flujo mensual.
+Gmail da 500 envíos por día, de sobra para 500 contribuyentes una vez al mes.
 
 **WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
 los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta
@@ -185,7 +193,7 @@ Dos cuidados al construirlas:
 
 | Qué | Estado | Detalle |
 | :--- | :--- | :--- |
-| **Email automático con el PDF adjunto** | decidido, no empezado | §5 · **es lo siguiente** |
+| **Email automático con el PDF adjunto** | hecho, sin prueba real | §5 · falta un envío real de prueba |
 | **WhatsApp Cloud API (Meta)** | evaluado, no empezado | §5 · necesita cuenta y plantilla |
 | **Verificar la sala de envío en pantalla** | nunca se hizo | necesita sesión para llegar a la matriz |
 | **Botones de un clic desde la ficha del cliente** | ideas anotadas | §6 |

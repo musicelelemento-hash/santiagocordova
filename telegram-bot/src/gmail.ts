@@ -131,6 +131,62 @@ export async function sendEmail(chatId: string, to: string, subject: string, bod
     }
 }
 
+export async function sendEmailWithAttachment(
+    chatId: string,
+    to: string,
+    subject: string,
+    body: string,
+    attachment: { filename: string; contentBase64: string; mimeType?: string }
+): Promise<string> {
+    try {
+        const auth = await loadToken(chatId);
+        const gmail = google.gmail({ version: 'v1', auth });
+
+        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+        const boundary = `boundary_baku_${Date.now()}`;
+        const mimeType = attachment.mimeType || 'application/pdf';
+
+        const emailLines = [
+            `To: ${to}`,
+            'MIME-Version: 1.0',
+            `Subject: ${utf8Subject}`,
+            `Content-Type: multipart/mixed; boundary="${boundary}"`,
+            '',
+            `--${boundary}`,
+            'Content-Type: text/plain; charset=utf-8',
+            'Content-Transfer-Encoding: 7bit',
+            '',
+            body,
+            '',
+            `--${boundary}`,
+            `Content-Type: ${mimeType}; name="${attachment.filename}"`,
+            'Content-Transfer-Encoding: base64',
+            `Content-Disposition: attachment; filename="${attachment.filename}"`,
+            '',
+            attachment.contentBase64,
+            '',
+            `--${boundary}--`
+        ];
+
+        const email = emailLines.join('\r\n');
+        const base64EncodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        const res = await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: base64EncodedEmail,
+            },
+        });
+
+        return `Correo con comprobante adjunto enviado exitosamente a ${to}. (Message ID: ${res.data.id})`;
+    } catch (e: any) {
+        if (e.message.includes("no está autorizado") || e.message.includes("insufficient Permissions")) {
+            return "No tienes permiso para enviar correos (necesitas reautorizar con /authgmail).";
+        }
+        return `Hubo un error enviando el correo con adjunto a ${to}: ${e.message}`;
+    }
+}
+
 export async function searchEmails(chatId: string, query: string, maxResults = 5): Promise<string> {
     try {
         const auth = await loadToken(chatId);
