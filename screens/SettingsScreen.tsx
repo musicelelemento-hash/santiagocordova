@@ -85,7 +85,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
     return (
         <div className="relative flex items-center group">
             {children}
-            <div className="absolute left-0 bottom-full mb-2 w-48 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+            <div className="absolute left-0 bottom-full mb-2 w-48 p-2 text-xs font-display text-on-surface bg-surface-low border border-foreground/10 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 {text}
             </div>
         </div>
@@ -95,16 +95,16 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
 const CollapsibleGuide: React.FC<{ title: string; icon: React.ElementType; children: React.ReactNode }> = ({ title, icon: Icon, children }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-all duration-300">
-            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                <h4 className="font-medium text-gray-800 dark:text-gold flex items-center text-md">
+        <div className="border border-foreground/10 rounded-xl overflow-hidden transition-all duration-300">
+            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-3 bg-surface-low hover:bg-surface-lowest transition-colors">
+                <h4 className="font-display font-semibold text-gold flex items-center text-md">
                     <Icon size={18} className="mr-3 text-gold" />
                     <span>{title}</span>
                 </h4>
-                <ChevronRight className={`w-5 h-5 transition-transform text-gray-500 ${isOpen ? 'rotate-90' : ''}`} />
+                <ChevronRight className={`w-5 h-5 transition-transform text-on-surface-variant ${isOpen ? 'rotate-90' : ''}`} />
             </button>
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
-                <div className="p-4 bg-white dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-4 bg-surface text-sm text-on-surface-variant border-t border-foreground/10">
                     {children}
                 </div>
             </div>
