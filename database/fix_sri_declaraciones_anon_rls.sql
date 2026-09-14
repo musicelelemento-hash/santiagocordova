@@ -52,6 +52,19 @@ GRANT SELECT, INSERT, UPDATE ON public.sri_declaraciones TO anon;
 GRANT SELECT (is_deleted) ON public.clients TO anon;
 
 -- ---------------------------------------------------------------------
+-- AGREGADO 14-sep-2026 (Claude) — candidata, SIN CONFIRMAR contra la base
+-- real (nunca se probó `select=is_active` como se probó `is_deleted` arriba).
+--
+-- Mismo patrón que is_deleted: si `is_active` tampoco es legible por `anon`,
+-- getClients() cae a una lectura degradada que la omite, y el código de
+-- protección en useAppStore.loadFromDB trata "no sé" como "está activo"
+-- (mismo motivo por el que un cliente desactivado podía reaparecer activo
+-- en la web). Igual de OPCIONAL que la de arriba: es una decisión tuya.
+-- ---------------------------------------------------------------------
+
+GRANT SELECT (is_active) ON public.clients TO anon;
+
+-- ---------------------------------------------------------------------
 -- Y una columna que NO EXISTE en ninguna de las dos tablas:
 --
 --   400  GET /rest/v1/sri_declaraciones?select=notification_count

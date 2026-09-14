@@ -977,6 +977,23 @@ export const useAppStore = create<AppState>((set, get) => ({
           const mergedCloudClients = [...legacyClients, ...(granularClients || [])];
 
           if (mergedCloudClients.length > 0) {
+            // sanitizeClients() fuerza isDeleted/isActive a boolean SIEMPRE
+            // (!!undefined = false, etc.), así que después de sanitizar ya no
+            // hay forma de distinguir "la nube dijo que no está borrado" de
+            // "la nube no pudo leer esa columna" (lectura degradada de
+            // getClients() por permiso de columna — ver database/fix_sri_declaraciones_anon_rls.sql).
+            // Por eso el estado crudo se guarda ANTES de sanitizar: es lo que
+            // usa la protección de abajo para no resucitar la papelera.
+            const rawStatusById = new Map<string, { hasIsDeleted: boolean; hasIsActive: boolean }>();
+            mergedCloudClients.forEach((raw: any) => {
+              if (raw && raw.id) {
+                rawStatusById.set(raw.id, {
+                  hasIsDeleted: typeof raw.isDeleted === 'boolean',
+                  hasIsActive: typeof raw.isActive === 'boolean',
+                });
+              }
+            });
+
             const cloudClients = sanitizeClients(mergedCloudClients);
             const currentClients = get().clients;
             
@@ -1034,6 +1051,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                 }
               });
 
+              const rawStatus = rawStatusById.get(cloudClient.id);
+
               return {
                 ...localMatch,
                 ...cloudClient,
@@ -1041,9 +1060,13 @@ export const useAppStore = create<AppState>((set, get) => ({
                 // (permiso de columna para el rol `anon`), llegan undefined y
                 // pisaban el estado local. Era lo que resucitaba en cada
                 // refresco a los clientes de la papelera y a los desactivados.
-                // La nube manda solo cuando dice algo de verdad (booleano).
-                isDeleted: typeof cloudClient.isDeleted === 'boolean' ? cloudClient.isDeleted : localMatch.isDeleted,
-                isActive: typeof cloudClient.isActive === 'boolean' ? cloudClient.isActive : localMatch.isActive,
+                // La nube manda solo cuando dice algo de verdad (booleano) —
+                // se mira el dato CRUDO (rawStatus), no `cloudClient`, porque
+                // sanitizeClients() ya convirtió cualquier undefined en `false`
+                // y el chequeo `typeof === 'boolean'` de acá dejó de ver la
+                // diferencia entre "no sé" y "no está borrado".
+                isDeleted: rawStatus?.hasIsDeleted ? cloudClient.isDeleted : localMatch.isDeleted,
+                isActive: rawStatus?.hasIsActive ? cloudClient.isActive : localMatch.isActive,
                 // Proteger campos locales contra consultas de nube restringidas (RLS/anon):
                 tradeName: cloudClient.tradeName || localMatch.tradeName,
                 notes: cloudClient.notes || localMatch.notes,

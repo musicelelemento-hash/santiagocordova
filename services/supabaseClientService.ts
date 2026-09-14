@@ -74,17 +74,29 @@ export const SupabaseService = {
   // --- Clients ---
   
   async getClients(): Promise<Client[]> {
-    // Intento 1: consulta ideal — todas las columnas + declaraciones, sin las bajas.
+    // Intento 1: consulta ideal — todas las columnas + declaraciones.
+    //
+    // A PROPÓSITO no se filtra por `.eq('is_deleted', false)` acá: el resto
+    // del código (TaxComplianceMatrix, ClientsScreen, la Papelera) ya filtra
+    // por `isDeleted` del lado del cliente. Filtrar en el SQL tenía dos
+    // costos escondidos: (1) un cliente recién dado de baja en OTRO
+    // dispositivo desaparecía de la Papelera acá, porque `loadFromDB`
+    // reemplaza el estado local con lo que vuelve de esta consulta — nunca
+    // llegaba a existir localmente para poder mostrarse borrado; y (2) forzaba
+    // a que la única señal de "¿está borrado?" viniera de un WHERE en vez de
+    // una columna, así que una lectura degradada (ver abajo) no tenía forma
+    // de pedir "todos, con o sin baja" — o filtraba mal, o no filtraba nada.
     let { data, error } = await supabase
       .from('clients')
-      .select('*, sri_declaraciones(*)')
-      .eq('is_deleted', false);
+      .select('*, sri_declaraciones(*)');
 
     // Intento 2+: el rol `anon` no tiene permiso sobre varias columnas de
     // `clients` (sri_password, notes, structured_notes, is_deleted…), así que
     // `select('*')` responde 401/42501 SIEMPRE. Se degrada a pedir solo lo que
     // sí puede leer, intentando conservar `is_deleted`/`is_active`: sin ellos
-    // las bajas de la papelera vuelven a la lista como si estuvieran activas.
+    // las bajas de la papelera vuelven a la lista como si estuvieran activas
+    // (la protección real contra eso vive en useAppStore.loadFromDB, que mira
+    // si esta consulta trajo el dato CRUDO antes de confiar en él).
     if (error) {
       console.warn('[SupabaseService] getClients: la consulta completa falló, se degrada la lectura:', describirError(error));
 
