@@ -448,6 +448,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       const newClients = currentClients.filter(c => c.id !== id);
       set({ clients: newClients });
       await db.setLocal('clients', newClients);
+      // La extensión lee su caché (sc_clients_cache) de lo último que le mandó
+      // este postMessage — sin esto, un cliente borrado acá seguía viéndose
+      // "mensual" en Nueva Luz hasta el próximo loadFromDB() completo (recarga
+      // de página), no al borrarlo.
+      sendFullClientsMatrixToExtension(newClients);
       // Borrado real en la nube: si no borra, se SABE (antes se cantaba éxito
       // aunque RLS / GRANT hubieran filtrado la fila y el cliente siguiera vivo).
       try {
@@ -482,6 +487,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       set({ clients: newClients });
       await db.setLocal('clients', newClients);
+      sendFullClientsMatrixToExtension(newClients);
 
       get().setCloudStatus('saving');
       try {
@@ -520,6 +526,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     set({ clients: newClients });
     await db.setLocal('clients', newClients);
+    sendFullClientsMatrixToExtension(newClients);
 
     get().setCloudStatus('saving');
     try {
@@ -558,6 +565,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const newClients = get().clients.filter(c => !idsBorrados.has(c.id));
       set({ clients: newClients });
       await db.setLocal('clients', newClients);
+      sendFullClientsMatrixToExtension(newClients);
 
       get().addAuditLog({
         type: 'system',
