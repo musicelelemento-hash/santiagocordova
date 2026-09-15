@@ -6,9 +6,11 @@ import {
     Copy, Check, User, FileText, KeyRound, Wallet,
     Calendar, TrendingUp, ShieldCheck, FileSpreadsheet,
     DollarSign, Briefcase, FileCheck, Layers, Award,
-    LayoutGrid, Box, Coins, PiggyBank, ShoppingCart, ArrowRightLeft
+    LayoutGrid, Box, Coins, PiggyBank, ShoppingCart, ArrowRightLeft,
+    Volume2
 } from 'lucide-react';
 import { Client } from '../types';
+import { hapticAudio } from '../services/hapticAudioService';
 
 interface CommandPaletteProps {
     isOpen: boolean;
@@ -89,6 +91,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             const actions = [
                 { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} className="text-[#00A896]" /> },
                 { id: 'act-sync', type: 'action', label: 'Sincronizar Datos SRI', action: 'sync', icon: <RefreshCw size={18} className="text-[#2B6AFF]" /> },
+                { id: 'act-haptic', type: 'action', label: 'Alternar Audio Háptico (Web Audio API)', action: 'toggle_haptic', icon: <Volume2 size={18} className="text-[#C9A96E]" /> },
             ];
             const cls = clients.filter(c => !c.isDeleted && c.isActive).slice(0, 5).map(c => ({
                 id: `client-${c.id}`,
@@ -110,6 +113,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         const actionResults = [
             { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} className="text-[#00A896]" /> },
             { id: 'act-sync', type: 'action', label: 'Sincronizar Datos SRI', action: 'sync', icon: <RefreshCw size={18} className="text-[#2B6AFF]" /> },
+            { id: 'act-haptic', type: 'action', label: 'Alternar Audio Háptico (Web Audio API)', action: 'toggle_haptic', icon: <Volume2 size={18} className="text-[#C9A96E]" /> },
             { id: 'act-logout', type: 'action', label: 'Cerrar Sesión', action: 'logout', icon: <LogOut size={18} className="text-rose-400" /> },
         ].filter(item => {
             const labelNorm = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -146,9 +150,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
+            hapticAudio.playClick(1100);
             setSelectedIndex(prev => (prev < results.length - 1 ? prev + 1 : 0));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
+            hapticAudio.playClick(1150);
             setSelectedIndex(prev => (prev > 0 ? prev - 1 : results.length - 1));
         } else if (e.key === 'Enter') {
             e.preventDefault();
@@ -161,6 +167,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     };
 
     const handleSelect = (item: any) => {
+        hapticAudio.playClick(900);
+        if (item.action === 'toggle_haptic') {
+            hapticAudio.toggleSound();
+            onClose();
+            return;
+        }
         if (item.type === 'nav') {
             onNavigate(item.screen);
         } else if (item.type === 'action') {
