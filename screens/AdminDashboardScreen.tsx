@@ -784,12 +784,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     return (
         <div className="space-y-6 animate-in fade-in duration-300 pb-20 relative min-h-screen font-sans">
             <div className="relative z-20 px-4 sm:px-0">
-                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl transition-all duration-500">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/10 border-t-foreground/20 bg-surface-low shadow-2xl backdrop-blur-2xl transition-all duration-500">
 
                     {/* Mesh gradient background */}
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-[#2B6AFF]/15 to-transparent blur-3xl" />
-                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-[#00A896]/15 to-transparent blur-3xl" />
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-primary/15 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-tertiary/15 to-transparent blur-3xl" />
                     </div>
 
                     {/* ── TOP STRIPE ── */}
@@ -799,44 +799,44 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* ── BRAND BLOCK (Stitch Obsidian Luxury) ── */}
                             <div className="flex flex-col gap-3 font-mono">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 backdrop-blur-md shadow-[0_0_10px_rgba(0,168,150,0.2)]">
-                                        <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
-                                            <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-tertiary/15 border border-tertiary/30 backdrop-blur-md shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                        <div className="relative w-2 h-2 rounded-full bg-tertiary">
+                                            <div className="absolute inset-0 rounded-full bg-tertiary animate-ping opacity-60" />
                                         </div>
-                                        <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em]">SISTEMA ACTIVO · SRI 2026</span>
+                                        <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">SISTEMA ACTIVO · SRI 2026</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-                                        <Database size={11} className="text-[#00A896]" />
-                                        <span className="text-[10px] font-bold text-slate-400 font-mono">Motor Nueva Luz 3.0</span>
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-foreground/5 border border-foreground/10 backdrop-blur-md">
+                                        <Database size={11} className="text-tertiary" />
+                                        <span className="text-[10px] font-bold text-on-surface-variant font-mono">Motor Nueva Luz 3.0</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-none font-display">
+                                    <h1 className="text-3xl sm:text-5xl font-black text-on-surface tracking-tight leading-none font-display">
                                         CENTRO DE CONTROL
                                         <span className="ml-3 relative inline-block">
-                                            <span className="relative z-10 bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">TRIBUTARIO</span>
+                                            <span className="relative z-10 bg-gradient-to-r from-tertiary via-tertiary to-primary bg-clip-text text-transparent">TRIBUTARIO</span>
                                         </span>
                                     </h1>
-                                    <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium">
-                                        Gestión contable de élite y automatización SRI · <span className="text-[#00A896] font-bold font-mono">{kpis.total} clientes activos</span>
+                                    <p className="mt-2.5 text-xs sm:text-sm text-on-surface-variant font-sans font-medium">
+                                        Gestión contable de élite y automatización SRI · <span className="text-tertiary font-bold font-mono">{kpis.total} clientes activos</span>
                                     </p>
                                 </div>
                             </div>
 
                             {/* ── ACTIONS & QUICK DOCK ── */}
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto font-mono flex-wrap">
-                                <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-2xl border border-white/10 overflow-x-auto hide-scrollbar">
+                                <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-2xl border border-foreground/10 overflow-x-auto hide-scrollbar">
                                     <button
                                         onClick={() => navigate('clients')}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-on-surface-variant hover:text-on-surface hover:bg-foreground/10 transition-all whitespace-nowrap cursor-pointer"
                                         title="Ir al Directorio de Clientes"
                                     >
-                                        <Users size={14} className="text-[#00A896]" />
+                                        <Users size={14} className="text-tertiary" />
                                         <span>Clientes</span>
                                     </button>
                                     <button
                                         onClick={() => navigate('cobranza')}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-on-surface-variant hover:text-on-surface hover:bg-foreground/10 transition-all whitespace-nowrap cursor-pointer"
                                         title="Ir a Cartera y Cobranza"
                                     >
                                         <Wallet size={14} className="text-rose-400" />
@@ -844,7 +844,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </button>
                                     <button
                                         onClick={() => navigate('firmas')}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-on-surface-variant hover:text-on-surface hover:bg-foreground/10 transition-all whitespace-nowrap cursor-pointer"
                                         title="Ir al Gestor de Firmas Electrónicas"
                                     >
                                         <KeyRound size={14} className="text-[#C9A96E]" />
@@ -852,10 +852,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </button>
                                     <button
                                         onClick={() => navigate('sri_facturacion')}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-on-surface-variant hover:text-on-surface hover:bg-foreground/10 transition-all whitespace-nowrap cursor-pointer"
                                         title="Ir a Facturación Electrónica SRI"
                                     >
-                                        <Zap size={14} className="text-[#00A896]" />
+                                        <Zap size={14} className="text-tertiary" />
                                         <span>Facturación SRI</span>
                                     </button>
                                 </div>
@@ -866,8 +866,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         onClick={() => setShowIntelligencePanels(p => !p)}
                                         className={`p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center shadow-sm shrink-0 cursor-pointer ${
                                             showIntelligencePanels 
-                                                ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896]' 
-                                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                                                ? 'bg-tertiary/15 border-tertiary/30 text-tertiary' 
+                                                : 'bg-foreground/5 border-foreground/10 text-on-surface-variant hover:text-on-surface'
                                         }`}
                                         title={showIntelligencePanels ? "Modo minimalista (ocultar paneles)" : "Mostrar paneles de control e inteligencia"}
                                     >
@@ -876,10 +876,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <button
                                         onClick={() => setShowUploader(p => !p)}
                                         disabled={isProcessing}
-                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:scale-[1.02] transition-all duration-300 shadow-xl disabled:opacity-50 group font-mono border border-white/10 cursor-pointer ${
+                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:scale-[1.02] transition-all duration-300 shadow-xl disabled:opacity-50 group font-mono border border-foreground/10 cursor-pointer ${
                                             showUploader 
-                                                ? 'bg-[#00A896] text-white shadow-[#00A896]/30' 
-                                                : 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/20'
+                                                ? 'bg-tertiary text-white shadow-tertiary/30' 
+                                                : 'bg-gradient-to-r from-tertiary to-tertiary text-white shadow-lg shadow-tertiary/20'
                                         }`}
                                     >
                                         {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} className="group-hover:-translate-y-0.5 transition-transform" />}
@@ -901,34 +901,34 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                     {/* ── TELEMETRY STRIP (4 LUXURY FISCAL KPI CARDS) ── */}
                     <div className="px-6 sm:px-10 pb-6 relative z-10 font-mono">
-                        <div className="p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-3xl border border-white/10 bg-[#020b14]/80 backdrop-blur-xl">
+                        <div className="p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-3xl border border-foreground/10 bg-surface-lowest backdrop-blur-xl">
                             {/* KPI 1: Clientes */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
-                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-white/10 hover:bg-white/5 transition-colors text-left cursor-pointer"
+                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                             >
-                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white shadow-lg shadow-[#2B6AFF]/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-primary text-white shadow-lg shadow-primary/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                     <Users size={20} strokeWidth={2} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 font-mono">Total Clientes</p>
-                                    <p className="text-3xl font-black text-white tracking-tight leading-none font-mono">{kpis.total}</p>
-                                    <p className="text-[10px] text-[#00A896] mt-1 font-mono">ir a expedientes →</p>
+                                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-1 font-mono">Total Clientes</p>
+                                    <p className="text-3xl font-black text-on-surface tracking-tight leading-none font-mono">{kpis.total}</p>
+                                    <p className="text-[10px] text-tertiary mt-1 font-mono">ir a expedientes →</p>
                                 </div>
                             </button>
 
                             {/* KPI 2: Facturación */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
-                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-white/10 hover:bg-white/5 transition-colors text-left cursor-pointer"
+                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                             >
-                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-tertiary to-tertiary text-white shadow-lg shadow-tertiary/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                     <TrendingUp size={20} strokeWidth={2} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 font-mono">Facturación Est.</p>
-                                    <p className="text-3xl font-black tracking-tight leading-none text-[#00A896] font-mono">${Math.round(kpis.projectedIncome).toLocaleString()}</p>
-                                    <p className="text-[10px] text-slate-400 mt-1 font-mono">ingreso proyectado</p>
+                                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-1 font-mono">Facturación Est.</p>
+                                    <p className="text-3xl font-black tracking-tight leading-none text-tertiary font-mono">${Math.round(kpis.projectedIncome).toLocaleString()}</p>
+                                    <p className="text-[10px] text-on-surface-variant mt-1 font-mono">ingreso proyectado</p>
                                 </div>
                             </button>
 
@@ -943,9 +943,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 return (
                                     <button
                                         onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true } })}
-                                        className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-white/10 hover:bg-white/5 transition-colors text-left cursor-pointer"
+                                        className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                                     >
-                                        <div className={`p-3.5 rounded-2xl text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-300 ${
+                                        <div className={`p-3.5 rounded-2xl text-on-surface shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-300 ${
                                             hasMissing
                                                 ? 'bg-gradient-to-br from-amber-400 to-[#C9A96E] shadow-amber-400/25'
                                                 : 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-slate-600/20'
@@ -953,11 +953,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             <Vault size={20} strokeWidth={2} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 font-mono">Archivo Digital</p>
+                                            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-1 font-mono">Archivo Digital</p>
                                             <p className={`text-3xl font-black tracking-tight leading-none font-mono ${
-                                                hasMissing ? 'text-[#C9A96E]' : 'text-slate-400'
+                                                hasMissing ? 'text-[#C9A96E]' : 'text-on-surface-variant'
                                             }`}>{missingPdfCount}</p>
-                                            <p className="text-[10px] text-slate-400 mt-1 font-mono">{hasMissing ? 'sin comprobante' : 'bóveda completa ✓'}</p>
+                                            <p className="text-[10px] text-on-surface-variant mt-1 font-mono">{hasMissing ? 'sin comprobante' : 'bóveda completa ✓'}</p>
                                         </div>
                                     </button>
                                 );
@@ -966,7 +966,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* KPI 4: Cartera por Cobrar */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'cobros' } })}
-                                className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-white/5 transition-colors text-left cursor-pointer"
+                                className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                 <div className="relative z-10">
@@ -974,13 +974,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 group-hover:scale-110 transition-transform">
                                             <Wallet size={14} />
                                         </div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] font-mono">Por Cobrar</p>
+                                        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] font-mono">Por Cobrar</p>
                                     </div>
                                     <div className="flex items-baseline gap-2 mb-3">
                                         <span className={`text-3xl font-black tracking-tight leading-none font-mono ${
-                                            kpis.pendingCollectionsAmount > 0 ? 'text-rose-400' : 'text-[#00A896]'
+                                            kpis.pendingCollectionsAmount > 0 ? 'text-rose-400' : 'text-tertiary'
                                         }`}>${Math.round(kpis.pendingCollectionsAmount).toLocaleString()}</span>
-                                        <span className="text-xs text-slate-400 font-mono">{kpis.pendingCollectionsCount} c.</span>
+                                        <span className="text-xs text-on-surface-variant font-mono">{kpis.pendingCollectionsCount} c.</span>
                                     </div>
                                     {(() => {
                                         const collectedPercent = kpis.projectedIncome > 0
@@ -988,10 +988,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             : 100;
                                         return (
                                             <>
-                                                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                                <div className="w-full h-2 bg-foreground/10 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                                                            collectedPercent >= 80 ? 'bg-gradient-to-r from-[#00A896] to-teal-400' :
+                                                            collectedPercent >= 80 ? 'bg-gradient-to-r from-tertiary to-tertiary' :
                                                             collectedPercent >= 50 ? 'bg-gradient-to-r from-amber-400 to-[#C9A96E]' :
                                                             'bg-gradient-to-r from-rose-500 to-red-400'
                                                         }`}
@@ -999,7 +999,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                     />
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1.5">
-                                                    <p className="text-[10px] text-slate-400 font-mono">{collectedPercent}% cobrado</p>
+                                                    <p className="text-[10px] text-on-surface-variant font-mono">{collectedPercent}% cobrado</p>
                                                     <ArrowRight size={12} className="text-rose-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                                                 </div>
                                             </>
@@ -1021,29 +1021,29 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div
                                     key={idx}
                                     onClick={s.action}
-                                    className="group relative overflow-hidden rounded-[2rem] cursor-pointer border border-white/10 bg-[#051424]/90 backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 shadow-xl"
+                                    className="group relative overflow-hidden rounded-[2rem] cursor-pointer border border-foreground/10 bg-surface-low backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-foreground/20 shadow-xl"
                                 >
                                     <div className={`absolute top-0 left-0 w-full h-1 ${
                                         s.priority === 'high' ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
                                         s.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-[#C9A96E]' :
-                                        'bg-gradient-to-r from-[#2B6AFF] to-blue-400'
+                                        'bg-gradient-to-r from-primary to-blue-400'
                                     }`} />
                                     <div className="p-5 relative z-10 font-mono">
                                         <div className="flex items-center gap-2 mb-3">
                                             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] ${
                                                 s.priority === 'high' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
                                                 s.priority === 'medium' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' :
-                                                'bg-[#2B6AFF]/15 text-[#2B6AFF] border border-[#2B6AFF]/30'
+                                                'bg-primary/15 text-primary border border-primary/30'
                                             }`}>
                                                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                                                    s.priority === 'high' ? 'bg-rose-400' : s.priority === 'medium' ? 'bg-amber-400' : 'bg-[#2B6AFF]'
+                                                    s.priority === 'high' ? 'bg-rose-400' : s.priority === 'medium' ? 'bg-amber-400' : 'bg-primary'
                                                 }`} />
                                                 {s.priority === 'high' ? 'Crítico' : s.priority === 'medium' ? 'Aviso' : 'Sugerencia'}
                                             </div>
                                         </div>
-                                        <h4 className="text-sm font-bold text-white mb-1.5 leading-tight font-display">{s.title}</h4>
-                                        <p className="text-xs text-slate-400 leading-relaxed font-sans">{s.desc}</p>
-                                        <div className="flex items-center gap-1.5 mt-3 text-[10px] font-bold uppercase tracking-widest text-[#00A896] group-hover:translate-x-1 transition-transform">
+                                        <h4 className="text-sm font-bold text-on-surface mb-1.5 leading-tight font-display">{s.title}</h4>
+                                        <p className="text-xs text-on-surface-variant leading-relaxed font-sans">{s.desc}</p>
+                                        <div className="flex items-center gap-1.5 mt-3 text-[10px] font-bold uppercase tracking-widest text-tertiary group-hover:translate-x-1 transition-transform">
                                             <span>Gestionar</span>
                                             <ArrowRight size={12} />
                                         </div>
@@ -1056,7 +1056,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     {/* ── TACTICAL ALERT BANNER ELITE ── */}
                     {isTacticalVisible && tacticalInfo.todayDigit !== null && (
                         <div className="relative z-30 animate-in fade-in duration-300 px-4 sm:px-0 group/tactical">
-                            <div className="relative overflow-hidden rounded-[2rem] border border-rose-500/30 bg-[#051424]/95 backdrop-blur-2xl p-5 shadow-2xl">
+                            <div className="relative overflow-hidden rounded-[2rem] border border-rose-500/30 bg-surface-low backdrop-blur-2xl p-5 shadow-2xl">
                                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-rose-500 via-rose-400/50 to-transparent" />
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-5">
@@ -1069,12 +1069,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <div className="flex flex-col font-mono">
                                             <span className="text-[9px] font-bold text-rose-400 uppercase tracking-[0.3em] mb-0.5">⚡ Alerta Tributaria SRI Activa</span>
                                             <div className="flex items-baseline gap-3">
-                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dígito vence hoy:</span>
-                                                <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter leading-none">{tacticalInfo.todayDigit}</span>
+                                                <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Dígito vence hoy:</span>
+                                                <span className="text-4xl sm:text-5xl font-black text-on-surface tracking-tighter leading-none">{tacticalInfo.todayDigit}</span>
                                                 {tacticalInfo.tomorrowDigit !== null && (
                                                     <div className="flex flex-col hidden sm:flex">
-                                                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Mañana</span>
-                                                        <span className="text-xl font-black text-slate-400 tracking-tight">{tacticalInfo.tomorrowDigit}</span>
+                                                        <span className="text-[9px] text-on-surface-variant uppercase tracking-widest">Mañana</span>
+                                                        <span className="text-xl font-black text-on-surface-variant tracking-tight">{tacticalInfo.tomorrowDigit}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -1089,7 +1089,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         )}
                                         <button
                                             onClick={() => setIsTacticalVisible(false)}
-                                            className="p-2 hover:bg-white/10 rounded-xl transition-colors text-slate-400 hover:text-white cursor-pointer"
+                                            className="p-2 hover:bg-foreground/10 rounded-xl transition-colors text-on-surface-variant hover:text-on-surface cursor-pointer"
                                         >
                                             <X size={16} />
                                         </button>
@@ -1114,10 +1114,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             ) : (
                 /* ── MINI SUMMARY RIBBON ── */
                 <div className="relative z-30 px-4 sm:px-0 no-print font-mono">
-                    <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-white/10 bg-[#051424]/90 backdrop-blur-xl">
+                    <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-foreground/10 bg-surface-low backdrop-blur-xl">
                         <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                <Sparkles size={12} className="text-[#00A896] animate-pulse" />
+                            <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-1.5">
+                                <Sparkles size={12} className="text-tertiary animate-pulse" />
                                 Resumen Operativo
                             </span>
                             
@@ -1134,14 +1134,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 </span>
                             )}
                             
-                            <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-full text-[10px] font-bold">
+                            <span className="flex items-center gap-1 px-2.5 py-1 bg-tertiary/15 border border-tertiary/30 text-tertiary rounded-full text-[10px] font-bold">
                                 📊 Avance Campaña: {completados.length}/{allResults.length > 0 ? allResults.length : kpis.total}
                             </span>
                         </div>
                         
                         <button
                             onClick={() => setShowIntelligencePanels(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-white/10"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-foreground/10"
                         >
                             <Eye size={12} />
                             Mostrar Paneles
@@ -1154,31 +1154,31 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 CENTRO OPERATIVO Y MESA DE TRABAJO TÁCTICA (Stitch Obsidian Luxury)
             ══════════════════════════════════════════════════════ */}
             <div className="relative z-30 px-4 sm:px-0 mt-6">
-                <div className="bg-[#051424]/90 rounded-[2.5rem] border border-white/10 border-t-white/20 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl transition-all duration-500">
+                <div className="bg-surface-low rounded-[2.5rem] border border-foreground/10 border-t-foreground/20 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl transition-all duration-500">
                     
                     {/* HUB NAVIGATION TABS */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-foreground/10">
                         <div className="flex items-center gap-3 font-mono">
-                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#00A896] to-[#2B6AFF] text-white shadow-lg shadow-[#00A896]/30">
+                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-tertiary to-primary text-white shadow-lg shadow-tertiary/30">
                                 <Command size={18} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-white uppercase tracking-wider font-display">CENTRO DE MANDO EJECUTIVO</h3>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Radar Tributario & Accesos Inmediatos</p>
+                                <h3 className="text-sm font-black text-on-surface uppercase tracking-wider font-display">CENTRO DE MANDO EJECUTIVO</h3>
+                                <p className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest mt-0.5">Radar Tributario & Accesos Inmediatos</p>
                             </div>
                         </div>
 
                         {/* TAB PILLS */}
-                        <div className="flex items-center gap-1.5 bg-[#0b1326] p-1.5 rounded-2xl border border-white/10 overflow-x-auto hide-scrollbar font-mono">
+                        <div className="flex items-center gap-1.5 bg-surface-lowest p-1.5 rounded-2xl border border-foreground/10 overflow-x-auto hide-scrollbar font-mono">
                             <button
                                 onClick={() => setHubTab('radar')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                     hubTab === 'radar'
-                                        ? 'bg-white/15 text-white shadow-md border border-white/20'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-foreground/15 text-on-surface shadow-md border border-foreground/20'
+                                        : 'text-on-surface-variant hover:text-on-surface'
                                 }`}
                             >
-                                <Sparkles size={14} className={hubTab === 'radar' ? 'text-[#00A896]' : ''} />
+                                <Sparkles size={14} className={hubTab === 'radar' ? 'text-tertiary' : ''} />
                                 <span>Radar Ejecutivo & SRI</span>
                             </button>
 
@@ -1186,15 +1186,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 onClick={() => setHubTab('cargas')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                     hubTab === 'cargas'
-                                        ? 'bg-white/15 text-white shadow-md border border-white/20'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-foreground/15 text-on-surface shadow-md border border-foreground/20'
+                                        : 'text-on-surface-variant hover:text-on-surface'
                                 }`}
                             >
-                                <UploadCloud size={14} className={hubTab === 'cargas' ? 'text-[#00A896]' : ''} />
+                                <UploadCloud size={14} className={hubTab === 'cargas' ? 'text-tertiary' : ''} />
                                 <span>Cargas & Bóveda</span>
                                 {recentUploads.length > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                        hubTab === 'cargas' ? 'bg-[#00A896] text-white' : 'bg-[#00A896]/15 text-[#00A896]'
+                                        hubTab === 'cargas' ? 'bg-tertiary text-white' : 'bg-tertiary/15 text-tertiary'
                                     }`}>
                                         {recentUploads.length}
                                     </span>
@@ -1206,7 +1206,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                     hubTab === 'alertas'
                                         ? 'bg-[#C9A96E]/20 text-[#C9A96E] shadow-md border border-[#C9A96E]/30'
-                                        : 'text-slate-400 hover:text-white'
+                                        : 'text-on-surface-variant hover:text-on-surface'
                                 }`}
                             >
                                 <AlertTriangle size={14} />
@@ -1224,15 +1224,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 onClick={() => setHubTab('firmas')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                     hubTab === 'firmas'
-                                        ? 'bg-[#00A896]/20 text-[#00A896] shadow-md border border-[#00A896]/30'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-tertiary/20 text-tertiary shadow-md border border-tertiary/30'
+                                        : 'text-on-surface-variant hover:text-on-surface'
                                 }`}
                             >
                                 <KeyRound size={14} />
                                 <span>Firmas .P12</span>
                                 {signatureData.withoutSignature.length > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                        hubTab === 'firmas' ? 'bg-[#00A896] text-white' : 'bg-[#00A896]/15 text-[#00A896]'
+                                        hubTab === 'firmas' ? 'bg-tertiary text-white' : 'bg-tertiary/15 text-tertiary'
                                     }`}>
                                         {signatureData.withoutSignature.length}
                                     </span>
@@ -1248,18 +1248,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-[#00A896] shadow-[0_0_8px_#00A896]"></div>
-                                        <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-tertiary shadow-[0_0_8px_#04B17B]"></div>
+                                        <h4 className="text-xs font-black text-on-surface uppercase tracking-wider font-mono">
                                             SRI Tax Deadline Matrix · Por 9no Dígito del RUC
                                         </h4>
                                     </div>
-                                    <span className="text-[10px] text-slate-400 font-mono bg-[#020b14] px-3 py-1 rounded-lg border border-white/10">
-                                        Período Fiscal Activo: <strong className="text-[#00A896]">{monthlyPeriodStr}</strong>
+                                    <span className="text-[10px] text-on-surface-variant font-mono bg-surface-lowest px-3 py-1 rounded-lg border border-foreground/10">
+                                        Período Fiscal Activo: <strong className="text-tertiary">{monthlyPeriodStr}</strong>
                                     </span>
                                 </div>
 
                                 {/* Filas 1 y 2 (Dígitos 0 al 4 y 5 al 9) */}
-                                <div className="p-6 rounded-3xl border border-white/10 bg-[#020b14]/80 backdrop-blur-2xl shadow-xl space-y-4">
+                                <div className="p-6 rounded-3xl border border-foreground/10 bg-surface-lowest backdrop-blur-2xl shadow-xl space-y-4">
                                     {/* Fila 1: Dígitos 0, 1, 2, 3, 4 */}
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                         {[
@@ -1284,13 +1284,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         isDueToday
                                                             ? 'bg-rose-500/20 border-rose-500/50 shadow-rose-500/20 ring-1 ring-rose-500/40 animate-pulse'
                                                             : isPastDue
-                                                            ? 'bg-white/5 border-white/5 opacity-70 hover:opacity-100 hover:border-white/20'
-                                                            : 'bg-[#051424] border-white/10 hover:border-[#00A896]/50'
+                                                            ? 'bg-foreground/5 border-foreground/5 opacity-70 hover:opacity-100 hover:border-foreground/20'
+                                                            : 'bg-surface-low border-foreground/10 hover:border-tertiary/50'
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className={`text-2xl font-black font-mono tracking-tight ${
-                                                            isDueToday ? 'text-rose-400' : isPastDue ? 'text-slate-400' : 'text-white'
+                                                            isDueToday ? 'text-rose-400' : isPastDue ? 'text-on-surface-variant' : 'text-on-surface'
                                                         }`}>
                                                             {digit}
                                                         </span>
@@ -1298,14 +1298,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                             isDueToday
                                                                 ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
                                                                 : isPastDue
-                                                                ? 'bg-slate-600'
-                                                                : 'bg-[#00A896] shadow-[0_0_8px_#00A896]'
+                                                                ? 'bg-on-surface-variant'
+                                                                : 'bg-tertiary shadow-[0_0_8px_#04B17B]'
                                                         }`}></div>
                                                     </div>
 
                                                     <div className="space-y-1.5">
-                                                        <div className="font-mono text-xs text-slate-400">
-                                                            Clts: <strong className="text-white font-bold">{digitClients.length}</strong>
+                                                        <div className="font-mono text-xs text-on-surface-variant">
+                                                            Clts: <strong className="text-on-surface font-bold">{digitClients.length}</strong>
                                                         </div>
                                                         <div className={`text-[9px] font-bold uppercase tracking-wider py-0.5 px-2 rounded font-mono inline-block ${
                                                             isDueToday
@@ -1314,7 +1314,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                                 ? `Día ${day} (Pasó)`
                                                                 : daysDiff <= 3
                                                                 ? 'bg-amber-500/20 text-amber-300'
-                                                                : 'bg-[#00A896]/15 text-[#00A896]'
+                                                                : 'bg-tertiary/15 text-tertiary'
                                                         }`}>
                                                             {isDueToday ? '¡VENCE HOY!' : isPastDue ? 'Vencido' : `Vence en ${daysDiff}d`}
                                                         </div>
@@ -1325,7 +1325,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </div>
 
                                     {/* Línea decorativa de línea de tiempo */}
-                                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-2"></div>
+                                    <div className="w-full h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent my-2"></div>
 
                                     {/* Fila 2: Dígitos 5, 6, 7, 8, 9 */}
                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -1351,13 +1351,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         isDueToday
                                                             ? 'bg-rose-500/20 border-rose-500/50 shadow-rose-500/20 ring-1 ring-rose-500/40 animate-pulse'
                                                             : isPastDue
-                                                            ? 'bg-white/5 border-white/5 opacity-70 hover:opacity-100 hover:border-white/20'
-                                                            : 'bg-[#051424] border-white/10 hover:border-[#00A896]/50'
+                                                            ? 'bg-foreground/5 border-foreground/5 opacity-70 hover:opacity-100 hover:border-foreground/20'
+                                                            : 'bg-surface-low border-foreground/10 hover:border-tertiary/50'
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className={`text-2xl font-black font-mono tracking-tight ${
-                                                            isDueToday ? 'text-rose-400' : isPastDue ? 'text-slate-400' : 'text-white'
+                                                            isDueToday ? 'text-rose-400' : isPastDue ? 'text-on-surface-variant' : 'text-on-surface'
                                                         }`}>
                                                             {digit}
                                                         </span>
@@ -1365,14 +1365,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                             isDueToday
                                                                 ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
                                                                 : isPastDue
-                                                                ? 'bg-slate-600'
-                                                                : 'bg-[#00A896] shadow-[0_0_8px_#00A896]'
+                                                                ? 'bg-on-surface-variant'
+                                                                : 'bg-tertiary shadow-[0_0_8px_#04B17B]'
                                                         }`}></div>
                                                     </div>
 
                                                     <div className="space-y-1.5">
-                                                        <div className="font-mono text-xs text-slate-400">
-                                                            Clts: <strong className="text-white font-bold">{digitClients.length}</strong>
+                                                        <div className="font-mono text-xs text-on-surface-variant">
+                                                            Clts: <strong className="text-on-surface font-bold">{digitClients.length}</strong>
                                                         </div>
                                                         <div className={`text-[9px] font-bold uppercase tracking-wider py-0.5 px-2 rounded font-mono inline-block ${
                                                             isDueToday
@@ -1381,7 +1381,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                                 ? `Día ${day} (Pasó)`
                                                                 : daysDiff <= 3
                                                                 ? 'bg-amber-500/20 text-amber-300'
-                                                                : 'bg-[#00A896]/15 text-[#00A896]'
+                                                                : 'bg-tertiary/15 text-tertiary'
                                                         }`}>
                                                             {isDueToday ? '¡VENCE HOY!' : isPastDue ? 'Vencido' : `Vence en ${daysDiff}d`}
                                                         </div>
@@ -1395,73 +1395,73 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             {/* 2. CENTRO DE ACCESO RÁPIDO EJECUTIVO (4 COMMAND LAUNCHERS) */}
                             <div className="space-y-3">
-                                <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                                    <Sparkles size={16} className="text-[#2B6AFF]" />
+                                <h4 className="text-xs font-black text-on-surface uppercase tracking-wider font-mono flex items-center gap-2">
+                                    <Sparkles size={16} className="text-primary" />
                                     Command Actions Launcher
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {/* Card 1: Declaraciones */}
                                     <button
                                         onClick={() => navigate('declaraciones')}
-                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-[#020b14] hover:border-[#00A896]/50 hover:bg-[#00A896]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-tertiary/50 hover:bg-tertiary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white flex items-center justify-center shadow-lg shadow-[#00A896]/30 group-hover:scale-110 transition-transform">
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-tertiary to-tertiary text-white flex items-center justify-center shadow-lg shadow-tertiary/30 group-hover:scale-110 transition-transform">
                                                 <FileText size={22} />
                                             </div>
-                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-[#00A896] group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight size={14} className="text-on-surface-variant group-hover:text-tertiary group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-white mb-0.5 font-display">Matriz Fiscal</h5>
-                                        <p className="text-[10px] text-[#00A896] font-mono mb-1">Full Audit View & Automation</p>
-                                        <p className="text-[11px] text-slate-400 font-sans">Control de IVA mensual, semestral y Renta anual con RPA.</p>
+                                        <h5 className="text-sm font-bold text-on-surface mb-0.5 font-display">Matriz Fiscal</h5>
+                                        <p className="text-[10px] text-tertiary font-mono mb-1">Full Audit View & Automation</p>
+                                        <p className="text-[11px] text-on-surface-variant font-sans">Control de IVA mensual, semestral y Renta anual con RPA.</p>
                                     </button>
 
                                     {/* Card 2: Clientes */}
                                     <button
                                         onClick={() => navigate('clients')}
-                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-[#020b14] hover:border-[#2B6AFF]/50 hover:bg-[#2B6AFF]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white flex items-center justify-center shadow-lg shadow-[#2B6AFF]/30 group-hover:scale-110 transition-transform">
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
                                                 <Users size={22} />
                                             </div>
-                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-[#2B6AFF] group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight size={14} className="text-on-surface-variant group-hover:text-primary group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-white mb-0.5 font-display">Directorio Clientes</h5>
-                                        <p className="text-[10px] text-[#2B6AFF] font-mono mb-1">Manage Profiles & SRI Keys</p>
-                                        <p className="text-[11px] text-slate-400 font-sans">Expedientes fiscales, tarifas, WhatsApp y accesos.</p>
+                                        <h5 className="text-sm font-bold text-on-surface mb-0.5 font-display">Directorio Clientes</h5>
+                                        <p className="text-[10px] text-primary font-mono mb-1">Manage Profiles & SRI Keys</p>
+                                        <p className="text-[11px] text-on-surface-variant font-sans">Expedientes fiscales, tarifas, WhatsApp y accesos.</p>
                                     </button>
 
                                     {/* Card 3: Facturador SRI */}
                                     <button
                                         onClick={() => navigate('sri_facturacion')}
-                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-[#020b14] hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform font-bold">
                                                 <Zap size={22} />
                                             </div>
-                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight size={14} className="text-on-surface-variant group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-white mb-0.5 font-display">Facturación Electrónica</h5>
+                                        <h5 className="text-sm font-bold text-on-surface mb-0.5 font-display">Facturación Electrónica</h5>
                                         <p className="text-[10px] text-[#C9A96E] font-mono mb-1">XML Processing & SRI Sync</p>
-                                        <p className="text-[11px] text-slate-400 font-sans">Emisión de facturas autorizadas con firma .p12.</p>
+                                        <p className="text-[11px] text-on-surface-variant font-sans">Emisión de facturas autorizadas con firma .p12.</p>
                                     </button>
 
                                     {/* Card 4: Firmas .P12 */}
                                     <button
                                         onClick={() => navigate('firmas')}
-                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-[#020b14] hover:border-teal-400/50 hover:bg-teal-500/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-tertiary/50 hover:bg-tertiary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-teal-500/20 group-hover:scale-110 transition-transform">
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-tertiary to-tertiary text-white flex items-center justify-center shadow-lg shadow-tertiary/20 group-hover:scale-110 transition-transform">
                                                 <KeyRound size={22} />
                                             </div>
-                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-teal-400 group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight size={14} className="text-on-surface-variant group-hover:text-tertiary group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-white mb-0.5 font-display">Bóveda de Llaves .P12</h5>
-                                        <p className="text-[10px] text-teal-400 font-mono mb-1">Secure Vault Access</p>
-                                        <p className="text-[11px] text-slate-400 font-sans">Control de vigencia, renovaciones y certificados.</p>
+                                        <h5 className="text-sm font-bold text-on-surface mb-0.5 font-display">Bóveda de Llaves .P12</h5>
+                                        <p className="text-[10px] text-tertiary font-mono mb-1">Secure Vault Access</p>
+                                        <p className="text-[11px] text-on-surface-variant font-sans">Control de vigencia, renovaciones y certificados.</p>
                                     </button>
                                 </div>
                             </div>
@@ -1469,21 +1469,21 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* 3. RADAR DE CARTERA POR RÉGIMEN TRIBUTARIO (PROJECTED REVENUE BY REGIME) */}
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                                        <TrendingUp size={16} className="text-[#00A896]" />
+                                    <h4 className="text-xs font-black text-on-surface uppercase tracking-wider font-mono flex items-center gap-2">
+                                        <TrendingUp size={16} className="text-tertiary" />
                                         Projected Revenue by Regime
                                     </h4>
-                                    <span className="text-xs font-mono font-bold text-[#00A896]">
+                                    <span className="text-xs font-mono font-bold text-tertiary">
                                         {clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length} Contribuyentes Activos
                                     </span>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {[
-                                        { label: 'Régimen General', filterId: 'general', regime: TaxRegime.General, barColor: 'bg-[#2B6AFF]', textColor: 'text-[#2B6AFF]', hoverText: 'group-hover:text-[#2B6AFF]' },
-                                        { label: 'RIMPE Emprendedor', filterId: 'rimpe_emp', regime: TaxRegime.RimpeEmprendedor, barColor: 'bg-[#00A896]', textColor: 'text-[#00A896]', hoverText: 'group-hover:text-[#00A896]' },
+                                        { label: 'Régimen General', filterId: 'general', regime: TaxRegime.General, barColor: 'bg-primary', textColor: 'text-primary', hoverText: 'group-hover:text-primary' },
+                                        { label: 'RIMPE Emprendedor', filterId: 'rimpe_emp', regime: TaxRegime.RimpeEmprendedor, barColor: 'bg-tertiary', textColor: 'text-tertiary', hoverText: 'group-hover:text-tertiary' },
                                         { label: 'RIMPE Negocio Popular', filterId: 'rimpe_np', regime: TaxRegime.RimpeNegocioPopular, barColor: 'bg-[#C9A96E]', textColor: 'text-[#C9A96E]', hoverText: 'group-hover:text-[#C9A96E]' },
-                                        { label: 'Solo Firma / Plan', filterId: 'solo_plan', regime: null, barColor: 'bg-teal-400', textColor: 'text-teal-400', hoverText: 'group-hover:text-teal-400' },
+                                        { label: 'Solo Firma / Plan', filterId: 'solo_plan', regime: null, barColor: 'bg-tertiary', textColor: 'text-tertiary', hoverText: 'group-hover:text-tertiary' },
                                     ].map((item, idx) => {
                                         const matched = item.regime
                                             ? clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.regime === item.regime)
@@ -1494,18 +1494,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             <div
                                                 key={idx}
                                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: item.filterId } })}
-                                                className="p-5 rounded-2xl border border-white/10 bg-[#020b14] hover:bg-white/5 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-lg"
+                                                className="p-5 rounded-2xl border border-foreground/10 bg-surface-lowest hover:bg-foreground/5 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-lg"
                                             >
                                                 <div className={`absolute top-0 left-0 w-1.5 h-full ${item.barColor} opacity-70 group-hover:opacity-100 transition-opacity`}></div>
-                                                <div className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                                <div className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">
                                                     {item.label}
                                                 </div>
-                                                <div className={`font-mono text-2xl font-black text-white ${item.hoverText} transition-colors`}>
+                                                <div className={`font-mono text-2xl font-black text-on-surface ${item.hoverText} transition-colors`}>
                                                     ${Math.round(feeSum).toLocaleString()}.00
                                                 </div>
-                                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-                                                    <span className="text-[10px] text-slate-400 font-mono">Projected MRR</span>
-                                                    <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-white/5 ${item.textColor}`}>
+                                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-foreground/5">
+                                                    <span className="text-[10px] text-on-surface-variant font-mono">Projected MRR</span>
+                                                    <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-foreground/5 ${item.textColor}`}>
                                                         {matched.length} clientes
                                                     </span>
                                                 </div>
@@ -1527,8 +1527,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 onDrop={handleDrop}
                                 className={`relative overflow-hidden rounded-2xl border transition-all duration-300 p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] ${
                                     dragActive 
-                                        ? 'bg-[#2B6AFF]/15 border-[#2B6AFF] shadow-lg shadow-[#2B6AFF]/20' 
-                                        : 'bg-[#020b14] border-white/10 hover:border-[#00A896]/50'
+                                        ? 'bg-primary/15 border-primary shadow-lg shadow-primary/20' 
+                                        : 'bg-surface-lowest border-foreground/10 hover:border-tertiary/50'
                                 }`}
                                 onClick={() => fileInputRef.current?.click()}
                             >
@@ -1536,17 +1536,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                                 {isProcessing ? (
                                     <div className="flex flex-col items-center gap-3 py-4">
-                                        <Loader2 className="animate-spin text-[#00A896]" size={32} />
-                                        <p className="text-xs font-bold text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
+                                        <Loader2 className="animate-spin text-tertiary" size={32} />
+                                        <p className="text-xs font-bold text-on-surface uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-3 py-2">
-                                        <div className="w-10 h-10 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 flex items-center justify-center text-[#00A896]">
+                                        <div className="w-10 h-10 rounded-xl bg-tertiary/15 border border-tertiary/30 flex items-center justify-center text-tertiary">
                                             <UploadCloud size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-white uppercase tracking-wider">Arrastra aquí tus PDFs SRI o RUCs</p>
-                                            <p className="text-[11px] text-slate-400 mt-0.5 font-sans">El sistema asociará el documento al cliente automáticamente</p>
+                                            <p className="text-xs font-bold text-on-surface uppercase tracking-wider">Arrastra aquí tus PDFs SRI o RUCs</p>
+                                            <p className="text-[11px] text-on-surface-variant mt-0.5 font-sans">El sistema asociará el documento al cliente automáticamente</p>
                                         </div>
                                     </div>
                                 )}
@@ -1555,22 +1555,22 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* RECENT UPLOADS */}
                             {recentUploads.length > 0 && (
                                 <div className="space-y-3">
-                                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargas de la Sesión ({recentUploads.length})</span>
+                                    <div className="flex items-center justify-between border-b border-foreground/10 pb-2">
+                                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Cargas de la Sesión ({recentUploads.length})</span>
                                         <button onClick={() => setRecentUploads([])} className="text-[9px] font-bold text-rose-400 uppercase tracking-wider hover:underline cursor-pointer">Limpiar</button>
                                     </div>
                                     <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
                                         {recentUploads.map((res, i) => {
                                             const matchedClient = clients.find(c => c.ruc === res.ruc);
                                             return (
-                                                <div key={i} className="flex items-center justify-between gap-3 p-3 bg-[#020b14] border border-white/10 rounded-xl text-xs">
+                                                <div key={i} className="flex items-center justify-between gap-3 p-3 bg-surface-lowest border border-foreground/10 rounded-xl text-xs">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                        <FileText size={14} className="text-[#00A896] shrink-0" />
-                                                        <span className="font-bold truncate text-white uppercase">{res.clientName || res.fileName}</span>
-                                                        <span className="text-[9px] font-mono text-slate-400">{res.ruc}</span>
+                                                        <FileText size={14} className="text-tertiary shrink-0" />
+                                                        <span className="font-bold truncate text-on-surface uppercase">{res.clientName || res.fileName}</span>
+                                                        <span className="text-[9px] font-mono text-on-surface-variant">{res.ruc}</span>
                                                     </div>
                                                     {matchedClient && (
-                                                        <button onClick={() => setWorkspaceClient({ client: matchedClient, period: res.period })} className="px-2.5 py-1 bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] rounded-lg text-[9px] font-bold uppercase cursor-pointer border border-[#00A896]/30">
+                                                        <button onClick={() => setWorkspaceClient({ client: matchedClient, period: res.period })} className="px-2.5 py-1 bg-tertiary/15 hover:bg-tertiary/25 text-tertiary rounded-lg text-[9px] font-bold uppercase cursor-pointer border border-tertiary/30">
                                                             Expediente
                                                         </button>
                                                     )}
@@ -1588,24 +1588,24 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-300 font-mono">
                             {/* REFUNDS */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                <div className="flex items-center justify-between border-b border-foreground/10 pb-2">
                                     <div className="flex items-center gap-2">
                                         <HandCoins size={16} className="text-[#C9A96E]" />
-                                        <span className="text-xs font-bold text-white uppercase tracking-wider">Devoluciones de Renta ({activeRentaRefunds.length})</span>
+                                        <span className="text-xs font-bold text-on-surface uppercase tracking-wider">Devoluciones de Renta ({activeRentaRefunds.length})</span>
                                     </div>
                                 </div>
 
                                 {activeRentaRefunds.length === 0 ? (
-                                    <p className="text-xs text-slate-400 italic p-4 text-center">No hay trámites de devolución pendientes.</p>
+                                    <p className="text-xs text-on-surface-variant italic p-4 text-center">No hay trámites de devolución pendientes.</p>
                                 ) : (
                                     <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                                         {activeRentaRefunds.map(c => (
-                                            <div key={c.id} className="flex items-center justify-between p-3.5 bg-[#020b14] border border-white/10 rounded-xl">
+                                            <div key={c.id} className="flex items-center justify-between p-3.5 bg-surface-lowest border border-foreground/10 rounded-xl">
                                                 <div>
-                                                    <h5 className="text-xs font-bold text-white uppercase font-display">{c.name}</h5>
+                                                    <h5 className="text-xs font-bold text-on-surface uppercase font-display">{c.name}</h5>
                                                     <p className="text-[10px] text-[#C9A96E] font-bold uppercase mt-0.5">Estado: {c.rentaRefundStatus || 'Solicitado'}</p>
                                                 </div>
-                                                <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg text-[9px] font-bold uppercase border border-white/10 cursor-pointer">
+                                                <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-3 py-1.5 bg-foreground/5 hover:bg-foreground/10 text-on-surface rounded-lg text-[9px] font-bold uppercase border border-foreground/10 cursor-pointer">
                                                     Ver
                                                 </button>
                                             </div>
@@ -1616,21 +1616,21 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             {/* FIRMAS POR CADUCAR */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                <div className="flex items-center justify-between border-b border-foreground/10 pb-2">
                                     <div className="flex items-center gap-2">
                                         <ShieldAlert size={16} className="text-rose-400" />
-                                        <span className="text-xs font-bold text-white uppercase tracking-wider">Firmas por Caducar ({expiringSignatures.length})</span>
+                                        <span className="text-xs font-bold text-on-surface uppercase tracking-wider">Firmas por Caducar ({expiringSignatures.length})</span>
                                     </div>
                                 </div>
 
                                 {expiringSignatures.length === 0 ? (
-                                    <p className="text-xs text-slate-400 italic p-4 text-center">Todas las firmas electrónicas están al día.</p>
+                                    <p className="text-xs text-on-surface-variant italic p-4 text-center">Todas las firmas electrónicas están al día.</p>
                                 ) : (
                                     <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                                         {expiringSignatures.map(c => (
-                                            <div key={c.id} className="flex items-center justify-between p-3.5 bg-[#020b14] border border-white/10 rounded-xl">
+                                            <div key={c.id} className="flex items-center justify-between p-3.5 bg-surface-lowest border border-foreground/10 rounded-xl">
                                                 <div>
-                                                    <h5 className="text-xs font-bold text-white uppercase font-display">{c.name}</h5>
+                                                    <h5 className="text-xs font-bold text-on-surface uppercase font-display">{c.name}</h5>
                                                     <p className="text-[10px] text-rose-400 font-bold uppercase mt-0.5">Vence: {c.signatureExpirationDate}</p>
                                                 </div>
                                                 <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm cursor-pointer">
@@ -1650,26 +1650,26 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* HEADER + STATS ROW */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded-2xl bg-gradient-to-br from-teal-500 to-[#00A896] text-white shadow-lg shadow-teal-500/25">
+                                    <div className="p-2.5 rounded-2xl bg-gradient-to-br from-tertiary to-tertiary text-white shadow-lg shadow-tertiary/25">
                                         <KeyRound size={16} strokeWidth={2.5} />
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-black text-white uppercase tracking-wider font-display">Control de Firmas Electrónicas</h4>
-                                        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                                            <span className="text-[#00A896] font-bold">{signatureData.withSignature.length}</span> con firma ·{' '}
+                                        <h4 className="text-sm font-black text-on-surface uppercase tracking-wider font-display">Control de Firmas Electrónicas</h4>
+                                        <p className="text-[10px] text-on-surface-variant mt-0.5 font-mono">
+                                            <span className="text-tertiary font-bold">{signatureData.withSignature.length}</span> con firma ·{' '}
                                             <span className="text-rose-400 font-bold">{signatureData.withoutSignature.length}</span> sin firma
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* SUB-TABS */}
-                                <div className="flex bg-[#0b1326] p-1 rounded-xl border border-white/10">
+                                <div className="flex bg-surface-lowest p-1 rounded-xl border border-foreground/10">
                                     <button
                                         onClick={() => setFirmasSubTab('vigentes')}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                                             firmasSubTab === 'vigentes'
-                                                ? 'bg-white/15 text-white shadow-sm border border-white/20'
-                                                : 'text-slate-400 hover:text-white'
+                                                ? 'bg-foreground/15 text-on-surface shadow-sm border border-foreground/20'
+                                                : 'text-on-surface-variant hover:text-on-surface'
                                         }`}
                                     >
                                         <ShieldCheck size={11} />
@@ -1680,7 +1680,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                                             firmasSubTab === 'sin-firma'
                                                 ? 'bg-rose-500/20 text-rose-300 shadow-sm border border-rose-500/30'
-                                                : 'text-slate-400 hover:text-white'
+                                                : 'text-on-surface-variant hover:text-on-surface'
                                         }`}
                                     >
                                         <ShieldOff size={11} />
@@ -1694,11 +1694,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                                     {signatureData.withSignature.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                                            <div className="p-4 rounded-2xl bg-white/5">
-                                                <KeyRound size={24} className="text-slate-400" />
+                                            <div className="p-4 rounded-2xl bg-foreground/5">
+                                                <KeyRound size={24} className="text-on-surface-variant" />
                                             </div>
-                                            <p className="text-sm text-slate-400 font-medium">Ningún cliente tiene firma cargada aún.</p>
-                                            <p className="text-[11px] text-slate-500">Sube el archivo .p12 en la bóveda de cada cliente.</p>
+                                            <p className="text-sm text-on-surface-variant font-medium">Ningún cliente tiene firma cargada aún.</p>
+                                            <p className="text-[11px] text-on-surface-variant">Sube el archivo .p12 en la bóveda de cada cliente.</p>
                                         </div>
                                     ) : (
                                         signatureData.withSignature.map((c, idx) => {
@@ -1711,13 +1711,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                 ? 'text-rose-400'
                                                 : isExpiringSoon
                                                 ? 'text-amber-400'
-                                                : 'text-[#00A896]';
+                                                : 'text-tertiary';
 
                                             const dotColor = isExpired
                                                 ? 'bg-rose-500 shadow-[0_0_6px_#f43f5e]'
                                                 : isExpiringSoon
                                                 ? 'bg-amber-400 animate-pulse'
-                                                : 'bg-[#00A896] shadow-[0_0_6px_#00A896]';
+                                                : 'bg-tertiary shadow-[0_0_6px_#04B17B]';
 
                                             const statusLabel = isExpired
                                                 ? `Caducada hace ${Math.abs(daysLeft!)} días`
@@ -1737,25 +1737,25 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             return (
                                                 <div
                                                     key={c.id}
-                                                    className={`group relative overflow-hidden flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-all duration-300 bg-[#020b14] ${
+                                                    className={`group relative overflow-hidden flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-all duration-300 bg-surface-lowest ${
                                                         isExpired
                                                             ? 'border-rose-500/30 hover:border-rose-500/50'
                                                             : isExpiringSoon
                                                             ? 'border-amber-400/30 hover:border-amber-400/50'
-                                                            : 'border-white/10 hover:border-[#00A896]/40'
+                                                            : 'border-foreground/10 hover:border-tertiary/40'
                                                     }`}
                                                 >
                                                     {/* ROW NUMBER + STATUS DOT */}
                                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                        <span className="text-[9px] font-bold text-slate-500 w-5 text-center shrink-0 tabular-nums">
+                                                        <span className="text-[9px] font-bold text-on-surface-variant w-5 text-center shrink-0 tabular-nums">
                                                             {idx + 1}
                                                         </span>
                                                         <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-xs font-bold text-white uppercase truncate leading-tight font-display">
+                                                            <p className="text-xs font-bold text-on-surface uppercase truncate leading-tight font-display">
                                                                 {c.name}
                                                             </p>
-                                                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{c.ruc}</p>
+                                                            <p className="text-[10px] text-on-surface-variant font-mono mt-0.5">{c.ruc}</p>
                                                         </div>
                                                     </div>
 
@@ -1765,7 +1765,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                             <p className={`text-[10px] font-bold uppercase tracking-wide ${statusColor}`}>
                                                                 {statusLabel}
                                                             </p>
-                                                            <p className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                                            <p className="text-[9px] text-on-surface-variant font-mono mt-0.5">
                                                                 Vence: {expiryFormatted}
                                                             </p>
                                                         </div>
@@ -1778,7 +1778,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                                         const msg = `Hola ${c.name.split(' ')[0]}, le informamos que su firma electrónica ${isExpired ? 'ha caducado' : `vence el ${expiryFormatted}`}. Contáctenos para gestionar la renovación.`;
                                                                         setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g,''), message: msg });
                                                                     }}
-                                                                    className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 transition-all active:scale-95 cursor-pointer"
+                                                                    className="p-2 rounded-xl bg-tertiary/15 text-tertiary hover:bg-tertiary hover:text-white border border-tertiary/30 transition-all active:scale-95 cursor-pointer"
                                                                     title="Notificar por WhatsApp"
                                                                 >
                                                                     <PhoneCall size={13} />
@@ -1786,7 +1786,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                             ) : null}
                                                             <button
                                                                 onClick={() => navigate('clients', { clientIdToView: c.id, initialTab: 'vault' })}
-                                                                className="px-3 py-1.5 bg-white/5 hover:bg-[#00A896]/20 hover:text-[#00A896] text-white rounded-xl text-[9px] font-bold uppercase transition-all active:scale-95 border border-white/10 cursor-pointer"
+                                                                className="px-3 py-1.5 bg-foreground/5 hover:bg-tertiary/20 hover:text-tertiary text-on-surface rounded-xl text-[9px] font-bold uppercase transition-all active:scale-95 border border-foreground/10 cursor-pointer"
                                                             >
                                                                 Bóveda
                                                             </button>
@@ -1804,10 +1804,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                                     {signatureData.withoutSignature.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                                            <div className="p-4 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30">
-                                                <ShieldCheck size={24} className="text-[#00A896]" />
+                                            <div className="p-4 rounded-2xl bg-tertiary/15 border border-tertiary/30">
+                                                <ShieldCheck size={24} className="text-tertiary" />
                                             </div>
-                                            <p className="text-sm font-bold text-[#00A896]">¡Todos los clientes activos tienen firma cargada!</p>
+                                            <p className="text-sm font-bold text-tertiary">¡Todos los clientes activos tienen firma cargada!</p>
                                         </div>
                                     ) : (
                                         <>
@@ -1820,18 +1820,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             {signatureData.withoutSignature.map((c, idx) => (
                                                 <div
                                                     key={c.id}
-                                                    className="group flex items-center justify-between gap-3 p-3.5 bg-[#020b14] border border-white/10 rounded-2xl transition-all duration-200 hover:border-rose-400/40"
+                                                    className="group flex items-center justify-between gap-3 p-3.5 bg-surface-lowest border border-foreground/10 rounded-2xl transition-all duration-200 hover:border-rose-400/40"
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                        <span className="text-[9px] font-bold text-slate-500 w-5 text-center shrink-0 tabular-nums">
+                                                        <span className="text-[9px] font-bold text-on-surface-variant w-5 text-center shrink-0 tabular-nums">
                                                             {idx + 1}
                                                         </span>
-                                                        <div className="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-on-surface-variant shrink-0" />
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-xs font-bold text-white uppercase truncate font-display">{c.name}</p>
+                                                            <p className="text-xs font-bold text-on-surface uppercase truncate font-display">{c.name}</p>
                                                             <div className="flex items-center gap-2 mt-0.5">
-                                                                <p className="text-[10px] text-slate-400 font-mono">{c.ruc}</p>
-                                                                <span className="text-[9px] font-bold text-slate-300 bg-white/5 px-1.5 py-0.5 rounded-md uppercase border border-white/5">
+                                                                <p className="text-[10px] text-on-surface-variant font-mono">{c.ruc}</p>
+                                                                <span className="text-[9px] font-bold text-on-surface-variant bg-foreground/5 px-1.5 py-0.5 rounded-md uppercase border border-foreground/5">
                                                                     {c.regime === TaxRegime.General ? 'General' : c.regime === TaxRegime.RimpeEmprendedor ? 'Emprendedor' : 'Popular'}
                                                                 </span>
                                                             </div>
@@ -1845,7 +1845,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                                     const msg = `Hola ${c.name.split(' ')[0]}, le recordamos que para emitir facturas electrónicas necesita una firma digital vigente. Podemos ayudarle a obtenerla. ¿Le interesa?`;
                                                                     setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g,''), message: msg });
                                                                 }}
-                                                                className="p-2 rounded-xl bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 transition-all active:scale-95 cursor-pointer"
+                                                                className="p-2 rounded-xl bg-tertiary/15 text-tertiary hover:bg-tertiary hover:text-white border border-tertiary/30 transition-all active:scale-95 cursor-pointer"
                                                                 title="Enviar propuesta por WhatsApp"
                                                             >
                                                                 <PhoneCall size={13} />
@@ -1891,24 +1891,24 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">
                 {whatsAppPrompt && (
                     <div className="space-y-6 p-4 font-mono">
-                        <div className="p-4 bg-[#020b14] rounded-2xl border border-white/10 space-y-2">
-                            <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider">
+                        <div className="p-4 bg-surface-lowest rounded-2xl border border-foreground/10 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-on-surface-variant font-bold uppercase tracking-wider">
                                 <span>Destinatario</span>
-                                <span className="text-[#00A896] font-black">Cliente Activo</span>
+                                <span className="text-tertiary font-black">Cliente Activo</span>
                             </div>
-                            <p className="text-sm font-bold text-white">
+                            <p className="text-sm font-bold text-on-surface">
                                 {whatsAppPrompt.clientName} ({whatsAppPrompt.phone})
                             </p>
                         </div>
                         
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">
+                            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest block ml-1">
                                 Mensaje Personalizable
                             </label>
                             <textarea
                                 value={whatsAppPrompt.message}
                                 onChange={(e) => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
-                                className="w-full h-40 px-4 py-3 bg-[#020b14] rounded-2xl border border-white/10 outline-none focus:border-[#00A896]/50 text-white text-xs font-mono leading-relaxed resize-none shadow-inner"
+                                className="w-full h-40 px-4 py-3 bg-surface-lowest rounded-2xl border border-foreground/10 outline-none focus:border-tertiary/50 text-on-surface text-xs font-mono leading-relaxed resize-none shadow-inner"
                                 placeholder="Escribe el mensaje aquí..."
                             />
                         </div>
@@ -1916,7 +1916,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setWhatsAppPrompt(null)}
-                                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer border border-white/10"
+                                className="flex-1 py-3.5 bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer border border-foreground/10"
                             >
                                 Omitir
                             </button>
@@ -1925,7 +1925,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     window.open(`https://wa.me/${whatsAppPrompt.phone}?text=${encodeURIComponent(whatsAppPrompt.message)}`, "_blank");
                                     setWhatsAppPrompt(null);
                                 }}
-                                className="flex-1 py-3.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+                                className="flex-1 py-3.5 bg-gradient-to-r from-tertiary to-green-600 hover:from-tertiary hover:to-green-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-tertiary/25 flex items-center justify-center gap-2 cursor-pointer border border-foreground/10"
                             >
                                 <MessageCircle size={14} strokeWidth={2.5} />
                                 Enviar WhatsApp
@@ -1943,7 +1943,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
                         className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 rounded-[2rem] shadow-[0_20px_40px_rgba(245,158,11,0.4)] border border-amber-300/30 transition-all hover:scale-105 active:scale-95 cursor-pointer font-mono font-bold"
                     >
-                        <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="absolute inset-0 bg-foreground/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         <HandCoins size={22} className="relative z-10" />
                         <span className="text-xs tracking-wider uppercase relative z-10 pr-2">
                             {activeRentaRefunds.length} Refund{activeRentaRefunds.length > 1 ? 's' : ''}
