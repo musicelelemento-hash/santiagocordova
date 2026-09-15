@@ -18,6 +18,8 @@ module.exports = {
       colors: {
         primary: '#2B6AFF',
         'primary-hover': '#1A53D9',
+        secondary: '#6366F1',
+        tertiary: '#04B17B',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         surface: 'hsl(var(--surface))',
