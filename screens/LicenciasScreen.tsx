@@ -176,7 +176,7 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
     return (
         <div className="space-y-8 animate-fade-in pb-24">
             {/* ── HEADER PRO DE LICENCIAS ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-[hsl(222,47%,4%)] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/[0.06] bg-surface-low shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
                 <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-amber-500/10 via-yellow-500/5 to-transparent blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -189,10 +189,10 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
                                 <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
                                 <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em]">Gestor de Suscripciones & SaaS</span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
+                            <h1 className="text-3xl sm:text-4xl font-black text-on-surface tracking-tight font-display">
                                 Licencias y Servicios Suscritos
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
+                            <p className="text-xs sm:text-sm text-on-surface-variant mt-1 font-medium">
                                 Control de licencias de facturadores, firmas electrónicas y suscripciones anuales con alertas automáticas.
                             </p>
                         </div>
@@ -209,28 +209,28 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
 
             {/* ── KPIs RESUMEN LICENCIAS ── */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-foreground/10 flex items-center justify-between">
                     <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Total Licencias</span>
-                        <p className="text-2xl font-black font-mono text-white mt-0.5">{kpis.total}</p>
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase">Total Licencias</span>
+                        <p className="text-2xl font-black font-mono text-on-surface mt-0.5">{kpis.total}</p>
                     </div>
                     <Server size={24} className="text-indigo-400" />
                 </div>
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-emerald-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-tertiary/20 flex items-center justify-between">
                     <div>
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase">Licencias Activas</span>
-                        <p className="text-2xl font-black font-mono text-emerald-400 mt-0.5">{kpis.activas}</p>
+                        <span className="text-[10px] font-bold text-tertiary uppercase">Licencias Activas</span>
+                        <p className="text-2xl font-black font-mono text-tertiary mt-0.5">{kpis.activas}</p>
                     </div>
-                    <CheckCircle size={24} className="text-emerald-400" />
+                    <CheckCircle size={24} className="text-tertiary" />
                 </div>
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-amber-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-amber-500/20 flex items-center justify-between">
                     <div>
                         <span className="text-[10px] font-bold text-amber-400 uppercase">Por Vencer</span>
                         <p className="text-2xl font-black font-mono text-amber-400 mt-0.5">{kpis.porVencer}</p>
                     </div>
                     <AlertTriangle size={24} className="text-amber-400" />
                 </div>
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-rose-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-rose-500/20 flex items-center justify-between">
                     <div>
                         <span className="text-[10px] font-bold text-rose-400 uppercase">Expiradas</span>
                         <p className="text-2xl font-black font-mono text-rose-400 mt-0.5">{kpis.expiradas}</p>
@@ -242,23 +242,23 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
             {/* ── BARRA BÚSQUEDA ── */}
             <div className="flex flex-col md:flex-row items-center gap-4 justify-between">
                 <div className="relative w-full md:max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                     <input
                         type="text"
                         placeholder="Buscar por clave, cliente o servicio..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-slate-900/60 backdrop-blur-2xl rounded-2xl border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                        className="w-full pl-12 pr-4 py-3 bg-surface-lowest backdrop-blur-2xl rounded-2xl border border-foreground/10 text-xs font-bold text-on-surface placeholder-on-surface-variant outline-none focus:border-amber-500"
                     />
                 </div>
             </div>
 
             {/* ── TABLA DE LICENCIAS ── */}
-            <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
-                <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
+            <div className="glass-card-premium rounded-[2.5rem] p-6 md:p-8 space-y-6">
+                <div className="overflow-x-auto rounded-3xl border border-foreground/5 bg-surface-lowest">
                     <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                            <tr className="border-b border-foreground/10 bg-surface-lowest text-[10px] font-black uppercase tracking-wider text-on-surface-variant">
                                 <th className="py-4 px-5">Clave de Licencia</th>
                                 <th className="py-4 px-5">Cliente / RUC</th>
                                 <th className="py-4 px-5">Servicio Suscrito</th>
@@ -267,9 +267,9 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
                                 <th className="py-4 px-5 text-right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-foreground/5">
                             {filteredLicencias.map((lic) => (
-                                <tr key={lic.id} className="hover:bg-white/[0.01] transition-colors">
+                                <tr key={lic.id} className="hover:bg-foreground/[0.01] transition-colors">
                                     <td className="py-4 px-5 font-mono font-bold text-amber-300">
                                         <div className="flex items-center gap-1.5">
                                             <Key size={12} className="text-amber-400" />
@@ -277,18 +277,18 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
                                         </div>
                                     </td>
                                     <td className="py-4 px-5">
-                                        <p className="font-bold text-white uppercase">{lic.nombreCliente}</p>
-                                        <p className="text-[10px] text-slate-400 font-mono">RUC: {lic.rucCliente}</p>
+                                        <p className="font-bold text-on-surface uppercase">{lic.nombreCliente}</p>
+                                        <p className="text-[10px] text-on-surface-variant font-mono">RUC: {lic.rucCliente}</p>
                                     </td>
                                     <td className="py-4 px-5">
-                                        <p className="font-bold text-teal-400">{lic.tipoServicio}</p>
+                                        <p className="font-bold text-tertiary">{lic.tipoServicio}</p>
                                     </td>
-                                    <td className="py-4 px-5 font-mono text-slate-300">
+                                    <td className="py-4 px-5 font-mono text-on-surface-variant">
                                         {lic.fechaExpiracion}
                                     </td>
                                     <td className="py-4 px-5">
                                         <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${
-                                            lic.estado === 'Activa' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                            lic.estado === 'Activa' ? 'bg-tertiary/20 text-tertiary border border-tertiary/30' :
                                             lic.estado === 'Por Vencer' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                                             'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                         }`}>
@@ -301,14 +301,14 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
                                                 navigator.clipboard.writeText(lic.licenseKey);
                                                 toast.success("Clave de licencia copiada al portapapeles.");
                                             }}
-                                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 text-[10px]"
+                                            className="px-2.5 py-1.5 rounded-lg bg-surface-lowest hover:bg-foreground/10 text-on-surface-variant font-bold uppercase transition-all inline-flex items-center gap-1 text-[10px]"
                                             title="Copiar Clave"
                                         >
                                             <Copy size={11} /> Clave
                                         </button>
                                         <button
                                             onClick={() => handleSendRenewalWhatsApp(lic)}
-                                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold uppercase transition-all inline-flex items-center gap-1 text-[10px] border border-emerald-500/20"
+                                            className="px-2.5 py-1.5 rounded-lg bg-tertiary/15 hover:bg-tertiary/25 text-tertiary font-bold uppercase transition-all inline-flex items-center gap-1 text-[10px] border border-tertiary/20"
                                             title="Enviar aviso por WhatsApp"
                                         >
                                             <PhoneCall size={11} /> WhatsApp
@@ -324,13 +324,13 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
             {/* ── MODAL NUEVA LICENCIA ── */}
             {isCreateModalOpen && (
                 <Modal isOpen={true} onClose={() => setIsCreateModalOpen(false)} title="🔑 Activar Nueva Licencia SaaS" size="md">
-                    <div className="space-y-4 p-4 text-white">
+                    <div className="space-y-4 p-4 text-on-surface">
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-300 uppercase block">Seleccionar Cliente</label>
+                            <label className="text-xs font-bold text-on-surface-variant uppercase block">Seleccionar Cliente</label>
                             <select
                                 value={selectedClientId}
                                 onChange={(e) => handleSelectClient(e.target.value)}
-                                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                             >
                                 <option value="">-- Seleccionar cliente --</option>
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.ruc}</option>)}
@@ -339,11 +339,11 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Servicio Suscrito</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Servicio Suscrito</label>
                                 <select
                                     value={tipoServicio}
                                     onChange={(e) => setTipoServicio(e.target.value as any)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                                 >
                                     <option value="Facturador Zifac">Facturador Zifac</option>
                                     <option value="Facturador Ecuafact">Facturador Ecuafact</option>
@@ -352,20 +352,20 @@ export const LicenciasScreen: React.FC<LicenciasScreenProps> = ({ navigate }) =>
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Duración (Meses)</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Duración (Meses)</label>
                                 <input
                                     type="number"
                                     min="1"
                                     max="36"
                                     value={duracionMeses}
                                     onChange={(e) => setDuracionMeses(parseInt(e.target.value) || 12)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none font-mono"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none font-mono"
                                 />
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 text-xs font-bold">Cancelar</button>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl bg-foreground/10 text-xs font-bold">Cancelar</button>
                             <button onClick={handleCreateLicencia} className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs">Generar Licencia</button>
                         </div>
                     </div>
