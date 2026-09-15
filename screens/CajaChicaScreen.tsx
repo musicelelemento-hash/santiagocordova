@@ -344,7 +344,7 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
     return (
         <div className="space-y-8 animate-fade-in pb-24">
             {/* ── HEADER PRO DE CAJA CHICA ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-[hsl(222,47%,4%)] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/[0.06] bg-surface-low shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
                 <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-indigo-500/10 via-sky-500/5 to-transparent blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -354,13 +354,13 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
-                                <div className={`w-2 h-2 rounded-full ${currentSesion ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-rose-500'}`} />
+                                <div className={`w-2 h-2 rounded-full ${currentSesion ? 'bg-tertiary animate-pulse shadow-[0_0_10px_rgba(4,177,123,0.8)]' : 'bg-rose-500'}`} />
                                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">TPV Punto de Venta & Caja Chica</span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
+                            <h1 className="text-3xl sm:text-4xl font-black text-on-surface tracking-tight font-display">
                                 Caja Chica de la Oficina Contable
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
+                            <p className="text-xs sm:text-sm text-on-surface-variant mt-1 font-medium">
                                 Control diario de cobros de honorarios en efectivo, transferencias, egresos de oficina y arqueo de turno.
                             </p>
                         </div>
@@ -370,7 +370,7 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
                         {!currentSesion ? (
                             <button
                                 onClick={() => setIsAperturaModalOpen(true)}
-                                className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95"
+                                className="flex items-center justify-center gap-2 px-6 py-4 bg-tertiary hover:bg-tertiary/90 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg active:scale-95"
                             >
                                 <Unlock size={18} /> Abrir Caja Chica del Día
                             </button>
@@ -396,28 +396,28 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
 
             {/* ── TARJETAS RESUMEN DE CAJA EN TIEMPO REAL ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-foreground/10 flex items-center justify-between">
                     <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Fondo Inicial</span>
-                        <p className="text-2xl font-black font-mono text-white mt-0.5">${totals.fondoInicial.toFixed(2)}</p>
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase">Fondo Inicial</span>
+                        <p className="text-2xl font-black font-mono text-on-surface mt-0.5">${totals.fondoInicial.toFixed(2)}</p>
                     </div>
                     <Banknote size={24} className="text-indigo-400" />
                 </div>
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-emerald-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-tertiary/20 flex items-center justify-between">
                     <div>
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase">Cobros Efectivo</span>
-                        <p className="text-2xl font-black font-mono text-emerald-400 mt-0.5">${totals.ingresosEfectivo.toFixed(2)}</p>
+                        <span className="text-[10px] font-bold text-tertiary uppercase">Cobros Efectivo</span>
+                        <p className="text-2xl font-black font-mono text-tertiary mt-0.5">${totals.ingresosEfectivo.toFixed(2)}</p>
                     </div>
-                    <ArrowUpRight size={24} className="text-emerald-400" />
+                    <ArrowUpRight size={24} className="text-tertiary" />
                 </div>
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-sky-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-sky-500/20 flex items-center justify-between">
                     <div>
                         <span className="text-[10px] font-bold text-sky-400 uppercase">Transferencias</span>
                         <p className="text-2xl font-black font-mono text-sky-400 mt-0.5">${totals.transferencias.toFixed(2)}</p>
                     </div>
                     <CreditCard size={24} className="text-sky-400" />
                 </div>
-                <div className="p-5 rounded-3xl bg-slate-900/60 border border-rose-500/20 flex items-center justify-between">
+                <div className="p-5 rounded-3xl bg-surface-low border border-rose-500/20 flex items-center justify-between">
                     <div>
                         <span className="text-[10px] font-bold text-rose-400 uppercase">Egresos / Gastos</span>
                         <p className="text-2xl font-black font-mono text-rose-400 mt-0.5">${totals.egresos.toFixed(2)}</p>
@@ -427,15 +427,15 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
             </div>
 
             {/* ── TABLA DE MOVIMIENTOS ── */}
-            <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
+            <div className="bg-surface-low backdrop-blur-2xl rounded-[2.5rem] border border-foreground/10 p-6 md:p-8 space-y-6">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    <h3 className="text-sm font-black text-on-surface uppercase tracking-wider">
                         Movimientos de la Sesión Activa
                     </h3>
                     {currentSesion && (
                         <button
                             onClick={() => handlePrintCajaReport(currentSesion)}
-                            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase transition-all flex items-center gap-1.5 text-xs"
+                            className="px-3.5 py-1.5 rounded-xl bg-surface-lowest hover:bg-surface text-on-surface-variant font-bold uppercase transition-all flex items-center gap-1.5 text-xs"
                         >
                             <Printer size={13} /> Imprimir Arqueo
                         </button>
@@ -443,14 +443,14 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
                 </div>
 
                 {!currentSesion || currentSesion.movimientos.length === 0 ? (
-                    <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 text-xs">
+                    <div className="p-12 text-center border border-dashed border-foreground/10 rounded-3xl text-on-surface-variant text-xs">
                         Aún no hay movimientos registrados en la caja chica de hoy.
                     </div>
                 ) : (
-                    <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
+                    <div className="overflow-x-auto rounded-3xl border border-foreground/5 bg-surface-lowest">
                         <table className="w-full text-left border-collapse text-xs">
                             <thead>
-                                <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                <tr className="border-b border-foreground/10 bg-surface-low text-[10px] font-black uppercase tracking-wider text-on-surface-variant">
                                     <th className="py-4 px-5">Fecha / Hora</th>
                                     <th className="py-4 px-5">Tipo</th>
                                     <th className="py-4 px-5">Concepto / Cliente</th>
@@ -458,25 +458,25 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
                                     <th className="py-4 px-5 text-right">Monto</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-foreground/5">
                                 {currentSesion.movimientos.map((m) => (
-                                    <tr key={m.id} className="hover:bg-white/[0.01] transition-colors">
-                                        <td className="py-4 px-5 font-mono text-slate-400 text-[10px]">{m.fechaHora}</td>
+                                    <tr key={m.id} className="hover:bg-foreground/[0.01] transition-colors">
+                                        <td className="py-4 px-5 font-mono text-on-surface-variant text-[10px]">{m.fechaHora}</td>
                                         <td className="py-4 px-5">
                                             <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${
-                                                m.tipo === 'ingreso' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                                m.tipo === 'ingreso' ? 'bg-tertiary/20 text-tertiary border border-tertiary/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                                             }`}>
                                                 {m.tipo}
                                             </span>
                                         </td>
                                         <td className="py-4 px-5">
-                                            <p className="font-bold text-white">{m.concepto}</p>
+                                            <p className="font-bold text-on-surface">{m.concepto}</p>
                                             {m.nombreCliente && (
-                                                <p className="text-[10px] text-teal-400 font-mono">Cliente: {m.nombreCliente}</p>
+                                                <p className="text-[10px] text-tertiary font-mono">Cliente: {m.nombreCliente}</p>
                                             )}
                                         </td>
-                                        <td className="py-4 px-5 font-mono text-slate-300 uppercase text-[10px]">{m.formaPago}</td>
-                                        <td className="py-4 px-5 text-right font-mono font-bold text-base text-white">
+                                        <td className="py-4 px-5 font-mono text-on-surface-variant uppercase text-[10px]">{m.formaPago}</td>
+                                        <td className="py-4 px-5 text-right font-mono font-bold text-base text-on-surface">
                                             ${m.monto.toFixed(2)}
                                         </td>
                                     </tr>
@@ -490,20 +490,20 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
             {/* ── MODAL APERTURA CAJA ── */}
             {isAperturaModalOpen && (
                 <Modal isOpen={true} onClose={() => setIsAperturaModalOpen(false)} title="🟢 Abrir Caja Chica del Día" size="sm">
-                    <div className="space-y-4 p-4 text-white">
+                    <div className="space-y-4 p-4 text-on-surface">
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-300 uppercase block">Monto Inicial (Fondo de Caja Chica)</label>
+                            <label className="text-xs font-bold text-on-surface-variant uppercase block">Monto Inicial (Fondo de Caja Chica)</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 value={montoInicialForm}
                                 onChange={(e) => setMontoInicialForm(parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-mono font-bold text-white outline-none"
+                                className="w-full px-3 py-2.5 rounded-xl bg-surface-lowest border border-foreground/10 text-xs font-mono font-bold text-on-surface outline-none"
                             />
                         </div>
                         <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setIsAperturaModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 text-xs font-bold">Cancelar</button>
-                            <button onClick={handleAbrirCaja} className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs">Abrir Caja</button>
+                            <button onClick={() => setIsAperturaModalOpen(false)} className="px-4 py-2 rounded-xl bg-foreground/10 text-xs font-bold">Cancelar</button>
+                            <button onClick={handleAbrirCaja} className="px-5 py-2 rounded-xl bg-tertiary hover:bg-tertiary/90 text-white font-bold text-xs">Abrir Caja</button>
                         </div>
                     </div>
                 </Modal>
@@ -512,25 +512,25 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
             {/* ── MODAL NUEVO MOVIMIENTO ── */}
             {isMovimientoModalOpen && (
                 <Modal isOpen={true} onClose={() => setIsMovimientoModalOpen(false)} title="➕ Registrar Movimiento de Caja" size="md">
-                    <div className="space-y-4 p-4 text-white">
+                    <div className="space-y-4 p-4 text-on-surface">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Tipo</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Tipo</label>
                                 <select
                                     value={tipoMov}
                                     onChange={(e) => setTipoMov(e.target.value as any)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-bold outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-bold outline-none"
                                 >
                                     <option value="ingreso">🟢 Ingreso / Cobro</option>
                                     <option value="egreso">🔴 Egreso / Gasto Oficina</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Forma de Pago</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Forma de Pago</label>
                                 <select
                                     value={formaPagoMov}
                                     onChange={(e) => setFormaPagoMov(e.target.value as any)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-bold outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-bold outline-none"
                                 >
                                     <option value="efectivo">💵 Efectivo</option>
                                     <option value="transferencia">🏦 Transferencia Banco</option>
@@ -541,11 +541,11 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase block">Cliente (Opcional)</label>
+                            <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Cliente (Opcional)</label>
                             <select
                                 value={selectedClientId}
                                 onChange={(e) => setSelectedClientId(e.target.value)}
-                                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                             >
                                 <option value="">-- Cliente de mostrador --</option>
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.ruc}</option>)}
@@ -554,29 +554,29 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Concepto *</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Concepto *</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: Cobro honorario / Compra copias"
                                     value={conceptoMov}
                                     onChange={(e) => setConceptoMov(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Monto ($) *</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Monto ($) *</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={montoMov}
                                     onChange={(e) => setMontoMov(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-mono outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setIsMovimientoModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 text-xs font-bold">Cancelar</button>
+                            <button onClick={() => setIsMovimientoModalOpen(false)} className="px-4 py-2 rounded-xl bg-foreground/10 text-xs font-bold">Cancelar</button>
                             <button onClick={handleAddMovimiento} className="px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs">Guardar Movimiento</button>
                         </div>
                     </div>
@@ -586,19 +586,19 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
             {/* ── MODAL ARQUEO DE CAJA ── */}
             {isArqueoModalOpen && (
                 <Modal isOpen={true} onClose={() => setIsArqueoModalOpen(false)} title="🔒 Arqueo y Cierre de Caja Chica" size="md">
-                    <div className="space-y-4 p-4 text-white">
-                        <div className="p-4 rounded-2xl bg-slate-950 border border-white/10 font-mono text-xs space-y-1">
-                            <div className="flex justify-between text-slate-400"><span>Fondo Inicial:</span> <span>${totals.fondoInicial.toFixed(2)}</span></div>
-                            <div className="flex justify-between text-emerald-400"><span>+ Ingresos Efectivo:</span> <span>${totals.ingresosEfectivo.toFixed(2)}</span></div>
+                    <div className="space-y-4 p-4 text-on-surface">
+                        <div className="p-4 rounded-2xl bg-surface-lowest border border-foreground/10 font-mono text-xs space-y-1">
+                            <div className="flex justify-between text-on-surface-variant"><span>Fondo Inicial:</span> <span>${totals.fondoInicial.toFixed(2)}</span></div>
+                            <div className="flex justify-between text-tertiary"><span>+ Ingresos Efectivo:</span> <span>${totals.ingresosEfectivo.toFixed(2)}</span></div>
                             <div className="flex justify-between text-rose-400"><span>- Egresos Oficina:</span> <span>${totals.egresos.toFixed(2)}</span></div>
-                            <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
+                            <div className="flex justify-between text-sm font-bold text-on-surface pt-2 border-t border-foreground/10">
                                 <span>EFECTIVO ESPERADO EN CAJA:</span>
                                 <span>${totals.efectivoEsperado.toFixed(2)}</span>
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                            <label className="text-[10px] font-bold text-on-surface-variant uppercase block mb-1">
                                 Conteo Físico Real de Efectivo ($) *
                             </label>
                             <input
@@ -606,12 +606,12 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
                                 step="0.01"
                                 value={conteoEfectivoReal}
                                 onChange={(e) => setConteoEfectivoReal(parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-mono font-bold text-white outline-none"
+                                className="w-full px-3 py-2.5 rounded-xl bg-surface-lowest border border-foreground/10 text-xs font-mono font-bold text-on-surface outline-none"
                             />
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setIsArqueoModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 text-xs font-bold">Cancelar</button>
+                            <button onClick={() => setIsArqueoModalOpen(false)} className="px-4 py-2 rounded-xl bg-foreground/10 text-xs font-bold">Cancelar</button>
                             <button onClick={handleCerrarCaja} className="px-5 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs">Cerrar y Cuadrar Caja</button>
                         </div>
                     </div>
