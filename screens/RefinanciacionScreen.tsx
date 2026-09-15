@@ -186,23 +186,23 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
     return (
         <div className="space-y-8 animate-fade-in pb-24">
             {/* ── HEADER PRO DE REFINANCIACIÓN ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-[hsl(222,47%,4%)] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
-                <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/[0.06] bg-surface-low shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
+                <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-tertiary/10 via-tertiary/5 to-transparent blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="p-4.5 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/30 text-white shrink-0">
+                        <div className="p-4.5 rounded-3xl bg-tertiary shadow-xl shadow-tertiary/30 text-white shrink-0">
                             <Coins size={32} strokeWidth={2.2} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">Convenios y Acuerdos de Pago</span>
+                                <div className="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_10px_rgba(4,177,123,0.8)]" />
+                                <span className="text-[10px] font-black text-tertiary uppercase tracking-[0.3em]">Convenios y Acuerdos de Pago</span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
+                            <h1 className="text-3xl sm:text-4xl font-black text-on-surface tracking-tight font-display">
                                 Refinanciación y Cuotas de Pago
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
+                            <p className="text-xs sm:text-sm text-on-surface-variant mt-1 font-medium">
                                 Consolida honorarios pendientes y facilita planes de pago en cuotas amortizadas con control de abonos.
                             </p>
                         </div>
@@ -210,7 +210,7 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
 
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-emerald-500/25 active:scale-95 shrink-0"
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-tertiary hover:bg-tertiary/90 text-white font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-tertiary/25 active:scale-95 shrink-0"
                     >
                         <Plus size={18} /> Nuevo Plan de Refinanciación
                     </button>
@@ -221,18 +221,18 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 font-mono">
                 {/* Search Bar */}
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                     <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Buscar por cliente, RUC o código de plan..."
-                        className="w-full pl-11 pr-4 py-3 bg-[#020b14] border border-white/10 rounded-2xl text-xs font-mono text-white placeholder-slate-500 outline-none focus:border-emerald-500/50 transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-surface-lowest border border-foreground/10 rounded-2xl text-xs font-mono text-on-surface placeholder-on-surface-variant outline-none focus:border-tertiary/50 transition-all"
                     />
                 </div>
 
                 {/* Filter Pills */}
-                <div className="inline-flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10 gap-1 shrink-0 overflow-x-auto no-scrollbar">
+                <div className="inline-flex p-1.5 bg-surface-lowest rounded-2xl border border-foreground/10 gap-1 shrink-0 overflow-x-auto no-scrollbar">
                     {(['Todos', 'Vigente', 'Cancelado', 'En Mora'] as const).map((filter) => {
                         const count = filter === 'Todos' ? planes.length : planes.filter(p => p.estado === filter).length;
                         const isSelected = statusFilter === filter;
@@ -242,13 +242,13 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
                                 onClick={() => setStatusFilter(filter)}
                                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap cursor-pointer ${
                                     isSelected
-                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-tertiary text-white shadow-md shadow-tertiary/20'
+                                        : 'text-on-surface-variant hover:text-on-surface'
                                 }`}
                             >
                                 <span>{filter === 'Todos' ? 'Todos los Planes' : filter}</span>
                                 <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                    isSelected ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-400'
+                                    isSelected ? 'bg-foreground/20 text-on-surface' : 'bg-foreground/5 text-on-surface-variant'
                                 }`}>
                                     {count}
                                 </span>
@@ -259,11 +259,11 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
             </div>
 
             {/* ── TABLA DE PLANES ── */}
-            <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
-                <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
+            <div className="bg-surface-low backdrop-blur-2xl rounded-[2.5rem] border border-foreground/10 p-6 md:p-8 space-y-6">
+                <div className="overflow-x-auto rounded-3xl border border-foreground/5 bg-surface-lowest">
                     <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                            <tr className="border-b border-foreground/10 bg-surface-low text-[10px] font-black uppercase tracking-wider text-on-surface-variant">
                                 <th className="py-4 px-5">Código Plan</th>
                                 <th className="py-4 px-5">Cliente</th>
                                 <th className="py-4 px-5">Monto Refinanciado</th>
@@ -272,31 +272,31 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
                                 <th className="py-4 px-5 text-right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-foreground/5">
                             {filteredPlanes.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="py-12 text-center text-slate-400 font-mono text-xs">
+                                    <td colSpan={6} className="py-12 text-center text-on-surface-variant font-mono text-xs">
                                         No se encontraron planes de refinanciación con los filtros seleccionados.
                                     </td>
                                 </tr>
                             ) : (
                                 filteredPlanes.map((p) => (
-                                <tr key={p.id} className="hover:bg-white/[0.01] transition-colors">
-                                    <td className="py-4 px-5 font-mono font-bold text-teal-400">{p.codigoPlan}</td>
+                                <tr key={p.id} className="hover:bg-foreground/[0.01] transition-colors">
+                                    <td className="py-4 px-5 font-mono font-bold text-tertiary">{p.codigoPlan}</td>
                                     <td className="py-4 px-5">
-                                        <p className="font-bold text-white uppercase">{p.nombreCliente}</p>
-                                        <p className="text-[10px] text-slate-400 font-mono">RUC: {p.rucCliente}</p>
+                                        <p className="font-bold text-on-surface uppercase">{p.nombreCliente}</p>
+                                        <p className="text-[10px] text-on-surface-variant font-mono">RUC: {p.rucCliente}</p>
                                     </td>
-                                    <td className="py-4 px-5 font-mono font-bold text-white text-base">
+                                    <td className="py-4 px-5 font-mono font-bold text-on-surface text-base">
                                         ${p.montoTotalRefinanciado.toFixed(2)} ({p.numeroCuotas} cuotas)
                                     </td>
                                     <td className="py-4 px-5 font-mono">
-                                        <p className="text-emerald-400 font-bold">Abonado: ${p.montoAbonado.toFixed(2)}</p>
+                                        <p className="text-tertiary font-bold">Abonado: ${p.montoAbonado.toFixed(2)}</p>
                                         <p className="text-amber-300 font-bold">Saldo: ${p.montoSaldoPendiente.toFixed(2)}</p>
                                     </td>
                                     <td className="py-4 px-5">
                                         <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase ${
-                                            p.estado === 'Cancelado' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                            p.estado === 'Cancelado' ? 'bg-tertiary/20 text-tertiary border border-tertiary/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                                         }`}>
                                             {p.estado}
                                         </span>
@@ -319,33 +319,33 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
             {/* ── MODAL DETALLE Y PAGOS DE CUOTAS ── */}
             {selectedPlanDetail && (
                 <Modal isOpen={true} onClose={() => setSelectedPlanDetail(null)} title={`📊 Tabla de Amortización — ${selectedPlanDetail.codigoPlan}`} size="lg">
-                    <div className="space-y-4 p-4 text-white">
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center text-xs">
+                    <div className="space-y-4 p-4 text-on-surface">
+                        <div className="p-4 rounded-2xl bg-foreground/5 border border-foreground/10 flex justify-between items-center text-xs">
                             <div>
-                                <h3 className="font-bold text-white uppercase">{selectedPlanDetail.nombreCliente}</h3>
-                                <p className="text-slate-400 font-mono">RUC: {selectedPlanDetail.rucCliente}</p>
+                                <h3 className="font-bold text-on-surface uppercase">{selectedPlanDetail.nombreCliente}</h3>
+                                <p className="text-on-surface-variant font-mono">RUC: {selectedPlanDetail.rucCliente}</p>
                             </div>
                             <div className="text-right font-mono">
-                                <span className="text-slate-400 text-[10px] uppercase block">Saldo Pendiente</span>
+                                <span className="text-on-surface-variant text-[10px] uppercase block">Saldo Pendiente</span>
                                 <span className="text-xl font-black text-amber-300">${selectedPlanDetail.montoSaldoPendiente.toFixed(2)}</span>
                             </div>
                         </div>
 
                         <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                             {selectedPlanDetail.cuotas.map((c) => (
-                                <div key={c.numeroCuota} className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-white/5 text-xs font-mono">
+                                <div key={c.numeroCuota} className="flex items-center justify-between p-3 rounded-xl bg-surface-lowest border border-foreground/5 text-xs font-mono">
                                     <div>
-                                        <span className="font-bold text-teal-400">Cuota #{c.numeroCuota}</span>
-                                        <span className="text-slate-400 text-[10px] block">Vence: {c.fechaVencimiento}</span>
+                                        <span className="font-bold text-tertiary">Cuota #{c.numeroCuota}</span>
+                                        <span className="text-on-surface-variant text-[10px] block">Vence: {c.fechaVencimiento}</span>
                                     </div>
                                     <div className="text-right">
-                                        <span className="font-bold text-white text-sm">${c.montoCuota.toFixed(2)}</span>
+                                        <span className="font-bold text-on-surface text-sm">${c.montoCuota.toFixed(2)}</span>
                                         {c.pagado ? (
-                                            <span className="text-emerald-400 text-[10px] font-bold block">✅ PAGADO ({c.fechaPago})</span>
+                                            <span className="text-tertiary text-[10px] font-bold block">✅ PAGADO ({c.fechaPago})</span>
                                         ) : (
                                             <button
                                                 onClick={() => handlePagarCuota(selectedPlanDetail.id, c.numeroCuota)}
-                                                className="px-2.5 py-1 mt-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase border border-emerald-500/30"
+                                                className="px-2.5 py-1 mt-1 rounded-lg bg-tertiary/20 hover:bg-tertiary/30 text-tertiary text-[10px] font-bold uppercase border border-tertiary/30"
                                             >
                                                 Registrar Abono
                                             </button>
@@ -361,13 +361,13 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
             {/* ── MODAL NUEVO PLAN REFINANCIACIÓN ── */}
             {isCreateModalOpen && (
                 <Modal isOpen={true} onClose={() => setIsCreateModalOpen(false)} title="➕ Crear Plan de Refinanciación" size="md">
-                    <div className="space-y-4 p-4 text-white">
+                    <div className="space-y-4 p-4 text-on-surface">
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-300 uppercase block">Cliente</label>
+                            <label className="text-xs font-bold text-on-surface-variant uppercase block">Cliente</label>
                             <select
                                 value={selectedClientId}
                                 onChange={(e) => handleSelectClient(e.target.value)}
-                                className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                             >
                                 <option value="">-- Seleccionar cliente --</option>
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.ruc}</option>)}
@@ -376,31 +376,31 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Monto a Refinanciar ($)</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Monto a Refinanciar ($)</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={montoTotal}
                                     onChange={(e) => setMontoTotal(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-mono outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Número de Cuotas</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Número de Cuotas</label>
                                 <input
                                     type="number"
                                     min="1"
                                     max="24"
                                     value={numeroCuotas}
                                     onChange={(e) => setNumeroCuotas(parseInt(e.target.value) || 1)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-mono outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 text-xs font-bold">Cancelar</button>
-                            <button onClick={handleCreatePlan} className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs">Crear Plan</button>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl bg-foreground/10 text-xs font-bold">Cancelar</button>
+                            <button onClick={handleCreatePlan} className="px-5 py-2 rounded-xl bg-tertiary hover:bg-tertiary/90 text-white font-bold text-xs">Crear Plan</button>
                         </div>
                     </div>
                 </Modal>
