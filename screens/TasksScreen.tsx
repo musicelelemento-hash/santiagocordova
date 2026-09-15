@@ -297,40 +297,40 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
         <div className="space-y-6 animate-in fade-in duration-300 relative pb-24 font-sans min-h-screen">
             {/* ── TOP EXECUTIVE STRIPE ── */}
             <div className="relative z-20 px-4 sm:px-0">
-                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/10 border-t-foreground/20 bg-surface-low shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
                     {/* Mesh Gradient */}
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-[#2B6AFF]/15 to-transparent blur-3xl" />
-                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-[#00A896]/15 to-transparent blur-3xl" />
+                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-primary/15 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-tertiary/15 to-transparent blur-3xl" />
                     </div>
 
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
-                        <div className="w-full sm:w-auto font-mono">
+                        <div className="w-full sm:w-auto">
                             <div className="flex items-center gap-2 mb-2">
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
-                                    <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
-                                        <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-tertiary/15 border border-tertiary/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                    <div className="relative w-2 h-2 rounded-full bg-tertiary">
+                                        <div className="absolute inset-0 rounded-full bg-tertiary animate-ping opacity-60" />
                                     </div>
-                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em]">OPERACIONES ACTIVAS</span>
+                                    <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">OPERACIONES ACTIVAS</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">• Protocolo Santiago Córdova</span>
+                                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hidden sm:inline">• Protocolo Santiago Córdova</span>
                             </div>
-                            <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight font-display">
-                                TAREAS & <span className="bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">FLUJOS</span>
+                            <h1 className="text-3xl sm:text-5xl font-black text-on-surface leading-none tracking-tight font-display">
+                                TAREAS & <span className="bg-gradient-to-r from-tertiary to-primary bg-clip-text text-transparent">FLUJOS</span>
                             </h1>
-                            <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium">
+                            <p className="mt-2.5 text-xs sm:text-sm text-on-surface-variant font-sans font-medium">
                                 Gestión operativa de trámites, órdenes de trabajo y vencimientos fiscales.
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto font-mono">
-                            <div className="flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10 overflow-x-auto no-scrollbar">
+                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                            <div className="flex p-1.5 bg-surface-lowest rounded-2xl border border-foreground/10 overflow-x-auto no-scrollbar">
                                 <button 
                                     onClick={() => setActiveTab('all')} 
                                     className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
                                         activeTab === 'all' 
-                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-foreground/15 text-on-surface shadow-md border border-foreground/20' 
+                                            : 'text-on-surface-variant hover:text-on-surface'
                                     }`}
                                 >
                                     General
@@ -339,8 +339,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                     onClick={() => setActiveTab('orders')} 
                                     className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all relative cursor-pointer whitespace-nowrap ${
                                         activeTab === 'orders' 
-                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-foreground/15 text-on-surface shadow-md border border-foreground/20' 
+                                            : 'text-on-surface-variant hover:text-on-surface'
                                     }`}
                                 >
                                     Work Orders
@@ -354,8 +354,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                     onClick={() => setActiveTab('pending')} 
                                     className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all relative cursor-pointer whitespace-nowrap ${
                                         activeTab === 'pending' 
-                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-foreground/15 text-on-surface shadow-md border border-foreground/20' 
+                                            : 'text-on-surface-variant hover:text-on-surface'
                                     }`}
                                 >
                                     Pendientes
@@ -369,13 +369,13 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                     onClick={() => setActiveTab('completed')} 
                                     className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all relative cursor-pointer whitespace-nowrap ${
                                         activeTab === 'completed' 
-                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-foreground/15 text-on-surface shadow-md border border-foreground/20' 
+                                            : 'text-on-surface-variant hover:text-on-surface'
                                     }`}
                                 >
                                     Completadas
                                     {stats.completed > 0 && (
-                                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#00A896]/20 text-[#00A896] font-mono">
+                                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-tertiary/20 text-tertiary font-mono">
                                             {stats.completed}
                                         </span>
                                     )}
@@ -384,7 +384,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                             
                             <button 
                                 onClick={() => openAndPrepareModal()} 
-                                className="flex items-center gap-2 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white px-6 py-3 rounded-2xl shadow-lg shadow-[#00A896]/20 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer border border-white/10 hover:scale-[1.02] active:scale-95"
+                                className="flex items-center gap-2 bg-gradient-to-r from-tertiary to-tertiary hover:from-tertiary hover:to-tertiary text-white px-6 py-3 rounded-2xl shadow-lg shadow-tertiary/20 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer border border-foreground/10 hover:scale-[1.02] active:scale-95"
                             >
                                 <Plus size={16} />
                                 NUEVA TAREA
@@ -395,30 +395,30 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
             </div>
 
             {/* ── ZENITH TASK KPI STRIP ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 px-4 sm:px-0 font-mono">
-                <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 px-4 sm:px-0">
+                <div className="p-6 rounded-[2rem] bg-surface-low border border-foreground/10 border-t-foreground/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3.5 bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white rounded-2xl shadow-lg shadow-[#2B6AFF]/25">
+                        <div className="p-3.5 bg-gradient-to-br from-indigo-500 to-primary text-white rounded-2xl shadow-lg shadow-primary/25">
                             <Briefcase size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Carga Total</p>
-                            <p className="text-3xl font-black text-white font-mono tracking-tight">{stats.total}</p>
+                            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Carga Total</p>
+                            <p className="text-3xl font-black text-on-surface font-mono tracking-tight">{stats.total}</p>
                         </div>
                     </div>
-                    <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10">
+                    <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-foreground/5 text-on-surface-variant border border-foreground/10">
                         Registradas
                     </span>
                 </div>
 
-                <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-6 rounded-[2rem] bg-surface-low border border-foreground/10 border-t-foreground/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3.5 bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 rounded-2xl shadow-lg shadow-amber-500/20 font-bold">
                             <Zap size={20} className="animate-pulse" />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-[#C9A96E] uppercase tracking-widest">Work Orders</p>
-                            <p className="text-3xl font-black text-white font-mono tracking-tight">{stats.orders}</p>
+                            <p className="text-3xl font-black text-on-surface font-mono tracking-tight">{stats.orders}</p>
                         </div>
                     </div>
                     <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
@@ -426,14 +426,14 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     </span>
                 </div>
 
-                <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-6 rounded-[2rem] bg-surface-low border border-foreground/10 border-t-foreground/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3.5 bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl shadow-lg shadow-rose-500/25">
                             <Clock size={20} />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Vencimientos Próximos</p>
-                            <p className="text-3xl font-black text-white font-mono tracking-tight">{stats.urgent}</p>
+                            <p className="text-3xl font-black text-on-surface font-mono tracking-tight">{stats.urgent}</p>
                         </div>
                     </div>
                     <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
@@ -443,21 +443,21 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
             </div>
 
             {/* ── SEARCH SCANNER ── */}
-            <div className="relative group z-10 px-4 sm:px-0 font-mono">
-                <Search className="absolute left-9 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#00A896] transition-colors" size={18} />
+            <div className="relative group z-10 px-4 sm:px-0">
+                <Search className="absolute left-9 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-tertiary transition-colors" size={18} />
                 <input 
                     type="text" 
                     placeholder="BUSCAR POR NOMBRE / RUC / DESCRIPCIÓN DE TAREA..." 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
-                    className="w-full pl-14 pr-6 py-4 bg-[#051424]/90 border border-white/10 focus:border-[#00A896]/50 rounded-[2rem] text-xs font-mono uppercase tracking-wider placeholder:text-slate-500 focus:outline-none transition-all text-white backdrop-blur-2xl shadow-xl"
+                    className="w-full pl-14 pr-6 py-4 bg-surface-low border border-foreground/10 focus:border-tertiary/50 rounded-[2rem] text-xs font-mono uppercase tracking-wider placeholder:text-on-surface-variant focus:outline-none transition-all text-on-surface backdrop-blur-2xl shadow-xl"
                 />
             </div>
 
             {taskFilter?.clientId && (
-                <div className="px-4 sm:px-0 font-mono">
-                    <button 
-                        onClick={clearTaskFilter} 
+                <div className="px-4 sm:px-0">
+                    <button
+                        onClick={clearTaskFilter}
                         className="flex items-center gap-2 px-4 py-2 bg-rose-500/15 text-rose-300 border border-rose-500/30 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-rose-500/25 transition-all w-fit cursor-pointer"
                     > 
                         <X size={14} /> Quitar Filtro de Cliente
@@ -481,8 +481,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                         statusLabel = 'ORDEN TÁCTICA';
                         glowColor = 'shadow-amber-500/30';
                     } else if (task.status === TaskStatus.Completada || task.status === TaskStatus.Pagada) {
-                        statusColor = 'bg-emerald-500 text-white';
-                        glowColor = 'shadow-emerald-500/20';
+                        statusColor = 'bg-tertiary text-white';
+                        glowColor = 'shadow-tertiary/20';
                     } else if (daysUntilDue < 0) {
                         statusColor = 'bg-rose-500 text-white';
                         glowColor = 'shadow-rose-500/30';
@@ -496,8 +496,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                             key={task.id} 
                             onClick={() => setSelectedTask(task)} 
                             className={`
-                                group relative p-6 sm:p-7 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 backdrop-blur-2xl
-                                transition-all duration-300 hover:border-white/20 hover:scale-[1.005] hover:shadow-2xl
+                                group relative p-6 sm:p-7 rounded-[2rem] bg-surface-low border border-foreground/10 border-t-foreground/20 backdrop-blur-2xl
+                                transition-all duration-300 hover:border-foreground/20 hover:scale-[1.005] hover:shadow-2xl
                                 cursor-pointer overflow-hidden
                                 ${isAuto ? 'border-l-4 border-l-amber-400' : ''}
                             `}
@@ -511,8 +511,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                     <div className={`
                                         w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform duration-300 group-hover:scale-105
                                         ${isAuto ? 'bg-amber-500/15 text-[#C9A96E] border border-amber-500/30' : 
-                                          task.status === TaskStatus.Completada ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 
-                                          'bg-white/5 text-slate-400 border border-white/10'}
+                                          task.status === TaskStatus.Completada ? 'bg-tertiary/15 text-tertiary border border-tertiary/30' : 
+                                          'bg-foreground/5 text-on-surface-variant border border-foreground/10'}
                                     `}>
                                         {isAuto ? <Zap size={24} className="animate-pulse" /> : 
                                          task.status === TaskStatus.Completada ? <CheckCircle size={24} /> : 
@@ -524,18 +524,18 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                             <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${statusColor} ${glowColor}`}>
                                                 {statusLabel}
                                             </span>
-                                            <span className="text-[10px] text-slate-500 font-mono">NODE · {task.id.substring(0, 8)}</span>
+                                            <span className="text-[10px] text-on-surface-variant font-mono">NODE · {task.id.substring(0, 8)}</span>
                                         </div>
-                                        <h3 className="text-lg sm:text-xl font-bold font-display text-white tracking-tight truncate group-hover:text-[#00A896] transition-colors uppercase">
+                                        <h3 className="text-lg sm:text-xl font-bold font-display text-on-surface tracking-tight truncate group-hover:text-tertiary transition-colors uppercase">
                                             {task.title}
                                         </h3>
                                         
-                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2 font-mono">
+                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2">
                                             <div className="flex items-center gap-2">
-                                                <div className="p-1 bg-white/5 rounded-lg border border-white/10">
-                                                    <User size={12} className="text-[#00A896]" />
+                                                <div className="p-1 bg-foreground/5 rounded-lg border border-foreground/10">
+                                                    <User size={12} className="text-tertiary" />
                                                 </div>
-                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
                                                     {client ? client.name : (task.nonClientName || 'Factor Externo')}
                                                 </span>
                                             </div>
@@ -549,7 +549,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                                         const msg = `Estimado(a) *${client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe notificamos sobre su trámite en curso: *${task.title}*.\n📅 *Fecha de entrega programada:* ${safeFormat(task.dueDate, 'dd/MM/yyyy')}\n\nCualquier consulta o documento adicional quedamos a su entera disposición. ¡Saludos cordiales!`;
                                                         window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank'); 
                                                     }} 
-                                                    className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
+                                                    className="flex items-center gap-1.5 text-[10px] font-bold text-tertiary uppercase tracking-wider px-3 py-1 rounded-xl bg-tertiary/10 hover:bg-tertiary/20 border border-tertiary/20 transition-all cursor-pointer"
                                                 >
                                                     <MessageSquare size={12} /> 
                                                     WhatsApp
@@ -560,11 +560,11 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                 </div>
 
                                 <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-4 shrink-0 font-mono">
-                                    <div className="flex flex-col items-end px-4 py-2 rounded-xl bg-[#020b14] border border-white/10">
-                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">VENCIMIENTO</span>
+                                    <div className="flex flex-col items-end px-4 py-2 rounded-xl bg-surface-lowest border border-foreground/10">
+                                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">VENCIMIENTO</span>
                                         <div className="flex items-center gap-1.5">
-                                            <Clock size={11} className={daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-400'} />
-                                            <span className={`text-xs font-bold ${daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-300'}`}>
+                                            <Clock size={11} className={daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-on-surface-variant'} />
+                                            <span className={`text-xs font-bold ${daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-on-surface-variant'}`}>
                                                 {safeFormat(task.dueDate, 'dd MMM, yyyy')}
                                             </span>
                                         </div>
@@ -578,7 +578,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                                     setUploadingTask(task); 
                                                     fileInputRef.current?.click(); 
                                                 }} 
-                                                className="flex items-center gap-2 px-5 py-2.5 bg-[#00A896] hover:bg-[#00A896]/80 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-[#00A896]/20 transition-all cursor-pointer"
+                                                className="flex items-center gap-2 px-5 py-2.5 bg-tertiary hover:bg-tertiary/80 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-tertiary/20 transition-all cursor-pointer"
                                                 disabled={isAnalyzingPdf && uploadingTask?.id === task.id}
                                             >
                                                 {(isAnalyzingPdf && uploadingTask?.id === task.id) ? (
@@ -588,7 +588,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                                 )}
                                             </button>
                                         )}
-                                        <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 group-hover:border-[#00A896]/50 group-hover:text-[#00A896] text-slate-400 transition-all">
+                                        <div className="p-2.5 bg-foreground/5 rounded-xl border border-foreground/10 group-hover:border-tertiary/50 group-hover:text-tertiary text-on-surface-variant transition-all">
                                             <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                                         </div>
                                     </div>
@@ -597,46 +597,46 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                         </div>
                     );
                 }) : (
-                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono">
-                        <div className="w-20 h-20 rounded-[2.5rem] bg-[#051424] flex items-center justify-center mb-4 border border-white/10 shadow-xl">
-                            <Shield size={32} className="text-[#00A896]" />
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                        <div className="w-20 h-20 rounded-[2.5rem] bg-surface-low flex items-center justify-center mb-4 border border-foreground/10 shadow-xl">
+                            <Shield size={32} className="text-tertiary" />
                         </div>
-                        <p className="text-sm font-bold tracking-wider uppercase text-white">Sin Tareas Pendientes</p>
-                        <p className="text-xs text-slate-400 mt-1 font-sans">Todas las operaciones y obligaciones están al día.</p>
+                        <p className="text-sm font-bold tracking-wider uppercase text-on-surface">Sin Tareas Pendientes</p>
+                        <p className="text-xs text-on-surface-variant mt-1 font-sans">Todas las operaciones y obligaciones están al día.</p>
                     </div>
                 )}
             </div>
 
             {/* ── NEW TASK MODAL ── */}
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="TACTICAL PROTOCOL: NUEVA TAREA" disableBackdropClick={true}>
-                <div className="space-y-6 pt-2 font-mono">
+                <div className="space-y-6 pt-2">
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Descripción del Objetivo</label>
+                        <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Descripción del Objetivo</label>
                         <input 
                             type="text" 
                             value={newTask.title || ''} 
                             onChange={e => handleNewTaskTitleChange(e.target.value)} 
-                            className="w-full h-12 px-4 bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-xl text-xs font-mono text-white transition-all outline-none" 
+                            className="w-full h-12 px-4 bg-surface-lowest border border-foreground/10 focus:border-tertiary/50 rounded-xl text-xs font-mono text-on-surface transition-all outline-none" 
                             placeholder="Ej: Devolución Renta 2024, Anexo Gastos..." 
                         />
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Fecha Límite</label>
+                            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Fecha Límite</label>
                             <input 
                                 type="date" 
                                 value={newTask.dueDate ? safeFormat(newTask.dueDate, 'yyyy-MM-dd') : ''} 
                                 onChange={e => setNewTask({ ...newTask, dueDate: new Date(e.target.value).toISOString() })} 
-                                className="w-full h-12 px-4 bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-xl text-xs font-mono text-white transition-all outline-none" 
+                                className="w-full h-12 px-4 bg-surface-lowest border border-foreground/10 focus:border-tertiary/50 rounded-xl text-xs font-mono text-on-surface transition-all outline-none" 
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Cliente Asignado</label>
+                            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2 block">Cliente Asignado</label>
                             <select 
                                 value={isNonClient ? 'non-client' : (newTask.clientId || '')} 
                                 onChange={handleClientSelectionChange} 
-                                className="w-full h-12 px-4 bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-xl text-xs font-mono text-white transition-all outline-none appearance-none cursor-pointer"
+                                className="w-full h-12 px-4 bg-surface-lowest border border-foreground/10 focus:border-tertiary/50 rounded-xl text-xs font-mono text-on-surface transition-all outline-none appearance-none cursor-pointer"
                             >
                                 <option value="">Seleccionar Cliente...</option>
                                 {sortedClients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
@@ -646,34 +646,34 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     </div>
 
                     {isNonClient && (
-                        <div className="space-y-4 p-5 bg-[#020b14] rounded-2xl border border-white/10">
+                        <div className="space-y-4 p-5 bg-surface-lowest rounded-2xl border border-foreground/10">
                             <div className="flex items-center gap-2 mb-1">
-                                <User size={14} className="text-[#00A896]" />
-                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Datos de Contacto Externo</span>
+                                <User size={14} className="text-tertiary" />
+                                <span className="text-[10px] font-bold text-on-surface uppercase tracking-wider">Datos de Contacto Externo</span>
                             </div>
-                            <input type="text" placeholder="Nombre Completo" value={newTask.nonClientName || ''} onChange={e => setNewTask({ ...newTask, nonClientName: e.target.value })} className="w-full h-11 px-4 bg-white/5 border border-white/10 rounded-xl text-xs text-white outline-none" />
-                            <input type="text" placeholder="RUC / Cédula" value={newTask.nonClientRuc || ''} onChange={e => setNewTask({ ...newTask, nonClientRuc: e.target.value })} className="w-full h-11 px-4 bg-white/5 border border-white/10 rounded-xl text-xs text-white outline-none" />
+                            <input type="text" placeholder="Nombre Completo" value={newTask.nonClientName || ''} onChange={e => setNewTask({ ...newTask, nonClientName: e.target.value })} className="w-full h-11 px-4 bg-foreground/5 border border-foreground/10 rounded-xl text-xs text-on-surface outline-none" />
+                            <input type="text" placeholder="RUC / Cédula" value={newTask.nonClientRuc || ''} onChange={e => setNewTask({ ...newTask, nonClientRuc: e.target.value })} className="w-full h-11 px-4 bg-foreground/5 border border-foreground/10 rounded-xl text-xs text-on-surface outline-none" />
                         </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-xl bg-[#020b14] border border-white/10">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Tarifa Proyectada</span>
+                        <div className="p-4 rounded-xl bg-surface-lowest border border-foreground/10">
+                            <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Tarifa Proyectada</span>
                             <div className="flex items-center gap-1">
-                                <p className="text-xl font-bold font-mono text-white">${(newTask.cost || 0).toFixed(2)}</p>
+                                <p className="text-xl font-bold font-mono text-on-surface">${(newTask.cost || 0).toFixed(2)}</p>
                             </div>
                         </div>
-                        <div className="p-4 rounded-xl bg-[#020b14] border border-white/10">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Anticipo Pagado</span>
+                        <div className="p-4 rounded-xl bg-surface-lowest border border-foreground/10">
+                            <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Anticipo Pagado</span>
                             <div className="flex items-center gap-1">
-                                <p className="text-xl font-bold font-mono text-[#00A896]">${(newTask.advancePayment || 0).toFixed(2)}</p>
+                                <p className="text-xl font-bold font-mono text-tertiary">${(newTask.advancePayment || 0).toFixed(2)}</p>
                             </div>
                         </div>
                     </div>
 
                     <button 
                         onClick={handleAddTask} 
-                        className="w-full py-4 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-[#00A896]/25 transition-all cursor-pointer border border-white/10 active:scale-95"
+                        className="w-full py-4 bg-gradient-to-r from-tertiary to-tertiary hover:from-tertiary hover:to-tertiary text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-tertiary/25 transition-all cursor-pointer border border-foreground/10 active:scale-95"
                     >
                         CREAR TAREA OPERATIVA
                     </button>
