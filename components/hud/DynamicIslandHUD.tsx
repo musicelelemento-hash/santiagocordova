@@ -61,7 +61,10 @@ export const DynamicIslandHUD: React.FC<DynamicIslandHUDProps> = ({ theme = 'dar
     };
 
     return (
-        <div className="fixed top-3 left-0 right-0 z-[120] flex justify-center pointer-events-none px-4">
+        <div
+            className="fixed left-0 right-0 z-[120] flex justify-center pointer-events-none px-3"
+            style={{ top: 'max(10px, env(safe-area-inset-top, 10px))' }}
+        >
             <motion.div
                 layout
                 transition={{ type: 'spring', stiffness: 450, damping: 35 }}
@@ -70,7 +73,7 @@ export const DynamicIslandHUD: React.FC<DynamicIslandHUDProps> = ({ theme = 'dar
                     theme === 'dark'
                         ? 'bg-[#020617]/85 border-white/10 shadow-black/70 hover:border-[#00A896]/40'
                         : 'bg-white/85 border-slate-200/80 shadow-slate-300/60 hover:border-[#00A896]/50'
-                } px-3.5 py-1.5 flex items-center gap-3 text-xs`}
+                } px-3 py-1.5 flex items-center gap-2.5 sm:gap-3 text-xs max-w-[94vw]`}
             >
                 {/* SRI Ping Status */}
                 <div className="flex items-center gap-2">
@@ -124,7 +127,7 @@ export const DynamicIslandHUD: React.FC<DynamicIslandHUDProps> = ({ theme = 'dar
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        className={`pointer-events-auto fixed top-16 max-w-sm w-full mx-4 p-5 rounded-2xl border shadow-2xl backdrop-blur-2xl ${
+                        className={`pointer-events-auto fixed top-16 max-w-sm w-[calc(100vw-32px)] p-4 sm:p-5 rounded-2xl border shadow-2xl backdrop-blur-2xl ${
                             theme === 'dark'
                                 ? 'bg-[#051424]/95 border-white/10 text-white'
                                 : 'bg-white/95 border-slate-200 text-slate-900'

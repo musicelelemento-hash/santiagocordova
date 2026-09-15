@@ -27,6 +27,18 @@ export const ExplodedVoucher3D: React.FC<ExplodedVoucher3DProps> = ({ theme = 'd
         setMouseTilt({ x: 18, y: -14 });
     };
 
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!containerRef.current || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const rect = containerRef.current.getBoundingClientRect();
+        const nx = (touch.clientX - rect.left) / rect.width - 0.5;
+        const ny = (touch.clientY - rect.top) / rect.height - 0.5;
+        setMouseTilt({
+            x: 20 - ny * 25,
+            y: -15 + nx * 30,
+        });
+    };
+
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = Number(e.target.value);
         setSeparation(val);
@@ -70,12 +82,14 @@ export const ExplodedVoucher3D: React.FC<ExplodedVoucher3DProps> = ({ theme = 'd
                 </div>
             </div>
 
-            {/* 3D Perspective Stage */}
+            {/* 3D Perspective Stage (Responsive on Web, Tablet & Mobile) */}
             <div
                 ref={containerRef}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
-                className="relative h-[480px] w-full flex items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#051424]/80 to-[#020617]/90 shadow-2xl"
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleMouseLeave}
+                className="relative h-[420px] sm:h-[480px] w-full flex items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#051424]/80 to-[#020617]/90 shadow-2xl touch-none select-none"
                 style={{ perspective: '1100px' }}
             >
                 {/* Visual Depth Background Grid */}
@@ -94,7 +108,7 @@ export const ExplodedVoucher3D: React.FC<ExplodedVoucher3DProps> = ({ theme = 'd
                     }}
                     transition={{ type: 'spring', stiffness: 120, damping: 18 }}
                     style={{ transformStyle: 'preserve-3d' }}
-                    className="relative w-[300px] sm:w-[360px] h-[240px]"
+                    className="relative w-[280px] sm:w-[360px] h-[220px] sm:h-[240px]"
                 >
                     {/* LAYER 1: RIDE FÍSICO */}
                     <div
