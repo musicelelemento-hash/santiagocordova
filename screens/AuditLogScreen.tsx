@@ -58,24 +58,24 @@ export const AuditLogScreen: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#050B18] text-white p-6 lg:p-10 animate-in fade-in duration-500">
+        <div className="min-h-screen bg-surface text-on-surface p-6 lg:p-10 animate-in fade-in duration-500">
             {/* Header Area */}
             <div className="max-w-7xl mx-auto mb-10">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-[#00A896]/10 rounded-lg border border-[#00A896]/20">
-                                <History className="w-5 h-5 text-[#00A896]" />
+                            <div className="p-2 bg-tertiary/10 rounded-lg border border-tertiary/20">
+                                <History className="w-5 h-5 text-tertiary" />
                             </div>
-                            <span className="text-xs font-semibold text-[#00A896] uppercase tracking-[0.3em]">System Monitoring</span>
+                            <span className="text-xs font-semibold text-tertiary uppercase tracking-[0.3em]">System Monitoring</span>
                         </div>
                         <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight">TACTICAL AUDIT LOG</h1>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button 
+                        <button
                             onClick={exportLogs}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-medium text-xs uppercase tracking-widest"
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-all font-medium text-xs uppercase tracking-widest"
                         >
                             <Download className="w-4 h-4" />
                             Exportar JSON
@@ -86,21 +86,21 @@ export const AuditLogScreen: React.FC = () => {
                 {/* Filters Row */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-8">
                     <div className="md:col-span-8 relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-[#00A896] transition-colors" />
-                        <input 
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant group-focus-within:text-tertiary transition-colors" />
+                        <input
                             type="text"
                             placeholder="Buscar en el historial táctico..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00A896]/50 focus:bg-white/10 transition-all"
+                            className="w-full bg-foreground/5 border border-foreground/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-tertiary/50 focus:bg-foreground/10 transition-all"
                         />
                     </div>
                     <div className="md:col-span-4 flex items-center gap-2">
-                        <Filter className="w-4 h-4 text-white/30" />
-                        <select 
+                        <Filter className="w-4 h-4 text-on-surface-variant" />
+                        <select
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-xs font-medium uppercase tracking-widest focus:outline-none focus:border-[#00A896]/50"
+                            className="w-full bg-foreground/5 border border-foreground/10 rounded-2xl py-4 px-4 text-xs font-medium uppercase tracking-widest focus:outline-none focus:border-tertiary/50"
                         >
                             <option value="all">TODOS LOS EVENTOS</option>
                             <option value="client">CLIENTES</option>
@@ -113,40 +113,40 @@ export const AuditLogScreen: React.FC = () => {
                 </div>
 
                 {/* Audit Table */}
-                <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
+                <div className="bg-foreground/[0.02] border border-foreground/5 rounded-[2rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-white/5 bg-white/[0.02]">
-                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Timestamp</th>
-                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Evento</th>
-                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Detalles</th>
-                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Severidad</th>
+                                <tr className="border-b border-foreground/5 bg-foreground/[0.02]">
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant">Timestamp</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant">Evento</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant">Detalles</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant">Severidad</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-foreground/5">
                                 {filteredLogs.length > 0 ? filteredLogs.map((log) => {
                                     const Icon = getTypeIcon(log.type);
                                     return (
-                                        <tr key={log.id} className="group hover:bg-white/[0.03] transition-colors">
+                                        <tr key={log.id} className="group hover:bg-foreground/[0.03] transition-colors">
                                             <td className="p-6">
-                                                <span className="text-xs font-mono text-white/40">
+                                                <span className="text-xs font-mono text-on-surface-variant">
                                                     {format(new Date(log.timestamp), 'dd MMM, HH:mm:ss', { locale: es })}
                                                 </span>
                                             </td>
                                             <td className="p-6">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-white/5 rounded-lg border border-white/10 group-hover:border-white/20 transition-all">
-                                                        <Icon className="w-4 h-4 text-[#00A896]" />
+                                                    <div className="p-2 bg-foreground/5 rounded-lg border border-foreground/10 group-hover:border-foreground/20 transition-all">
+                                                        <Icon className="w-4 h-4 text-tertiary" />
                                                     </div>
                                                     <div>
                                                         <p className="font-medium text-sm tracking-tight">{log.action}</p>
-                                                        <p className="text-xs font-semibold text-white/20 uppercase tracking-widest">{log.type}</p>
+                                                        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest">{log.type}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="p-6">
-                                                <p className="text-sm text-white/60 leading-relaxed max-w-md">{log.details}</p>
+                                                <p className="text-sm text-on-surface-variant leading-relaxed max-w-md">{log.details}</p>
                                             </td>
                                             <td className="p-6">
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest border ${getSeverityStyles(log.severity)}`}>
@@ -171,7 +171,7 @@ export const AuditLogScreen: React.FC = () => {
                 </div>
 
                 {/* Footer Info */}
-                <div className="mt-8 flex items-center justify-between text-xs font-medium text-white/20 uppercase tracking-[0.2em]">
+                <div className="mt-8 flex items-center justify-between text-xs font-medium text-on-surface-variant uppercase tracking-[0.2em]">
                     <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4" />
                         Capa de Seguridad Estándar Stitch v3.0
