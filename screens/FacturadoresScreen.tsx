@@ -521,28 +521,28 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         <div className="space-y-6 pb-24 animate-in fade-in duration-300 relative font-sans min-h-screen">
             {/* ── TOP EXECUTIVE STRIPE ── */}
             <div className="relative z-20 px-4 sm:px-0">
-                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/10 border-t-foreground/20 bg-surface-low shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
                     {/* Mesh Gradient */}
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-[#2B6AFF]/15 to-transparent blur-3xl" />
-                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-[#00A896]/15 to-transparent blur-3xl" />
+                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-primary/15 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-tertiary/15 to-transparent blur-3xl" />
                     </div>
 
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
                         <div className="w-full sm:w-auto font-mono">
                             <div className="flex items-center gap-2 mb-2">
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
-                                    <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
-                                        <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-tertiary/15 border border-tertiary/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                    <div className="relative w-2 h-2 rounded-full bg-tertiary">
+                                        <div className="absolute inset-0 rounded-full bg-tertiary animate-ping opacity-60" />
                                     </div>
-                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em]">CONTROL DE EMISIÓN & PLANES SRI</span>
+                                    <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">CONTROL DE EMISIÓN & PLANES SRI</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">• Plataformas SRI 2026</span>
+                                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hidden sm:inline">• Plataformas SRI 2026</span>
                             </div>
-                            <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight font-display">
-                                FACTURACIÓN & <span className="bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">PLANES</span>
+                            <h1 className="text-3xl sm:text-5xl font-black text-on-surface leading-none tracking-tight font-display">
+                                FACTURACIÓN & <span className="bg-gradient-to-r from-tertiary via-tertiary to-primary bg-clip-text text-transparent">PLANES</span>
                             </h1>
-                            <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium max-w-2xl">
+                            <p className="mt-2.5 text-xs sm:text-sm text-on-surface-variant font-sans font-medium max-w-2xl">
                                 Gestión de software de emisión (Ecuafact, Zifact, etc.), expedientes de firma .p12 y separación estricta de particulares vs contables.
                             </p>
                         </div>
@@ -551,39 +551,39 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         <div className="flex items-center gap-3 flex-wrap shrink-0 font-mono">
                             <button
                                 onClick={() => setIsSalesModalOpen(true)}
-                                className="px-6 py-3.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-[#00A896]/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer border border-white/10"
+                                className="px-6 py-3.5 bg-gradient-to-r from-tertiary to-tertiary hover:from-tertiary hover:to-tertiary text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-tertiary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer border border-foreground/10"
                             >
                                 <Plus size={16} />
                                 <span>Vender Plan / Combo</span>
                             </button>
                             <button
                                 onClick={() => setIsQuickPlanModalOpen(true)}
-                                className="px-5 py-3.5 bg-[#0b1326] hover:bg-white/10 text-slate-200 border border-white/10 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                                className="px-5 py-3.5 bg-surface-lowest hover:bg-foreground/10 text-on-surface-variant border border-foreground/10 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
                             >
-                                <FileText size={16} className="text-[#00A896]" />
+                                <FileText size={16} className="text-tertiary" />
                                 <span>Autorización Ecuafact</span>
                             </button>
                         </div>
                     </div>
 
                     {/* ── 4 TARJETAS EJECUTIVAS KPI ── */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10 font-mono">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-foreground/10 font-mono">
                         {/* Card 1: Total Planes */}
                         <div 
                             onClick={() => setFilterStatus('todos')}
                             className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
                                 filterStatus === 'todos' 
-                                    ? 'bg-[#00A896]/15 border-[#00A896]/40 text-[#00A896] shadow-lg shadow-[#00A896]/10 scale-[1.02]' 
-                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                                    ? 'bg-tertiary/15 border-tertiary/40 text-tertiary shadow-lg shadow-tertiary/10 scale-[1.02]' 
+                                    : 'bg-surface-lowest border-foreground/10 text-on-surface-variant hover:border-foreground/20'
                             }`}
                         >
                             <div className="flex justify-between items-start">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Planes</span>
-                                <ShoppingBag size={16} className="text-[#00A896]" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Total Planes</span>
+                                <ShoppingBag size={16} className="text-tertiary" />
                             </div>
-                            <div className="text-3xl font-black text-white font-mono mt-2">{kpis.total}</div>
-                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#00A896]" />
+                            <div className="text-3xl font-black text-on-surface font-mono mt-2">{kpis.total}</div>
+                            <div className="text-[10px] font-medium text-on-surface-variant mt-1 flex items-center gap-1.5 font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
                                 <span>Emisión Digital</span>
                             </div>
                         </div>
@@ -594,7 +594,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
                                 filterStatus === 'particulares' 
                                     ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 shadow-lg shadow-sky-500/10 scale-[1.02]' 
-                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                                    : 'bg-surface-lowest border-foreground/10 text-on-surface-variant hover:border-foreground/20'
                             }`}
                         >
                             <div className="flex justify-between items-start">
@@ -602,7 +602,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 <User size={16} className="text-sky-400" />
                             </div>
                             <div className="text-3xl font-black text-sky-400 font-mono mt-2">{kpis.particulares}</div>
-                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                            <div className="text-[10px] font-medium text-on-surface-variant mt-1 flex items-center gap-1.5 font-sans">
                                 <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
                                 <span>Aislados de Matriz IVA</span>
                             </div>
@@ -614,7 +614,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
                                 filterStatus === 'clientes' 
                                     ? 'bg-[#C9A96E]/15 border-[#C9A96E]/40 text-[#C9A96E] shadow-lg shadow-[#C9A96E]/10 scale-[1.02]' 
-                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                                    : 'bg-surface-lowest border-foreground/10 text-on-surface-variant hover:border-foreground/20'
                             }`}
                         >
                             <div className="flex justify-between items-start">
@@ -622,7 +622,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 <UserCheck size={16} className="text-[#C9A96E]" />
                             </div>
                             <div className="text-3xl font-black text-[#C9A96E] font-mono mt-2">{kpis.contables}</div>
-                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                            <div className="text-[10px] font-medium text-on-surface-variant mt-1 flex items-center gap-1.5 font-sans">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E]" />
                                 <span>Servicio Integral + Plan</span>
                             </div>
@@ -633,17 +633,17 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             onClick={() => setFilterStatus('activado')}
                             className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
                                 filterStatus === 'activado' 
-                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-lg shadow-emerald-500/10 scale-[1.02]' 
-                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                                    ? 'bg-tertiary/15 border-tertiary/40 text-tertiary shadow-lg shadow-tertiary/10 scale-[1.02]' 
+                                    : 'bg-surface-lowest border-foreground/10 text-on-surface-variant hover:border-foreground/20'
                             }`}
                         >
                             <div className="flex justify-between items-start">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Activados & Listos</span>
-                                <CheckCircle2 size={16} className="text-emerald-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-tertiary">Activados & Listos</span>
+                                <CheckCircle2 size={16} className="text-tertiary" />
                             </div>
-                            <div className="text-3xl font-black text-emerald-400 font-mono mt-2">{kpis.activado}</div>
-                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <div className="text-3xl font-black text-tertiary font-mono mt-2">{kpis.activado}</div>
+                            <div className="text-[10px] font-medium text-on-surface-variant mt-1 flex items-center gap-1.5 font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
                                 <span>{kpis.total > 0 ? Math.round((kpis.activado / kpis.total) * 100) : 100}% Operativos</span>
                             </div>
                         </div>
@@ -666,12 +666,12 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 const expDate = new Date(client.signatureExpirationDate!);
                                 const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
                                 return (
-                                    <div key={client.id} className="bg-[#020b14] border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
+                                    <div key={client.id} className="bg-surface-lowest border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
                                         <div>
-                                            <div className="font-bold text-white uppercase text-xs truncate">{client.tradeName || client.name}</div>
-                                            <div className="text-[10px] font-mono text-slate-400 mt-0.5">RUC: {client.ruc}</div>
+                                            <div className="font-bold text-on-surface uppercase text-xs truncate">{client.tradeName || client.name}</div>
+                                            <div className="text-[10px] font-mono text-on-surface-variant mt-0.5">RUC: {client.ruc}</div>
                                         </div>
-                                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5 font-mono">
+                                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-foreground/5 font-mono">
                                             <span className="text-xs font-bold text-amber-400">{format(expDate, "dd/MM/yyyy")}</span>
                                             <span className="text-[9px] uppercase font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
                                                 {diffDays} días rest.
@@ -687,14 +687,14 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
             {/* ── SELECTOR PRINCIPAL: CENTRO DE LLENADO VS ADMINISTRACIÓN ── */}
             <div className="px-4 sm:px-0">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-[#051424]/90 p-4 rounded-[2rem] border border-white/10 backdrop-blur-2xl shadow-xl font-mono">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-surface-low p-4 rounded-[2rem] border border-foreground/10 backdrop-blur-2xl shadow-xl font-mono">
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <button
                             onClick={() => setViewMode('filling_center')}
                             className={`flex-1 md:flex-none px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                 viewMode === 'filling_center'
-                                    ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/25 border border-white/20 scale-[1.02]'
-                                    : 'bg-[#020b14] border border-white/10 text-slate-400 hover:text-white'
+                                    ? 'bg-gradient-to-r from-tertiary to-tertiary text-white shadow-lg shadow-tertiary/25 border border-foreground/20 scale-[1.02]'
+                                    : 'bg-surface-lowest border border-foreground/10 text-on-surface-variant hover:text-on-surface'
                             }`}
                         >
                             <ShoppingBag size={15} />
@@ -704,8 +704,8 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             onClick={() => setViewMode('software_admin')}
                             className={`flex-1 md:flex-none px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                 viewMode === 'software_admin'
-                                    ? 'bg-gradient-to-r from-[#2B6AFF] to-indigo-600 text-white shadow-lg shadow-[#2B6AFF]/25 border border-white/20 scale-[1.02]'
-                                    : 'bg-[#020b14] border border-white/10 text-slate-400 hover:text-white'
+                                    ? 'bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg shadow-primary/25 border border-foreground/20 scale-[1.02]'
+                                    : 'bg-surface-lowest border border-foreground/10 text-on-surface-variant hover:text-on-surface'
                             }`}
                         >
                             <Sliders size={15} />
@@ -715,20 +715,20 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                     {/* Month Navigator */}
                     {viewMode === 'filling_center' && (
-                        <div className="flex items-center gap-2 bg-[#020b14] border border-white/10 rounded-2xl p-1.5 w-full md:w-auto justify-between">
+                        <div className="flex items-center gap-2 bg-surface-lowest border border-foreground/10 rounded-2xl p-1.5 w-full md:w-auto justify-between">
                             <button
                                 onClick={handlePrevMonth}
-                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all cursor-pointer font-bold"
+                                className="p-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface transition-all cursor-pointer font-bold"
                                 title="Mes Anterior"
                             >
                                 ◀
                             </button>
-                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest px-4 font-mono">
+                            <span className="text-xs font-bold text-tertiary uppercase tracking-widest px-4 font-mono">
                                 📅 {formatPeriodMonth(selectedPeriod)}
                             </span>
                             <button
                                 onClick={handleNextMonth}
-                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all cursor-pointer font-bold"
+                                className="p-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface transition-all cursor-pointer font-bold"
                                 title="Mes Siguiente"
                             >
                                 ▶
@@ -740,20 +740,20 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
             {/* ── BARRA DE BÚSQUEDA Y FILTRADO SEGMENTADO ── */}
             <div className="px-4 sm:px-0">
-                <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-[#051424]/90 p-4 rounded-[2rem] border border-white/10 backdrop-blur-2xl shadow-xl font-mono">
+                <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-surface-low p-4 rounded-[2rem] border border-foreground/10 backdrop-blur-2xl shadow-xl font-mono">
                     <div className="relative w-full lg:max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                         <input
                             type="text"
                             placeholder="BUSCAR POR CLIENTE, RUC O SOFTWARE..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-10 py-3 bg-[#020b14] rounded-2xl border border-white/10 text-xs font-mono uppercase text-white placeholder-slate-500 outline-none focus:border-[#00A896]/50 transition-all"
+                            className="w-full pl-11 pr-10 py-3 bg-surface-lowest rounded-2xl border border-foreground/10 text-xs font-mono uppercase text-on-surface placeholder-on-surface-variant outline-none focus:border-tertiary/50 transition-all"
                         />
                         {searchTerm && (
                             <button
                                 onClick={() => setSearchTerm('')}
-                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface text-xs font-bold p-1 cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -775,8 +775,8 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 onClick={() => setFilterStatus(tab.id as any)}
                                 className={`px-3.5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     filterStatus === tab.id
-                                        ? 'bg-white/15 text-white border-white/20 shadow-md scale-[1.02]'
-                                        : 'bg-[#020b14] border-white/5 text-slate-400 hover:text-white'
+                                        ? 'bg-foreground/15 text-on-surface border-foreground/20 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest border-foreground/5 text-on-surface-variant hover:text-on-surface'
                                 }`}
                             >
                                 {tab.icon && <tab.icon size={12} />}
@@ -791,9 +791,9 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
             {viewMode === 'filling_center' ? (
                 <div className="px-4 sm:px-0 space-y-4">
                     {displayClients.length === 0 ? (
-                        <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2 font-mono bg-[#051424]/60">
-                            <div className="text-xs font-bold text-slate-300 uppercase">No se encontraron clientes para facturación</div>
-                            <p className="text-xs text-slate-500 max-w-md mx-auto font-sans">
+                        <div className="p-12 text-center border border-dashed border-foreground/10 rounded-3xl text-on-surface-variant space-y-2 font-mono bg-surface-low">
+                            <div className="text-xs font-bold text-on-surface-variant uppercase">No se encontraron clientes para facturación</div>
+                            <p className="text-xs text-on-surface-variant max-w-md mx-auto font-sans">
                                 Ajusta los filtros de búsqueda o registra un nuevo plan de software para empezar a emitir facturas.
                             </p>
                         </div>
@@ -830,18 +830,18 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 return (
                                     <div 
                                         key={client.id}
-                                        className="bg-[#051424]/90 border border-white/10 hover:border-[#00A896]/40 rounded-[2rem] p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between transition-all duration-300 group hover:shadow-2xl hover:shadow-[#00A896]/5 font-mono"
+                                        className="bg-surface-low border border-foreground/10 hover:border-tertiary/40 rounded-[2rem] p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between transition-all duration-300 group hover:shadow-2xl hover:shadow-tertiary/5 font-mono"
                                     >
                                         <div className="space-y-4">
                                             {/* Header: Client Name, RUC, Software badge & Open button */}
                                             <div>
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="min-w-0">
-                                                        <h4 className="text-sm font-black text-white uppercase truncate tracking-tight">
+                                                        <h4 className="text-sm font-black text-on-surface uppercase truncate tracking-tight">
                                                             {client.tradeName || client.name}
                                                         </h4>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
+                                                            <span className="text-[10px] text-on-surface-variant font-mono">{client.ruc}</span>
                                                             <span className="text-[9px] font-bold text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                                                                 {client.regime || 'Régimen General'}
                                                             </span>
@@ -850,7 +850,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                     <button
                                                         onClick={() => window.open(providerUrl, '_blank')}
-                                                        className="px-3 py-1.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md shadow-[#00A896]/10"
+                                                        className="px-3 py-1.5 bg-tertiary/15 hover:bg-tertiary text-tertiary hover:text-white border border-tertiary/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md shadow-tertiary/10"
                                                         title="Abrir facturador en nueva pestaña"
                                                     >
                                                         <span>Abrir</span>
@@ -858,29 +858,29 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                     </button>
                                                 </div>
 
-                                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
-                                                    <span className="text-[10px] font-bold text-[#00A896] uppercase flex items-center gap-1">
+                                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-foreground/5">
+                                                    <span className="text-[10px] font-bold text-tertiary uppercase flex items-center gap-1">
                                                         🌐 {config.programName || 'Facturador Web'}
                                                     </span>
-                                                    <span className="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                                                    <span className="text-[9px] text-on-surface-variant bg-foreground/5 px-2 py-0.5 rounded-md border border-foreground/5">
                                                         {planTypeLabel}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             {/* Credenciales de 1 toque */}
-                                            <div className="p-3 bg-[#020b14] border border-white/10 rounded-2xl space-y-2 text-[10px]">
+                                            <div className="p-3 bg-surface-lowest border border-foreground/10 rounded-2xl space-y-2 text-[10px]">
                                                 {/* Usuario Facturador */}
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <span className="text-slate-400">👤 User:</span>
+                                                    <span className="text-on-surface-variant">👤 User:</span>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="text-white font-mono truncate max-w-[140px]">{config.username || client.ruc}</span>
+                                                        <span className="text-on-surface font-mono truncate max-w-[140px]">{config.username || client.ruc}</span>
                                                         <button
                                                             onClick={() => {
                                                                 navigator.clipboard.writeText(config.username || client.ruc);
                                                                 toast.success("Usuario copiado al portapapeles");
                                                             }}
-                                                            className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                            className="p-1 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                             title="Copiar usuario"
                                                         >
                                                             <Copy size={11} />
@@ -890,14 +890,14 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                 {/* Clave Facturador */}
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <span className="text-slate-400">🔑 Clave Fact.:</span>
+                                                    <span className="text-on-surface-variant">🔑 Clave Fact.:</span>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="text-slate-200 font-mono">
+                                                        <span className="text-on-surface-variant font-mono">
                                                             {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
                                                         </span>
                                                         <button
                                                             onClick={() => togglePasswordVisibility(client.id)}
-                                                            className="p-1 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                                                            className="p-1 hover:text-on-surface text-on-surface-variant transition-colors cursor-pointer"
                                                         >
                                                             {pwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
                                                         </button>
@@ -906,7 +906,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                 navigator.clipboard.writeText(config.password || client.sriPassword);
                                                                 toast.success("Clave Facturador copiada");
                                                             }}
-                                                            className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                            className="p-1 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                             title="Copiar clave facturador"
                                                         >
                                                             <Copy size={11} />
@@ -916,15 +916,15 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                 {/* Clave SRI Oficial */}
                                                 {client.sriPassword && (
-                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
-                                                        <span className="text-slate-500">🏛️ Clave SRI:</span>
+                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-foreground/5">
+                                                        <span className="text-on-surface-variant">🏛️ Clave SRI:</span>
                                                         <div className="flex items-center gap-1.5">
-                                                            <span className="text-slate-300 font-mono">
+                                                            <span className="text-on-surface-variant font-mono">
                                                                 {sriPwdVisible ? client.sriPassword : '••••••••'}
                                                             </span>
                                                             <button
                                                                 onClick={() => setVisibleSriPasswords(p => ({ ...p, [client.id]: !p[client.id] }))}
-                                                                className="p-1 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                                                                className="p-1 hover:text-on-surface text-on-surface-variant transition-colors cursor-pointer"
                                                             >
                                                                 {sriPwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
                                                             </button>
@@ -933,7 +933,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                     navigator.clipboard.writeText(client.sriPassword);
                                                                     toast.success("Clave SRI copiada");
                                                                 }}
-                                                                className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                                className="p-1 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                                 title="Copiar clave SRI"
                                                             >
                                                                 <Copy size={11} />
@@ -944,15 +944,15 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                 {/* Clave Firma .p12 */}
                                                 {client.electronicSignaturePassword && (
-                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
-                                                        <span className="text-slate-500">🔐 Firma .p12:</span>
+                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-foreground/5">
+                                                        <span className="text-on-surface-variant">🔐 Firma .p12:</span>
                                                         <div className="flex items-center gap-1.5">
-                                                            <span className="text-slate-300 font-mono">
+                                                            <span className="text-on-surface-variant font-mono">
                                                                 {sigPwdVisible ? client.electronicSignaturePassword : '••••••••'}
                                                             </span>
                                                             <button
                                                                 onClick={() => setVisibleSigPasswords(p => ({ ...p, [client.id]: !p[client.id] }))}
-                                                                className="p-1 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                                                                className="p-1 hover:text-on-surface text-on-surface-variant transition-colors cursor-pointer"
                                                             >
                                                                 {sigPwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
                                                             </button>
@@ -961,7 +961,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                     navigator.clipboard.writeText(client.electronicSignaturePassword || '');
                                                                     toast.success("Clave de Firma copiada");
                                                                 }}
-                                                                className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                                className="p-1 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                                 title="Copiar clave de firma"
                                                             >
                                                                 <Copy size={11} />
@@ -972,36 +972,36 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                             </div>
 
                                             {/* Widget Métrico del Mes Actual */}
-                                            <div className="p-4 bg-gradient-to-br from-[#020b14] to-[#051424] border border-white/10 rounded-2xl space-y-3">
+                                            <div className="p-4 bg-gradient-to-br from-surface-lowest to-surface-low border border-foreground/10 rounded-2xl space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
                                                         Facturas en {formatPeriodMonth(selectedPeriod)}
                                                     </span>
-                                                    <span className="text-xl font-black text-white font-mono">
-                                                        {record.count} <span className="text-xs text-slate-500 font-normal">emitidas</span>
+                                                    <span className="text-xl font-black text-on-surface font-mono">
+                                                        {record.count} <span className="text-xs text-on-surface-variant font-normal">emitidas</span>
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
-                                                    <span className="text-slate-400 font-sans">Total Honorarios:</span>
-                                                    <span className="text-base font-black text-emerald-400 font-mono">
+                                                <div className="flex items-center justify-between pt-2 border-t border-foreground/5 text-xs">
+                                                    <span className="text-on-surface-variant font-sans">Total Honorarios:</span>
+                                                    <span className="text-base font-black text-tertiary font-mono">
                                                         ${record.totalFee.toFixed(2)} USD
                                                     </span>
                                                 </div>
 
                                                 {/* Resumen de Facturas con PDF si hay */}
                                                 {record.invoices && record.invoices.length > 0 && (
-                                                    <div className="pt-2 border-t border-white/5 space-y-1">
-                                                        <div className="text-[9px] text-slate-500 uppercase font-bold">Comprobantes Recientes:</div>
+                                                    <div className="pt-2 border-t border-foreground/5 space-y-1">
+                                                        <div className="text-[9px] text-on-surface-variant uppercase font-bold">Comprobantes Recientes:</div>
                                                         <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto custom-scrollbar">
                                                             {record.invoices.slice(-3).reverse().map((inv, idx) => (
-                                                                <div key={inv.id || idx} className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[9px] text-slate-300 flex items-center gap-1.5">
+                                                                <div key={inv.id || idx} className="bg-foreground/5 border border-foreground/5 px-2 py-0.5 rounded text-[9px] text-on-surface-variant flex items-center gap-1.5">
                                                                     <span>#{inv.secuencial || `${record.count - idx}`}</span>
-                                                                    {inv.amount ? <span className="text-emerald-400 font-bold">${inv.amount.toFixed(2)}</span> : null}
+                                                                    {inv.amount ? <span className="text-tertiary font-bold">${inv.amount.toFixed(2)}</span> : null}
                                                                     {inv.file && (
                                                                         <button 
                                                                             onClick={() => downloadStoredFile(inv.file!)}
-                                                                            className="text-[#00A896] hover:underline"
+                                                                            className="text-tertiary hover:underline"
                                                                             title="Descargar PDF"
                                                                         >
                                                                             📄
@@ -1016,11 +1016,11 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         </div>
 
                                         {/* Botonera de Acciones Rápidas */}
-                                        <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
+                                        <div className="mt-5 pt-4 border-t border-foreground/10 space-y-2">
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
                                                     onClick={() => handleQuickIncrementInvoice(client)}
-                                                    className="px-3 py-2.5 bg-[#00A896]/20 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/40 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-[#00A896]/15 hover:scale-[1.02] active:scale-[0.98]"
+                                                    className="px-3 py-2.5 bg-tertiary/20 hover:bg-tertiary text-tertiary hover:text-white border border-tertiary/40 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-tertiary/15 hover:scale-[1.02] active:scale-[0.98]"
                                                     title="Registrar +1 Factura Realizada"
                                                 >
                                                     <Plus size={14} />
@@ -1029,10 +1029,10 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                 <button
                                                     onClick={() => setRecordingInvoiceClient(client)}
-                                                    className="px-3 py-2.5 bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
+                                                    className="px-3 py-2.5 bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant border border-foreground/10 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
                                                     title="Registrar con No. Secuencial, Monto o PDF"
                                                 >
-                                                    <FileText size={14} className="text-[#00A896]" />
+                                                    <FileText size={14} className="text-tertiary" />
                                                     <span>Detalle / PDF</span>
                                                 </button>
                                             </div>
@@ -1040,7 +1040,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleSendWhatsAppBillingNotice(client, selectedPeriod)}
-                                                    className="flex-1 px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                                    className="flex-1 px-3 py-2 bg-tertiary/15 hover:bg-tertiary/25 text-tertiary border border-tertiary/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                                                     title="Generar mensaje de liquidación y cobro por WhatsApp"
                                                 >
                                                     <PhoneCall size={12} />
@@ -1049,7 +1049,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                 <button
                                                     onClick={() => setEditingFacturadorClient(client)}
-                                                    className="px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                                    className="px-3 py-2 bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer"
                                                     title="Configurar o Editar Facturador, Credenciales y Plan"
                                                 >
                                                     <Sliders size={12} />
@@ -1066,38 +1066,38 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
             ) : (
                 /* ── TABLA DE FACTURADORES (VISTA DE GESTIÓN & TRÁMITES) ── */
                 <div className="px-4 sm:px-0">
-                    <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl p-6 sm:p-8 space-y-6">
+                    <div className="bg-surface-low backdrop-blur-2xl rounded-[2.5rem] border border-foreground/10 border-t-foreground/20 shadow-2xl p-6 sm:p-8 space-y-6">
                         <div className="flex items-center justify-between font-mono">
                             <div>
-                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                                <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">
                                     Registro de Trámites y Activaciones de Facturadores
                                 </h3>
-                                <p className="text-xs text-slate-400 font-sans mt-0.5">
+                                <p className="text-xs text-on-surface-variant font-sans mt-0.5">
                                     Descarga los recursos recopilados en 1-clic o inspecciona y sube directamente a la Bóveda del Cliente.
                                 </p>
                             </div>
                         </div>
 
                         {displayClients.length === 0 ? (
-                            <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2 font-mono">
-                                <div className="text-xs font-bold text-slate-300 uppercase">No se encontraron registros de planes</div>
-                                <p className="text-xs text-slate-500 max-w-md mx-auto font-sans">
+                            <div className="p-12 text-center border border-dashed border-foreground/10 rounded-3xl text-on-surface-variant space-y-2 font-mono">
+                                <div className="text-xs font-bold text-on-surface-variant uppercase">No se encontraron registros de planes</div>
+                                <p className="text-xs text-on-surface-variant max-w-md mx-auto font-sans">
                                     No hay clientes con planes de facturación que coincidan con los filtros activos. Usa el botón "Vender Plan / Combo" para registrar uno nuevo.
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto rounded-3xl border border-white/10 bg-[#020b14]">
+                            <div className="overflow-x-auto rounded-3xl border border-foreground/10 bg-surface-lowest">
                                 <table className="w-full text-left border-collapse text-xs">
                                     <thead>
-                                        <tr className="border-b border-white/10 bg-[#0b1326] text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                                        <tr className="border-b border-foreground/10 bg-surface-lowest text-[10px] font-bold uppercase tracking-wider text-on-surface-variant font-mono">
                                             <th className="py-4 px-4 w-10 text-center">
                                                 <button
                                                     onClick={handleToggleSelectAll}
-                                                    className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                    className="p-1 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                     title={selectedClientIds.length === displayClients.length ? "Deseleccionar todos" : "Seleccionar todos"}
                                                 >
                                                     {displayClients.length > 0 && selectedClientIds.length === displayClients.length ? (
-                                                        <CheckSquare size={16} className="text-[#00A896]" />
+                                                        <CheckSquare size={16} className="text-tertiary" />
                                                     ) : (
                                                         <Square size={16} />
                                                     )}
@@ -1112,7 +1112,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                             <th className="py-4 px-5 text-right">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/5 font-mono">
+                                    <tbody className="divide-y divide-foreground/5 font-mono">
                                         {displayClients.map((client) => {
                                             if (!client) return null;
                                             const config = client.billingPlan || client.facturadorConfig || {
@@ -1153,25 +1153,25 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                             ].filter(Boolean).length;
 
                                             return (
-                                                <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''} ${isPlanExpiringSoon || isSigExpiringSoon ? 'bg-amber-500/[0.02]' : ''}`}>
+                                                <tr key={client.id} className={`hover:bg-foreground/[0.02] transition-colors ${isSelected ? 'bg-tertiary/10' : ''} ${isPlanExpiringSoon || isSigExpiringSoon ? 'bg-amber-500/[0.02]' : ''}`}>
                                                     <td className="py-4 px-4 text-center">
                                                         <button
                                                             onClick={() => handleToggleSelectClient(client.id)}
-                                                            className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                            className="p-1 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                         >
                                                             {isSelected ? (
-                                                                <CheckSquare size={16} className="text-[#00A896]" />
+                                                                <CheckSquare size={16} className="text-tertiary" />
                                                             ) : (
                                                                 <Square size={16} />
                                                             )}
                                                         </button>
                                                     </td>
                                                     <td className="py-4 px-5">
-                                                        <p className="font-bold text-white uppercase text-xs">{client.tradeName || client.name}</p>
+                                                        <p className="font-bold text-on-surface uppercase text-xs">{client.tradeName || client.name}</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
+                                                            <span className="text-[10px] text-on-surface-variant font-mono">{client.ruc}</span>
                                                             <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
-                                                                hasRuc ? 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                                                hasRuc ? 'bg-tertiary/15 text-tertiary border border-tertiary/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                                                             }`}>
                                                                 {hasRuc ? '🏢 RUC Emisor' : '👤 Persona Natural'}
                                                             </span>
@@ -1179,7 +1179,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                     </td>
                                                     {/* Columna Plan & Vencimiento Software */}
                                                     <td className="py-4 px-5">
-                                                        <p className="font-bold text-[#00A896] text-xs">{config.programName || 'Emisión SRI'}</p>
+                                                        <p className="font-bold text-tertiary text-xs">{config.programName || 'Emisión SRI'}</p>
                                                         <div className="mt-1">
                                                             {config.expirationDate ? (
                                                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
@@ -1187,13 +1187,13 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                         ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
                                                                         : isPlanExpiringSoon 
                                                                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
-                                                                        : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                                                        : 'bg-tertiary/15 text-tertiary border border-tertiary/30'
                                                                 }`}>
                                                                     📅 {new Date(config.expirationDate).toLocaleDateString('es-EC')}
                                                                     <span className="opacity-80">({isPlanExpired ? 'Vencido' : `${planExpDays}d rest.`})</span>
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-[10px] text-slate-400">Sin caducidad de software</span>
+                                                                <span className="text-[10px] text-on-surface-variant">Sin caducidad de software</span>
                                                             )}
                                                         </div>
                                                     </td>
@@ -1202,7 +1202,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                         {client.signatureFile ? (
                                                             <div className="space-y-1">
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <span className="text-xs font-bold text-white">🔑 {client.signatureProvider || 'Firma .p12'}</span>
+                                                                    <span className="text-xs font-bold text-on-surface">🔑 {client.signatureProvider || 'Firma .p12'}</span>
                                                                 </div>
                                                                 {client.signatureExpirationDate ? (
                                                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
@@ -1210,13 +1210,13 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                             ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
                                                                             : isSigExpiringSoon 
                                                                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
-                                                                            : 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30'
+                                                                            : 'bg-tertiary/15 text-tertiary border border-tertiary/30'
                                                                     }`}>
                                                                         🔐 {new Date(client.signatureExpirationDate).toLocaleDateString('es-EC')}
                                                                         <span className="opacity-80">({isSigExpired ? 'Caducada' : `${sigExpDays}d rest.`})</span>
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="text-[9px] text-slate-500">Sin fecha de firma</span>
+                                                                    <span className="text-[9px] text-on-surface-variant">Sin fecha de firma</span>
                                                                 )}
                                                             </div>
                                                         ) : (
@@ -1226,7 +1226,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                     <td className="py-4 px-5 space-y-2">
                                                         <div className="flex items-center gap-2">
                                                             <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                                                isComplete ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                                                                isComplete ? 'bg-tertiary/15 text-tertiary border border-tertiary/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                                                             }`}>
                                                                 {presentCount}/{totalRequired} Recursos
                                                             </span>
@@ -1246,7 +1246,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                             {client.signatureFile ? (
                                                                 <button
                                                                     onClick={() => downloadStoredFile(client.signatureFile)}
-                                                                    className="px-2 py-0.5 rounded-lg bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold border border-[#00A896]/30 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    className="px-2 py-0.5 rounded-lg bg-tertiary/15 hover:bg-tertiary/25 text-tertiary font-bold border border-tertiary/30 flex items-center gap-1 text-[9px] cursor-pointer"
                                                                     title={`Descargar Firma .p12 (${client.signatureProvider || 'SRI'}) - Vence: ${client.signatureExpirationDate || 'Sin fecha'}`}
                                                                 >
                                                                     <Download size={9} /> 🔑 Firma .p12
@@ -1258,49 +1258,49 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                             {client.idCardFront ? (
                                                                 <button
                                                                     onClick={() => downloadStoredFile(client.idCardFront)}
-                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    className="px-2 py-0.5 rounded-lg bg-tertiary/10 hover:bg-tertiary/20 text-tertiary font-bold border border-tertiary/20 flex items-center gap-1 text-[9px] cursor-pointer"
                                                                     title="Descargar Cédula Frontal"
                                                                 >
                                                                     <Download size={9} /> 🪪 Frente
                                                                 </button>
                                                             ) : (
-                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
+                                                                <span className="px-2 py-0.5 rounded-lg bg-foreground/5 text-on-surface-variant border border-foreground/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
                                                             )}
 
                                                             {client.idCardBack ? (
                                                                 <button
                                                                     onClick={() => downloadStoredFile(client.idCardBack)}
-                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    className="px-2 py-0.5 rounded-lg bg-tertiary/10 hover:bg-tertiary/20 text-tertiary font-bold border border-tertiary/20 flex items-center gap-1 text-[9px] cursor-pointer"
                                                                     title="Descargar Cédula Reverso"
                                                                 >
                                                                     <Download size={9} /> 🪪 Reverso
                                                                 </button>
                                                             ) : (
-                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
+                                                                <span className="px-2 py-0.5 rounded-lg bg-foreground/5 text-on-surface-variant border border-foreground/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
                                                             )}
 
                                                             {client.idCardSelfie ? (
                                                                 <button
                                                                     onClick={() => downloadStoredFile(client.idCardSelfie)}
-                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    className="px-2 py-0.5 rounded-lg bg-tertiary/10 hover:bg-tertiary/20 text-tertiary font-bold border border-tertiary/20 flex items-center gap-1 text-[9px] cursor-pointer"
                                                                     title="Descargar Foto Selfie"
                                                                 >
                                                                     <Download size={9} /> 🤳 Selfie
                                                                 </button>
                                                             ) : (
-                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Foto Selfie">⚠️ Selfie</span>
+                                                                <span className="px-2 py-0.5 rounded-lg bg-foreground/5 text-on-surface-variant border border-foreground/5 text-[9px]" title="Falta Foto Selfie">⚠️ Selfie</span>
                                                             )}
 
                                                             {client.rucPdf ? (
                                                                 <button
                                                                     onClick={() => downloadStoredFile(client.rucPdf)}
-                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    className="px-2 py-0.5 rounded-lg bg-tertiary/10 hover:bg-tertiary/20 text-tertiary font-bold border border-tertiary/20 flex items-center gap-1 text-[9px] cursor-pointer"
                                                                     title="Descargar RUC PDF"
                                                                 >
                                                                     <Download size={9} /> 📄 RUC
                                                                 </button>
                                                             ) : (
-                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta RUC PDF">⚠️ RUC</span>
+                                                                <span className="px-2 py-0.5 rounded-lg bg-foreground/5 text-on-surface-variant border border-foreground/5 text-[9px]" title="Falta RUC PDF">⚠️ RUC</span>
                                                             )}
 
                                                             {isEcuafact && (
@@ -1329,8 +1329,8 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                  newStatus === 'subido_plataforma' ? 'Subido a Plataforma' : 'Activado y Listo'
                                                              }`);
                                                             }}
-                                                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold outline-none cursor-pointer bg-[#020b14] ${
-                                                                (client.facturadorActivationStatus === 'activado') ? 'border-emerald-500/30 text-emerald-400' :
+                                                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold outline-none cursor-pointer bg-surface-lowest ${
+                                                                (client.facturadorActivationStatus === 'activado') ? 'border-tertiary/30 text-tertiary' :
                                                                 (client.facturadorActivationStatus === 'subido_plataforma') ? 'border-amber-500/30 text-amber-400' :
                                                                 'border-rose-500/30 text-rose-400'
                                                             }`}
@@ -1342,28 +1342,28 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                     </td>
                                                     <td className="py-4 px-5">
                                                         <div className="space-y-1">
-                                                            <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono">
-                                                                <span className="text-slate-500">U:</span> {config.username || client.ruc}
+                                                            <div className="flex items-center gap-1 text-[11px] text-on-surface-variant font-mono">
+                                                                <span className="text-on-surface-variant">U:</span> {config.username || client.ruc}
                                                             </div>
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className="text-slate-500 font-mono text-[11px]">C:</span>
-                                                                <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
-                                                                    <span className="font-bold text-slate-300 min-w-[60px] text-[10px] font-mono">
+                                                                <span className="text-on-surface-variant font-mono text-[11px]">C:</span>
+                                                                <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-foreground/5">
+                                                                    <span className="font-bold text-on-surface-variant min-w-[60px] text-[10px] font-mono">
                                                                         {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
                                                                     </span>
                                                                     <button
                                                                         onClick={() => togglePasswordVisibility(client.id)}
-                                                                        className="p-0.5 hover:text-white text-slate-400 transition-colors cursor-pointer"
+                                                                        className="p-0.5 hover:text-on-surface text-on-surface-variant transition-colors cursor-pointer"
                                                                         title="Ver / Ocultar"
                                                                     >
                                                                         {pwdVisible ? <EyeOff size={10} /> : <Eye size={10} />}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
-                                                                        className="p-0.5 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                                        className="p-0.5 hover:text-tertiary text-on-surface-variant transition-colors cursor-pointer"
                                                                         title="Copiar clave"
                                                                     >
-                                                                        {isCopied ? <Check size={10} className="text-[#00A896]" /> : <Copy size={10} />}
+                                                                        {isCopied ? <Check size={10} className="text-tertiary" /> : <Copy size={10} />}
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -1373,7 +1373,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                         {/* ✏️ Botón Editar Facturador */}
                                                         <button
                                                             onClick={() => setEditingFacturadorClient(client)}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-teal-500/30 text-[10px] cursor-pointer"
+                                                            className="px-2.5 py-1.5 rounded-xl bg-tertiary/15 hover:bg-tertiary/25 text-tertiary font-bold uppercase transition-all inline-flex items-center gap-1 border border-tertiary/30 text-[10px] cursor-pointer"
                                                             title="Editar detalles y plan del facturador"
                                                         >
                                                             <Sliders size={11} /> Editar
@@ -1389,7 +1389,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                         <button
                                                             onClick={() => handleCopyClientSummary(client)}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10 text-[10px] cursor-pointer"
+                                                            className="px-2.5 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant font-bold uppercase transition-all inline-flex items-center gap-1 border border-foreground/10 text-[10px] cursor-pointer"
                                                             title="Copiar texto con datos de cliente para registro en plataforma"
                                                         >
                                                             <ClipboardCopy size={11} /> Ficha
@@ -1421,7 +1421,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                                 const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
                                                                 setWhatsAppPrompt({ clientName: client.name, phone, message });
                                                             }}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-emerald-500/20 text-[10px] cursor-pointer"
+                                                            className="px-2.5 py-1.5 rounded-xl bg-tertiary/15 hover:bg-tertiary/25 text-tertiary font-bold uppercase transition-all inline-flex items-center gap-1 border border-tertiary/20 text-[10px] cursor-pointer"
                                                             title="Enviar credenciales de facturación por WhatsApp"
                                                         >
                                                             <PhoneCall size={11} /> WhatsApp
@@ -1429,7 +1429,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                                         <button
                                                             onClick={() => window.open(providerUrl, '_blank')}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold uppercase transition-all inline-flex items-center gap-1 border border-[#00A896]/20 text-[10px] cursor-pointer"
+                                                            className="px-2.5 py-1.5 rounded-xl bg-tertiary/15 hover:bg-tertiary/25 text-tertiary font-bold uppercase transition-all inline-flex items-center gap-1 border border-tertiary/20 text-[10px] cursor-pointer"
                                                             title="Visitar plataforma del Facturador"
                                                         >
                                                             <Globe size={11} /> Abrir
@@ -1458,12 +1458,12 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
             {/* ── BARRA FLOTANTE DE ACCIONES EN LOTE (BATCH DEPURATION) ── */}
             {selectedClientIds.length > 0 && (
                 <div className="fixed bottom-6 inset-x-0 mx-auto max-w-2xl z-50 px-4 animate-in slide-in-from-bottom-5 duration-300">
-                    <div className="p-4 rounded-3xl bg-[#051424]/95 border border-white/20 shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-4 font-mono flex-wrap sm:flex-nowrap">
+                    <div className="p-4 rounded-3xl bg-surface-low border border-foreground/20 shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-4 font-mono flex-wrap sm:flex-nowrap">
                         <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-full bg-[#00A896]/20 text-[#00A896] font-bold text-xs flex items-center justify-center border border-[#00A896]/30">
+                            <span className="w-8 h-8 rounded-full bg-tertiary/20 text-tertiary font-bold text-xs flex items-center justify-center border border-tertiary/30">
                                 {selectedClientIds.length}
                             </span>
-                            <span className="text-xs font-bold text-white uppercase">
+                            <span className="text-xs font-bold text-on-surface uppercase">
                                 {selectedClientIds.length === 1 ? '1 seleccionado' : `${selectedClientIds.length} seleccionados`}
                             </span>
                         </div>
@@ -1486,7 +1486,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             </button>
                             <button
                                 onClick={() => setSelectedClientIds([])}
-                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
+                                className="p-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface cursor-pointer"
                                 title="Cancelar selección"
                             >
                                 <X size={14} />
@@ -1504,11 +1504,11 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     title={`🔐 Bóveda de Recursos — ${selectedVaultClient.name}`}
                     size="lg"
                 >
-                    <div className="space-y-6 p-2 text-white font-mono">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#020b14] border border-white/10">
+                    <div className="space-y-6 p-2 text-on-surface font-mono">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-surface-lowest border border-foreground/10">
                             <div>
-                                <h3 className="text-sm font-bold text-white uppercase">{selectedVaultClient.name}</h3>
-                                <p className="text-[10px] text-slate-400 font-mono">RUC: {selectedVaultClient.ruc} • {selectedVaultClient.regime || 'Régimen General'}</p>
+                                <h3 className="text-sm font-bold text-on-surface uppercase">{selectedVaultClient.name}</h3>
+                                <p className="text-[10px] text-on-surface-variant font-mono">RUC: {selectedVaultClient.ruc} • {selectedVaultClient.regime || 'Régimen General'}</p>
                             </div>
                             <button
                                 onClick={() => {
@@ -1523,26 +1523,26 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                         {/* Credenciales Básicas de la Bóveda */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave SRI</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-[#00A896]">
+                            <div className="p-3.5 rounded-2xl bg-surface-lowest border border-foreground/10 space-y-1">
+                                <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider block">Clave SRI</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-tertiary">
                                     <span>{selectedVaultClient.sriPassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('sri', selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
+                                    <button onClick={() => handleCopyPassword('sri', selectedVaultClient.sriPassword)} className="p-1 hover:text-on-surface text-on-surface-variant cursor-pointer">
                                         <Copy size={12} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave Firma .p12</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-[#2B6AFF]">
+                            <div className="p-3.5 rounded-2xl bg-surface-lowest border border-foreground/10 space-y-1">
+                                <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider block">Clave Firma .p12</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-primary">
                                     <span>{selectedVaultClient.electronicSignaturePassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('firma', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
+                                    <button onClick={() => handleCopyPassword('firma', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-on-surface text-on-surface-variant cursor-pointer">
                                         <Copy size={12} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Vigencia Firma</span>
+                            <div className="p-3.5 rounded-2xl bg-surface-lowest border border-foreground/10 space-y-1">
+                                <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider block">Vigencia Firma</span>
                                 <div className="font-mono text-xs text-amber-400 truncate">
                                     {selectedVaultClient.signatureExpirationDate || 'Sin Registrar'}
                                 </div>
@@ -1550,9 +1550,9 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         </div>
 
                         {/* Subida Rápida a la Bóveda */}
-                        <div className="p-4 rounded-2xl bg-[#051424]/60 border border-white/10 space-y-3">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                <UploadCloud size={14} className="text-[#00A896]" />
+                        <div className="p-4 rounded-2xl bg-surface-low border border-foreground/10 space-y-3">
+                            <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-2">
+                                <UploadCloud size={14} className="text-tertiary" />
                                 Subir Documento a la Bóveda
                             </h4>
 
@@ -1560,7 +1560,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 <select
                                     value={vaultUploadTarget}
                                     onChange={(e) => setVaultUploadTarget(e.target.value as any)}
-                                    className="px-3 py-2 rounded-xl bg-[#020b14] border border-white/10 text-xs text-white outline-none cursor-pointer"
+                                    className="px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none cursor-pointer"
                                 >
                                     <option value="vault">📁 Archivo General a Bóveda</option>
                                     <option value="signatureFile">🔑 Firma Electrónica (.p12)</option>
@@ -1580,7 +1580,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                                 <button
                                     onClick={() => directVaultUploadInputRef.current?.click()}
-                                    className="px-4 py-2 bg-[#00A896] hover:bg-[#00A896]/90 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                                    className="px-4 py-2 bg-tertiary hover:bg-tertiary/90 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
                                 >
                                     <Upload size={14} /> Seleccionar y Subir
                                 </button>
@@ -1589,7 +1589,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                         {/* Lista de Documentos en la Bóveda */}
                         <div className="space-y-3">
-                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                                 Documentos Disponibles en Bóveda
                             </h4>
 
@@ -1603,14 +1603,14 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                     { file: selectedVaultClient.ecuafactSignedRequest, name: 'Solicitud Ecuafact Firmada', type: 'pdf' },
                                     ...(selectedVaultClient.vault || []).map(f => ({ file: f, name: f.name, type: f.type }))
                                 ].filter(item => item.file && item.file.content).map((item, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-[#020b14] border border-white/10 text-xs">
+                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-surface-lowest border border-foreground/10 text-xs">
                                         <div className="flex items-center gap-2.5 truncate">
-                                            <FileCode size={14} className="text-[#00A896] shrink-0" />
-                                            <span className="font-bold text-white truncate text-[11px]">{item.name}</span>
+                                            <FileCode size={14} className="text-tertiary shrink-0" />
+                                            <span className="font-bold text-on-surface truncate text-[11px]">{item.name}</span>
                                         </div>
                                         <button
                                             onClick={() => downloadStoredFile(item.file!)}
-                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-[#00A896] rounded-lg transition-all shrink-0 cursor-pointer"
+                                            className="p-1.5 bg-foreground/5 hover:bg-foreground/10 text-tertiary rounded-lg transition-all shrink-0 cursor-pointer"
                                             title="Descargar Archivo"
                                         >
                                             <Download size={13} />
@@ -1623,7 +1623,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         <div className="flex justify-end pt-2">
                             <button
                                 onClick={() => setSelectedVaultClient(null)}
-                                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+                                className="px-5 py-2.5 rounded-xl bg-foreground/10 hover:bg-foreground/20 text-on-surface text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
                                 Cerrar Bóveda
                             </button>
@@ -1640,16 +1640,16 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     title="🛡️ Depuración & Gestión de Registro"
                     size="md"
                 >
-                    <div className="space-y-5 p-2 text-white font-sans">
-                        <div className="p-4 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
-                            <h4 className="text-xs font-bold text-white uppercase">{depurationTargetClient.name}</h4>
-                            <p className="text-[11px] font-mono text-[#00A896]">RUC: {depurationTargetClient.ruc}</p>
-                            <p className="text-[10px] text-slate-400">
+                    <div className="space-y-5 p-2 text-on-surface font-sans">
+                        <div className="p-4 rounded-2xl bg-surface-lowest border border-foreground/10 space-y-1">
+                            <h4 className="text-xs font-bold text-on-surface uppercase">{depurationTargetClient.name}</h4>
+                            <p className="text-[11px] font-mono text-tertiary">RUC: {depurationTargetClient.ruc}</p>
+                            <p className="text-[10px] text-on-surface-variant">
                                 Plan actual: {depurationTargetClient.billingPlan?.programName || depurationTargetClient.facturadorConfig?.programName || 'Plan Particular'}
                             </p>
                         </div>
 
-                        <p className="text-xs text-slate-300">
+                        <p className="text-xs text-on-surface-variant">
                             Selecciona la acción adecuada para este registro:
                         </p>
 
@@ -1667,7 +1667,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         Conserva Contabilidad
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-slate-300 mt-1">
+                                <p className="text-[11px] text-on-surface-variant mt-1">
                                     El cliente seguirá existiendo en tu Directorio Contable y Matriz de Declaraciones, pero se quitará de este menú de Facturadores.
                                 </p>
                             </button>
@@ -1685,7 +1685,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         Mover a Papelera
                                     </span>
                                 </div>
-                                <p className="text-[11px] text-slate-300 mt-1">
+                                <p className="text-[11px] text-on-surface-variant mt-1">
                                     Usa esta opción si el cliente se creó por error (ej: al subir firmas antiguas). Se moverá a la Papelera de reciclaje.
                                 </p>
                             </button>
@@ -1694,7 +1694,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         <div className="flex justify-end pt-2">
                             <button
                                 onClick={() => setDepurationTargetClient(null)}
-                                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+                                className="px-5 py-2.5 rounded-xl bg-foreground/10 hover:bg-foreground/20 text-on-surface text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
                                 Cancelar
                             </button>
@@ -1711,21 +1711,21 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     title="⚠️ Confirmación de Eliminación Masiva"
                     size="md"
                 >
-                    <div className="space-y-4 p-2 text-white font-sans">
+                    <div className="space-y-4 p-2 text-on-surface font-sans">
                         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3">
                             <AlertOctagon size={24} className="text-rose-400 shrink-0 mt-0.5" />
                             <div>
                                 <h4 className="text-xs font-bold text-rose-400 uppercase">
                                     ¿Estás seguro de eliminar {selectedClientIds.length} clientes?
                                 </h4>
-                                <p className="text-[11px] text-slate-300 mt-1">
+                                <p className="text-[11px] text-on-surface-variant mt-1">
                                     Los clientes seleccionados se moverán a la Papelera de reciclaje del sistema. Esta acción limpiará los registros no deseados.
                                 </p>
                             </div>
                         </div>
 
                         <div className="space-y-1.5 font-mono">
-                            <label className="text-[10px] text-slate-400 uppercase block font-bold">
+                            <label className="text-[10px] text-on-surface-variant uppercase block font-bold">
                                 Escribe <span className="text-rose-400 font-bold">CONFIRMAR</span> para proceder:
                             </label>
                             <input
@@ -1733,14 +1733,14 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 value={bulkConfirmText}
                                 onChange={(e) => setBulkConfirmText(e.target.value)}
                                 placeholder="CONFIRMAR"
-                                className="w-full px-3.5 py-2 bg-[#020b14] border border-white/10 rounded-xl text-xs text-white uppercase outline-none focus:border-rose-500"
+                                className="w-full px-3.5 py-2 bg-surface-lowest border border-foreground/10 rounded-xl text-xs text-on-surface uppercase outline-none focus:border-rose-500"
                             />
                         </div>
 
                         <div className="flex justify-end gap-2 pt-3">
                             <button
                                 onClick={() => setIsBulkDeleteModalOpen(false)}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-bold uppercase"
+                                className="px-4 py-2 rounded-xl bg-foreground/10 hover:bg-foreground/20 text-on-surface-variant text-xs font-bold uppercase"
                             >
                                 Cancelar
                             </button>
@@ -1759,19 +1759,19 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
             {/* ── MODAL WHATSAPP NOTIFICACIÓN ── */}
             {whatsAppPrompt && (
                 <Modal isOpen={true} onClose={() => setWhatsAppPrompt(null)} title="💬 Enviar Credenciales de Facturación" size="md">
-                    <div className="space-y-4 p-4 text-white">
-                        <p className="text-xs text-slate-300">
+                    <div className="space-y-4 p-4 text-on-surface">
+                        <p className="text-xs text-on-surface-variant">
                             Enviarás el siguiente mensaje con los datos de acceso del facturador al cliente <strong>{whatsAppPrompt.clientName}</strong>:
                         </p>
 
-                        <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 text-xs font-mono text-emerald-300 whitespace-pre-wrap">
+                        <div className="p-3.5 rounded-2xl bg-black/50 border border-foreground/10 text-xs font-mono text-tertiary whitespace-pre-wrap">
                             {whatsAppPrompt.message}
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setWhatsAppPrompt(null)}
-                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold"
+                                className="px-4 py-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant text-xs font-bold"
                             >
                                 Cancelar
                             </button>
@@ -1779,7 +1779,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 href={`https://wa.me/${whatsAppPrompt.phone ? whatsAppPrompt.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(whatsAppPrompt.message)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5"
+                                className="px-5 py-2 rounded-xl bg-tertiary hover:bg-tertiary text-white text-xs font-bold flex items-center gap-1.5"
                             >
                                 <PhoneCall size={14} /> Abrir WhatsApp Web
                             </a>
