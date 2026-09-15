@@ -201,14 +201,14 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
         { id: 'prospecto', label: '📥 1. Prospectos', color: 'text-indigo-400', bg: 'border-indigo-500/30 bg-indigo-500/5' },
         { id: 'cotizacion', label: '📑 2. Cotización Enviada', color: 'text-sky-400', bg: 'border-sky-500/30 bg-sky-500/5' },
         { id: 'negociacion', label: '🤝 3. En Negociación', color: 'text-amber-400', bg: 'border-amber-500/30 bg-amber-500/5' },
-        { id: 'ganado', label: '✅ 4. Clientes Ganados', color: 'text-emerald-400', bg: 'border-emerald-500/30 bg-emerald-500/5' },
+        { id: 'ganado', label: '✅ 4. Clientes Ganados', color: 'text-tertiary', bg: 'border-tertiary/30 bg-tertiary/5' },
         { id: 'perdido', label: '❌ 5. Perdidos', color: 'text-rose-400', bg: 'border-rose-500/30 bg-rose-500/5' }
     ];
 
     return (
         <div className="space-y-8 animate-fade-in pb-24">
             {/* ── HEADER PRO DE CRM ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-[hsl(222,47%,4%)] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-foreground/[0.06] bg-surface-low shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
                 <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -221,10 +221,10 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                                 <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
                                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">CRM Embudo & Seguimiento de Clientes</span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
+                            <h1 className="text-3xl sm:text-4xl font-black text-on-surface tracking-tight font-display">
                                 Pipeline de Prospectos & Leads
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
+                            <p className="text-xs sm:text-sm text-on-surface-variant mt-1 font-medium">
                                 Gestión comercial de prospectos para honorarios contables, firmas electrónicas y servicios tributarios.
                             </p>
                         </div>
@@ -241,13 +241,13 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
 
             {/* ── BARRA BÚSQUEDA ── */}
             <div className="relative max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                 <input
                     type="text"
                     placeholder="Buscar por prospecto, RUC o teléfono..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-900/60 backdrop-blur-2xl rounded-2xl border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                    className="w-full pl-12 pr-4 py-3 bg-surface-low backdrop-blur-2xl rounded-2xl border border-foreground/10 text-xs font-bold text-on-surface placeholder-on-surface-variant outline-none focus:border-indigo-500"
                 />
             </div>
 
@@ -260,12 +260,12 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                     return (
                         <div key={st.id} className={`p-4 rounded-3xl border flex flex-col space-y-4 min-w-[240px] ${st.bg}`}>
                             {/* Header de Etapa */}
-                            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                            <div className="flex items-center justify-between pb-2 border-b border-foreground/10">
                                 <div>
                                     <h3 className={`text-xs font-black uppercase tracking-wider ${st.color}`}>{st.label}</h3>
-                                    <span className="text-[10px] text-slate-400 font-mono">${totalValue.toFixed(2)} estimador</span>
+                                    <span className="text-[10px] text-on-surface-variant font-mono">${totalValue.toFixed(2)} estimador</span>
                                 </div>
-                                <span className="px-2 py-0.5 rounded-full bg-black/40 text-[10px] font-mono font-bold text-white">
+                                <span className="px-2 py-0.5 rounded-full bg-surface-lowest text-[10px] font-mono font-bold text-on-surface">
                                     {leadsInStage.length}
                                 </span>
                             </div>
@@ -275,23 +275,23 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                                 {leadsInStage.map(lead => (
                                     <div
                                         key={lead.id}
-                                        className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-indigo-500/40 transition-all space-y-3 shadow-md"
+                                        className="p-4 rounded-2xl bg-surface-low border border-foreground/10 hover:border-indigo-500/40 transition-all space-y-3 shadow-md"
                                     >
                                         <div>
                                             <span className="text-[9px] font-mono text-indigo-400 font-bold uppercase block">{lead.origen}</span>
-                                            <h4 className="font-bold text-white text-xs truncate">{lead.nombre}</h4>
-                                            {lead.ruc && <p className="text-[10px] text-slate-400 font-mono">RUC: {lead.ruc}</p>}
+                                            <h4 className="font-bold text-on-surface text-xs truncate">{lead.nombre}</h4>
+                                            {lead.ruc && <p className="text-[10px] text-on-surface-variant font-mono">RUC: {lead.ruc}</p>}
                                         </div>
 
-                                        <div className="p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between text-xs font-mono">
-                                            <span className="text-slate-400 text-[10px] truncate max-w-[120px]">{lead.servicioInteres}</span>
-                                            <span className="font-bold text-emerald-400">${lead.montoEstimado.toFixed(2)}</span>
+                                        <div className="p-2 rounded-xl bg-surface-lowest border border-foreground/5 flex items-center justify-between text-xs font-mono">
+                                            <span className="text-on-surface-variant text-[10px] truncate max-w-[120px]">{lead.servicioInteres}</span>
+                                            <span className="font-bold text-tertiary">${lead.montoEstimado.toFixed(2)}</span>
                                         </div>
 
                                         <div className="flex items-center justify-between pt-1">
                                             <button
                                                 onClick={() => handleSendWhatsApp(lead)}
-                                                className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold flex items-center gap-1 border border-emerald-500/30"
+                                                className="p-1.5 rounded-lg bg-tertiary/20 hover:bg-tertiary/30 text-tertiary text-[10px] font-bold flex items-center gap-1 border border-tertiary/30"
                                             >
                                                 <Phone size={11} /> WhatsApp
                                             </button>
@@ -311,7 +311,7 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                                         <select
                                             value={lead.etapa}
                                             onChange={(e) => handleChangeStage(lead.id, e.target.value as any)}
-                                            className="w-full mt-1 px-2 py-1 rounded-lg bg-slate-950 border border-white/10 text-[9px] font-bold text-slate-300 outline-none"
+                                            className="w-full mt-1 px-2 py-1 rounded-lg bg-surface-lowest border border-foreground/10 text-[9px] font-bold text-on-surface-variant outline-none"
                                         >
                                             <option value="prospecto">Move a Prospecto</option>
                                             <option value="cotizacion">Move a Cotización</option>
@@ -330,47 +330,47 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
             {/* ── MODAL NUEVO PROSPECTO ── */}
             {isCreateModalOpen && (
                 <Modal isOpen={true} onClose={() => setIsCreateModalOpen(false)} title="📥 Registrar Nuevo Prospecto CRM" size="md">
-                    <div className="space-y-4 p-4 text-white">
+                    <div className="space-y-4 p-4 text-on-surface">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Nombre / Razón Social *</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Nombre / Razón Social *</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: Ing. Pedro Perez"
                                     value={nombreForm}
                                     onChange={(e) => setNombreForm(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs font-bold text-white outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs font-bold text-on-surface outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Teléfono / WhatsApp *</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Teléfono / WhatsApp *</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: 0991234567"
                                     value={telefonoForm}
                                     onChange={(e) => setTelefonoForm(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-mono outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">RUC / Cédula (Opcional)</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">RUC / Cédula (Opcional)</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: 0701234567001"
                                     value={rucForm}
                                     onChange={(e) => setRucForm(e.target.value)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-mono outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Origen del Lead</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Origen del Lead</label>
                                 <select
                                     value={origenForm}
                                     onChange={(e) => setOrigenForm(e.target.value as any)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                                 >
                                     <option value="WhatsApp">📱 WhatsApp</option>
                                     <option value="Web">🌐 Sitio Web</option>
@@ -382,11 +382,11 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Servicio de Interés</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Servicio de Interés</label>
                                 <select
                                     value={servicioForm}
                                     onChange={(e) => setServicioForm(e.target.value as any)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none"
                                 >
                                     <option value="Honorarios Mensuales">Honorarios Mensuales</option>
                                     <option value="Firma Electrónica .p12">Firma Electrónica .p12</option>
@@ -396,19 +396,19 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block">Monto Estimado ($)</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase block">Monto Estimado ($)</label>
                                 <input
                                     type="number"
                                     step="0.01"
                                     value={montoForm}
                                     onChange={(e) => setMontoForm(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white font-mono outline-none"
+                                    className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl bg-white/10 text-xs font-bold">Cancelar</button>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl bg-foreground/10 text-xs font-bold">Cancelar</button>
                             <button onClick={handleCreateLead} className="px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs">Guardar Lead</button>
                         </div>
                     </div>
