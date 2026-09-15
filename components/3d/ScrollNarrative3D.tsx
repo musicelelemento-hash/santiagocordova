@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useInView, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/useReducedMotion';
+import { hapticAudio } from '../../services/hapticAudioService';
 
 /**
  * ScrollNarrative3D — "EL SISTEMA EN 4 ESTADOS"
@@ -18,6 +19,8 @@ interface Stage {
     text: string;
     accent: string;
     glow: string;
+    media: string;
+    poster: string;
 }
 
 const STAGES: Stage[] = [
@@ -29,6 +32,8 @@ const STAGES: Stage[] = [
         text: 'Tu información contable y fiscal blindada con cifrado de nivel bancario. Nadie más la toca.',
         accent: '#00A896',
         glow: 'rgba(0,168,150,0.35)',
+        media: '/media/shield-circuit.webp',
+        poster: '/media/poster-shield-circuit.png',
     },
     {
         id: 'precision',
@@ -38,6 +43,8 @@ const STAGES: Stage[] = [
         text: 'Declaraciones calculadas con precisión algorítmica contra el SRI 2026. Cero redondeos, cero errores.',
         accent: '#38bdf8',
         glow: 'rgba(56,189,248,0.30)',
+        media: '/media/financial-bars.webp',
+        poster: '/media/poster-financial-bars.png',
     },
     {
         id: 'optimiza',
@@ -47,6 +54,8 @@ const STAGES: Stage[] = [
         text: 'RIMPE, IVA y Renta optimizados para pagar exactamente lo correcto, ni un centavo de más.',
         accent: '#C9A96E',
         glow: 'rgba(201,169,110,0.35)',
+        media: '/media/ecuador-map.webp',
+        poster: '/media/poster-ecuador-map.png',
     },
     {
         id: 'crecimiento',
@@ -56,6 +65,8 @@ const STAGES: Stage[] = [
         text: 'Cero multas, cero sorpresas. Tu contabilidad evoluciona con tu negocio, en cualquier rincón del Ecuador.',
         accent: '#00A896',
         glow: 'rgba(16,185,129,0.40)',
+        media: '/media/cacao-fields.webp',
+        poster: '/media/poster-cacao-fields.png',
     },
 ];
 
@@ -72,7 +83,11 @@ export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ them
 
     // Escucha el scroll solo mientras la sección está visible (perf)
     useMotionValueEvent(scrollYProgress, 'change', (v) => {
-        setStage(Math.min(STAGES.length - 1, Math.floor(v * STAGES.length)));
+        const nextStage = Math.min(STAGES.length - 1, Math.floor(v * STAGES.length));
+        if (nextStage !== stage) {
+            hapticAudio.playClick(950 + nextStage * 120);
+            setStage(nextStage);
+        }
     });
 
     const titleY = useTransform(scrollYProgress, [0, 1], [30, -30]);
@@ -84,21 +99,24 @@ export const ScrollNarrative3D: React.FC<{ theme?: 'light' | 'dark' }> = ({ them
     return (
         <section ref={sectionRef} id="sistema" className="relative" style={{ height: '420vh' }}>
             <div className="sticky top-0 h-screen-fix w-full overflow-hidden flex items-center justify-center">
-                {/* ── Fondo: cristal en video (bucle) que reacciona al scroll ── */}
+                {/* ── Fondo: WebP 3D cinemático del stage actual (bucle) que reacciona al scroll ── */}
                 {inView && !reduced && (
                     <motion.div
                         style={{ scale: bgScale, y: bgY }}
-                        className="absolute inset-0 pointer-events-none z-0"
+                        className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
                     >
-                        <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="metadata"
-                            className="w-full h-full object-cover opacity-70"
-                            src="/media/crystal-loop.mp4"
-                        />
+                        <AnimatePresence mode="wait">
+                            <motion.img
+                                key={current.id}
+                                src={current.media}
+                                alt={current.title}
+                                initial={{ opacity: 0, scale: 1.08 }}
+                                animate={{ opacity: 0.75, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.96 }}
+                                transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                                className="w-full h-full object-cover"
+                            />
+                        </AnimatePresence>
                     </motion.div>
                 )}
 

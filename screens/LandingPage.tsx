@@ -18,6 +18,8 @@ import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 const Scroll3DCanvas = React.lazy(() => import('../components/3d/Scroll3DCanvas').then(m => ({ default: m.Scroll3DCanvas })));
 const TaxShieldHero3D = React.lazy(() => import('../components/3d/TaxShieldHero3D').then(m => ({ default: m.TaxShieldHero3D })));
 const ScrollNarrative3D = React.lazy(() => import('../components/3d/ScrollNarrative3D').then(m => ({ default: m.ScrollNarrative3D })));
+const ExplodedVoucher3D = React.lazy(() => import('../components/3d/ExplodedVoucher3D').then(m => ({ default: m.ExplodedVoucher3D })));
+import { DynamicIslandHUD } from '../components/hud/DynamicIslandHUD';
 import { CinematicIntro } from '../components/hero/CinematicIntro';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 
@@ -751,6 +753,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
             <CustomCursor />
             <TacticalGrid />
+            <DynamicIslandHUD theme={theme} />
 
             {/* ── FLOATING SMART WHATSAPP LEAD ASSISTANT ── */}
             <div className="fixed bottom-20 md:bottom-8 right-6 z-50 pointer-events-auto">
@@ -1004,6 +1007,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C9A96E]/40 bg-[#C9A96E]/15 backdrop-blur-xl text-[10px] font-bold text-[#ffb95f] uppercase tracking-widest font-mono">
                                         <ShieldCheck size={13} className="text-[#ffb95f]" /> SRI 2026 SINCRONIZADO
                                     </div>
+                                    <button onClick={() => scrollToSection('sistema')} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#00A896]/50 bg-[#00A896]/20 backdrop-blur-xl text-[10px] font-bold text-[#4edea3] uppercase tracking-widest font-mono hover:bg-[#00A896]/30 hover:scale-105 transition-all">
+                                        <Sparkles size={13} className="text-[#4edea3]" /> EXPERIENCIA 3D ACTIVA
+                                    </button>
                                 </div>
                             </Reveal>
 
@@ -1243,6 +1249,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
             {/* ── AUTHORITY TICKER ── */}
             <AuthorityTicker theme={theme} />
+
+            {/* ════════════════════════════════════════════════════════════════
+                ANATOMÍA 3D DESGLOSADA: COMPROBANTES Y CASILLEROS CRIPTOGRÁFICOS
+            ════════════════════════════════════════════════════════════════ */}
+            <Suspense fallback={null}>
+                <ExplodedVoucher3D theme={theme} />
+            </Suspense>
 
             {/* ════════════════════════════════════════════════════════════════
                 SECCIÓN: LAS 4 FASES DE LA INGENIERÍA TRIBUTARIA
