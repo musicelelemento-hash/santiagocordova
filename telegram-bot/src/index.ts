@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -62,26 +62,22 @@ bot.catch((err) => {
 });
 
 // ═════════════════════════════════════════════════════════════════
-// ⚡ CENTRO DE CONTROL CONTABLE INTERACTIVO — BAKU 2.0 (ZEN UI)
+// ⚡ CENTRO DE CONTROL CONTABLE INTERACTIVO — BAKU 3.0 (EXECUTIVE HUBS)
 // ═════════════════════════════════════════════════════════════════
 
 export function buildMainMenuKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
-        .text('👤 Buscar Cliente', 'baku_nav:search')
-        .text('💳 Registrar Pago', 'baku_nav:pay_quick').row()
-        .text('⏰ Vencimientos SRI', 'baku_nav:deadlines')
-        .text('💰 Deudores & Mora', 'baku_page_debt:1').row()
-        .text('🔑 Claves SRI', 'baku_nav:sri_keys')
-        .text('📄 Comprobantes PDF', 'baku_cmd:browse_proofs').row()
-        .text('🧾 Emitir Factura', 'baku_cmd:create_invoice')
-        .text('🔐 Bóveda Firma .p12', 'baku_cmd:browse_vault').row()
-        .text('📊 Resumen Cartera', 'baku_cmd:quick_report')
-        .text('⚡ Estado del Bot', 'baku_nav:status');
+        .text('🏛️ Tributario & SRI', 'baku_hub:sri')
+        .text('💰 Finanzas & Caja', 'baku_hub:finances').row()
+        .text('🔐 Bóveda & Facturación', 'baku_hub:vault_invoice')
+        .text('📲 Clientes & CRM 360°', 'baku_hub:clients_crm').row()
+        .text('📊 Resumen Ejecutivo', 'baku_cmd:quick_report')
+        .text('⚡ Estado Baku', 'baku_nav:status');
 }
 
 export function buildMainMenuText(): string {
-    return `⚡ <b>CENTRO DE CONTROL CONTABLE — ${BOT_NAME.toUpperCase()} 2.0</b>\n\n` +
-           `Bienvenido Santiago. Selecciona una acción rápida o escribe lo que necesitas (clave, RUC, pagos, comprobantes o envía una nota de voz / foto):`;
+    return `⚡ <b>CENTRO DE CONTROL CONTABLE — ${BOT_NAME.toUpperCase()} 3.0</b>\n\n` +
+           `Bienvenido Santiago. Selecciona un centro de mando o escribe directamente tu requerimiento (RUC, clave, pagos, notas de voz, fotos de recibos o archivos .p12):`;
 }
 
 export async function showMainMenu(ctx: any, isEdit: boolean = false) {
@@ -94,6 +90,156 @@ export async function showMainMenu(ctx: any, isEdit: boolean = false) {
         } catch (e) {}
     }
     await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showSriHub(ctx: any, isEdit: boolean = false) {
+    const text = `🏛️ <b>CENTRO DE MANDO TRIBUTARIO & SRI</b>\n\n` +
+                 `Control maestro de obligaciones tributarias, calendario fiscal, sanciones y trámites especiales:`;
+    const kb = new InlineKeyboard()
+        .text('⏰ Vencimientos & Calendario', 'baku_nav:deadlines')
+        .text('🧮 Calculadora Multas SRI', 'baku_sri:calculator').row()
+        .text('📊 Matriz de Obligaciones', 'baku_sri:matrix')
+        .text('👴 Devolución IVA 3ra Edad', 'baku_sri:devoluciones').row()
+        .text('🔑 Consultar Claves SRI', 'baku_nav:sri_keys')
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    if (isEdit) {
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+    }
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showFinancesHub(ctx: any, isEdit: boolean = false) {
+    const text = `💰 <b>CENTRO DE MANDO FINANCIERO & CAJA CHICA</b>\n\n` +
+                 `Gestión de liquidez, control diario de caja, cobro de honorarios y mora de clientes:`;
+    const kb = new InlineKeyboard()
+        .text('💵 Saldo & Arqueo de Caja', 'baku_caja:balance')
+        .text('➕ Registrar Movimiento', 'baku_caja:record').row()
+        .text('💳 Cobro Rápido Honorarios', 'baku_nav:pay_quick')
+        .text('📋 Deudores & Mora', 'baku_page_debt:1').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    if (isEdit) {
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+    }
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showVaultInvoiceHub(ctx: any, isEdit: boolean = false) {
+    const text = `🔐 <b>BÓVEDA DIGITAL & FACTURACIÓN SRI</b>\n\n` +
+                 `Custodia segura de firmas .p12, emisión electrónica y archivo de declaraciones:`;
+    const kb = new InlineKeyboard()
+        .text('🧾 Emitir Factura SRI', 'baku_cmd:create_invoice')
+        .text('📁 Bóveda Firmas .p12', 'baku_cmd:browse_vault').row()
+        .text('📄 Comprobantes PDF (Declaraciones)', 'baku_cmd:browse_proofs').row()
+        .text('📤 Subir Firma (.p12)', 'baku_cmd:upload_p12')
+        .text('🔍 Facturas Emitidas', 'baku_cmd:browse_invoices').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    if (isEdit) {
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+    }
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showClientsCrmHub(ctx: any, isEdit: boolean = false) {
+    const text = `📲 <b>CRM & GESTIÓN DE CLIENTES 360°</b>\n\n` +
+                 `Expedientes fiscales, canales de fidelización, enlaces mágicos y tarjeta ejecutiva:`;
+    const kb = new InlineKeyboard()
+        .text('👤 Buscar Expediente Cliente', 'baku_nav:search')
+        .text('🔗 Enlace Mágico Portal', 'baku_crm:share_portal').row()
+        .text('📇 Tarjeta Digital Santiago', 'baku_crm:digital_card')
+        .text('📊 Resumen de Cartera', 'baku_cmd:quick_report').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    if (isEdit) {
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+    }
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showInteractivePenalties(ctx: any, isEdit: boolean = false) {
+    const text = `🧮 <b>CALCULADORA DE MULTAS & RIESGO FISCAL SRI</b>\n\n` +
+                 `Calcula la sanción estimada por declaraciones atrasadas (multa base legal Art. 100 LRTI + interés fiscal sobre ventas):\n\n` +
+                 `<i>Selecciona un escenario rápido o elige un cálculo a la medida:</i>`;
+    const kb = new InlineKeyboard()
+        .text('1 Mes (Sin Ventas)', 'baku_calc:1:sin_ventas:0')
+        .text('3 Meses (Sin Ventas)', 'baku_calc:3:sin_ventas:0').row()
+        .text('6 Meses (Sin Ventas)', 'baku_calc:6:sin_ventas:0')
+        .text('12 Meses (Sin Ventas)', 'baku_calc:12:sin_ventas:0').row()
+        .text('1 Mes ($1,000 Ventas)', 'baku_calc:1:con_ventas:1000')
+        .text('3 Meses ($3,000 Ventas)', 'baku_calc:3:con_ventas:3000').row()
+        .text('✍️ Personalizado', 'baku_calc:custom')
+        .text('🔙 Hub Tributario', 'baku_hub:sri');
+
+    if (isEdit) {
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+    }
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showCajaChicaBalance(ctx: any, isEdit: boolean = false) {
+    try {
+        const { session } = await getCajaChicaSummary();
+        const totalNeto = (session.montoInicial || 0) + (session.montoEfectivoCalculado || 0);
+        
+        let msg = `💵 <b>SALDO & ARQUEO DE CAJA CHICA</b>\n\n`;
+        msg += `🟢 <b>Estado:</b> ${session.estado.toUpperCase()}\n`;
+        msg += `📅 <b>Apertura:</b> ${session.fechaApertura}\n\n`;
+        msg += `💰 <b>Fondo Base Inicial:</b> $${(session.montoInicial || 0).toFixed(2)}\n`;
+        msg += `💵 <b>Efectivo en Caja:</b> $${(session.montoEfectivoCalculado || 0).toFixed(2)}\n`;
+        msg += `🏢 <b>Transferencias/Bancos:</b> $${(session.montoTransferenciasCalculado || 0).toFixed(2)}\n`;
+        msg += `💳 <b>Cobros con Tarjeta:</b> $${(session.montoTarjetasCalculado || 0).toFixed(2)}\n`;
+        msg += `🔻 <b>Total Egresos Registrados:</b> $${(session.montoEgresosCalculado || 0).toFixed(2)}\n`;
+        msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `💎 <b>EFECTIVO TOTAL EN MANO:</b> <b>$${totalNeto.toFixed(2)}</b>\n\n`;
+
+        const recentMovs = (session.movimientos || []).slice(0, 4);
+        if (recentMovs.length > 0) {
+            msg += `📋 <b>Últimos Movimientos:</b>\n`;
+            recentMovs.forEach((m: any) => {
+                const icon = m.tipo === 'ingreso' ? '🟢' : '🔴';
+                const sign = m.tipo === 'ingreso' ? '+' : '-';
+                msg += `${icon} <b>${sign}$${m.monto.toFixed(2)}</b> — ${m.concepto} [${m.formaPago}]\n`;
+                msg += `   <i>${m.fechaHora}</i>\n`;
+            });
+            msg += `\n`;
+        } else {
+            msg += `<i>No hay movimientos registrados hoy en caja chica.</i>\n\n`;
+        }
+
+        const kb = new InlineKeyboard()
+            .text('➕ Ingreso (Cobro)', 'baku_caja_add:ingreso')
+            .text('🔴 Egreso (Gasto)', 'baku_caja_add:egreso').row()
+            .text('🔄 Refrescar Saldo', 'baku_caja:balance')
+            .text('🔙 Hub Finanzas', 'baku_hub:finances');
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e) {}
+        }
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (e: any) {
+        console.error("Error showing caja chica balance:", e);
+        await ctx.reply(`❌ Error al consultar caja chica: ${e.message}`);
+    }
 }
 
 export async function showInteractiveDebtors(ctx: any, page: number = 1, isEdit: boolean = false) {
@@ -820,9 +966,9 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 }
 
 export interface DialogState {
-  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice' | 'browse_proofs' | 'upload_p12' | 'browse_invoices';
+  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice' | 'browse_proofs' | 'upload_p12' | 'browse_invoices' | 'caja_movement' | 'sri_calc_custom' | 'share_portal';
   chatId: string;
-  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method' | 'ask_p12_password' | 'choose_p12_mode' | 'ask_vault_info';
+  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method' | 'ask_p12_password' | 'choose_p12_mode' | 'ask_vault_info' | 'ask_caja_monto' | 'ask_caja_concepto' | 'ask_caja_forma' | 'ask_calc_meses' | 'ask_calc_ventas' | 'ask_portal_client';
   client?: any;
   candidates?: any[];
   data: {
@@ -838,6 +984,12 @@ export interface DialogState {
     p12FileName?: string;
     selectedType?: 'IVA' | 'RENTA';
     selectedYear?: string;
+    cajaTipo?: 'ingreso' | 'egreso';
+    cajaMonto?: number;
+    cajaConcepto?: string;
+    cajaForma?: 'efectivo' | 'transferencia' | 'tarjeta' | 'deposito';
+    calcMonths?: number;
+    calcType?: 'sin_ventas' | 'con_ventas';
   };
 }
 
@@ -1269,6 +1421,91 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
         } catch (err: any) {
             await ctx.reply(`Error al buscar clientes: ${err.message}. Baku.`);
         }
+        return;
+    }
+
+    if (dialog.step === 'ask_portal_client') {
+        try {
+            const matches = await findClients(text, '*');
+            if (matches.length === 0) {
+                await ctx.reply(`❌ No encontré ningún cliente con "${text}".\nEscribe **cancelar** para salir.`);
+                return;
+            }
+            if (matches.length > 1) {
+                await showClientSelection(
+                    chatId, matches, 'share_portal', {}, ctx,
+                    `🔗 Encontré <b>${matches.length}</b> clientes. ¿De cuál deseas generar el enlace?`
+                );
+            } else {
+                const client = matches[0];
+                pendingDialogs.delete(chatId);
+                const shareText = getClientPortalShareText(client);
+                const kb = new InlineKeyboard()
+                    .text('📲 Hub Clientes', 'baku_hub:clients_crm')
+                    .text('🔙 Menú Principal', 'baku_nav:home');
+                await ctx.reply(shareText, { parse_mode: 'HTML', reply_markup: kb });
+            }
+        } catch (e: any) {
+            await ctx.reply(`Error buscando cliente: ${e.message}`);
+        }
+        return;
+    }
+
+    if (dialog.type === 'caja_movement' && dialog.step === 'ask_caja_monto') {
+        const cleanAmount = parseFloat(text.replace(/[^0-9.]/g, ''));
+        if (isNaN(cleanAmount) || cleanAmount <= 0) {
+            await ctx.reply("❌ Por favor ingresa un monto numérico válido mayor a 0 (ej: 25.50):");
+            return;
+        }
+        dialog.data.cajaMonto = cleanAmount;
+        dialog.step = 'ask_caja_concepto';
+        pendingDialogs.set(chatId, dialog);
+        await ctx.reply(`📝 Ingresa el concepto o detalle para este ${dialog.data.cajaTipo} de **$${cleanAmount.toFixed(2)}** (ej: "Cobro de honorarios" o "Compra de suministros"):`);
+        return;
+    }
+
+    if (dialog.type === 'caja_movement' && dialog.step === 'ask_caja_concepto') {
+        dialog.data.cajaConcepto = text.trim();
+        dialog.step = 'ask_caja_forma';
+        pendingDialogs.set(chatId, dialog);
+
+        const kb = new InlineKeyboard()
+            .text('💵 Efectivo', 'baku_caja_pay:efectivo')
+            .text('🏢 Transferencia / Depósito', 'baku_caja_pay:transferencia').row()
+            .text('💳 Tarjeta', 'baku_caja_pay:tarjeta')
+            .text('❌ Cancelar', 'baku_cancel');
+
+        await ctx.reply(`💳 Selecciona la forma de pago para este ${dialog.data.cajaTipo}:`, { reply_markup: kb });
+        return;
+    }
+
+    if (dialog.type === 'sri_calc_custom' && dialog.step === 'ask_calc_meses') {
+        const months = parseInt(text.replace(/[^0-9]/g, ''), 10);
+        if (isNaN(months) || months <= 0) {
+            await ctx.reply("❌ Por favor ingresa un número de meses válido (ej: 3):");
+            return;
+        }
+        dialog.data.calcMonths = months;
+        const kb = new InlineKeyboard()
+            .text('En Cero (Sin Ventas)', 'baku_calc_type:sin_ventas')
+            .text('Con Ventas Declaradas', 'baku_calc_type:con_ventas').row()
+            .text('❌ Cancelar', 'baku_cancel');
+
+        await ctx.reply(`📊 ¿La declaración con **${months} mes(es)** de atraso tuvo ventas o fue en cero?`, { reply_markup: kb });
+        return;
+    }
+
+    if (dialog.type === 'sri_calc_custom' && dialog.step === 'ask_calc_ventas') {
+        const sales = parseFloat(text.replace(/[^0-9.]/g, '')) || 0;
+        const months = dialog.data.calcMonths || 1;
+        pendingDialogs.delete(chatId);
+
+        const resultHtml = calculateSriPenaltyText(months, 'con_ventas', sales);
+        const kb = new InlineKeyboard()
+            .text('🧮 Otra Estimación', 'baku_sri:calculator')
+            .text('🔙 Hub Tributario', 'baku_hub:sri');
+
+        await ctx.reply(resultHtml, { parse_mode: 'HTML', reply_markup: kb });
         return;
     }
 
@@ -2189,6 +2426,216 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    // 🏛️ Baku 3.0 Hub Navigation
+    if (data.startsWith('baku_hub:')) {
+        const hub = data.replace('baku_hub:', '');
+        if (hub === 'sri') {
+            await showSriHub(ctx, true);
+            return;
+        }
+        if (hub === 'finances') {
+            await showFinancesHub(ctx, true);
+            return;
+        }
+        if (hub === 'vault_invoice') {
+            await showVaultInvoiceHub(ctx, true);
+            return;
+        }
+        if (hub === 'clients_crm') {
+            await showClientsCrmHub(ctx, true);
+            return;
+        }
+    }
+
+    // 🧮 Hub Tributario: Calculadora y Sanciones
+    if (data === 'baku_sri:calculator') {
+        await showInteractivePenalties(ctx, true);
+        return;
+    }
+
+    if (data.startsWith('baku_calc:')) {
+        const parts = data.split(':');
+        if (parts[1] === 'custom') {
+            pendingDialogs.set(chatId, {
+                type: 'sri_calc_custom',
+                chatId,
+                step: 'ask_calc_meses',
+                data: {}
+            });
+            const kb = new InlineKeyboard().text('🔙 Cancelar', 'baku_cancel');
+            await ctx.reply("🧮 <b>Cálculo Personalizado:</b>\n¿Cuántos meses de atraso tiene la declaración? (Escribe el número, ej: 3):", { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        }
+        const months = parseInt(parts[1], 10) || 1;
+        const calcType = parts[2] as 'sin_ventas' | 'con_ventas';
+        const sales = parseFloat(parts[3]) || 0;
+
+        const resultHtml = calculateSriPenaltyText(months, calcType, sales);
+        const kb = new InlineKeyboard()
+            .text('🧮 Otra Estimación', 'baku_sri:calculator')
+            .text('🔙 Hub Tributario', 'baku_hub:sri');
+
+        try {
+            await ctx.editMessageText(resultHtml, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch(e) {}
+        await ctx.reply(resultHtml, { parse_mode: 'HTML', reply_markup: kb });
+        return;
+    }
+
+    if (data.startsWith('baku_calc_type:')) {
+        const calcType = data.replace('baku_calc_type:', '') as 'sin_ventas' | 'con_ventas';
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.type !== 'sri_calc_custom') return;
+
+        dialog.data.calcType = calcType;
+        if (calcType === 'sin_ventas') {
+            pendingDialogs.delete(chatId);
+            const resultHtml = calculateSriPenaltyText(dialog.data.calcMonths || 1, 'sin_ventas', 0);
+            const kb = new InlineKeyboard()
+                .text('🧮 Otra Estimación', 'baku_sri:calculator')
+                .text('🔙 Hub Tributario', 'baku_hub:sri');
+            await ctx.reply(resultHtml, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } else {
+            dialog.step = 'ask_calc_ventas';
+            pendingDialogs.set(chatId, dialog);
+            await ctx.reply("💵 Ingresa el valor total aproximado de ventas declaradas en ese período (Ejemplo: 2500):");
+            return;
+        }
+    }
+
+    // 📊 Hub Tributario: Matriz de Obligaciones
+    if (data === 'baku_sri:matrix') {
+        await ctx.replyWithChatAction('typing');
+        const matrix = await getComplianceMatrixSummary();
+        let msg = `📊 <b>MATRIZ DE OBLIGACIONES TRIBUTARIAS SRI</b>\n\n`;
+        msg += `👥 <b>Clientes Activos con Obligación:</b> ${matrix.total}\n`;
+        msg += `✅ <b>Al Día con Declaraciones:</b> ${matrix.alDia} clientes\n`;
+        msg += `⚠️ <b>Con Declaraciones Pendientes:</b> ${matrix.pendientes} clientes\n\n`;
+        msg += `📅 <b>Frecuencia de Declaración:</b>\n`;
+        msg += `• <b>Semestrales (RIMPE Emprendedor):</b> ${matrix.semestral} clientes\n`;
+        msg += `• <b>Mensuales (Régimen General):</b> ${matrix.mensual} clientes\n\n`;
+        msg += `<i>Revisa el calendario de vencimientos por 9no dígito para evitar multas.</i>`;
+
+        const kb = new InlineKeyboard()
+            .text('⏰ Ver Vencimientos', 'baku_nav:deadlines').row()
+            .text('🔙 Hub Tributario', 'baku_hub:sri');
+
+        try {
+            await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+        return;
+    }
+
+    // 👴 Hub Tributario: Devoluciones de IVA
+    if (data === 'baku_sri:devoluciones') {
+        await ctx.replyWithChatAction('typing');
+        const devs = await getDevolucionesIvaList();
+        let msg = `👴 <b>DEVOLUCIÓN DE IVA — GRUPOS PRIORITARIOS</b>\n\n`;
+        msg += `Total de expedientes activos: <b>${devs.total}</b>\n\n`;
+
+        const kb = new InlineKeyboard();
+        if (devs.clients.length === 0) {
+            msg += `<i>No hay clientes registrados bajo régimen de Tercera Edad o Discapacidad actualmente.</i>\n`;
+        } else {
+            devs.clients.slice(0, 6).forEach((c: any, i: number) => {
+                msg += `${i + 1}. <b>${c.name}</b>\n`;
+                msg += `   🆔 <code>${c.ruc}</code> | Régimen: ${c.regime || 'Tercera Edad'}\n`;
+                const shortName = c.name.length > 20 ? c.name.substring(0, 18) + '…' : c.name;
+                kb.text(`👤 ${shortName}`, `baku_hub_profile:${c.ruc}`).row();
+            });
+        }
+        kb.text('🔙 Hub Tributario', 'baku_hub:sri');
+
+        try {
+            await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+        return;
+    }
+
+    // 💵 Hub Finanzas: Caja Chica
+    if (data === 'baku_caja:balance') {
+        await showCajaChicaBalance(ctx, true);
+        return;
+    }
+
+    if (data === 'baku_caja:record') {
+        const text = `➕ <b>REGISTRAR MOVIMIENTO DE CAJA CHICA</b>\n\n` +
+                     `Selecciona el tipo de transacción a ingresar:`;
+        const kb = new InlineKeyboard()
+            .text('🟢 Ingreso (Cobro Honorarios / Efectivo)', 'baku_caja_add:ingreso').row()
+            .text('🔴 Egreso (Gasto Oficina / Suministros)', 'baku_caja_add:egreso').row()
+            .text('🔙 Hub Finanzas', 'baku_hub:finances');
+
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+        await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+        return;
+    }
+
+    if (data.startsWith('baku_caja_add:')) {
+        const tipo = data.replace('baku_caja_add:', '') as 'ingreso' | 'egreso';
+        pendingDialogs.set(chatId, {
+            type: 'caja_movement',
+            chatId,
+            step: 'ask_caja_monto',
+            data: { cajaTipo: tipo }
+        });
+        const kb = new InlineKeyboard().text('🔙 Cancelar', 'baku_cancel');
+        await ctx.reply(`💵 ¿Cuál es el monto del **${tipo.toUpperCase()}**? (Ejemplo: 35.00):`, { reply_markup: kb });
+        return;
+    }
+
+    if (data.startsWith('baku_caja_pay:')) {
+        const forma = data.replace('baku_caja_pay:', '') as 'efectivo' | 'transferencia' | 'tarjeta';
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.type !== 'caja_movement') return;
+
+        const res = await recordCajaChicaMovement({
+            tipo: dialog.data.cajaTipo || 'ingreso',
+            monto: dialog.data.cajaMonto || 0,
+            concepto: dialog.data.cajaConcepto || 'Movimiento contable',
+            formaPago: forma
+        });
+
+        pendingDialogs.delete(chatId);
+        const kb = new InlineKeyboard()
+            .text('💵 Ver Saldo Actualizado', 'baku_caja:balance').row()
+            .text('🔙 Hub Finanzas', 'baku_hub:finances');
+
+        await ctx.reply(convertMarkdownToTelegramHtml(res.message), { parse_mode: 'HTML', reply_markup: kb });
+        return;
+    }
+
+    // 📲 Hub CRM: Enlace Mágico y Tarjeta
+    if (data === 'baku_crm:share_portal') {
+        pendingDialogs.set(chatId, {
+            type: 'share_portal',
+            chatId,
+            step: 'ask_portal_client',
+            data: {}
+        });
+        const kb = new InlineKeyboard().text('🔙 Cancelar', 'baku_cancel');
+        await ctx.reply("🔗 ¿De qué cliente deseas generar el Enlace Mágico del Portal? (Escribe el nombre o RUC):", { reply_markup: kb });
+        return;
+    }
+
+    if (data === 'baku_crm:digital_card') {
+        const cardText = getSantiagoExecutiveCard();
+        const kb = new InlineKeyboard()
+            .text('📲 Hub Clientes', 'baku_hub:clients_crm')
+            .text('🔙 Menú Principal', 'baku_nav:home');
+        await ctx.reply(cardText, { parse_mode: 'HTML', reply_markup: kb });
+        return;
+    }
+
     if (data.startsWith('baku_nav:')) {
         const nav = data.replace('baku_nav:', '');
         if (nav === 'home') {
@@ -2406,6 +2853,13 @@ bot.on('callback_query:data', async (ctx) => {
     } else if (dialog.type === 'view_profile' as any) {
         pendingDialogs.delete(chatId);
         await showClientProfileCard(chatId, client, ctx);
+    } else if (dialog.type === 'share_portal') {
+        pendingDialogs.delete(chatId);
+        const shareText = getClientPortalShareText(client);
+        const kb = new InlineKeyboard()
+            .text('📲 Hub Clientes', 'baku_hub:clients_crm')
+            .text('🔙 Menú Principal', 'baku_nav:home');
+        await ctx.reply(shareText, { parse_mode: 'HTML', reply_markup: kb });
     }
 });
 

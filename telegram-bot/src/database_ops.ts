@@ -2476,3 +2476,287 @@ export async function processAndSaveDeclarationPdf(buffer: Buffer, originalFileN
         return `❌ Error al procesar comprobante de declaración: ${e.message}`;
     }
 }
+
+// ─────────────────────────────────────────────────────────
+// HERRAMIENTAS TRIBUTARIAS & MULTAS SRI (Baku 3.0)
+// ─────────────────────────────────────────────────────────
+
+export function calculateSriPenaltyText(months: number, type: 'sin_ventas' | 'con_ventas', sales: number = 0): string {
+    const multaPorMes = type === 'sin_ventas' ? 30 : 45;
+    const totalMultaBase = months * multaPorMes;
+    const interesEstimado = type === 'con_ventas' ? Math.round(sales * 0.15 * 0.012 * months) : 0;
+    const totalRiesgo = totalMultaBase + interesEstimado;
+    const ahorroConNosotros = Math.round(totalRiesgo * 0.6);
+
+    let res = `🧮 <b>ESTIMACIÓN DE SANCIONES & MULTAS SRI</b>\n\n`;
+    res += `⏱️ <b>Meses de Atraso:</b> ${months} mes(es)\n`;
+    res += `📊 <b>Tipo de Declaración:</b> ${type === 'sin_ventas' ? 'Sin Ventas / En Cero' : 'Con Ventas'}\n`;
+    if (type === 'con_ventas') {
+        res += `💵 <b>Ventas Declaradas:</b> $${sales.toFixed(2)}\n`;
+        res += `📈 <b>Interés Fiscal Estimado:</b> ~$${interesEstimado.toFixed(2)}\n`;
+    }
+    res += `⚠️ <b>Multa Base SRI:</b> $${totalMultaBase.toFixed(2)} ($${multaPorMes}/mes)\n`;
+    res += `🔥 <b>TOTAL RIESGO ESTIMADO:</b> <b>$${totalRiesgo.toFixed(2)}</b>\n\n`;
+    res += `💡 <i>Regularizando voluntariamente con asesoría contable antes de que el SRI emita coactiva o notificación formal, el ahorro de recargos estimado es de hasta <b>$${ahorroConNosotros.toFixed(2)}</b>.</i>`;
+    return res;
+}
+
+export interface CajaChicaSession {
+    id: string;
+    fechaApertura: string;
+    montoInicial: number;
+    montoEfectivoCalculado: number;
+    montoTransferenciasCalculado: number;
+    montoTarjetasCalculado: number;
+    montoEgresosCalculado: number;
+    estado: 'abierta' | 'cerrada';
+    movimientos: Array<{
+        id: string;
+        tipo: 'ingreso' | 'egreso';
+        concepto: string;
+        monto: number;
+        formaPago: string;
+        categoria: string;
+        nombreCliente?: string;
+        fechaHora: string;
+    }>;
+}
+
+export async function getCajaChicaSummary(): Promise<{ ok: boolean; session: CajaChicaSession; error?: string }> {
+    try {
+        const { data, error } = await supabase
+            .from('files')
+            .select('content')
+            .eq('id', 'sc_caja_chica_current')
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.warn("Aviso al leer caja chica de files:", error);
+        }
+
+        if (data?.content) {
+            try {
+                const parsed = JSON.parse(data.content);
+                return { ok: true, session: parsed };
+            } catch (e) {}
+        }
+
+        // Si no existe, crear sesión por defecto
+        const todayStr = new Date().toISOString().split('T')[0];
+        const defaultSession: CajaChicaSession = {
+            id: `CAJA-${todayStr}`,
+            fechaApertura: `${todayStr} 08:30:00`,
+            montoInicial: 50.00,
+            montoEfectivoCalculado: 0.00,
+            montoTransferenciasCalculado: 0.00,
+            montoTarjetasCalculado: 0.00,
+            montoEgresosCalculado: 0.00,
+            estado: 'abierta',
+            movimientos: []
+        };
+
+        // Guardar la sesión inicial
+        await supabase
+            .from('files')
+            .upsert({ id: 'sc_caja_chica_current', content: JSON.stringify(defaultSession), updated_at: new Date().toISOString() });
+
+        return { ok: true, session: defaultSession };
+    } catch (e: any) {
+        console.error("Error obteniendo caja chica:", e);
+        return { 
+            ok: false, 
+            error: e.message, 
+            session: {
+                id: 'FALLBACK',
+                fechaApertura: new Date().toISOString(),
+                montoInicial: 0,
+                montoEfectivoCalculado: 0,
+                montoTransferenciasCalculado: 0,
+                montoTarjetasCalculado: 0,
+                montoEgresosCalculado: 0,
+                estado: 'abierta',
+                movimientos: []
+            } 
+        };
+    }
+}
+
+export async function recordCajaChicaMovement(params: {
+    tipo: 'ingreso' | 'egreso';
+    concepto: string;
+    monto: number;
+    formaPago?: 'efectivo' | 'transferencia' | 'tarjeta' | 'deposito';
+    categoria?: string;
+    nombreCliente?: string;
+}): Promise<{ ok: boolean; message: string; session?: CajaChicaSession }> {
+    try {
+        const { session } = await getCajaChicaSummary();
+        const forma = params.formaPago || 'efectivo';
+        const now = new Date();
+        const horaStr = now.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+        const fechaStr = now.toISOString().split('T')[0];
+
+        const newMov = {
+            id: crypto.randomUUID(),
+            tipo: params.tipo,
+            concepto: params.concepto.trim(),
+            monto: Math.abs(params.monto),
+            formaPago: forma,
+            categoria: params.categoria || (params.tipo === 'ingreso' ? 'Honorarios' : 'Suministros Oficina'),
+            nombreCliente: params.nombreCliente,
+            fechaHora: `${fechaStr} ${horaStr}`
+        };
+
+        session.movimientos = [newMov, ...(session.movimientos || [])];
+
+        if (params.tipo === 'ingreso') {
+            if (forma === 'efectivo') {
+                session.montoEfectivoCalculado = (session.montoEfectivoCalculado || 0) + newMov.monto;
+            } else if (forma === 'transferencia' || forma === 'deposito') {
+                session.montoTransferenciasCalculado = (session.montoTransferenciasCalculado || 0) + newMov.monto;
+            } else if (forma === 'tarjeta') {
+                session.montoTarjetasCalculado = (session.montoTarjetasCalculado || 0) + newMov.monto;
+            }
+        } else {
+            session.montoEgresosCalculado = (session.montoEgresosCalculado || 0) + newMov.monto;
+            if (forma === 'efectivo') {
+                session.montoEfectivoCalculado = Math.max(0, (session.montoEfectivoCalculado || 0) - newMov.monto);
+            }
+        }
+
+        // Persistir en Supabase files
+        await supabase
+            .from('files')
+            .upsert({
+                id: 'sc_caja_chica_current',
+                content: JSON.stringify(session),
+                updated_at: new Date().toISOString()
+            });
+
+        // Registrar auditoría
+        await logAuditAction(
+            `caja_chica_${params.tipo}`,
+            `Registrado ${params.tipo}: $${newMov.monto} - ${newMov.concepto} (${forma})`,
+            'finanzas',
+            'low'
+        );
+
+        return {
+            ok: true,
+            session,
+            message: `✅ **${params.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'} Registrado en Caja Chica**\n\n` +
+                     `💵 **Monto:** $${newMov.monto.toFixed(2)}\n` +
+                     `📝 **Concepto:** ${newMov.concepto}\n` +
+                     `💳 **Forma de Pago:** ${forma.toUpperCase()}\n` +
+                     (newMov.nombreCliente ? `👤 **Cliente:** ${newMov.nombreCliente}\n` : '') +
+                     `⏰ **Hora:** ${newMov.fechaHora}`
+        };
+    } catch (e: any) {
+        console.error("Error registrando movimiento de caja chica:", e);
+        return { ok: false, message: `❌ Error al registrar movimiento: ${e.message}` };
+    }
+}
+
+export async function getDevolucionesIvaList(): Promise<{ total: number; clients: any[] }> {
+    try {
+        const raw = await findClients('', '*');
+        const devolucionClients = (raw || []).filter((c: any) => {
+            const regime = (c.regime || '').toLowerCase();
+            const act = (c.tax_profile?.activity || '').toLowerCase();
+            const clientType = (c.clientType || '').toLowerCase();
+            return (
+                clientType === 'devolucion_iva' ||
+                regime.includes('tercera edad') ||
+                regime.includes('discapacidad') ||
+                act.includes('discapacidad_3ra_edad') ||
+                act.includes('tercera edad')
+            );
+        });
+
+        return {
+            total: devolucionClients.length,
+            clients: devolucionClients
+        };
+    } catch (e) {
+        console.error("Error listando devoluciones IVA:", e);
+        return { total: 0, clients: [] };
+    }
+}
+
+export async function getComplianceMatrixSummary(): Promise<{
+    total: number;
+    alDia: number;
+    pendientes: number;
+    semestral: number;
+    mensual: number;
+}> {
+    try {
+        const clients = await findClients('', '*, sri_declaraciones(*)');
+        const active = (clients || []).filter((c: any) => {
+            return (
+                !c.is_deleted &&
+                c.requiresDeclarations !== false &&
+                c.clientType !== 'solo_plan' &&
+                !c.isSignatureOnly
+            );
+        });
+
+        let alDiaCount = 0;
+        let semestralCount = 0;
+        let mensualCount = 0;
+
+        for (const c of active) {
+            const obs = getClientObligations(c);
+            if (obs.ivaFrequency === 'Semestral') semestralCount++;
+            if (obs.ivaFrequency === 'Mensual') mensualCount++;
+
+            const history: any[] = c.sri_declaraciones || [];
+            // Si tiene al menos una declaración marcada como realizada recientemente
+            const hasRecent = history.some((d: any) => d.isRealizada);
+            if (hasRecent) alDiaCount++;
+        }
+
+        const pendientesCount = Math.max(0, active.length - alDiaCount);
+
+        return {
+            total: active.length,
+            alDia: alDiaCount,
+            pendientes: pendientesCount,
+            semestral: semestralCount,
+            mensual: mensualCount
+        };
+    } catch (e) {
+        console.error("Error obteniendo resumen de cumplimiento:", e);
+        return { total: 0, alDia: 0, pendientes: 0, semestral: 0, mensual: 0 };
+    }
+}
+
+export function getSantiagoExecutiveCard(): string {
+    return `📇 <b>TARJETA EJECUTIVA DIGITAL — SANTIAGO CÓRDOVA</b>\n\n` +
+           `👤 <b>Santiago A. Córdoba Ramírez</b>\n` +
+           `🎓 <b>Contador Público & Asesor Tributario Estratégico</b>\n` +
+           `📍 <i>Pasaje / Machala — El Oro, Ecuador</i>\n\n` +
+           `💼 <b>Servicios Especializados:</b>\n` +
+           `• Declaraciones SRI (IVA, Renta, Anexos Transaccionales)\n` +
+           `• Emisión e Instalación de Firmas Electrónicas .p12\n` +
+           `• Facturación Electrónica SRI Automática\n` +
+           `• Devolución Mensual de IVA (Tercera Edad y Discapacidad)\n` +
+           `• Blindaje Tributario y Planificación Fiscal Corporativa\n\n` +
+           `🏦 <b>Canal Oficial de Cobranza:</b>\n` +
+           `• <b>Banco Pichincha:</b> Cuenta Corriente No. 2200XXXXXX\n` +
+           `• <b>Titular:</b> Roberto Santiago Córdova Ramírez\n\n` +
+           `🌐 <b>Portal Web & Clientes:</b> https://santiagocordova.com\n` +
+           `📱 <b>WhatsApp Directo:</b> +593 98 012 3456\n\n` +
+           `<i>"Eficiencia tributaria de élite, tranquilidad absoluta."</i>`;
+}
+
+export function getClientPortalShareText(client: any): string {
+    const portalUrl = `https://santiagocordova.com`;
+    return `📲 <b>ENLACE MÁGICO — PORTAL DEL CLIENTE</b>\n\n` +
+           `👤 <b>Cliente:</b> ${client.name}\n` +
+           `🆔 <b>RUC / Cédula:</b> <code>${client.ruc}</code>\n` +
+           `🔗 <b>Portal Web:</b> ${portalUrl}\n\n` +
+           `📋 <b>Mensaje listo para copiar y enviar a WhatsApp:</b>\n\n` +
+           `<code>Estimado(a) ${client.name}, le saluda el despacho de Santiago Córdoba Asesoría Contable. Puede revisar en tiempo real el estado de sus declaraciones SRI, comprobantes y cuentas bancarias en su Portal de Cliente ingresando su RUC ${client.ruc} en: ${portalUrl}</code>`;
+}
+

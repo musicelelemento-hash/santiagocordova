@@ -24,7 +24,7 @@ import { sendFullClientsMatrixToExtension } from './services/extensionBridge';
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
-const VALID_SCREENS: Screen[] = ['home', 'clients', 'declaraciones', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'services', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
+const VALID_SCREENS: Screen[] = ['home', 'clients', 'declaraciones', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
 
 // Lazy-loaded heavy modules & admin screens
 const AdminDashboardScreen = React.lazy(() => import('./screens/AdminDashboardScreen').then(m => ({ default: m.AdminDashboardScreen })));
@@ -536,6 +536,13 @@ const App: React.FC = () => {
   };
 
   const navigate = (screen: Screen, options: any = {}) => {
+    // 'services' es una página pública de nivel superior, no un módulo del dashboard.
+    // Desde el menú interno se abre el catálogo; con sesión activa se vuelve al panel vía "Administración".
+    if (screen === 'services') {
+      setAppState('services');
+      return;
+    }
+
     // Si estamos navegando a un cliente específico desde otra pantalla, guardamos la actual como "previous"
     if (options.clientIdToView && activeScreen !== screen) {
       setPreviousScreen(activeScreen);
@@ -708,7 +715,7 @@ const App: React.FC = () => {
   if (appState === 'services') return (
     <Suspense fallback={<ScreenLoader />}>
       <ServicesPage
-        onAdminAccess={() => setAppState('login')}
+        onAdminAccess={() => (session ? setAppState('dashboard') : setAppState('login'))}
         onSubmitOrder={(o) => setWebOrders(p => [...p, o])}
         onNavigateToHome={() => setAppState('landing')}
         currentUser={publicUser}
