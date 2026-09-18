@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -74,7 +74,7 @@ export function buildMainMenuKeyboard(): InlineKeyboard {
         .text('🔑 Claves SRI', 'baku_nav:sri_keys')
         .text('📄 Comprobantes PDF', 'baku_cmd:browse_proofs').row()
         .text('🧾 Emitir Factura', 'baku_cmd:create_invoice')
-        .text('🔐 Bóveda Firma .p12', 'baku_cmd:upload_p12').row()
+        .text('🔐 Bóveda Firma .p12', 'baku_cmd:browse_vault').row()
         .text('📊 Resumen Cartera', 'baku_cmd:quick_report')
         .text('⚡ Estado del Bot', 'baku_nav:status');
 }
@@ -207,9 +207,109 @@ export async function showInteractiveDeadlines(ctx: any, isEdit: boolean = false
     }
 }
 
+export async function showInteractiveSignaturesVault(ctx: any, page: number = 1, isEdit: boolean = false) {
+    try {
+        const list = await getSignaturesVaultList();
+        if (list.length === 0) {
+            const text = `🔐 <b>BÓVEDA DIGITAL DE FIRMAS VACÍA</b>\n\n` +
+                         `No tienes firmas electrónicas (.p12) respaldadas aún.\n\n` +
+                         `Para respaldar una firma, simplemente arrastra o envía el archivo <code>.p12</code> o <code>.pfx</code> a este chat de Telegram.`;
+            const kb = new InlineKeyboard()
+                .text('📤 Subir Firma (.p12)', 'baku_cmd:upload_p12').row()
+                .text('🔙 Menú Principal', 'baku_nav:home');
+            if (isEdit) {
+                try { await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb }); return; } catch(e) {}
+            }
+            await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        }
+
+        const pageSize = 4;
+        const totalCount = list.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const safePage = Math.max(1, Math.min(page, totalPages));
+        const startIdx = (safePage - 1) * pageSize;
+        const currentItems = list.slice(startIdx, startIdx + pageSize);
+
+        const vigentes = list.filter(s => s.status === 'vigente').length;
+        const porVencer = list.filter(s => s.status === 'por_vencer').length;
+        const caducadas = list.filter(s => s.status === 'caducada').length;
+
+        let msg = `🔐 <b>BÓVEDA DIGITAL DE FIRMAS ELECTRÓNICAS</b>\n`;
+        msg += `Total archivadas: <b>${totalCount}</b>\n`;
+        msg += `🟢 Vigentes: <b>${vigentes}</b> | 🟡 Por vencer (30d): <b>${porVencer}</b> | 🔴 Caducadas: <b>${caducadas}</b>\n`;
+        msg += `<i>Página ${safePage} de ${totalPages}</i>\n\n`;
+
+        const kb = new InlineKeyboard();
+
+        currentItems.forEach((sig: any, idx: number) => {
+            const num = startIdx + idx + 1;
+            let icon = '🟢';
+            let expBadge = 'Vigente';
+            if (sig.status === 'caducada') {
+                icon = '🔴';
+                expBadge = 'Caducada';
+            } else if (sig.status === 'por_vencer') {
+                icon = '🟡';
+                expBadge = `${sig.daysRemaining}d restantes`;
+            } else if (sig.daysRemaining !== null) {
+                expBadge = `${sig.daysRemaining}d restantes`;
+            }
+
+            const shortName = sig.name.length > 20 ? sig.name.substring(0, 18) + '…' : sig.name;
+            const vaultBadge = sig.isStandalone ? ' [Solo Respaldo]' : ' [Contable]';
+
+            msg += `<b>${num}. ${icon} ${sig.name}</b>${vaultBadge}\n`;
+            msg += `   🆔 <code>${sig.ruc}</code> | 📁 <code>${sig.fileName}</code>\n`;
+            msg += `   ⏳ <i>${expBadge}</i>\n\n`;
+
+            kb.text(`📥 Descargar: ${shortName}`, `baku_dl_sig:${sig.id}`).row();
+            kb.text(`🔑 Ver Clave`, `baku_key_sig:${sig.id}`);
+            if (sig.phone) {
+                const cleanPhone = sig.phone.replace(/\D/g, '');
+                const ecPhone = cleanPhone.startsWith('0') ? '593' + cleanPhone.substring(1) : (cleanPhone.startsWith('593') ? cleanPhone : '593' + cleanPhone);
+                kb.url(`📲 WhatsApp`, `https://wa.me/${ecPhone}`);
+            }
+            kb.row();
+        });
+
+        const navRow = [];
+        if (safePage > 1) {
+            navRow.push(InlineKeyboard.text('◀ Anterior', `baku_page_vault:${safePage - 1}`));
+        }
+        if (safePage < totalPages) {
+            navRow.push(InlineKeyboard.text('Siguiente ▶', `baku_page_vault:${safePage + 1}`));
+        }
+        if (navRow.length > 0) {
+            kb.row(...navRow);
+        }
+
+        kb.row(
+            InlineKeyboard.text('📤 Subir Otra Firma', 'baku_cmd:upload_p12'),
+            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+        );
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e: any) {}
+        }
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (err: any) {
+        console.error("Error en showInteractiveSignaturesVault:", err);
+        await ctx.reply(`❌ Error consultando Bóveda de Firmas: ${err.message}`);
+    }
+}
+
 // Base commands & Tactical Center
 bot.command(['start', 'menu', 'panel', 'ayuda', 'help'], async (ctx) => {
     await showMainMenu(ctx, false);
+});
+
+bot.command(['firmas', 'boveda'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    await showInteractiveSignaturesVault(ctx, 1, false);
 });
 
 bot.command('cobranza', async (ctx) => {
@@ -722,7 +822,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 export interface DialogState {
   type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice' | 'browse_proofs' | 'upload_p12' | 'browse_invoices';
   chatId: string;
-  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method' | 'ask_p12_password';
+  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method' | 'ask_p12_password' | 'choose_p12_mode' | 'ask_vault_info';
   client?: any;
   candidates?: any[];
   data: {
@@ -1179,6 +1279,63 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
         const res = await saveClientSignatureP12(client.ruc, dialog.data.p12Base64!, dialog.data.p12FileName!, password);
         pendingDialogs.delete(chatId);
         await ctx.reply(convertMarkdownToTelegramHtml(res), { parse_mode: 'HTML' });
+        return;
+    }
+
+    if (dialog.type === 'upload_p12' && dialog.step === 'ask_vault_info') {
+        await ctx.replyWithChatAction('typing');
+        const inputStr = text.trim();
+
+        let extractedPassword = '';
+        let extractedName = '';
+        let extractedRuc = '';
+
+        // Si el usuario ingresó: "Clave123 - Juan Perez" o "Clave123 - 0701234567001 - Juan Perez"
+        const parts = inputStr.split(/[-;,]+/).map(p => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+            extractedPassword = parts[0];
+            for (let i = 1; i < parts.length; i++) {
+                const part = parts[i];
+                if (/^\d{10,13}$/.test(part)) {
+                    extractedRuc = part;
+                } else if (!extractedName) {
+                    extractedName = part;
+                }
+            }
+        } else {
+            extractedPassword = inputStr;
+        }
+
+        // Si no se especificó nombre, limpiamos el nombre del archivo
+        if (!extractedName) {
+            const rawFileName = dialog.data.p12FileName || 'Titular';
+            extractedName = rawFileName
+                .replace(/\.(p12|pfx)$/i, '')
+                .replace(/[_-]+/g, ' ')
+                .trim();
+        }
+
+        const res = await saveStandaloneSignatureVault({
+            name: extractedName,
+            ruc: extractedRuc,
+            base64Content: dialog.data.p12Base64!,
+            fileName: dialog.data.p12FileName!,
+            password: extractedPassword
+        });
+
+        pendingDialogs.delete(chatId);
+
+        if (!res.ok) {
+            await ctx.reply(res.message);
+            return;
+        }
+
+        const kb = new InlineKeyboard()
+            .text('📋 Ver Bóveda de Firmas', 'baku_cmd:browse_vault').row()
+            .text('📥 Descargar Archivo .p12', `baku_dl_sig:${res.client?.id || res.client?.ruc}`).row()
+            .text('🏠 Menú Principal', 'baku_nav:home');
+
+        await ctx.reply(convertMarkdownToTelegramHtml(res.message), { parse_mode: 'HTML', reply_markup: kb });
         return;
     }
 
@@ -1945,6 +2102,87 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_p12_mode:')) {
+        const mode = data.replace('baku_p12_mode:', '');
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.type !== 'upload_p12') {
+            await ctx.reply('⚠️ La sesión de subida de firma expiró. Por favor envía el archivo .p12 nuevamente.');
+            return;
+        }
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+
+        if (mode === 'cancel') {
+            pendingDialogs.delete(chatId);
+            await ctx.reply('❌ Subida de firma cancelada.');
+            return;
+        }
+
+        if (mode === 'contable') {
+            dialog.step = 'ask_client_name';
+            pendingDialogs.set(chatId, dialog);
+            await ctx.reply('🏢 <b>Asignar a Cliente Contable</b>\n\n¿A qué cliente pertenece esta firma? (Escribe el nombre o RUC):', { parse_mode: 'HTML' });
+            return;
+        }
+
+        if (mode === 'vault_only') {
+            dialog.step = 'ask_vault_info';
+            pendingDialogs.set(chatId, dialog);
+            await ctx.reply(
+                '🔐 <b>BÓVEDA DE RESPALDO (Sin Declaraciones SRI)</b>\n\n' +
+                'Por favor escribe la <b>contraseña de la firma</b> y opcionalmente el <b>nombre o RUC del titular</b>.\n\n' +
+                '<b>Ejemplos:</b>\n' +
+                '• <code>MiClave123 - Juan Pérez</code>\n' +
+                '• <code>MiClave123 - 0701234567001 - Juan Pérez</code>\n' +
+                '• O simplemente escribe la clave si deseas usar el nombre del archivo.',
+                { parse_mode: 'HTML' }
+            );
+            return;
+        }
+    }
+
+    if (data.startsWith('baku_dl_sig:')) {
+        const id = data.replace('baku_dl_sig:', '');
+        await ctx.replyWithChatAction('upload_document');
+        const res = await downloadSignatureFileBuffer(id);
+        if (!res.ok || !res.buffer) {
+            await ctx.reply(`❌ No se pudo descargar la firma: ${res.error || 'Archivo no disponible'}`);
+            return;
+        }
+
+        await ctx.replyWithDocument(new InputFile(res.buffer, res.fileName!), {
+            caption: `🔐 <b>Firma Electrónica (.p12)</b>\n\n` +
+                     `👤 <b>Titular:</b> ${res.clientName}\n` +
+                     `🔑 <b>Clave:</b> <code>${res.password || 'No registrada'}</code>\n\n` +
+                     `<i>Archivo recuperado directamente de la Bóveda Segura de Baku.</i>`,
+            parse_mode: 'HTML'
+        });
+        return;
+    }
+
+    if (data.startsWith('baku_key_sig:')) {
+        const id = data.replace('baku_key_sig:', '');
+        const res = await downloadSignatureFileBuffer(id);
+        if (!res.ok) {
+            await ctx.reply(`❌ Error al consultar clave: ${res.error}`);
+            return;
+        }
+
+        await ctx.reply(
+            `🔑 <b>Clave de Firma Electrónica</b>\n\n` +
+            `👤 <b>Titular:</b> ${res.clientName}\n` +
+            `🔐 <b>Contraseña:</b> <code>${res.password || 'No registrada'}</code>`,
+            { parse_mode: 'HTML' }
+        );
+        return;
+    }
+
+    if (data.startsWith('baku_page_vault:')) {
+        const page = parseInt(data.replace('baku_page_vault:', ''), 10) || 1;
+        await showInteractiveSignaturesVault(ctx, page, true);
+        return;
+    }
+
     if (data.startsWith('baku_page_debt:')) {
         const page = parseInt(data.replace('baku_page_debt:', ''), 10) || 1;
         await showInteractiveDebtors(ctx, page, true);
@@ -2028,6 +2266,11 @@ bot.on('callback_query:data', async (ctx) => {
                 data: {}
             });
             await ctx.reply('📄 ¿De qué cliente deseas consultar comprobantes de declaración? (Escribe el nombre o RUC):');
+            return;
+        }
+
+        if (cmd === 'browse_vault') {
+            await showInteractiveSignaturesVault(ctx, 1, false);
             return;
         }
 
@@ -2334,13 +2577,25 @@ bot.on('message:document', async (ctx) => {
             pendingDialogs.set(chatId, {
                 type: 'upload_p12',
                 chatId,
-                step: 'ask_client_name',
+                step: 'choose_p12_mode',
                 data: {
                     p12Base64: base64Content,
                     p12FileName: fileName
                 }
             });
-            await ctx.reply('🔐 Recibí la Firma Electrónica **' + fileName + '**.\n\n¿A qué cliente pertenece? (Escribe el nombre o RUC). Baku.');
+
+            const kb = new InlineKeyboard()
+                .text('🏢 Asignar a Cliente Contable', 'baku_p12_mode:contable').row()
+                .text('🔐 Solo Guardar en Bóveda (Respaldo)', 'baku_p12_mode:vault_only').row()
+                .text('❌ Cancelar', 'baku_p12_mode:cancel');
+
+            await ctx.reply(
+                `🔐 <b>Firma Electrónica Recibida:</b> <code>${fileName}</code>\n\n` +
+                `¿Cómo deseas registrar este certificado digital?\n\n` +
+                `• <b>🏢 Cliente Contable:</b> Se vincula a un cliente para facturación y declaraciones SRI.\n` +
+                `• <b>🔐 Solo Respaldo en Bóveda:</b> Custodia segura sin generar declaraciones SRI, ni alertas de IVA/Renta ni cobros contables.`,
+                { parse_mode: 'HTML', reply_markup: kb }
+            );
         } else if (isPdf) {
             const resText = await processAndSaveDeclarationPdf(buffer, fileName);
             await ctx.reply(convertMarkdownToTelegramHtml(resText), { parse_mode: 'HTML' });

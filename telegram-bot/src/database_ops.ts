@@ -306,6 +306,14 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
         const debtors: any[] = [];
 
         clients.forEach(c => {
+            // 🛡️ Ignorar clientes de solo firma, solo plan o que no requieren declaraciones
+            if (c.tax_profile?.requiresDeclarations === false || 
+                c.tax_profile?.clientType === 'solo_plan' || 
+                c.tax_profile?.isSignatureOnly === true || 
+                c.requires_declarations === false) {
+                return;
+            }
+
             const regime = c.regime || 'Régimen General';
             const isPopular = regime === 'Rimpe Negocio Popular';
             const isEmprendedor = regime === 'Rimpe Emprendedor';
@@ -469,6 +477,14 @@ export async function getUpcomingDeadlines() {
         const currentMonth = today.getMonth() + 1; // 1-indexed (1: Ene, 7: Jul, etc.)
         
         const upcoming = clients.filter((c: any) => {
+            // 🛡️ Ignorar clientes de solo firma, solo plan o que no requieren declaraciones
+            if (c.tax_profile?.requiresDeclarations === false || 
+                c.tax_profile?.clientType === 'solo_plan' || 
+                c.tax_profile?.isSignatureOnly === true || 
+                c.requires_declarations === false) {
+                return false;
+            }
+
             const ruc = c.ruc || "";
             const ninthDigit = ruc.length >= 9 ? parseInt(ruc[8]) : -1;
             if (ninthDigit === -1) return false;
@@ -572,6 +588,14 @@ export async function getUpcomingDeadlinesStructured() {
         const later: any[] = [];
 
         clients.forEach((c: any) => {
+            // 🛡️ Ignorar clientes de solo firma, solo plan o que no requieren declaraciones
+            if (c.tax_profile?.requiresDeclarations === false || 
+                c.tax_profile?.clientType === 'solo_plan' || 
+                c.tax_profile?.isSignatureOnly === true || 
+                c.requires_declarations === false) {
+                return;
+            }
+
             const ruc = c.ruc || "";
             if (ruc.length < 9) return;
             const ninthDigit = parseInt(ruc.charAt(8));
@@ -2163,6 +2187,221 @@ export async function saveClientSignatureP12(ruc: string, base64Content: string,
         return `❌ Error al guardar firma electrónica: ${e.message}`;
     }
 }
+
+export interface StandaloneVaultInput {
+    name: string;
+    ruc?: string;
+    phone?: string;
+    base64Content: string;
+    fileName: string;
+    password?: string;
+    expirationDate?: string;
+    notes?: string;
+}
+
+/**
+ * Guarda una firma electrónica en la Bóveda de Respaldo INDEPENDIENTE de la cartera de declaraciones.
+ * Garantiza que tax_profile tenga requiresDeclarations: false y clientType: 'solo_plan'.
+ */
+export async function saveStandaloneSignatureVault(input: StandaloneVaultInput): Promise<{ ok: boolean; message: string; client?: any }> {
+    try {
+        const cleanName = (input.name || 'Titular de Firma').trim();
+        const cleanRuc = (input.ruc || '').trim();
+        const nowIso = new Date().toISOString();
+
+        // Si se especificó RUC, verificar si ya existe un registro previo
+        let existingId: string | null = null;
+        if (cleanRuc && cleanRuc.length >= 10) {
+            const { data: existing } = await supabase
+                .from('clients')
+                .select('id, name, tax_profile')
+                .eq('ruc', cleanRuc)
+                .eq('is_deleted', false)
+                .limit(1);
+            if (existing && existing.length > 0) {
+                existingId = existing[0].id;
+            }
+        }
+
+        const signatureFileObj = {
+            name: input.fileName,
+            content: input.base64Content,
+            uploadedAt: nowIso
+        };
+
+        const taxProfileObj = {
+            ivaFrequency: 'Ninguno',
+            requiresAnnualRenta: false,
+            requiresDeclarations: false,
+            clientType: 'solo_plan',
+            isSignatureOnly: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
+        };
+
+        if (existingId) {
+            // Actualizar existente preservando firma y marcándolo como protegido
+            const updatePayload: any = {
+                signature_file: signatureFileObj,
+                tax_profile: taxProfileObj,
+                updated_at: nowIso
+            };
+            if (input.password) updatePayload.signature_password = input.password;
+            if (input.expirationDate) updatePayload.signature_expiration = input.expirationDate;
+
+            const { data: updated, error } = await supabase
+                .from('clients')
+                .update(updatePayload)
+                .eq('id', existingId)
+                .select('*')
+                .single();
+
+            if (error) throw error;
+            return {
+                ok: true,
+                message: `✅ **Firma Electrónica (.p12)** respaldada en la bóveda para **${updated.name}** (RUC: \`${updated.ruc}\`).\n\n🛡️ *No generará declaraciones SRI ni cobros.*`,
+                client: updated
+            };
+        }
+
+        // Crear nuevo registro independiente en Bóveda
+        const finalRuc = cleanRuc || `FIRMA_${Date.now().toString().slice(-8)}`;
+        const insertPayload: any = {
+            id: crypto.randomUUID(),
+            name: cleanName,
+            ruc: finalRuc,
+            phones: input.phone ? [input.phone] : [],
+            signature_file: signatureFileObj,
+            signature_password: input.password || '',
+            signature_expiration: input.expirationDate || null,
+            regime: 'Régimen General',
+            tax_profile: taxProfileObj,
+            notes: input.notes || '🔐 Solo Respaldo de Firma .p12 (Bóveda sin declaraciones SRI)',
+            is_active: true,
+            is_deleted: false,
+            created_at: nowIso,
+            updated_at: nowIso
+        };
+
+        const { data: inserted, error } = await supabase
+            .from('clients')
+            .insert([insertPayload])
+            .select('*')
+            .single();
+
+        if (error) throw error;
+        return {
+            ok: true,
+            message: `✅ **Firma Electrónica (.p12)** guardada en la Bóveda de Respaldo para **${inserted.name}**.\n\n🛡️ *Este registro está blindado: no generará declaraciones SRI, ni alertas de IVA/Renta, ni cobros contables.*`,
+            client: inserted
+        };
+    } catch (e: any) {
+        console.error("Error saving standalone signature vault:", e);
+        return { ok: false, message: `❌ Error al guardar firma en bóveda: ${e.message}` };
+    }
+}
+
+/**
+ * Obtiene todas las firmas respaldadas en el sistema con su semáforo de vigencia y clave.
+ */
+export async function getSignaturesVaultList(): Promise<any[]> {
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('id, name, ruc, phones, signature_file, signature_password, signature_expiration, tax_profile, notes, updated_at')
+            .not('signature_file', 'is', null)
+            .eq('is_deleted', false)
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return [];
+
+        const now = new Date();
+
+        return clients.map(c => {
+            const sigFile = c.signature_file || {};
+            const fileName = sigFile.name || 'firma.p12';
+            const expDateStr = c.signature_expiration || null;
+            let daysRemaining: number | null = null;
+            let status: 'vigente' | 'por_vencer' | 'caducada' | 'desconocido' = 'desconocido';
+
+            if (expDateStr) {
+                const expDate = new Date(expDateStr);
+                if (!isNaN(expDate.getTime())) {
+                    const diffMs = expDate.getTime() - now.getTime();
+                    daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                    if (daysRemaining <= 0) {
+                        status = 'caducada';
+                    } else if (daysRemaining <= 30) {
+                        status = 'por_vencer';
+                    } else {
+                        status = 'vigente';
+                    }
+                }
+            }
+
+            const tp = c.tax_profile || {};
+            const isStandalone = tp.requiresDeclarations === false || tp.clientType === 'solo_plan' || tp.isSignatureOnly === true;
+
+            return {
+                id: c.id,
+                name: c.name,
+                ruc: c.ruc,
+                phone: (c.phones && c.phones[0]) || '',
+                fileName,
+                password: c.signature_password || '',
+                expirationDate: expDateStr,
+                daysRemaining,
+                status,
+                isStandalone,
+                notes: c.notes || ''
+            };
+        });
+    } catch (e: any) {
+        console.error("Error fetching signatures vault list:", e);
+        return [];
+    }
+}
+
+/**
+ * Descarga y extrae el buffer binario de una firma .p12 para reenviarla por Telegram o exportarla.
+ */
+export async function downloadSignatureFileBuffer(clientIdOrRuc: string): Promise<{ ok: boolean; fileName?: string; buffer?: Buffer; password?: string; clientName?: string; error?: string }> {
+    try {
+        let query = supabase.from('clients').select('id, name, ruc, signature_file, signature_password').eq('is_deleted', false);
+        if (clientIdOrRuc.length === 36 && clientIdOrRuc.includes('-')) {
+            query = query.eq('id', clientIdOrRuc);
+        } else {
+            query = query.eq('ruc', clientIdOrRuc);
+        }
+
+        const { data, error } = await query.limit(1);
+        if (error) throw error;
+        if (!data || data.length === 0) return { ok: false, error: 'Cliente no encontrado' };
+
+        const client = data[0];
+        const sig = client.signature_file;
+        if (!sig || !sig.content) {
+            return { ok: false, error: `El expediente de ${client.name} no contiene el archivo .p12 en base64` };
+        }
+
+        const buffer = Buffer.from(sig.content, 'base64');
+        return {
+            ok: true,
+            fileName: sig.name || `firma_${client.ruc}.p12`,
+            buffer,
+            password: client.signature_password || '',
+            clientName: client.name
+        };
+    } catch (e: any) {
+        console.error("Error downloading signature file buffer:", e);
+        return { ok: false, error: e.message };
+    }
+}
+
 
 export async function getRecentSriInvoices(limit = 10, rucFilter?: string): Promise<any[]> {
     try {
