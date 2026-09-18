@@ -40,6 +40,7 @@ const LoginScreen = React.lazy(() => import('./screens/LoginScreen').then(m => (
 const ServicesPage = React.lazy(() => import('./screens/ServicesPage').then(m => ({ default: m.ServicesPage })));
 const ClientPortalScreen = React.lazy(() => import('./screens/ClientPortalScreen').then(m => ({ default: m.ClientPortalScreen })));
 const MusicPage = React.lazy(() => import('./screens/MusicPage').then(m => ({ default: m.MusicPage })));
+const LandingLujoPage = React.lazy(() => import('./screens/LandingLujoPage').then(m => ({ default: m.LandingLujoPage })));
 const AuditLogScreen = React.lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
 const FacturacionSriScreen = React.lazy(() => import('./screens/FacturacionSriScreen').then(m => ({ default: m.FacturacionSriScreen })));
 const FirmasScreen = React.lazy(() => import('./screens/FirmasScreen').then(m => ({ default: m.FirmasScreen })));
@@ -63,7 +64,7 @@ const ScreenLoader = () => (
 );
 
 
-type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music';
+type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music' | 'lujo';
 
 const App: React.FC = () => {
   const {
@@ -91,6 +92,7 @@ const App: React.FC = () => {
     if (path === '/admin' || path === '/dashboard' || path === '/login') return 'login';
     if (path === '/services') return 'services';
     if (path === '/musica' || path === '/music') return 'music';
+    if (path === '/lujo') return 'lujo';
     if (path === '/portal') return 'login';
     return 'landing';
   });
@@ -134,6 +136,7 @@ const App: React.FC = () => {
     else if (appState === 'services') targetPath = '/services';
     else if (appState === 'client_portal') targetPath = '/portal';
     else if (appState === 'music') targetPath = '/musica';
+    else if (appState === 'lujo') targetPath = '/lujo';
 
     if (path + window.location.search !== targetPath) {
       window.history.pushState({ appState }, '', targetPath);
@@ -157,6 +160,8 @@ const App: React.FC = () => {
         setAppState('services');
       } else if (path === '/musica' || path === '/music') {
         setAppState('music');
+      } else if (path === '/lujo') {
+        setAppState('lujo');
       } else if (path === '/portal') {
         setAppState('login');
       } else {
@@ -741,6 +746,11 @@ const App: React.FC = () => {
   if (appState === 'music') return (
     <Suspense fallback={<ScreenLoader />}>
       <MusicPage onBack={() => setAppState('landing')} />
+    </Suspense>
+  );
+  if (appState === 'lujo') return (
+    <Suspense fallback={<ScreenLoader />}>
+      <LandingLujoPage onBack={() => setAppState('landing')} />
     </Suspense>
   );
 
