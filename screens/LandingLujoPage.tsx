@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
   Award,
   Calculator,
+  Calendar,
+  Fingerprint,
   FileKey,
   FileSpreadsheet,
   Heart,
@@ -12,9 +14,12 @@ import {
   LayoutGrid,
   MapPin,
   MessageCircle,
+  Search,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Users,
+  X,
   Zap,
   Boxes,
 } from 'lucide-react';
@@ -23,6 +28,15 @@ import { Crystal3D } from '../components/3d/Crystal3D';
 import { Reveal, CountUp, ActMedia } from '../components/lujo/LujoWidgets';
 import { useLujoScroll } from '../hooks/useLujoScroll';
 import { useAppStore } from '../store/useAppStore';
+import { PublicUser } from '../types';
+import { getIdentificacionInfo, IdentificacionInfo } from '../utils/sriCalculators';
+import {
+  ActividadTipo,
+  calculateDetailedTax,
+  calculatePenaltyRisk,
+  getRucDeadlineInfo,
+  PenaltyType,
+} from '../utils/taxTools';
 
 /**
  * "Landing 3D Lujo" — a standalone, editorial-tone marketing page ported
@@ -50,6 +64,7 @@ const MEDIA = '/media/';
 const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: '#blindaje', label: 'Blindaje' },
   { href: '#sistema', label: 'Sistema' },
+  { href: '#herramientas', label: 'Herramientas' },
   { href: '#resultados', label: 'Resultados' },
   { href: '#cobertura', label: 'Cobertura' },
   { href: '#servicios', label: 'Servicios' },
@@ -167,13 +182,92 @@ const FAQS = [
   },
 ];
 
+// ── Modal genérico para las herramientas fiscales — mismo lenguaje visual
+// (obsidiana + teal/azure/gold, JetBrains Mono + Manrope) que el resto de la
+// página, en vez de reutilizar el <Modal> del panel administrativo.
+const ToolModal: React.FC<{ title: string; tag: string; color: string; onClose: () => void; children: React.ReactNode }> = ({
+  title,
+  tag,
+  color,
+  onClose,
+  children,
+}) => (
+  <div
+    className="fixed inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in"
+    style={{ background: 'rgba(2,6,23,0.86)', backdropFilter: 'blur(20px)' }}
+    onClick={onClose}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="relative w-full max-w-[480px] max-h-[86vh] overflow-y-auto no-scrollbar rounded-[26px]"
+      style={{ padding: 30, border: '1px solid rgba(255,255,255,0.10)', background: '#051424', boxShadow: '0 50px 100px -30px rgba(0,0,0,0.9)' }}
+    >
+      <button
+        onClick={onClose}
+        aria-label="Cerrar"
+        className="absolute top-5 right-5 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white transition-colors"
+      >
+        <X size={14} />
+      </button>
+      <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color }}>{tag}</span>
+      <h3 className="font-display font-extrabold text-white" style={{ margin: '12px 0 0', fontSize: 'clamp(1.3rem,3vw,1.7rem)', letterSpacing: '-0.02em' }}>{title}</h3>
+      <div style={{ marginTop: 22 }}>{children}</div>
+    </div>
+  </div>
+);
+
 interface LandingLujoPageProps {
-  onBack: () => void;
+  /** Preserva compatibilidad con el mount anterior en /lujo (botón "volver"). Opcional ahora que esta página es la home. */
+  onBack?: () => void;
+  onAdminAccess: () => void;
+  onNavigateToServices: () => void;
+  currentUser: PublicUser | null;
+  onLogin: (user: PublicUser) => void;
+  onLogout: () => void;
+  theme?: 'light' | 'dark';
+  toggleTheme?: () => void;
 }
 
-export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack }) => {
+export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdminAccess, onNavigateToServices }) => {
   const { registerAct, registerNav, progressRef, heroMediaRef, activeId } = useLujoScroll();
   const { serviceFees } = useAppStore();
+
+  // ── Acceso administrativo oculto (equivalente a `handleProtectedAccess` de
+  // screens/LandingPage.tsx): un icono discreto en el header, no un botón
+  // "Iniciar sesión admin" visible, que dispara una breve transición antes
+  // de delegar a onAdminAccess. Ver el overlay `showBiometric` más abajo.
+  const [showBiometric, setShowBiometric] = useState(false);
+  const handleProtectedAccess = () => {
+    setShowBiometric(true);
+    setTimeout(() => { setShowBiometric(false); onAdminAccess(); }, 2200);
+  };
+
+  // ── Herramientas fiscales (RUC/cédula, simulador, multas, calendario) ──
+  const [activeTool, setActiveTool] = useState<null | 'ruc' | 'simulador' | 'multas' | 'calendario'>(null);
+
+  const [rucInput, setRucInput] = useState('');
+  const rucInfo: IdentificacionInfo | null = useMemo(
+    () => (rucInput.trim() ? getIdentificacionInfo(rucInput) : null),
+    [rucInput]
+  );
+
+  const [simIngresos, setSimIngresos] = useState(18000);
+  const [simActividad, setSimActividad] = useState<ActividadTipo>('comercial');
+  const taxDetails = useMemo(
+    () => calculateDetailedTax(simIngresos, simActividad, serviceFees),
+    [simIngresos, simActividad, serviceFees]
+  );
+
+  const [penaltyMeses, setPenaltyMeses] = useState(3);
+  const [penaltyType, setPenaltyType] = useState<PenaltyType>('con_ventas');
+  const [penaltyVentasEst, setPenaltyVentasEst] = useState(1500);
+  const penaltyResult = useMemo(
+    () => calculatePenaltyRisk(penaltyMeses, penaltyType, penaltyVentasEst),
+    [penaltyMeses, penaltyType, penaltyVentasEst]
+  );
+
+  const [selectedRucDigit, setSelectedRucDigit] = useState(1);
+  const deadlineInfo = useMemo(() => getRucDeadlineInfo(selectedRucDigit), [selectedRucDigit]);
 
   // Real current pricing (store/useAppStore.ts `serviceFees`, same fallbacks used by
   // screens/LandingPage.tsx's own service grid) — NOT the prototype's placeholder numbers.
@@ -313,13 +407,15 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack }) => {
           }}
         >
           <div className="flex items-center gap-2">
-            <button
-              onClick={onBack}
-              aria-label="Volver al sitio principal"
-              className="flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex-none"
-            >
-              <ArrowLeft size={15} className="text-slate-300" />
-            </button>
+            {onBack && (
+              <button
+                onClick={onBack}
+                aria-label="Volver al sitio principal"
+                className="flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex-none"
+              >
+                <ArrowLeft size={15} className="text-slate-300" />
+              </button>
+            )}
             <a href="#top" className="flex items-center gap-2.5">
               <Logo className="w-9 h-9 flex-none" />
               <span className="flex flex-col leading-tight whitespace-nowrap">
@@ -341,18 +437,45 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack }) => {
               </a>
             ))}
           </div>
-          <a
-            href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-none inline-flex items-center gap-2 px-[18px] py-[11px] rounded-full bg-[#00A896] text-[#031310] font-mono text-[11px] font-bold uppercase tracking-[0.12em]"
-            style={{ boxShadow: '0 12px 30px -12px rgba(0,168,150,0.8)' }}
-          >
-            <MessageCircle size={14} />
-            Diagnóstico
-          </a>
+          <div className="flex-none flex items-center gap-2">
+            <button
+              onClick={handleProtectedAccess}
+              aria-label="Acceso administrativo"
+              title="Panel Administrativo"
+              className="hidden min-[480px]:flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-500 hover:text-[#00A896] hover:border-[#00A896]/40 transition-colors flex-none"
+            >
+              <ShieldCheck size={15} />
+            </button>
+            <a
+              href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-none inline-flex items-center gap-2 px-[18px] py-[11px] rounded-full bg-[#00A896] text-[#031310] font-mono text-[11px] font-bold uppercase tracking-[0.12em]"
+              style={{ boxShadow: '0 12px 30px -12px rgba(0,168,150,0.8)' }}
+            >
+              <MessageCircle size={14} />
+              Diagnóstico
+            </a>
+          </div>
         </nav>
       </header>
+
+      {/* ── BIOMETRIC OVERLAY (Admin Access) — equivalente al de screens/LandingPage.tsx ── */}
+      {showBiometric && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-center animate-in fade-in"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="relative w-64 h-64 rounded-[26px] p-10 flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(5,20,36,0.92)', boxShadow: '0 40px 90px -30px rgba(0,168,150,0.35)' }}>
+            <Fingerprint size={92} className="text-[#00A896] animate-pulse" />
+          </div>
+          <div className="mt-8 text-center">
+            <div className="font-mono text-[10px] font-bold tracking-[0.5em] mb-2 animate-pulse" style={{ color: '#00A896' }}>AUTENTICACIÓN BIOMÉTRICA</div>
+            <div className="font-display font-extrabold text-white text-2xl tracking-tight">CENTRO DE CONTROL TRIBUTARIO</div>
+          </div>
+        </div>
+      )}
 
       {/* ── MOBILE DOCK (<1040px) ───────────────────────────────────────── */}
       <div
@@ -578,6 +701,304 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack }) => {
           </div>
         </div>
       </section>
+
+      {/* ── HERRAMIENTAS (calculadoras fiscales interactivas) ───────────────
+          Mismos motores que screens/LandingPage.tsx (utils/sriCalculators.ts
+          + utils/taxTools.ts), reempaquetados como tarjetas que abren un
+          panel modal en vez de un formulario largo en la página. */}
+      <section id="herramientas" ref={registerNav('herramientas')} className="relative px-6" style={{ padding: 'clamp(80px,12vh,150px) 24px', background: '#020617' }}>
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 0%, rgba(0,168,150,0.10), transparent 70%)' }} />
+        <div className="relative max-w-[1160px] mx-auto">
+          <Reveal index={0} as="span" className="inline-block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>
+            HERRAMIENTAS
+          </Reveal>
+          <Reveal index={1} as="h2" className="font-display font-extrabold text-white" style={{ margin: '18px 0 0', maxWidth: 760, letterSpacing: '-0.03em', lineHeight: 1.05, fontSize: 'clamp(2rem,4.4vw,3.4rem)' }}>
+            Calcula tu caso antes de escribirnos
+          </Reveal>
+          <Reveal index={2} as="p" className="font-light" style={{ margin: '18px 0 0', maxWidth: 640, fontSize: 'clamp(0.95rem,1.3vw,1.05rem)', lineHeight: 1.7, color: '#aebbcd' }}>
+            Las mismas herramientas que usamos internamente para tus declaraciones, disponibles aquí: validación de RUC/cédula, simulación de régimen, riesgo por atraso y calendario de vencimiento.
+          </Reveal>
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,250px), 1fr))', marginTop: 40 }}>
+            {(
+              [
+                { id: 'ruc', icon: Search, color: '#00A896', tag: 'VALIDACIÓN SRI', title: 'Validar RUC o cédula', desc: 'Módulo 10/11, provincia y tipo de contribuyente en segundos.' },
+                { id: 'simulador', icon: Calculator, color: '#2B6AFF', tag: 'RIMPE 2026', title: 'Simular tu declaración', desc: 'Encuadre de régimen e impuesto estimado según tus ingresos.' },
+                { id: 'multas', icon: ShieldAlert, color: '#C9A96E', tag: 'ATRASOS', title: 'Calcular multas', desc: 'Riesgo estimado por meses sin declarar, con o sin ventas.' },
+                { id: 'calendario', icon: Calendar, color: '#00A896', tag: 'CALENDARIO SRI', title: 'Fecha límite por RUC', desc: 'Tu día exacto de vencimiento según el 9no dígito.' },
+              ] as const
+            ).map((tool, i) => (
+              <Reveal key={tool.id} index={i}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTool(tool.id)}
+                  className="lujo-card flex flex-col text-left w-full h-full rounded-[22px]"
+                  style={{ padding: 26, border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.025)' }}
+                >
+                  <span
+                    className="grid place-items-center rounded-2xl"
+                    style={{ width: 44, height: 44, marginBottom: 20, border: `1px solid ${tool.color}55`, background: `${tool.color}1a`, color: tool.color }}
+                  >
+                    <tool.icon size={21} strokeWidth={1.7} />
+                  </span>
+                  <span className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: tool.color }}>{tool.tag}</span>
+                  <h3 className="font-display font-bold text-white text-[17px]" style={{ margin: '14px 0 0', lineHeight: 1.25 }}>{tool.title}</h3>
+                  <p className="font-light flex-1 text-[13px]" style={{ margin: '10px 0 0', lineHeight: 1.6, color: '#9fadc0' }}>{tool.desc}</p>
+                  <span className="inline-flex items-center gap-2 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em]" style={{ marginTop: 16, color: tool.color }}>
+                    Abrir herramienta <ArrowRight size={13} />
+                  </span>
+                </button>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {activeTool === 'ruc' && (
+        <ToolModal title="Validar RUC o cédula" tag="VALIDACIÓN SRI · MÓDULO 10/11" color="#00A896" onClose={() => setActiveTool(null)}>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={13}
+            value={rucInput}
+            onChange={(e) => setRucInput(e.target.value.replace(/\D/g, ''))}
+            placeholder="Ej. 0703303632 o 0703303632001"
+            className="w-full rounded-2xl font-mono text-sm tracking-wider outline-none text-white"
+            style={{ padding: '14px 16px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)' }}
+          />
+          <div style={{ marginTop: 16 }}>
+            {rucInput.trim() === '' && (
+              <p className="font-light text-[13px]" style={{ color: '#7d8ca1' }}>Ingresa tu número de cédula (10 dígitos) o RUC (13 dígitos).</p>
+            )}
+            {rucInput.trim() !== '' && rucInfo?.valid && (
+              <div className="rounded-2xl" style={{ padding: '16px 18px', border: '1px solid rgba(0,168,150,0.3)', background: 'rgba(0,168,150,0.08)' }}>
+                <div className="font-display font-bold text-[14px]" style={{ color: '#4edea3' }}>✓ Identificación válida · {rucInfo.typeLabel}</div>
+                <div className="font-mono text-[11px] tracking-[0.12em]" style={{ marginTop: 8, color: '#C9A96E' }}>📍 PROVINCIA: {rucInfo.province?.toUpperCase()}</div>
+                <p className="font-light text-[12.5px]" style={{ marginTop: 8, lineHeight: 1.6, color: '#c3d0dd' }}>{rucInfo.details}</p>
+              </div>
+            )}
+            {rucInput.trim().length >= 10 && rucInfo && !rucInfo.valid && (
+              <div className="rounded-2xl" style={{ padding: '16px 18px', border: '1px solid rgba(244,63,94,0.3)', background: 'rgba(244,63,94,0.08)' }}>
+                <div className="font-display font-bold text-[14px]" style={{ color: '#fb7185' }}>✗ Identificación no válida</div>
+                <p className="font-light text-[12.5px]" style={{ marginTop: 8, lineHeight: 1.6, color: '#c3d0dd' }}>
+                  El número no supera el algoritmo de validación del SRI (módulos 10/11) o no tiene el formato ecuatoriano válido.
+                </p>
+              </div>
+            )}
+          </div>
+          <a
+            href={wa(`Hola Santiago Córdova, valide mi identificación (${rucInput}) y quiero confirmar mi situación tributaria.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
+            style={{ marginTop: 20, height: 48, background: '#00A896', color: '#031310' }}
+          >
+            <MessageCircle size={15} />
+            Consultar por WhatsApp
+          </a>
+        </ToolModal>
+      )}
+
+      {activeTool === 'simulador' && (
+        <ToolModal title="Simular tu declaración" tag="RIMPE 2026 · RÉGIMEN GENERAL" color="#2B6AFF" onClose={() => setActiveTool(null)}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {(
+              [
+                { id: 'comercial', label: 'Comercial / RIMPE' },
+                { id: 'profesional', label: 'Profesional' },
+                { id: 'discapacidad_3ra_edad', label: '3ra Edad / Discapacidad' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setSimActividad(opt.id)}
+                className="rounded-xl font-mono text-[9.5px] font-bold uppercase tracking-wide leading-tight"
+                style={
+                  simActividad === opt.id
+                    ? { padding: '10px 6px', background: '#2B6AFF', color: '#fff' }
+                    : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {simActividad !== 'discapacidad_3ra_edad' && (
+            <div style={{ marginTop: 20 }}>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>INGRESOS ANUALES ESTIMADOS</span>
+                <span className="font-mono text-[15px] font-bold" style={{ color: '#00A896' }}>${simIngresos.toLocaleString()}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={320000}
+                step={500}
+                value={simIngresos}
+                onChange={(e) => setSimIngresos(Number(e.target.value))}
+                className="w-full mt-3"
+                style={{ accentColor: '#00A896' }}
+              />
+            </div>
+          )}
+          <div className="rounded-2xl" style={{ marginTop: 22, padding: '18px 20px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
+            <div className="font-mono text-[10px] tracking-[0.14em]" style={{ color: '#C9A96E' }}>{taxDetails.regimen.toUpperCase()}</div>
+            <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
+              <span className="font-light text-[13px]" style={{ color: '#9fadc0' }}>Impuesto estimado anual</span>
+              <span className="font-mono font-bold text-[16px]" style={{ color: '#00A896' }}>${taxDetails.impuestoEstimadoAnual.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
+              <span className="font-light text-[13px]" style={{ color: '#9fadc0' }}>Ahorro estimado con nosotros</span>
+              <span className="font-mono font-bold text-[16px]" style={{ color: '#C9A96E' }}>${taxDetails.ahorroEstimado.toLocaleString()}</span>
+            </div>
+            <p className="font-light text-[12px]" style={{ marginTop: 12, lineHeight: 1.6, color: '#8b99ac' }}>{taxDetails.formularios}</p>
+          </div>
+          <div style={{ marginTop: 18 }}>
+            <div className="font-display font-bold text-white text-[15px]">{taxDetails.planTitle}</div>
+            <div className="font-mono font-extrabold text-[20px]" style={{ color: '#00A896' }}>${taxDetails.price} USD</div>
+          </div>
+          <a
+            href={wa(`Hola Santiago Córdova, he realizado la simulación para ingresos de $${simIngresos.toLocaleString()} USD (${taxDetails.regimen}). Quisiera agendar el plan ${taxDetails.planTitle}.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
+            style={{ marginTop: 18, height: 48, background: '#00A896', color: '#031310' }}
+          >
+            <MessageCircle size={15} />
+            Agendar este plan
+          </a>
+        </ToolModal>
+      )}
+
+      {activeTool === 'multas' && (
+        <ToolModal title="Calcular multas por atraso" tag="RIESGO ESTIMADO SRI" color="#C9A96E" onClose={() => setActiveTool(null)}>
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>MESES SIN DECLARAR</span>
+              <span className="font-mono text-[15px] font-bold text-white">{penaltyMeses} {penaltyMeses === 1 ? 'mes' : 'meses'}</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={36}
+              step={1}
+              value={penaltyMeses}
+              onChange={(e) => setPenaltyMeses(Number(e.target.value))}
+              className="w-full mt-3"
+              style={{ accentColor: '#C9A96E' }}
+            />
+          </div>
+          <div className="grid gap-2" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 18 }}>
+            <button
+              type="button"
+              onClick={() => setPenaltyType('sin_ventas')}
+              className="rounded-xl font-mono text-[10px] font-bold uppercase tracking-wide"
+              style={
+                penaltyType === 'sin_ventas'
+                  ? { padding: '10px 6px', background: '#C9A96E', color: '#1a1508' }
+                  : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
+              }
+            >
+              Sin ventas
+            </button>
+            <button
+              type="button"
+              onClick={() => setPenaltyType('con_ventas')}
+              className="rounded-xl font-mono text-[10px] font-bold uppercase tracking-wide"
+              style={
+                penaltyType === 'con_ventas'
+                  ? { padding: '10px 6px', background: '#C9A96E', color: '#1a1508' }
+                  : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
+              }
+            >
+              Con ventas
+            </button>
+          </div>
+          {penaltyType === 'con_ventas' && (
+            <div style={{ marginTop: 18 }}>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>VENTAS MENSUALES ESTIMADAS</span>
+                <span className="font-mono text-[15px] font-bold text-white">${penaltyVentasEst.toLocaleString()}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={20000}
+                step={100}
+                value={penaltyVentasEst}
+                onChange={(e) => setPenaltyVentasEst(Number(e.target.value))}
+                className="w-full mt-3"
+                style={{ accentColor: '#C9A96E' }}
+              />
+            </div>
+          )}
+          <div className="rounded-2xl" style={{ marginTop: 22, padding: '18px 20px', border: '1px solid rgba(201,169,110,0.3)', background: 'rgba(201,169,110,0.08)' }}>
+            <div className="flex items-center justify-between">
+              <span className="font-light text-[13px]" style={{ color: '#e6d3ab' }}>Riesgo total estimado</span>
+              <span className="font-mono font-extrabold text-[20px]" style={{ color: '#C9A96E' }}>${penaltyResult.totalRiesgo.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
+              <span className="font-light text-[12px]" style={{ color: '#9fadc0' }}>Multa base + interés</span>
+              <span className="font-mono text-[12px]" style={{ color: '#9fadc0' }}>${penaltyResult.multaBase} + ${penaltyResult.interes}</span>
+            </div>
+            <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
+              <span className="font-light text-[12px]" style={{ color: '#9fadc0' }}>Ahorro gestionando con nosotros</span>
+              <span className="font-mono font-bold text-[13px]" style={{ color: '#4edea3' }}>${penaltyResult.ahorroConNosotros.toLocaleString()}</span>
+            </div>
+          </div>
+          <a
+            href={wa(`Hola Santiago Córdova, tengo ${penaltyMeses} meses sin declarar en el SRI y necesito regularizar mi RUC de forma urgente.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
+            style={{ marginTop: 18, height: 48, background: '#C9A96E', color: '#1a1508' }}
+          >
+            <MessageCircle size={15} />
+            Regularizar ahora
+          </a>
+        </ToolModal>
+      )}
+
+      {activeTool === 'calendario' && (
+        <ToolModal title="Tu fecha límite en el SRI" tag="CALENDARIO POR 9NO DÍGITO" color="#00A896" onClose={() => setActiveTool(null)}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+            {Array.from({ length: 10 }, (_, digit) => digit).map((digit) => (
+              <button
+                key={digit}
+                type="button"
+                onClick={() => setSelectedRucDigit(digit)}
+                className="rounded-xl font-mono text-[13px] font-bold aspect-square flex items-center justify-center"
+                style={
+                  selectedRucDigit === digit
+                    ? { background: '#00A896', color: '#031310' }
+                    : { border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
+                }
+              >
+                {digit}
+              </button>
+            ))}
+          </div>
+          <div className="rounded-2xl" style={{ marginTop: 20, padding: '18px 20px', border: '1px solid rgba(0,168,150,0.3)', background: 'rgba(0,168,150,0.08)' }}>
+            <div className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>9NO DÍGITO {selectedRucDigit}</div>
+            <div className="font-display font-extrabold text-white" style={{ marginTop: 6, fontSize: 'clamp(1.2rem,3vw,1.5rem)' }}>{deadlineInfo.label}</div>
+            {deadlineInfo.isImminent ? (
+              <div className="font-mono text-[12px] font-bold" style={{ marginTop: 8, color: '#fb7185' }}>⚠ Faltan {deadlineInfo.daysLeft} días. ¡Es inminente!</div>
+            ) : (
+              <div className="font-light text-[13px]" style={{ marginTop: 8, color: '#c3d0dd' }}>Faltan aproximadamente {deadlineInfo.daysLeft} días para tu vencimiento.</div>
+            )}
+          </div>
+          <a
+            href={wa(`Hola Santiago Córdova, mi RUC termina en dígito ${selectedRucDigit} (vence el ${deadlineInfo.label}) y deseo asegurar mi declaración a tiempo.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
+            style={{ marginTop: 20, height: 48, background: '#00A896', color: '#031310' }}
+          >
+            <MessageCircle size={15} />
+            Asegurar mi declaración
+          </a>
+        </ToolModal>
+      )}
 
       {/* ── ACTO II · RESULTADOS ─────────────────────────────────────────── */}
       <section id="resultados" ref={registerAct('resultados')} className="relative" style={{ height: '300vh' }}>

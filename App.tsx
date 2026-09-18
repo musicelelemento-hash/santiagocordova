@@ -64,7 +64,7 @@ const ScreenLoader = () => (
 );
 
 
-type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music' | 'lujo';
+type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music' | 'clasica';
 
 const App: React.FC = () => {
   const {
@@ -92,7 +92,7 @@ const App: React.FC = () => {
     if (path === '/admin' || path === '/dashboard' || path === '/login') return 'login';
     if (path === '/services') return 'services';
     if (path === '/musica' || path === '/music') return 'music';
-    if (path === '/lujo') return 'lujo';
+    if (path === '/clasica') return 'clasica';
     if (path === '/portal') return 'login';
     return 'landing';
   });
@@ -136,7 +136,7 @@ const App: React.FC = () => {
     else if (appState === 'services') targetPath = '/services';
     else if (appState === 'client_portal') targetPath = '/portal';
     else if (appState === 'music') targetPath = '/musica';
-    else if (appState === 'lujo') targetPath = '/lujo';
+    else if (appState === 'clasica') targetPath = '/clasica';
 
     if (path + window.location.search !== targetPath) {
       window.history.pushState({ appState }, '', targetPath);
@@ -160,8 +160,8 @@ const App: React.FC = () => {
         setAppState('services');
       } else if (path === '/musica' || path === '/music') {
         setAppState('music');
-      } else if (path === '/lujo') {
-        setAppState('lujo');
+      } else if (path === '/clasica') {
+        setAppState('clasica');
       } else if (path === '/portal') {
         setAppState('login');
       } else {
@@ -714,6 +714,22 @@ const App: React.FC = () => {
   );
 
   if (appState === 'landing') return (
+    <Suspense fallback={<ScreenLoader />}>
+      <LandingLujoPage
+        onAdminAccess={() => setAppState('login')}
+        onNavigateToServices={() => setAppState('services')}
+        currentUser={publicUser}
+        onLogin={setPublicUser}
+        onLogout={() => setPublicUser(null)}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    </Suspense>
+  );
+  // Página clásica (pre-2026): se mantiene intacta como red de seguridad en /clasica,
+  // con las mismas herramientas de negocio (validador RUC/cédula, simulador RIMPE,
+  // calculadora de multas, calendario RUC, FAQ) que ya tenía en producción.
+  if (appState === 'clasica') return (
     <LandingPage
       onAdminAccess={() => setAppState('login')}
       onNavigateToServices={() => setAppState('services')}
@@ -746,11 +762,6 @@ const App: React.FC = () => {
   if (appState === 'music') return (
     <Suspense fallback={<ScreenLoader />}>
       <MusicPage onBack={() => setAppState('landing')} />
-    </Suspense>
-  );
-  if (appState === 'lujo') return (
-    <Suspense fallback={<ScreenLoader />}>
-      <LandingLujoPage onBack={() => setAppState('landing')} />
     </Suspense>
   );
 

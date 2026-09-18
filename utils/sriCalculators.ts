@@ -154,3 +154,64 @@ export const validarIdentificacionEcuatoriana = (id: string): boolean => {
     return false;
 };
 
+/**
+ * Mapa de código de provincia (2 primeros dígitos de cédula/RUC) a nombre.
+ * Extraído de `screens/LandingPage.tsx` (helper "ECUADORIAN PROVINCE LIST")
+ * para que pueda ser reutilizado por otras pantallas (p. ej. la herramienta
+ * de validación de RUC/cédula de `screens/LandingLujoPage.tsx`) sin duplicar
+ * el listado.
+ */
+export const PROVINCES_MAP: Record<string, string> = {
+    "01": "Azuay", "02": "Bolívar", "03": "Cañar", "04": "Carchi", "05": "Cotopaxi",
+    "06": "Chimborazo", "07": "El Oro (Pasaje / Machala)", "08": "Esmeraldas", "09": "Guayas",
+    "10": "Imbabura", "11": "Loja", "12": "Los Ríos", "13": "Manabí", "14": "Morona Santiago",
+    "15": "Napo", "16": "Pastaza", "17": "Pichincha (Quito)", "18": "Tungurahua",
+    "19": "Zamora Chinchipe", "20": "Galápagos", "21": "Sucumbíos", "22": "Orellana",
+    "23": "Santo Domingo", "24": "Santa Elena"
+};
+
+export interface IdentificacionInfo {
+    valid: boolean;
+    /** Solo presente cuando valid === true */
+    ninthDigit?: number;
+    province?: string;
+    typeLabel?: string;
+    details?: string;
+}
+
+/**
+ * Valida una cédula/RUC ecuatoriano y, si es válido, devuelve la provincia,
+ * el tipo de contribuyente y una nota de régimen — la misma lógica que
+ * `screens/LandingPage.tsx` calcula inline en su efecto de validación en
+ * vivo del RUC. Centralizada aquí para que cualquier pantalla (incluida
+ * `screens/LandingLujoPage.tsx`) obtenga el mismo resultado sin reimplementar
+ * el detalle por tipo de contribuyente.
+ */
+export const getIdentificacionInfo = (id: string): IdentificacionInfo => {
+    const input = id.trim();
+    if (!validarIdentificacionEcuatoriana(input)) {
+        return { valid: false };
+    }
+
+    const ninthDigit = parseInt(input.charAt(8), 10);
+    const provCode = input.substring(0, 2);
+    const province = PROVINCES_MAP[provCode] || "Ecuador";
+    const thirdDigit = parseInt(input.charAt(2), 10);
+
+    let typeLabel = "";
+    let details = "";
+
+    if (thirdDigit < 6) {
+        typeLabel = "Persona Natural";
+        details = "Sujeto a régimen RIMPE (Popular si ingresos ≤ $20K, Emprendedor hasta $300K) o Régimen General. Declaraciones semestrales o mensuales.";
+    } else if (thirdDigit === 9) {
+        typeLabel = "Persona Jurídica (Sociedad Privada)";
+        details = "Obligación de llevar contabilidad formal. Declaración mensual obligatoria de IVA, Renta y retenciones en la fuente.";
+    } else if (thirdDigit === 6) {
+        typeLabel = "Entidad Pública";
+        details = "Sujeto a normas de contabilidad gubernamental y retención especial del 100% de IVA en compras públicas.";
+    }
+
+    return { valid: true, ninthDigit, province, typeLabel, details };
+};
+
