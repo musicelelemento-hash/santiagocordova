@@ -5,7 +5,6 @@ import {
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
   Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check
 } from 'lucide-react';
-import { LandingPage } from './screens/LandingPage';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
@@ -41,6 +40,14 @@ const ServicesPage = React.lazy(() => import('./screens/ServicesPage').then(m =>
 const ClientPortalScreen = React.lazy(() => import('./screens/ClientPortalScreen').then(m => ({ default: m.ClientPortalScreen })));
 const MusicPage = React.lazy(() => import('./screens/MusicPage').then(m => ({ default: m.MusicPage })));
 const LandingLujoPage = React.lazy(() => import('./screens/LandingLujoPage').then(m => ({ default: m.LandingLujoPage })));
+// `/clasica` is a fallback safety net, not the homepage, so it's lazy like every other screen —
+// previously it was imported eagerly at the top of this file, which meant its whole bundle
+// (gsap + ScrollTrigger, the CinematicIntro 3D hero, Lenis smooth-scroll) shipped in the *main*
+// entry chunk and ran on every route, including this new `/` homepage: gsap's ScrollTrigger
+// ticker was found running a background requestAnimationFrame loop on `/` even though nothing
+// on the Lujo page uses gsap at all. Fixing the import fixes that idle background work and
+// trims real weight off the homepage's initial bundle.
+const LandingPage = React.lazy(() => import('./screens/LandingPage').then(m => ({ default: m.LandingPage })));
 const AuditLogScreen = React.lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
 const FacturacionSriScreen = React.lazy(() => import('./screens/FacturacionSriScreen').then(m => ({ default: m.FacturacionSriScreen })));
 const FirmasScreen = React.lazy(() => import('./screens/FirmasScreen').then(m => ({ default: m.FirmasScreen })));
@@ -730,15 +737,17 @@ const App: React.FC = () => {
   // con las mismas herramientas de negocio (validador RUC/cédula, simulador RIMPE,
   // calculadora de multas, calendario RUC, FAQ) que ya tenía en producción.
   if (appState === 'clasica') return (
-    <LandingPage
-      onAdminAccess={() => setAppState('login')}
-      onNavigateToServices={() => setAppState('services')}
-      currentUser={publicUser}
-      onLogin={setPublicUser}
-      onLogout={() => setPublicUser(null)}
-      theme={theme}
-      toggleTheme={toggleTheme}
-    />
+    <Suspense fallback={<ScreenLoader />}>
+      <LandingPage
+        onAdminAccess={() => setAppState('login')}
+        onNavigateToServices={() => setAppState('services')}
+        currentUser={publicUser}
+        onLogin={setPublicUser}
+        onLogout={() => setPublicUser(null)}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    </Suspense>
   );
   if (appState === 'login') return (
     <Suspense fallback={<ScreenLoader />}>

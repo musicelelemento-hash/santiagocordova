@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -81,6 +81,9 @@ const REGIONS = [
 
 const AGRO_TAGS = ['AGRO & PRODUCCIÓN', 'COMERCIO & RETAIL', 'TRANSPORTE & LOGÍSTICA', 'PYMES & EMPRENDEDORES'];
 
+// Per-panel poster opacity restored to match the prototype's own tuning per photo
+// (`Landing 3D Lujo.dc.html`'s `#galeria` articles: 0.62 / 0.55 / 0.6 / 0.62) — the port had
+// flattened all four to a single 0.6, which is close but not an exact copy.
 const GALLERY_PANELS = [
   {
     poster: 'poster-shield-circuit.png',
@@ -89,6 +92,7 @@ const GALLERY_PANELS = [
     title: 'IVA y retenciones al día',
     desc: 'Declaración mensual o semestral presentada antes del vencimiento, con el comprobante archivado y el aviso enviado.',
     border: 'rgba(255,255,255,0.10)',
+    posterOpacity: 0.62,
   },
   {
     poster: 'poster-financial-bars.png',
@@ -97,6 +101,7 @@ const GALLERY_PANELS = [
     title: 'Retenciones a favor recuperadas',
     desc: 'Cruce de comprobantes y encuadre en la tabla del SRI para que el saldo a favor no se quede en el aire.',
     border: 'rgba(255,255,255,0.10)',
+    posterOpacity: 0.55,
   },
   {
     poster: 'poster-ecuador-map.png',
@@ -105,6 +110,7 @@ const GALLERY_PANELS = [
     title: 'Presencial en El Oro, remoto en el país',
     desc: 'Visitas programadas en la provincia y atención digital para Guayaquil, Quito y Cuenca.',
     border: 'rgba(255,255,255,0.10)',
+    posterOpacity: 0.6,
   },
   {
     poster: 'poster-cacao-fields.png',
@@ -113,6 +119,7 @@ const GALLERY_PANELS = [
     title: 'Contabilidad que entiende el campo',
     desc: 'Banano, cacao, camarón y comercio mayorista, con las reglas que realmente les aplican.',
     border: 'rgba(201,169,110,0.28)',
+    posterOpacity: 0.62,
   },
 ];
 
@@ -185,36 +192,68 @@ const FAQS = [
 // ── Modal genérico para las herramientas fiscales — mismo lenguaje visual
 // (obsidiana + teal/azure/gold, JetBrains Mono + Manrope) que el resto de la
 // página, en vez de reutilizar el <Modal> del panel administrativo.
+//
+// Accesibilidad de teclado (bug encontrado en esta pasada: ninguno de esto
+// existía — Escape no hacía nada y el foco se quedaba flotando en el botón
+// que abrió el modal en vez de entrar en él):
+// - Escape cierra el modal.
+// - Al abrir, el foco se mueve al botón de cerrar (primer elemento enfocable).
+// - Al cerrar, el foco vuelve al elemento que tenía el foco antes de abrir
+//   (la tarjeta "Abrir herramienta" que se pulsó), en vez de perderse en <body>.
 const ToolModal: React.FC<{ title: string; tag: string; color: string; onClose: () => void; children: React.ReactNode }> = ({
   title,
   tag,
   color,
   onClose,
   children,
-}) => (
-  <div
-    className="fixed inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in"
-    style={{ background: 'rgba(2,6,23,0.86)', backdropFilter: 'blur(20px)' }}
-    onClick={onClose}
-  >
+}) => {
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeBtnRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
+  return (
     <div
-      onClick={(e) => e.stopPropagation()}
-      className="relative w-full max-w-[480px] max-h-[86vh] overflow-y-auto no-scrollbar rounded-[26px]"
-      style={{ padding: 30, border: '1px solid rgba(255,255,255,0.10)', background: '#051424', boxShadow: '0 50px 100px -30px rgba(0,0,0,0.9)' }}
+      className="fixed inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in"
+      style={{ background: 'rgba(2,6,23,0.86)', backdropFilter: 'blur(20px)' }}
+      onClick={onClose}
     >
-      <button
-        onClick={onClose}
-        aria-label="Cerrar"
-        className="absolute top-5 right-5 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white transition-colors"
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-[480px] max-h-[86vh] overflow-y-auto no-scrollbar rounded-[26px]"
+        style={{ padding: 30, border: '1px solid rgba(255,255,255,0.10)', background: '#051424', boxShadow: '0 50px 100px -30px rgba(0,0,0,0.9)' }}
       >
-        <X size={14} />
-      </button>
-      <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color }}>{tag}</span>
-      <h3 className="font-display font-extrabold text-white" style={{ margin: '12px 0 0', fontSize: 'clamp(1.3rem,3vw,1.7rem)', letterSpacing: '-0.02em' }}>{title}</h3>
-      <div style={{ marginTop: 22 }}>{children}</div>
+        <button
+          ref={closeBtnRef}
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="absolute top-5 right-5 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white transition-colors"
+        >
+          <X size={14} />
+        </button>
+        <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color }}>{tag}</span>
+        <h3 className="font-display font-extrabold text-white" style={{ margin: '12px 0 0', fontSize: 'clamp(1.3rem,3vw,1.7rem)', letterSpacing: '-0.02em' }}>{title}</h3>
+        <div style={{ marginTop: 22 }}>{children}</div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 interface LandingLujoPageProps {
   /** Preserva compatibilidad con el mount anterior en /lujo (botón "volver"). Opcional ahora que esta página es la home. */
@@ -382,6 +421,30 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         @media (prefers-reduced-motion: reduce) {
           .lujo-root * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
         }
+        /* Same reasoning as hiding this cue on narrow (<1040px) viewports, where the mobile dock
+           already communicates "there's more below": on a short-but-wide desktop window there
+           isn't vertical room for it next to the hero copy either, and (bug found in this pass)
+           it could visually collide with the hero paragraph / CTA row. */
+        @media (max-height: 700px) {
+          .lujo-scrollcue { display: none !important; }
+        }
+        /* Bug found in this pass, pre-existing before any of this pass's other hero changes: on a
+           short viewport (verified on real device sizes down to ~390x600, e.g. a phone with an
+           on-screen keyboard or browser toolbar eating into the viewport) the hero's own vertical
+           rhythm needs more room than is available above the fixed mobile dock / below the fixed
+           header, so the CTA row could end up sitting underneath the dock at the initial,
+           unscrolled position. Tightening the hero's margins and top/bottom padding at short
+           heights reclaims exactly that room without touching spacing on any normal-height
+           viewport (this query only matches when height, not width, is constrained). */
+        @media (max-height: 700px) {
+          /* padding-top must stay clear of the fixed header's own real height (~88px) — going
+             below that (an earlier version of this fix tried 66px) hid the "PASAJE · EL ORO ·
+             ECUADOR" badge partway behind the header itself, trading one overlap for another. */
+          .lujo-hero { padding-top: 96px !important; padding-bottom: 78px !important; }
+          .lujo-hero-title { margin-top: 12px !important; }
+          .lujo-hero-desc { margin-top: 12px !important; }
+          .lujo-hero-ctas { margin-top: 16px !important; }
+        }
       `}</style>
 
       {/* ── HEADER: progress bar + desktop pill nav ─────────────────────── */}
@@ -544,8 +607,20 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section
         id="top"
-        className="relative overflow-hidden grid place-items-center pt-[104px] pb-[92px] min-[1040px]:pb-0"
-        style={{ minHeight: 'min(100vh, 620px)', height: '100vh' }}
+        className="lujo-hero relative overflow-hidden grid place-items-center pt-[104px] pb-[92px] min-[1040px]:pb-0"
+        // Bug found in this pass: this used to be `minHeight: 'min(100vh, 620px)', height: '100vh'`
+        // — an explicit `height` always wins over `min-height` when it's the larger value, and
+        // `100vh` is >= `min(100vh, 620px)` by construction, so that `minHeight` never actually did
+        // anything (true in the original prototype's identical markup too). The practical effect
+        // only showed up on short-but-wide desktop windows (verified down to ~1366x560): the fixed
+        // `height: 100vh` + `overflow: hidden` clipped the centered hero content instead of letting
+        // it grow, which pushed the "Agendar diagnóstico" CTA button below the clipped box — not
+        // just visually cut off, but genuinely unreachable, since scrolling the page can't reveal
+        // content clipped inside a shorter in-flow box. `minHeight: '100vh'` with no explicit
+        // `height` keeps the exact same full-bleed look on every normal viewport (content is always
+        // far shorter than 100vh, so the box still floors at 100vh) and only grows taller than the
+        // viewport — instead of clipping — on the rare short/cramped one.
+        style={{ minHeight: '100vh' }}
       >
         <ActMedia
           webp={`${MEDIA}obsidian-crystal.webp`}
@@ -569,7 +644,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color: '#e6d3ab' }}>PASAJE · EL ORO · ECUADOR</span>
             </span>
           </Reveal>
-          <Reveal index={1} as="h1" className="font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.02, fontSize: 'clamp(2.6rem,7.4vw,6.4rem)' }}>
+          <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.02, fontSize: 'clamp(2.6rem,7.4vw,6.4rem)' }}>
             Ingeniería tributaria
             <br />
             <span
@@ -585,10 +660,10 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               de precisión
             </span>
           </Reveal>
-          <Reveal index={2} as="p" className="font-light" style={{ margin: '26px auto 0', maxWidth: 620, fontSize: 'clamp(1rem,1.5vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
+          <Reveal index={2} as="p" className="lujo-hero-desc font-light" style={{ margin: '26px auto 0', maxWidth: 620, fontSize: 'clamp(1rem,1.5vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
             Contabilidad, declaraciones y blindaje fiscal para empresas y profesionales del Ecuador. Automatización algorítmica con revisión humana experta.
           </Reveal>
-          <Reveal index={3} className="flex flex-wrap gap-3.5 justify-center" style={{ marginTop: 38 }}>
+          <Reveal index={3} className="lujo-hero-ctas flex flex-wrap gap-3.5 justify-center" style={{ marginTop: 38 }}>
             <a
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario gratuito.')}
               target="_blank"
@@ -608,7 +683,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </a>
           </Reveal>
         </div>
-        <div className="hidden min-[1040px]:flex absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[2] flex-col items-center gap-2.5">
+        <div className="lujo-scrollcue hidden min-[1040px]:flex absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[2] flex-col items-center gap-2.5">
           <span className="font-mono text-[9px] tracking-[0.34em] text-slate-500">SCROLL</span>
           <span style={{ width: 1, height: 46, background: 'linear-gradient(to bottom,#00A896,transparent)', animation: 'lujoDrift 2.2s ease-in-out infinite alternate' }} />
         </div>
@@ -1159,7 +1234,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   className="relative flex-none rounded-[26px] overflow-hidden"
                   style={{ width: '78vw', maxWidth: 1100, height: '100%', maxHeight: 'min(64vh,620px)', border: `1px solid ${panel.border}` }}
                 >
-                  <img src={`${MEDIA}${panel.poster}`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0.6 }} />
+                  <img src={`${MEDIA}${panel.poster}`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: panel.posterOpacity }} />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.25) 60%)' }} />
                   <div className="absolute left-0 right-0 bottom-0" style={{ padding: 'clamp(24px,3.4vw,44px)' }}>
                     <span className="font-mono text-[10px] tracking-[0.24em]" style={{ color: panel.color }}>{panel.tag}</span>

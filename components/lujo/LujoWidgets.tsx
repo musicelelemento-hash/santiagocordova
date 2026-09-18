@@ -113,8 +113,18 @@ export const CountUp: React.FC<{ to: number; suffix?: string; duration?: number 
 // decodificando a la vez bloquean el hilo principal"): every act's media
 // starts on its static poster PNG and only swaps to the animated WebP while
 // its section is near/in the viewport, swapping back out when it leaves, so
-// only one 1080p animated WebP ever decodes at a time. The hero media plays
-// immediately (it's the first thing painted) and never swaps back to poster.
+// only one 1080p animated WebP ever decodes at a time. `eager` (the hero)
+// only means "start on the animated WebP immediately instead of the poster,
+// with a high fetch priority" — the prototype's own `[data-hero-media]` is
+// still registered on the SAME IntersectionObserver as every other act's
+// media (`media.forEach(img => this._mio.observe(img))` covers it too), so
+// it swaps back to its poster once scrolled out of view like anything else.
+// (Bug found in this port: the observer effect below used to bail out
+// entirely for `eager` media, so the hero's WebP kept decoding forever no
+// matter how far past it you scrolled — meaning 2-3 animated WebPs could be
+// decoding at once, exactly the perf problem this whole mechanism exists to
+// prevent. Fixed by always observing, and only skipping the *initial*
+// force-to-poster for eager media so it still paints animated immediately.)
 export const ActMedia: React.FC<{
   webp: string;
   poster: string;
@@ -127,7 +137,6 @@ export const ActMedia: React.FC<{
   const localRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    if (eager) return;
     const img = localRef.current;
     if (!img) return;
     const io = new IntersectionObserver(
@@ -139,7 +148,7 @@ export const ActMedia: React.FC<{
     );
     io.observe(img);
     return () => io.disconnect();
-  }, [eager, webp, poster]);
+  }, [webp, poster]);
 
   return (
     <img
