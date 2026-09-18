@@ -46,13 +46,34 @@ async function logAuditAction(action: string, details: string, type: string, sev
 }
 
 export async function findClients(query: string, selectFields: string) {
-    const { data: rawClients, error } = await supabase
+    let data: any[] | null = null;
+    
+    // Intento 1: Consulta estándar filtrando clientes no eliminados
+    let res = await supabase
         .from('clients')
         .select(selectFields)
         .eq('is_deleted', false);
-    if (error) throw error;
-    const clients = rawClients as any[] | null;
-    if (!clients) return [];
+        
+    // Fallback si la llave anon no tiene permiso sobre is_deleted (error 42501)
+    if (res.error && (res.error.code === '42501' || res.error.message?.includes('permission denied'))) {
+        console.warn("⚠️ Aviso de permisos Supabase (42501): Intentando consulta de rescate...");
+        const safeFields = selectFields === '*' ? 'id, name, ruc, trade_name, regime, tax_profile' : selectFields;
+        const retry = await supabase
+            .from('clients')
+            .select(safeFields);
+
+        if (retry.error) {
+            console.error("❌ Error de permisos crítico en tabla clients:", retry.error);
+            throw new Error(`Permisos denegados en Supabase (${retry.error.message}). Solución: Configura SUPABASE_SERVICE_KEY en tu .env o ejecuta GRANT SELECT ON public.clients TO anon; en Supabase SQL Editor.`);
+        }
+        data = retry.data;
+    } else if (res.error) {
+        throw res.error;
+    } else {
+        data = res.data;
+    }
+
+    const clients = (data || []) as any[];
     if (!query) return clients;
     
     const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -318,6 +339,30 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
 }
 
 /**
+ * Retorna la lista de deudores de forma paginada para menús interactivos de Telegram.
+ */
+export async function getDebtorClientsPaginated(page: number = 1, pageSize: number = 4) {
+    const rawDebtors = await getDebtorClientsRaw();
+    rawDebtors.sort((a, b) => (b.clientDebt || 0) - (a.clientDebt || 0));
+
+    const totalDebt = rawDebtors.reduce((sum, d) => sum + (d.clientDebt || 0), 0);
+    const totalCount = rawDebtors.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const safePage = Math.max(1, Math.min(page, totalPages));
+
+    const startIdx = (safePage - 1) * pageSize;
+    const items = rawDebtors.slice(startIdx, startIdx + pageSize);
+
+    return {
+        totalDebt,
+        totalCount,
+        page: safePage,
+        totalPages,
+        items
+    };
+}
+
+/**
  * Gets a list of clients who have pending payments or pending declarations.
  */
 export async function getDebtorClients() {
@@ -499,6 +544,94 @@ export async function getUpcomingDeadlines() {
         return response;
     } catch (error: any) {
         return "Error al calcular vencimientos: " + error.message;
+    }
+}
+
+/**
+ * Retorna los vencimientos estructurados en categorías (Hoy, Próximos 7 días, Resto del mes)
+ * para alimentar los botones interactivos de Telegram.
+ */
+export async function getUpcomingDeadlinesStructured() {
+    console.log(`⏰ Fetching structured upcoming deadlines from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*, sri_declaraciones(*)')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return { today: [], thisWeek: [], later: [], total: 0 };
+
+        const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
+        const now = new Date();
+        const currentDay = now.getDate();
+        const currentMonth = now.getMonth() + 1; // 1-12
+
+        const today: any[] = [];
+        const thisWeek: any[] = [];
+        const later: any[] = [];
+
+        clients.forEach((c: any) => {
+            const ruc = c.ruc || "";
+            if (ruc.length < 9) return;
+            const ninthDigit = parseInt(ruc.charAt(8));
+            if (isNaN(ninthDigit) || SRI_DUE_DATES[ninthDigit] === undefined) return;
+
+            const dueDay = SRI_DUE_DATES[ninthDigit];
+
+            // Determinar si tiene obligación tributaria aplicable en este mes
+            const regime = c.regime || 'Régimen General';
+            const isPopular = regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            const reqRenta = c.tax_profile?.requiresAnnualRenta ?? true;
+
+            const hasIvaThisMonth = ivaFreq === 'Mensual' || (ivaFreq === 'Semestral' && (currentMonth === 7 || currentMonth === 1));
+            const hasRentaThisMonth = reqRenta && ((isPopular && currentMonth === 5) || (!isPopular && currentMonth === 3));
+
+            if (!hasIvaThisMonth && !hasRentaThisMonth) return;
+
+            // Verificar si ya declaró el período más reciente
+            const latestDecl = (c.sri_declaraciones || [])
+                .filter((d: any) => d.status !== 'Pendiente')
+                .sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            const isDone = latestDecl?.status === 'Enviada' || latestDecl?.status === 'Pagada' || !!latestDecl?.proof_file;
+
+            const item = {
+                id: c.id,
+                name: c.name,
+                tradeName: c.trade_name,
+                ruc: c.ruc,
+                dueDay,
+                ninthDigit,
+                regime,
+                typeLabel: isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semestral' : 'Mensual'),
+                isDone
+            };
+
+            if (dueDay === currentDay) {
+                today.push(item);
+            } else if (dueDay > currentDay && dueDay <= currentDay + 7) {
+                thisWeek.push(item);
+            } else if (dueDay > currentDay + 7) {
+                later.push(item);
+            }
+        });
+
+        // Ordenar por día de vencimiento ascendente
+        today.sort((a, b) => a.dueDay - b.dueDay);
+        thisWeek.sort((a, b) => a.dueDay - b.dueDay);
+        later.sort((a, b) => a.dueDay - b.dueDay);
+
+        return {
+            today,
+            thisWeek,
+            later,
+            total: today.length + thisWeek.length + later.length
+        };
+    } catch (e: any) {
+        console.error("Error al estructurar vencimientos:", e);
+        return { today: [], thisWeek: [], later: [], total: 0 };
     }
 }
 

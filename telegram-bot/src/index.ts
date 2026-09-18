@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -61,44 +61,175 @@ bot.catch((err) => {
   ctx.reply("Ups, ocurrió un error interno. Santiago ya fue notificado. Baku.").catch(e => console.error("Could not send error report to user:", e));
 });
 
+// ═════════════════════════════════════════════════════════════════
+// ⚡ CENTRO DE CONTROL CONTABLE INTERACTIVO — BAKU 2.0 (ZEN UI)
+// ═════════════════════════════════════════════════════════════════
+
+export function buildMainMenuKeyboard(): InlineKeyboard {
+    return new InlineKeyboard()
+        .text('👤 Buscar Cliente', 'baku_nav:search')
+        .text('💳 Registrar Pago', 'baku_nav:pay_quick').row()
+        .text('⏰ Vencimientos SRI', 'baku_nav:deadlines')
+        .text('💰 Deudores & Mora', 'baku_page_debt:1').row()
+        .text('🔑 Claves SRI', 'baku_nav:sri_keys')
+        .text('📄 Comprobantes PDF', 'baku_cmd:browse_proofs').row()
+        .text('🧾 Emitir Factura', 'baku_cmd:create_invoice')
+        .text('🔐 Bóveda Firma .p12', 'baku_cmd:upload_p12').row()
+        .text('📊 Resumen Cartera', 'baku_cmd:quick_report')
+        .text('⚡ Estado del Bot', 'baku_nav:status');
+}
+
+export function buildMainMenuText(): string {
+    return `⚡ <b>CENTRO DE CONTROL CONTABLE — ${BOT_NAME.toUpperCase()} 2.0</b>\n\n` +
+           `Bienvenido Santiago. Selecciona una acción rápida o escribe lo que necesitas (clave, RUC, pagos, comprobantes o envía una nota de voz / foto):`;
+}
+
+export async function showMainMenu(ctx: any, isEdit: boolean = false) {
+    const text = buildMainMenuText();
+    const kb = buildMainMenuKeyboard();
+    if (isEdit) {
+        try {
+            await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        } catch (e) {}
+    }
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showInteractiveDebtors(ctx: any, page: number = 1, isEdit: boolean = false) {
+    try {
+        const data = await getDebtorClientsPaginated(page, 4);
+        if (data.totalCount === 0) {
+            const text = `🎉 <b>¡CARTERA TOTALMENTE AL DÍA!</b>\n\nNo existen clientes con honorarios pendientes registrados. Baku.`;
+            const kb = new InlineKeyboard().text('🔙 Menú Principal', 'baku_nav:home');
+            if (isEdit) {
+                await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+            } else {
+                await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+            }
+            return;
+        }
+
+        let msg = `💰 <b>DEUDORES & CARTERA PENDIENTE</b>\n`;
+        msg += `Total por cobrar: <b>$${data.totalDebt.toFixed(2)}</b> (${data.totalCount} clientes)\n`;
+        msg += `<i>Página ${data.page} de ${data.totalPages}</i>\n\n`;
+
+        const kb = new InlineKeyboard();
+
+        data.items.forEach((c: any, idx: number) => {
+            const debt = (c.clientDebt || 0).toFixed(2);
+            const shortName = c.name.length > 20 ? c.name.substring(0, 18) + '…' : c.name;
+            msg += `<b>${(data.page - 1) * 4 + idx + 1}. ${c.name}</b>\n`;
+            msg += `   🆔 <code>${c.ruc}</code> | Saldo: <b>$${debt}</b> [${c.typeLabel}]\n\n`;
+
+            kb.text(`💵 Cobrar: ${shortName} ($${debt})`, `baku_hub_pay:${c.ruc}`).row();
+        });
+
+        const navRow = [];
+        if (data.page > 1) {
+            navRow.push(InlineKeyboard.text('◀ Anterior', `baku_page_debt:${data.page - 1}`));
+        }
+        if (data.page < data.totalPages) {
+            navRow.push(InlineKeyboard.text('Siguiente ▶', `baku_page_debt:${data.page + 1}`));
+        }
+        if (navRow.length > 0) {
+            kb.row(...navRow);
+        }
+
+        kb.row(
+            InlineKeyboard.text('🔄 Refrescar', `baku_page_debt:${data.page}`),
+            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+        );
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e: any) {}
+        }
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (err: any) {
+        console.error("Error en showInteractiveDebtors:", err);
+        await ctx.reply(`❌ Error consultando deudores: ${err.message}`);
+    }
+}
+
+export async function showInteractiveDeadlines(ctx: any, isEdit: boolean = false) {
+    try {
+        const data = await getUpcomingDeadlinesStructured();
+        let msg = `⏰ <b>VENCIMIENTOS SRI — CALENDARIO INTERACTIVO</b>\n\n`;
+        const kb = new InlineKeyboard();
+
+        if (data.today.length > 0) {
+            msg += `🔥 <b>¡VENCEN HOY (${data.today.length})!</b>\n`;
+            data.today.forEach((c: any) => {
+                const shortName = c.name.length > 18 ? c.name.substring(0, 16) + '…' : c.name;
+                const status = c.isDone ? '✅ Declarado' : '❌ PENDIENTE';
+                msg += `• <b>${c.name}</b> (Día ${c.dueDay}) → ${status}\n`;
+                kb.text(`👤 ${shortName} (${status})`, `baku_hub_profile:${c.ruc}`).row();
+            });
+            msg += `\n`;
+        }
+
+        if (data.thisWeek.length > 0) {
+            msg += `📅 <b>PRÓXIMOS 7 DÍAS (${data.thisWeek.length}):</b>\n`;
+            data.thisWeek.slice(0, 6).forEach((c: any) => {
+                const shortName = c.name.length > 18 ? c.name.substring(0, 16) + '…' : c.name;
+                const status = c.isDone ? '✅' : '⏳';
+                msg += `• Día ${c.dueDay}: ${c.name} [${c.typeLabel}] ${status}\n`;
+                kb.text(`Día ${c.dueDay}: ${shortName} ${status}`, `baku_hub_profile:${c.ruc}`).row();
+            });
+            if (data.thisWeek.length > 6) {
+                msg += `<i>... y ${data.thisWeek.length - 6} más esta semana.</i>\n`;
+            }
+            msg += `\n`;
+        }
+
+        if (data.today.length === 0 && data.thisWeek.length === 0) {
+            msg += `✨ <i>No hay vencimientos pendientes para los próximos 7 días. ¡Todo al día!</i>\n\n`;
+        }
+
+        kb.row(
+            InlineKeyboard.text('🔄 Refrescar', 'baku_nav:deadlines'),
+            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+        );
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e) {}
+        }
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (err: any) {
+        console.error("Error en showInteractiveDeadlines:", err);
+        await ctx.reply(`❌ Error consultando vencimientos: ${err.message}`);
+    }
+}
+
 // Base commands & Tactical Center
 bot.command(['start', 'menu', 'panel', 'ayuda', 'help'], async (ctx) => {
-    const kb = new InlineKeyboard()
-        .text('📊 Resumen Cartera', 'baku_cmd:quick_report')
-        .text('⏰ Vencimientos SRI', 'baku_cmd:deadlines').row()
-        .text('📋 Deudores & Mora', 'baku_cmd:debt_report')
-        .text('💳 Registrar Pago', 'baku_cmd:reg_payment').row()
-        .text('👤 Expediente 360°', 'baku_cmd:view_profile')
-        .text('📄 Comprobantes PDF', 'baku_cmd:browse_proofs').row()
-        .text('🔐 Bóveda Firma .p12', 'baku_cmd:upload_p12')
-        .text('🧾 Emitir Factura', 'baku_cmd:create_invoice').row()
-        .text('🔄 Refrescar Estado', 'baku_cmd:quick_report');
-
-    const welcome = `⚡ <b>PANEL TÁCTICO CONTABLE — ${BOT_NAME.toUpperCase()}</b>\n\n` +
-                    `Bienvenido Santiago. Selecciona una acción rápida o escribe lo que necesitas (clave, RUC, pagos, comprobantes, deudores o envía una nota de voz / foto de comprobante):`;
-
-    await ctx.reply(welcome, {
-        parse_mode: 'HTML',
-        reply_markup: kb
-    });
+    await showMainMenu(ctx, false);
 });
 
 bot.command('cobranza', async (ctx) => {
     await ctx.replyWithChatAction('typing');
-    const report = await getDebtorClients();
-    await ctx.reply(convertMarkdownToTelegramHtml(report), { parse_mode: 'HTML' });
+    await showInteractiveDebtors(ctx, 1, false);
 });
 
 bot.command('vencimientos', async (ctx) => {
     await ctx.replyWithChatAction('typing');
-    const report = await getUpcomingDeadlines();
-    await ctx.reply(convertMarkdownToTelegramHtml(report), { parse_mode: 'HTML' });
+    await showInteractiveDeadlines(ctx, false);
 });
 
 bot.command('resumen', async (ctx) => {
     await ctx.replyWithChatAction('typing');
     const summary = await getDatabaseSummary();
-    await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML' });
+    const kb = new InlineKeyboard()
+        .text('💰 Ver Deudores', 'baku_page_debt:1')
+        .text('⏰ Vencimientos', 'baku_nav:deadlines').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+    await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML', reply_markup: kb });
 });
 
 bot.command('clear', async (ctx) => {
@@ -217,10 +348,22 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
         .text('📄 Comprobantes SRI', `baku_hub_proofs:${ruc}`).row()
         .text('🔐 Firma .p12 / Bóveda', `baku_hub_p12:${ruc}`)
         .text('📲 Link Portal Cliente', `baku_hub_portal:${ruc}`).row()
-        .text('✏️ Editar Perfil', `baku_hub_edit:${ruc}`)
-        .text('❌ Cerrar Perfil', 'baku_cancel').row()
         .text('👁 Ver Clave SRI', `baku_reveal_sri:${ruc}`)
-        .text('👁 Ver Clave Firma', `baku_reveal_sig:${ruc}`);
+        .text('👁 Ver Clave Firma', `baku_reveal_sig:${ruc}`).row()
+        .text('✏️ Editar Perfil', `baku_hub_edit:${ruc}`)
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    // Si tiene teléfono móvil válido, agregar botón directo para abrir chat de WhatsApp
+    const firstPhone = Array.isArray(client.phones) ? client.phones[0] : (client.phone || client.phones || '');
+    let cleanPhone = String(firstPhone).replace(/\D/g, '');
+    if (cleanPhone.startsWith('09') && cleanPhone.length === 10) {
+        cleanPhone = '593' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('9') && cleanPhone.length === 9) {
+        cleanPhone = '593' + cleanPhone;
+    }
+    if (cleanPhone.length >= 11) {
+        kb.row(InlineKeyboard.url('💬 Abrir Chat de WhatsApp', `https://wa.me/${cleanPhone}`));
+    }
 
     await ctx.reply(convertMarkdownToTelegramHtml(cardText), {
         parse_mode: 'HTML',
@@ -1802,6 +1945,65 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_page_debt:')) {
+        const page = parseInt(data.replace('baku_page_debt:', ''), 10) || 1;
+        await showInteractiveDebtors(ctx, page, true);
+        return;
+    }
+
+    if (data.startsWith('baku_nav:')) {
+        const nav = data.replace('baku_nav:', '');
+        if (nav === 'home') {
+            await showMainMenu(ctx, true);
+            return;
+        }
+        if (nav === 'deadlines') {
+            await showInteractiveDeadlines(ctx, true);
+            return;
+        }
+        if (nav === 'search') {
+            pendingDialogs.set(chatId, {
+                type: 'view_profile',
+                chatId,
+                step: 'ask_client_name',
+                data: {}
+            });
+            const kb = new InlineKeyboard().text('🔙 Cancelar', 'baku_cancel');
+            await ctx.reply("🔍 ¿Qué cliente deseas buscar? (Escribe el nombre o RUC):", { reply_markup: kb });
+            return;
+        }
+        if (nav === 'pay_quick') {
+            await showInteractiveDebtors(ctx, 1, true);
+            return;
+        }
+        if (nav === 'sri_keys') {
+            pendingDialogs.set(chatId, {
+                type: 'field_query',
+                chatId,
+                step: 'ask_client_name',
+                data: { field: 'sri_password' }
+            });
+            const kb = new InlineKeyboard().text('🔙 Cancelar', 'baku_cancel');
+            await ctx.reply("🔑 ¿De qué cliente deseas consultar la clave SRI? (Escribe el nombre o RUC):", { reply_markup: kb });
+            return;
+        }
+        if (nav === 'status') {
+            const vStatus = await getVoiceStatus();
+            let statusMsg = `⚡ <b>ESTADO OPERATIVO — BAKU 2.0</b>\n\n` +
+                `🟢 <b>Servicio:</b> Activo y respondiendo\n` +
+                `🌐 <b>Anti-Sleep:</b> Habilitado (Ping cada 9 min)\n` +
+                `🎙️ <b>Voz (ElevenLabs):</b> ${vStatus.elevenLabs ? '✅ Conectada' : '⚠️ Sin clave'}\n` +
+                `☁️ <b>TTS Respaldo:</b> ${vStatus.googleCloud ? '✅ Google Cloud Activo' : '⚠️ En reposo'}\n` +
+                `🧠 <b>Motor IA:</b> Activo\n\n` +
+                `<i>Todo el ecosistema contable está sincronizado con Supabase.</i>`;
+            const kb = new InlineKeyboard()
+                .text('🔄 Refrescar Menú', 'baku_nav:home')
+                .text('📊 Resumen Cartera', 'baku_cmd:quick_report');
+            await ctx.reply(statusMsg, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        }
+    }
+
     if (data.startsWith('baku_cmd:')) {
         const cmd = data.replace('baku_cmd:', '');
         
@@ -1809,16 +2011,12 @@ bot.on('callback_query:data', async (ctx) => {
         try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
         
         if (cmd === 'debt_report') {
-            await ctx.replyWithChatAction('typing');
-            const report = await getDebtorClients();
-            await ctx.reply(convertMarkdownToTelegramHtml(report), { parse_mode: 'HTML' });
+            await showInteractiveDebtors(ctx, 1, false);
             return;
         }
 
         if (cmd === 'deadlines') {
-            await ctx.replyWithChatAction('typing');
-            const report = await getUpcomingDeadlines();
-            await ctx.reply(convertMarkdownToTelegramHtml(report), { parse_mode: 'HTML' });
+            await showInteractiveDeadlines(ctx, false);
             return;
         }
 
@@ -2276,6 +2474,29 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🌐 Web server listening on port ${PORT} for Render health checks.`);
 });
+
+// ==========================================
+// 🛡️ ANTI-SLEEP ENGINE FOR RENDER (Keep-Alive)
+// ==========================================
+function startAntiSleepWorker() {
+    const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://santiagocordova.onrender.com';
+    const intervalMinutes = 9; // Render duerme a los 15 min, 9 min garantiza 24/7 activo
+
+    console.log(`🛡️ Anti-Sleep Engine activado: auto-ping cada ${intervalMinutes} min a ${targetUrl}/health`);
+
+    setInterval(async () => {
+        try {
+            const res = await axios.get(`${targetUrl}/health`, { timeout: 8000 });
+            if (res.status === 200) {
+                console.log(`💓 [Anti-Sleep] Keep-alive OK [${new Date().toLocaleTimeString()}]`);
+            }
+        } catch (e: any) {
+            // Silencioso si está en local o arrancando
+        }
+    }, intervalMinutes * 60 * 1000).unref();
+}
+
+startAntiSleepWorker();
 
 // Start Cron Jobs
 try {
