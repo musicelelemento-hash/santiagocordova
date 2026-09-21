@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { BellRing, Briefcase, Calendar, CalendarClock, Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clock, Cloud, Crown, Database, DatabaseBackup, DollarSign, Download, Edit, Edit3, ExternalLink, FileEdit, FileSearch, Fingerprint, Globe, History, Info, Key, Link, Loader, Loader2, Lock, MessageSquare, Package, Palette, Pencil, Plus, RefreshCw, RotateCw, Save, Settings as SettingsIcon, Share2, ShieldCheck, ShoppingBag, Target, ToggleLeft, ToggleRight, Trash2, Upload, UploadCloud, UserX, Wrench, Zap, FileText, CreditCard } from 'lucide-react';
+import { BellRing, Briefcase, Calendar, CalendarClock, Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clock, Cloud, Crown, Database, DatabaseBackup, DollarSign, Download, Edit, Edit3, ExternalLink, FileEdit, FileSearch, Fingerprint, Globe, History, Info, Key, Link, Loader, Loader2, Lock, MessageSquare, Package, Palette, Pencil, Plus, RefreshCw, RotateCw, Save, Settings as SettingsIcon, Share2, ShieldCheck, ShoppingBag, Target, ToggleLeft, ToggleRight, Trash2, Upload, UploadCloud, UserX, Wrench, Zap, FileText, CreditCard, Pin, Activity } from 'lucide-react';
+import { getDefaultStartScreen, setDefaultStartScreen, getMostUsedScreens } from '../services/usageStatsService';
 import { Client, TaxRegime, ServiceFeesConfig, Screen, Task, DeclarationStatus, Declaration, ReminderConfig, WebOrder, SystemSettings, SystemComboConfig } from '../types';
 import { exportClientsToCSV, parseClientsFromCSV, parseBrowserPasswordsCSV, parseCredentialsCSV } from '../services/csv';
 import { getClientServiceFee } from '../services/clientService';
@@ -130,7 +131,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
     const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>(systemSettings);
     const [editingCombo, setEditingCombo] = useState<SystemComboConfig | null>(null);
     const [isEditingCombos, setIsEditingCombos] = useState(false);
-    const [settingsTab, setSettingsTab] = useState<'all' | 'cloud' | 'fees' | 'reminders' | 'combos' | 'backup'>('all');
+    const [settingsTab, setSettingsTab] = useState<'all' | 'flow' | 'cloud' | 'fees' | 'reminders' | 'combos' | 'backup'>('all');
+    const [startScreen, setStartScreen] = useState<Screen>(() => getDefaultStartScreen());
+    const [usageStatsList, setUsageStatsList] = useState(() => getMostUsedScreens(10));
+    const [startScreenSaved, setStartScreenSaved] = useState(false);
+
+    const handleSaveStartScreen = (screen: Screen) => {
+        setDefaultStartScreen(screen);
+        setStartScreen(screen);
+        setStartScreenSaved(true);
+        setTimeout(() => setStartScreenSaved(false), 2500);
+    };
+
     const [isSavingSystem, setIsSavingSystem] = useState(false);
     const [systemSaved, setSystemSaved] = useState(false);
 
@@ -597,6 +609,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                 <div className="inline-flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10 gap-1 shrink-0">
                     {[
                         { id: 'all', label: 'General / Todo', icon: SettingsIcon },
+                        { id: 'flow', label: 'Flujo & Inicio', icon: Zap },
                         { id: 'cloud', label: 'Nube & SRI', icon: Cloud },
                         { id: 'fees', label: 'Honorarios', icon: DollarSign },
                         { id: 'combos', label: 'Combos & Planes', icon: ShoppingBag },
@@ -624,6 +637,131 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             </div>
 
             <div className="space-y-8 px-4 sm:px-0">
+                {/* --- MÓDULO: FLUJO DE TRABAJO, INICIO AUTOMÁTICO & MÉTRICAS --- */}
+                {(settingsTab === 'all' || settingsTab === 'flow') && (
+                    <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden group">
+                        <div className="relative z-10 font-mono">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl text-amber-400">
+                                    <Pin size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">Flujo de Trabajo & Pantalla de Inicio</h3>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Inicio Automático & Análisis de Uso</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p className="text-slate-300 text-xs sm:text-sm mb-6 leading-relaxed font-sans">
+                                Configure a qué pantalla debe ingresar el sistema automáticamente al iniciar sesión o cargar el panel. Analice los módulos más utilizados para acoplar el flujo de trabajo diario.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Pantalla de Inicio */}
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                                            <Pin size={14} className="text-amber-400" />
+                                            Pantalla de Inicio Predeterminada
+                                        </label>
+                                        {startScreenSaved && (
+                                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest animate-pulse">
+                                                ¡Guardado!
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 font-sans">
+                                        El panel se abrirá inmediatamente en esta pantalla al iniciar sesión:
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {[
+                                            { screen: 'declaraciones' as Screen, label: 'Declaraciones SRI', badge: 'Recomendado' },
+                                            { screen: 'home' as Screen, label: 'Centro de Control (Dashboard)' },
+                                            { screen: 'clients' as Screen, label: 'Directorio de Clientes' },
+                                            { screen: 'cobranza' as Screen, label: 'Módulo de Cobranza' },
+                                            { screen: 'firmas' as Screen, label: 'Firmas Electrónicas' },
+                                            { screen: 'sri_facturacion' as Screen, label: 'Facturador SRI' },
+                                        ].map((opt) => (
+                                            <button
+                                                key={opt.screen}
+                                                onClick={() => handleSaveStartScreen(opt.screen)}
+                                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                                                    startScreen === opt.screen
+                                                        ? 'bg-amber-500/20 border-amber-500/50 text-white shadow-lg'
+                                                        : 'bg-black/30 border-white/5 text-slate-400 hover:text-white hover:bg-white/5'
+                                                }`}
+                                            >
+                                                <span className="font-bold text-xs">{opt.label}</span>
+                                                {opt.badge && (
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 mt-1">
+                                                        ★ {opt.badge}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Módulos más utilizados */}
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                                            <Activity size={14} className="text-[#00A896]" />
+                                            Módulos Más Utilizados
+                                        </label>
+                                        <button
+                                            onClick={() => {
+                                                localStorage.removeItem('sc_module_usage_stats');
+                                                setUsageStatsList([]);
+                                            }}
+                                            className="text-[10px] text-slate-400 hover:text-rose-400 transition-colors uppercase tracking-wider font-bold cursor-pointer"
+                                            title="Reiniciar historial de uso"
+                                        >
+                                            Reiniciar
+                                        </button>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 font-sans">
+                                        Frecuencia de acceso a cada herramienta en este dispositivo:
+                                    </p>
+                                    {usageStatsList.length > 0 ? (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                            {usageStatsList.map((stat, idx) => {
+                                                const maxCount = Math.max(...usageStatsList.map(s => s.count), 1);
+                                                const pct = Math.round((stat.count / maxCount) * 100);
+                                                return (
+                                                    <div key={stat.screen} className="p-2.5 rounded-xl bg-black/20 border border-white/5 flex items-center justify-between text-xs">
+                                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                            <span className="w-5 text-[10px] font-bold text-slate-500 font-mono">#{idx + 1}</span>
+                                                            <div className="min-w-0 flex-1">
+                                                                <span className="font-bold text-slate-200 capitalize truncate block">
+                                                                    {stat.screen.replace('_', ' ')}
+                                                                </span>
+                                                                <div className="w-full bg-white/5 rounded-full h-1 mt-1 overflow-hidden">
+                                                                    <div className="bg-[#00A896] h-full rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0 ml-3">
+                                                            <span className="font-bold font-mono text-[#00A896]">{stat.count}</span>
+                                                            <span className="text-[9px] text-slate-400 block font-mono">visitas</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="p-6 text-center text-xs text-slate-500 font-mono">
+                                            No hay datos de navegación registrados aún.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* --- MÓDULO: STORE DE EXTENSIONES SRI & NUBE --- */}
                 {(settingsTab === 'all' || settingsTab === 'cloud') && (
                     <>

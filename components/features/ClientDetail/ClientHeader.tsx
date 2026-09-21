@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX, Key, Tag, Edit2 } from 'lucide-react';
+import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX, Key, Tag, Edit2, Zap, CheckCircle2 } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
-import { safeFormat, getDaysUntilDue, isSriPasswordUpdated } from '../../../services/sri';
+import { safeFormat, getDaysUntilDue, isSriPasswordUpdated, formatPeriodForDisplay } from '../../../services/sri';
 import { useAppStore } from '../../../store/useAppStore';
 import { useToast } from '../../../context/ToastContext';
 
@@ -23,6 +23,10 @@ interface ClientHeaderProps {
     onShare?: () => void;
     onDelete?: () => void;
     nextDeadline: Date | null;
+    prepaidPeriods?: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[];
+    advanceCredits?: number;
+    totalAdvanceBalance?: number;
+    debtBreakdown?: { period: string; amount: number; status: string }[];
 }
 
 // Botón reutilizable de copiar con feedback visual
@@ -102,7 +106,11 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
     onOpenAnulacionSRI,
     onShare,
     onDelete,
-    nextDeadline
+    nextDeadline,
+    prepaidPeriods = [],
+    advanceCredits = 0,
+    totalAdvanceBalance = 0,
+    debtBreakdown = []
 }) => {
     const { updateClientAlias } = useAppStore();
     const { toast } = useToast();
@@ -393,6 +401,114 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         {client.tradeName && client.tradeName !== currentAlias && (
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{client.tradeName}</p>
                         )}
+
+                        {/* ── Banner VIP de Prepago / Adelanto Activo ── */}
+                        {totalAdvanceBalance > 0 && (
+                            <div className="w-full mt-3 p-4 bg-gradient-to-r from-emerald-500/10 via-[#00A896]/10 to-teal-500/10 dark:from-emerald-500/15 dark:via-[#00A896]/15 dark:to-teal-500/15 rounded-2xl border border-emerald-500/30 shadow-lg text-left animate-in fade-in zoom-in-95 duration-300">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-sm">
+                                            <Zap size={16} className="text-amber-400 fill-amber-400" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-mono font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                                    ⚡ Prepago Activo
+                                                </span>
+                                                {advanceCredits > 0 && (
+                                                    <span className="text-[9px] font-mono text-amber-500">
+                                                        (+${advanceCredits.toFixed(2)} crédito)
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-black text-slate-900 dark:text-white font-mono leading-tight">
+                                                +${totalAdvanceBalance.toFixed(2)} <span className="text-[10px] font-bold text-emerald-500">a favor</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-mono font-black bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                                        {prepaidPeriods.length} {prepaidPeriods.length === 1 ? 'período' : 'períodos'}
+                                    </span>
+                                </div>
+
+                                {prepaidPeriods.length > 0 && (
+                                    <div className="mt-2.5 pt-2 border-t border-emerald-500/20">
+                                        <p className="text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 font-bold">
+                                            Períodos cubiertos:
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {prepaidPeriods.map(p => (
+                                                <span 
+                                                    key={p.period} 
+                                                    className="px-2 py-0.5 rounded-lg bg-white/80 dark:bg-[#020b14]/80 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shadow-sm"
+                                                    title={`Honorario: $${p.amount.toFixed(2)}${p.paidAt ? ` · Pagado ${safeFormat(p.paidAt, 'dd/MM/yy')}` : ''}`}
+                                                >
+                                                    <Check size={10} className="text-emerald-500" strokeWidth={3} />
+                                                    <span>{formatPeriodForDisplay(p.period)}</span>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Banner de Deuda / Pendiente de Cobro ── */}
+                        {totalDebt > 0 && (
+                            <div className="w-full mt-3 p-4 bg-rose-500/10 dark:bg-rose-500/15 rounded-2xl border border-rose-500/30 shadow-lg text-left animate-in fade-in zoom-in-95 duration-300">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0 shadow-sm">
+                                            <AlertTriangle size={16} className="text-rose-500" />
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-mono font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                                ⚠ Saldo Pendiente
+                                            </span>
+                                            <p className="text-sm font-black text-rose-600 dark:text-rose-300 font-mono leading-tight">
+                                                ${totalDebt.toFixed(2)} <span className="text-[10px] font-bold">por cobrar</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {onWhatsApp && (
+                                        <button
+                                            onClick={onWhatsApp}
+                                            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-[9px] font-mono font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1.5 shadow-md shadow-rose-500/20 shrink-0"
+                                            title="Enviar recordatorio de cobro por WhatsApp"
+                                        >
+                                            <MessageCircle size={12} />
+                                            <span>Cobrar</span>
+                                        </button>
+                                    )}
+                                </div>
+                                {debtBreakdown && debtBreakdown.length > 0 && (
+                                    <div className="mt-2.5 pt-2 border-t border-rose-500/20">
+                                        <p className="text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 font-bold">
+                                            Obligaciones por cobrar ({debtBreakdown.length}):
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {debtBreakdown.map(d => (
+                                                <span 
+                                                    key={d.period} 
+                                                    className="px-2 py-0.5 rounded-lg bg-white/80 dark:bg-[#020b14]/80 text-[9px] font-mono font-bold text-rose-600 dark:text-rose-300 border border-rose-500/30 flex items-center gap-1 shadow-sm"
+                                                >
+                                                    <span>{formatPeriodForDisplay(d.period)}</span>
+                                                    <span className="opacity-70">(${d.amount.toFixed(2)})</span>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Banner de Al Día cuando no hay deuda ni prepago ── */}
+                        {totalDebt === 0 && (!totalAdvanceBalance || totalAdvanceBalance === 0) && (
+                            <div className="w-full mt-3 py-2 px-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold">
+                                <CheckCircle2 size={14} strokeWidth={2.5} />
+                                <span>Honorarios al Día · Sin Deuda</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Micro-cuadrícula de Métricas Clave (Stitch Telemetry Cards) */}
@@ -422,10 +538,24 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         </div>
 
                         <div className="p-3.5 bg-slate-100/70 dark:bg-[#0b1326]/60 rounded-2xl text-center border border-slate-200/60 dark:border-white/5">
-                            <p className="text-[9px] font-mono font-bold text-[#2B6AFF] uppercase tracking-widest">Deuda Honorarios</p>
-                            <p className={`text-sm font-mono font-black mt-1 ${totalDebt > 0 ? 'text-rose-500' : 'text-[#00A896]'}`}>
-                                ${totalDebt.toFixed(2)}
-                            </p>
+                            {totalAdvanceBalance > 0 && totalDebt === 0 ? (
+                                <>
+                                    <p className="text-[9px] font-mono font-bold text-emerald-500 uppercase tracking-widest flex items-center justify-center gap-1">
+                                        <Zap size={10} className="fill-amber-400 text-amber-400" />
+                                        Prepago Activo
+                                    </p>
+                                    <p className="text-sm font-mono font-black mt-1 text-[#00A896]">
+                                        +${totalAdvanceBalance.toFixed(2)}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-[9px] font-mono font-bold text-[#2B6AFF] uppercase tracking-widest">Deuda Honorarios</p>
+                                    <p className={`text-sm font-mono font-black mt-1 ${totalDebt > 0 ? 'text-rose-500' : 'text-[#00A896]'}`}>
+                                        ${totalDebt.toFixed(2)}
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

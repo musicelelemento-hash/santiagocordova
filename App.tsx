@@ -3,7 +3,8 @@ import {
   Home, Users, LayoutGrid, Kanban, Box, KeyRound, ShoppingBag,
   FileSpreadsheet, Key, Coins, Wallet, BarChart, FileText, CheckCircle,
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
-  Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check
+  Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check,
+  UserPlus, Pin
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -21,6 +22,7 @@ import { useAppStore } from './store/useAppStore';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
 import { authService } from './services/authService';
 import { sendFullClientsMatrixToExtension } from './services/extensionBridge';
+import { recordScreenVisit, getMostUsedScreens, getDefaultStartScreen, setDefaultStartScreen } from './services/usageStatsService';
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
@@ -62,6 +64,7 @@ const AdaptadorConvert = React.lazy(() => import('./components/features/Adaptado
 const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalUploadModal').then(m => ({ default: m.GlobalUploadModal })));
 const SalesComboModal = React.lazy(() => import('./components/features/SalesComboModal').then(m => ({ default: m.SalesComboModal })));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
+const GlobalNewClientModal = React.lazy(() => import('./components/features/GlobalNewClientModal').then(m => ({ default: m.GlobalNewClientModal })));
 
 const ScreenLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[300px] w-full py-16">
@@ -127,7 +130,9 @@ const App: React.FC = () => {
     const p = window.location.pathname;
     if (p !== '/dashboard' && p !== '/admin') return 'home';
     const s = new URLSearchParams(window.location.search).get('screen') as Screen | null;
-    return s && VALID_SCREENS.includes(s) ? s : 'home';
+    if (s && VALID_SCREENS.includes(s)) return s;
+    const defaultScreen = getDefaultStartScreen();
+    return defaultScreen && VALID_SCREENS.includes(defaultScreen) ? defaultScreen : 'declaraciones';
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -161,7 +166,8 @@ const App: React.FC = () => {
         setAppState(session ? 'dashboard' : 'login');
         if (session) {
           const s = new URLSearchParams(window.location.search).get('screen') as Screen | null;
-          setActiveScreen(s && VALID_SCREENS.includes(s) ? s : 'home');
+          const defaultScreen = getDefaultStartScreen();
+          setActiveScreen(s && VALID_SCREENS.includes(s) ? s : defaultScreen);
         }
       } else if (path === '/services') {
         setAppState('services');
@@ -320,6 +326,24 @@ const App: React.FC = () => {
   const [sriInvoiceDescription, setSriInvoiceDescription] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isGlobalNewClientOpen, setIsGlobalNewClientOpen] = useState(false);
+  const [defaultStartScreen, setDefaultStartScreenState] = useState<Screen>(() => getDefaultStartScreen());
+
+  useEffect(() => {
+    if (appState === 'dashboard' && activeScreen) {
+      recordScreenVisit(activeScreen);
+    }
+  }, [activeScreen, appState]);
+
+  const handleToggleDefaultStartScreen = () => {
+    const next = defaultStartScreen === activeScreen ? 'home' : activeScreen;
+    setDefaultStartScreen(next);
+    setDefaultStartScreenState(next);
+  };
+
+  const topScreens = useMemo(() => {
+    return getMostUsedScreens(4).filter(s => s.screen !== activeScreen);
+  }, [activeScreen]);
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline'>('idle');
@@ -856,10 +880,24 @@ const App: React.FC = () => {
         />
         <div className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-500 ${(isSidebarCollapsed || !!clientToView) ? 'md:pl-[84px]' : 'md:pl-[280px]'}`}>
           <header className="hidden md:flex items-center justify-between p-5 px-10 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/10 relative z-30 transition-all duration-500 no-print">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white capitalize font-display">
                 {activeScreen === 'home' ? 'Centro de Control' : (navItems.find(i => i.screen === activeScreen)?.label ?? activeScreen.replace('_', ' '))}
               </h1>
+              <button
+                onClick={handleToggleDefaultStartScreen}
+                className={`p-1.5 px-2.5 rounded-xl border transition-all text-xs flex items-center gap-1.5 font-mono cursor-pointer ${
+                  defaultStartScreen === activeScreen
+                    ? 'bg-amber-500/15 text-amber-500 border-amber-500/30 font-bold shadow-sm'
+                    : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-slate-200 border-transparent hover:border-slate-200 dark:hover:border-white/10'
+                }`}
+                title={defaultStartScreen === activeScreen ? 'Pantalla de inicio predeterminada actual' : 'Fijar esta pantalla como inicio automático'}
+              >
+                <Pin size={12} className={defaultStartScreen === activeScreen ? 'fill-amber-500 text-amber-500 rotate-45' : ''} />
+                <span className="hidden lg:inline text-[10px]">
+                  {defaultStartScreen === activeScreen ? 'Inicio Activo' : 'Fijar Inicio'}
+                </span>
+              </button>
             </div>
 
             {/* Universal Search Bar (Stitch High-Tech Glass) */}
@@ -1059,7 +1097,38 @@ const App: React.FC = () => {
             )}
             </div>
 
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setIsGlobalNewClientOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#00A896] to-emerald-600 hover:from-[#00A896]/90 hover:to-emerald-500 text-white font-premium font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 active:scale-95 transition-all cursor-pointer group"
+                title="Crear o dar de alta un nuevo cliente (Atajo global)"
+              >
+                <UserPlus size={15} className="group-hover:rotate-12 transition-transform" />
+                <span className="hidden sm:inline">Nuevo Cliente</span>
+              </button>
+
+              {topScreens.length > 0 && (
+                <div className="hidden xl:flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/60 dark:border-white/5">
+                  <span className="text-[9px] font-mono font-bold text-slate-400 px-2 uppercase tracking-wider">Top:</span>
+                  {topScreens.map(s => {
+                    const item = navItems.find(i => i.screen === s.screen);
+                    if (!item) return null;
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={s.screen}
+                        onClick={() => navigate(s.screen)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/10 transition-all cursor-pointer"
+                        title={`Usado ${s.count} veces`}
+                      >
+                        <Icon size={12} className="text-[#00A896]" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <NotificationBell clients={clients} navigate={navigate} />
 
               <div className="flex items-center bg-white/40 dark:bg-slate-800/40 p-1.5 rounded-2xl border border-white/20 dark:border-white/10 shadow-lg group">
@@ -1118,6 +1187,13 @@ const App: React.FC = () => {
           </div>
         </Modal>
         <Suspense fallback={null}>
+          <GlobalNewClientModal
+            isOpen={isGlobalNewClientOpen}
+            onClose={() => setIsGlobalNewClientOpen(false)}
+            onClientCreated={(client) => {
+              navigate('clients', { clientIdToView: client.id });
+            }}
+          />
           <GlobalUploadModal
             isOpen={isUploadModalOpen}
             onClose={() => setIsUploadModalOpen(false)}

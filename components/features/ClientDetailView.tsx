@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { Client, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, StoredFile, Task, TaskStatus, TaxObligationType } from '../../types';
-import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva, generateDeclarationWhatsAppMessage } from '../../services/sri';
+import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva, generateDeclarationWhatsAppMessage, isFuturePeriod } from '../../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/geminiService';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { UnifiedStorageService } from '../../services/unifiedStorageService';
@@ -225,8 +225,34 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const { totalDebt, nextDeadline, lastActivityDate, primaryCommand, isFullyPaid, isFullyDeclared, complianceStats, isWorkOrder, isFullyAlDia } = useMemo(() => {
-        if (!editedClient) return { totalDebt: 0, nextDeadline: null, lastActivityDate: null, primaryCommand: null, isFullyPaid: false, isFullyDeclared: false, complianceStats: null };
+    const {
+        totalDebt,
+        nextDeadline,
+        lastActivityDate,
+        primaryCommand,
+        isFullyPaid,
+        isFullyDeclared,
+        complianceStats,
+        isWorkOrder,
+        isFullyAlDia,
+        prepaidPeriods,
+        advanceCredits,
+        totalAdvanceBalance,
+        debtBreakdown
+    } = useMemo(() => {
+        if (!editedClient) return {
+            totalDebt: 0,
+            nextDeadline: null,
+            lastActivityDate: null,
+            primaryCommand: null,
+            isFullyPaid: false,
+            isFullyDeclared: false,
+            complianceStats: null,
+            prepaidPeriods: [],
+            advanceCredits: 0,
+            totalAdvanceBalance: 0,
+            debtBreakdown: []
+        };
 
         const currentPeriod = getPeriod(editedClient, new Date());
         const decl = (editedClient.declarations || []).find(d => d.period === currentPeriod);
@@ -258,14 +284,44 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const fullyPaid = isIvaPaid && isRentaPaid && (!editedClient.taxProfile?.requiresIce || true) && (!editedClient.taxProfile?.requiresAnexoPvp || true);
         const fullyDeclared = isIvaDeclared && isRentaDeclared && isIceOk && isPvpOk;
 
+        // --- CÁLCULO DE DEUDA Y DESGLOSE ---
         const pending = (editedClient.declarations || []).filter(d => !d.is_paid);
-        let debt = pending.reduce((sum, d) => sum + (d.amount ?? getClientServiceFee(editedClient, serviceFees, d.period)), 0);
+        const debtBreakdown: { period: string; amount: number; status: string }[] = pending.map(d => ({
+            period: d.period,
+            amount: d.amount ?? getClientServiceFee(editedClient, serviceFees, d.period),
+            status: d.status
+        }));
+        let debt = debtBreakdown.reduce((sum, d) => sum + d.amount, 0);
 
         // Add Renta debt if not paid and required
         const rentaFee = editedClient.fee_structure?.annual ?? 10;
         if (needsRenta && !isRentaPaid) {
             debt += rentaFee;
+            debtBreakdown.push({
+                period: rentaPeriod,
+                amount: rentaFee,
+                status: rentaDecl?.status || DeclarationStatus.Pendiente
+            });
         }
+
+        // --- CÁLCULO DE ADELANTOS / PREPAGOS ---
+        const defaultFee = getClientServiceFee(editedClient, serviceFees);
+        const prepaid: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[] = [];
+        (editedClient.declarations || []).forEach(d => {
+            if (d.is_paid && (d.is_advance || d.status === DeclarationStatus.Pendiente || isFuturePeriod(d.period))) {
+                prepaid.push({
+                    period: d.period,
+                    amount: d.amount ?? defaultFee,
+                    paidAt: d.paidAt,
+                    status: d.status,
+                    is_advance: d.is_advance
+                });
+            }
+        });
+        const clientAdvanceCredits = editedClient.advanceCredits || 0;
+        const totalPrepaid = prepaid.reduce((sum, p) => sum + p.amount, 0);
+        const totalAdvanceBalance = totalPrepaid + clientAdvanceCredits;
+        const sortedPrepaid = prepaid.sort((a, b) => a.period.localeCompare(b.period));
 
         const sortedByPeriod = [...(editedClient.declarations || [])].sort((a, b) => a.period.localeCompare(b.period));
         const activeWorkflowDeclaration = sortedByPeriod.find(d => d.status === DeclarationStatus.Pendiente) ||
@@ -315,7 +371,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 renta: { period: rentaPeriod, isDeclared: isRentaDeclared, is_paid: isRentaPaid, needed: needsRenta, hasProofFile: hasRentaProof }
             },
             isWorkOrder: (!fullyDeclared && fullyPaid),
-            isFullyAlDia: (fullyDeclared && fullyPaid)
+            isFullyAlDia: (fullyDeclared && fullyPaid),
+            prepaidPeriods: sortedPrepaid,
+            advanceCredits: clientAdvanceCredits,
+            totalAdvanceBalance,
+            debtBreakdown
         };
     }, [editedClient, serviceFees]);
 
@@ -894,6 +954,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             handleRevertDeclaration={handleRevertDeclaration}
             handleCancelDeclaration={handleCancelDeclaration}
             onChangeIvaFrequency={() => setShowFrequencyModal(true)}
+            prepaidPeriods={prepaidPeriods}
+            advanceCredits={advanceCredits}
+            totalAdvanceBalance={totalAdvanceBalance}
+            totalDebt={totalDebt}
+            debtBreakdown={debtBreakdown}
         />
     );
 
@@ -916,6 +981,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             proofInputRef={proofInputRef}
             handleRevertDeclaration={handleRevertDeclaration}
             handleCancelDeclaration={handleCancelDeclaration}
+            prepaidPeriods={prepaidPeriods}
+            totalAdvanceBalance={totalAdvanceBalance}
         />
     );
 
@@ -1060,6 +1127,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         onShare={handleShareViaWhatsApp}
                         onDelete={() => setIsDeleteConfirmOpen(true)}
                         nextDeadline={nextDeadline}
+                        prepaidPeriods={prepaidPeriods}
+                        advanceCredits={advanceCredits}
+                        totalAdvanceBalance={totalAdvanceBalance}
+                        debtBreakdown={debtBreakdown}
                     />
                 </div>
 

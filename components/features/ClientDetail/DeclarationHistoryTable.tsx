@@ -1,7 +1,7 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import { Declaration, DeclarationStatus, Client } from '../../../types';
-import { formatPeriodForDisplay, safeFormat } from '../../../services/sri';
+import { formatPeriodForDisplay, safeFormat, isFuturePeriod } from '../../../services/sri';
 
 interface DeclarationHistoryTableProps {
     history: Declaration[];
@@ -106,6 +106,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
             <div className="divide-y divide-slate-50 dark:divide-white/5">
                 {sortedHistory.map((decl, idx) => {
                     const fee = decl.amount || getEstimatedFee(decl.period);
+                    const isAdvance = !!decl.is_paid && (!!decl.is_advance || isFuturePeriod(decl.period) || (decl.status === DeclarationStatus.Pendiente && !!decl.is_paid));
                     
                     return (
                         <div
@@ -115,16 +116,30 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                             {/* 1. Periodo y Tipo */}
                             <div className="flex items-center gap-4">
                                 <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-500 border ${
-                                    decl.status === DeclarationStatus.Pendiente 
-                                    ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400' 
-                                    : 'bg-primary/10 border-primary/20 text-primary'
+                                    isAdvance
+                                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.15)]'
+                                    : decl.status === DeclarationStatus.Pendiente 
+                                        ? 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400' 
+                                        : 'bg-primary/10 border-primary/20 text-primary'
                                 }`}>
-                                    <LucideIcons.FileText size={18} strokeWidth={2.5} />
+                                    {isAdvance ? (
+                                        <LucideIcons.Zap size={18} strokeWidth={2.5} className="fill-amber-400 text-amber-400" />
+                                    ) : (
+                                        <LucideIcons.FileText size={18} strokeWidth={2.5} />
+                                    )}
                                 </div>
                                 <div>
-                                    <p className="font-black text-slate-900 dark:text-white text-sm tracking-tight leading-tight">
-                                        {formatPeriodForDisplay(decl.period)}
-                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-black text-slate-900 dark:text-white text-sm tracking-tight leading-tight">
+                                            {formatPeriodForDisplay(decl.period)}
+                                        </p>
+                                        {isAdvance && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-mono font-black bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                                                <LucideIcons.Zap size={8} className="fill-amber-400" />
+                                                PREPAGO
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
                                         {decl.type || 'IVA MENSUAL'}
                                     </p>
@@ -152,7 +167,13 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             <LucideIcons.CheckCircle2 size={12} strokeWidth={3} />
                                             <span>${fee?.toFixed(2) || '0.00'}</span>
                                         </div>
-                                        <span className="text-[8px] font-bold uppercase tracking-tighter text-slate-400 ml-4">Liquidado</span>
+                                        {isAdvance ? (
+                                            <span className="text-[8px] font-bold uppercase tracking-tighter text-amber-500 dark:text-amber-400 ml-4 font-mono">
+                                                ★ Prepago {decl.paidAt ? `(${safeFormat(decl.paidAt, 'dd/MM/yy')})` : ''}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[8px] font-bold uppercase tracking-tighter text-slate-400 ml-4">Liquidado</span>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-1">

@@ -18,6 +18,8 @@ interface HistoryTabProps {
     proofInputRef: React.RefObject<HTMLInputElement>;
     handleCancelDeclaration: (period: string) => void;
     handleRevertDeclaration: (period: string) => void;
+    prepaidPeriods?: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[];
+    totalAdvanceBalance?: number;
 }
 
 export const HistoryTab: React.FC<HistoryTabProps> = ({
@@ -33,29 +35,47 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
     setUploadingTarget,
     proofInputRef,
     handleCancelDeclaration,
-    handleRevertDeclaration
+    handleRevertDeclaration,
+    prepaidPeriods = [],
+    totalAdvanceBalance = 0
 }) => {
     const totalDeclared = (client.declarations || []).filter(d => d.status === 'Enviada' || d.status === 'Pagada').length;
     const totalPaid = (client.declarations || []).filter(d => d.is_paid).length;
     const totalPending = (client.declarations || []).filter(d => d.status === 'Pendiente').length;
+    const hasAdvances = totalAdvanceBalance > 0 || prepaidPeriods.length > 0;
+
+    const kpiList = [
+        { label: 'Declaradas', value: String(totalDeclared), icon: LucideIcons.Send, color: 'text-[#2B6AFF]', bg: 'bg-[#2B6AFF]/10', border: 'border-[#2B6AFF]/25', glow: 'shadow-[#2B6AFF]/15' },
+        { label: 'Pagadas', value: String(totalPaid), icon: LucideIcons.CheckCircle2, color: 'text-[#00A896]', bg: 'bg-[#00A896]/10', border: 'border-[#00A896]/25', glow: 'shadow-[#00A896]/15' },
+        { label: 'Pendientes', value: String(totalPending), icon: LucideIcons.Clock, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/25', glow: 'shadow-rose-500/15' },
+        ...(hasAdvances ? [{
+            label: 'Adelantos / Prepago',
+            value: `+$${totalAdvanceBalance.toFixed(2)}`,
+            subText: `${prepaidPeriods.length} período(s)`,
+            icon: LucideIcons.Zap,
+            color: 'text-amber-400',
+            bg: 'bg-amber-500/10',
+            border: 'border-amber-500/30',
+            glow: 'shadow-amber-500/20'
+        }] : [])
+    ];
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
 
             {/* KPI Strip (Stitch Telemetry Cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 font-mono">
-                {[
-                    { label: 'Declaradas', value: totalDeclared, icon: LucideIcons.Send, color: 'text-[#2B6AFF]', bg: 'bg-[#2B6AFF]/10', border: 'border-[#2B6AFF]/25', glow: 'shadow-[#2B6AFF]/15' },
-                    { label: 'Pagadas', value: totalPaid, icon: LucideIcons.CheckCircle2, color: 'text-[#00A896]', bg: 'bg-[#00A896]/10', border: 'border-[#00A896]/25', glow: 'shadow-[#00A896]/15' },
-                    { label: 'Pendientes', value: totalPending, icon: LucideIcons.Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/25', glow: 'shadow-amber-500/15' },
-                ].map((kpi) => (
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${hasAdvances ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5 font-mono`}>
+                {kpiList.map((kpi) => (
                     <div key={kpi.label} className={`bg-[#051424]/90 backdrop-blur-2xl ${kpi.border} border border-t-white/20 rounded-3xl p-6 flex items-center gap-5 transition-all hover:scale-[1.02] shadow-xl ${kpi.glow}`}>
                         <div className={`p-3.5 rounded-2xl ${kpi.bg} border ${kpi.border} ${kpi.color} shadow-sm`}>
                             <kpi.icon size={22} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <p className={`text-3xl font-black ${kpi.color} leading-none font-mono tracking-tighter`}>{kpi.value}</p>
+                            <p className={`text-2xl sm:text-3xl font-black ${kpi.color} leading-none font-mono tracking-tighter`}>{kpi.value}</p>
                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1.5">{kpi.label}</p>
+                            {(kpi as any).subText && (
+                                <p className="text-[9px] font-mono text-emerald-400 mt-0.5">{(kpi as any).subText}</p>
+                            )}
                         </div>
                     </div>
                 ))}

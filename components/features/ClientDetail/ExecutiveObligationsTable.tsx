@@ -5,7 +5,7 @@ import {
     Copy, Check, Tag
 } from 'lucide-react';
 import { Client, DeclarationStatus, TaxObligationType, Declaration } from '../../../types';
-import { formatPeriodForDisplay } from '../../../services/sri';
+import { formatPeriodForDisplay, isFuturePeriod } from '../../../services/sri';
 import { getClientServiceFee } from '../../../services/clientService';
 import { useToast } from '../../../context/ToastContext';
 import { extractDeclarationCifras, formatDeclarationSummary } from '../../../utils/declarationFormatter';
@@ -47,6 +47,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
     const ivaDeclared = ivaData?.isDeclared || false;
     const ivaPaid = ivaData?.is_paid || false;
     const ivaDeclItem = (client.declarations || []).find(d => d.period === ivaPeriod);
+    const isIvaAdvance = ivaPaid && (!!ivaDeclItem?.is_advance || isFuturePeriod(ivaPeriod));
 
     const rentaPeriod = rentaData?.period || '';
     const rentaDeclared = rentaData?.isDeclared || false;
@@ -259,11 +260,13 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                             ${ivaFee.toFixed(2)}
                                         </span>
                                         <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase border ${
-                                            ivaPaid
-                                                ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
-                                                : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                            isIvaAdvance
+                                                ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+                                                : ivaPaid
+                                                    ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                                    : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                         }`}>
-                                            {ivaPaid ? 'Pagado' : 'Pendiente'}
+                                            {isIvaAdvance ? '★ Prepago' : ivaPaid ? 'Pagado' : 'Pendiente'}
                                         </span>
                                     </div>
                                 </td>

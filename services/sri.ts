@@ -280,6 +280,36 @@ export const formatPeriodForDisplay = (period: string): string => {
 };
 
 /**
+ * Detecta si un período fiscal corresponde a una fecha futura respecto al mes/año actual.
+ * Soporta formatos mensuales (YYYY-MM), semestrales (YYYY-S1, YYYY-S2) y anuales (YYYY).
+ */
+export const isFuturePeriod = (p: string): boolean => {
+    if (!p) return false;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const cleanPeriod = p.split(':')[0];
+    if (cleanPeriod.includes('-S')) {
+        const [yStr, sStr] = cleanPeriod.split('-S');
+        const y = parseInt(yStr, 10);
+        const s = parseInt(sStr, 10);
+        const currentS = currentMonth <= 6 ? 1 : 2;
+        return y > currentYear || (y === currentYear && s > currentS);
+    }
+    if (cleanPeriod.length === 7 && cleanPeriod.includes('-')) {
+        const [yStr, mStr] = cleanPeriod.split('-');
+        const y = parseInt(yStr, 10);
+        const m = parseInt(mStr, 10);
+        return y > currentYear || (y === currentYear && m > currentMonth);
+    }
+    if (cleanPeriod.length === 4 && !isNaN(Number(cleanPeriod))) {
+        const y = parseInt(cleanPeriod, 10);
+        return y > currentYear;
+    }
+    return false;
+};
+
+/**
  * Formatea una fecha de manera segura evitando el error "Invalid time value"
  */
 export const safeFormat = (dateInput: any, formatStr: string, options?: any): string => {

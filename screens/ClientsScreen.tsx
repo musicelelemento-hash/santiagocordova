@@ -121,6 +121,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
         if (initialFilter?.activeGroupTab) return initialFilter.activeGroupTab;
+        const saved = sessionStorage.getItem('clients_group_tab');
+        if (saved) return saved;
         return 'matrix';
     };
 
@@ -166,19 +168,36 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     // Scroll Persistence
     useEffect(() => {
+        const mainEl = document.querySelector('main');
         const savedScroll = sessionStorage.getItem('clients_scroll');
         if (savedScroll) {
             setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScroll, 10));
+                if (mainEl) {
+                    mainEl.scrollTop = parseInt(savedScroll, 10);
+                } else {
+                    window.scrollTo(0, parseInt(savedScroll, 10));
+                }
             }, 100);
         }
 
         const handleScroll = () => {
-            sessionStorage.setItem('clients_scroll', window.scrollY.toString());
+            if (mainEl) {
+                sessionStorage.setItem('clients_scroll', mainEl.scrollTop.toString());
+            } else {
+                sessionStorage.setItem('clients_scroll', window.scrollY.toString());
+            }
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        if (mainEl) {
+            mainEl.addEventListener('scroll', handleScroll, { passive: true });
+        }
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            if (mainEl) {
+                mainEl.removeEventListener('scroll', handleScroll);
+            }
+            window.removeEventListener('scroll', handleScroll);
+        };
     }, []);
 
     useEffect(() => {
@@ -632,6 +651,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     };
 
     const handleOpenClientDetails = (client: Client, tab?: string) => {
+        const mainEl = document.querySelector('main');
+        if (mainEl) {
+            sessionStorage.setItem('clients_scroll', mainEl.scrollTop.toString());
+        }
         setSelectedClient(client);
         const targetTab = tab || initialTab || 'profile';
         (window as any).__TEMP_INITIAL_TAB__ = targetTab;
@@ -643,7 +666,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setIsClientDetailsOpen(false);
         setTimeout(() => setSelectedClient(null), 300);
         clearClientToView();
-        navigate('clients');
+        const savedScroll = sessionStorage.getItem('clients_scroll');
+        if (savedScroll) {
+            setTimeout(() => {
+                const mainEl = document.querySelector('main');
+                if (mainEl) {
+                    mainEl.scrollTop = parseInt(savedScroll, 10);
+                }
+            }, 100);
+        }
     };
 
     const handleQuickAction = (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge', customPeriod?: string) => {

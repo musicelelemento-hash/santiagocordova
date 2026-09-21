@@ -43,6 +43,11 @@ interface ProfileTabProps {
     handleCancelDeclaration: (period: string) => void;
     handleEmail?: () => void;
     onChangeIvaFrequency?: () => void;
+    prepaidPeriods?: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[];
+    advanceCredits?: number;
+    totalAdvanceBalance?: number;
+    totalDebt?: number;
+    debtBreakdown?: { period: string; amount: number; status: string }[];
 }
 
 // ── Badge de régimen con su descripción ─────────────────────────
@@ -80,45 +85,168 @@ const RegimeInfoPanel = ({ client }: { client: Client }) => {
     );
 };
 
-// ── Estado del servicio (pagado / pendiente de cobro) ────────────
-const ServicePaymentStatus = ({ isFullyAlDia, complianceStats, client, serviceFees, handleQuickPay, setConfirmation }: any) => {
-    const ivaIsPaid = complianceStats?.iva?.is_paid ?? false;
-    const rentaIsPaid = complianceStats?.renta?.is_paid ?? false;
-    const needsIva = complianceStats?.iva?.needed ?? false;
-    const needsRenta = complianceStats?.renta?.needed ?? false;
+// ── Panel Financiero de Cobranzas, Anticipos y Saldos ────────────
+const FinancialOverviewCard: React.FC<{
+    client: Client;
+    prepaidPeriods: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[];
+    advanceCredits: number;
+    totalAdvanceBalance: number;
+    totalDebt: number;
+    debtBreakdown: { period: string; amount: number; status: string }[];
+    handleWhatsApp: () => void;
+    handleQuickPay: (period: string) => void;
+}> = ({ client, prepaidPeriods = [], advanceCredits = 0, totalAdvanceBalance = 0, totalDebt = 0, debtBreakdown = [], handleWhatsApp, handleQuickPay }) => {
+    const hasAdvance = totalAdvanceBalance > 0 || prepaidPeriods.length > 0;
+    const hasDebt = totalDebt > 0;
 
-    const allPaid = (!needsIva || ivaIsPaid) && (!needsRenta || rentaIsPaid);
+    if (!hasAdvance && !hasDebt) {
+        return (
+            <div className="p-5 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-3xl border border-emerald-500/20 backdrop-blur-xl flex items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+                        <CheckCircle2 size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white font-display">
+                            Honorarios al Día · Sin Deuda
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                            El cliente no tiene valores pendientes de cobro por servicios contables.
+                        </p>
+                    </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    ✓ Estado Solvente
+                </span>
+            </div>
+        );
+    }
 
     return (
-        <div className={`rounded-2xl p-5 border flex items-center justify-between gap-4 transition-all ${
-            allPaid
-                ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20'
-                : 'bg-amber-50 dark:bg-amber-500/5 border-amber-100 dark:border-amber-500/20'
-        }`}>
-            <div className="flex items-center gap-4">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    allPaid ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
-                }`}>
-                    {allPaid ? <CheckCircle2 size={20} strokeWidth={2.5} /> : <Clock size={20} strokeWidth={2} />}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* CARD 1: Anticipos y Prepagos */}
+            <div className={`p-5 rounded-3xl border backdrop-blur-2xl transition-all shadow-xl ${
+                hasAdvance
+                    ? 'bg-gradient-to-br from-emerald-500/10 via-[#00A896]/10 to-teal-500/10 dark:from-emerald-500/15 dark:via-[#00A896]/15 dark:to-teal-500/15 border-emerald-500/30'
+                    : 'bg-white/80 dark:bg-[#051424]/90 border-slate-200/60 dark:border-white/10 opacity-70'
+            }`}>
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shadow-md shadow-emerald-500/10">
+                            <Zap size={20} className="text-amber-400 fill-amber-400" />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                                Prepago / Saldo a Favor
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-mono">
+                                {hasAdvance ? `${prepaidPeriods.length} período(s) cubierto(s)` : 'Sin anticipos registrados'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400">
+                            +${totalAdvanceBalance.toFixed(2)}
+                        </p>
+                        {advanceCredits > 0 && (
+                            <p className="text-[9px] font-mono text-amber-400">
+                                Incluye ${advanceCredits.toFixed(2)} crédito
+                            </p>
+                        )}
+                    </div>
                 </div>
-                <div>
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                        {allPaid ? 'Servicios al Día' : 'Cobro Pendiente'}
+
+                {hasAdvance && prepaidPeriods.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                        <p className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+                            Meses cancelados por adelantado:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {prepaidPeriods.map(p => (
+                                <div 
+                                    key={p.period} 
+                                    className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-[#0b1326]/90 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-300 flex items-center gap-1.5 shadow-sm"
+                                >
+                                    <CheckCircle2 size={12} className="text-emerald-500" />
+                                    <span>{formatPeriodForDisplay(p.period)}</span>
+                                    <span className="text-[9px] opacity-70 font-normal">(${p.amount.toFixed(2)})</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="mt-3 text-[11px] text-slate-400 font-mono italic">
+                        No hay meses futuros prepagados para este cliente.
                     </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        {allPaid ? 'Todos los servicios han sido cobrados' : 'Hay servicios declarados sin cobrar'}
-                    </p>
-                </div>
+                )}
             </div>
-            {!allPaid && needsIva && !ivaIsPaid && complianceStats?.iva?.isDeclared && (
-                <button
-                    onClick={() => handleQuickPay(complianceStats.iva.period)}
-                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md"
-                >
-                    <DollarSign size={14} strokeWidth={2.5} />
-                    Cobrar IVA
-                </button>
-            )}
+
+            {/* CARD 2: Cartera y Deuda */}
+            <div className={`p-5 rounded-3xl border backdrop-blur-2xl transition-all shadow-xl ${
+                hasDebt
+                    ? 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/30'
+                    : 'bg-white/80 dark:bg-[#051424]/90 border-slate-200/60 dark:border-white/10 opacity-70'
+            }`}>
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center font-bold shadow-md shadow-rose-500/10">
+                            <AlertTriangle size={20} className="text-rose-500" />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                                Cartera por Cobrar
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-mono">
+                                {hasDebt ? `${debtBreakdown.length} obligación(es) pendiente(s)` : 'Al día en pagos'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className={`text-base font-black font-mono ${hasDebt ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-500'}`}>
+                            ${totalDebt.toFixed(2)}
+                        </p>
+                    </div>
+                </div>
+
+                {hasDebt ? (
+                    <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+                                Períodos adeudados:
+                            </p>
+                            <button
+                                onClick={handleWhatsApp}
+                                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[9px] font-mono font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 shadow-sm"
+                                title="Cobrar todo por WhatsApp"
+                            >
+                                <MessageCircle size={11} />
+                                Recordar Cobro
+                            </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {debtBreakdown.map(d => (
+                                <div 
+                                    key={d.period} 
+                                    className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-[#0b1326]/90 border border-rose-500/30 text-[10px] font-mono font-bold text-rose-600 dark:text-rose-300 flex items-center justify-between gap-2 shadow-sm"
+                                >
+                                    <span>{formatPeriodForDisplay(d.period)}: ${d.amount.toFixed(2)}</span>
+                                    <button
+                                        onClick={() => handleQuickPay(d.period)}
+                                        className="text-[9px] font-bold text-emerald-500 hover:underline ml-1"
+                                        title="Marcar como cobrado"
+                                    >
+                                        Cobrar
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="mt-3 text-[11px] text-slate-400 font-mono italic">
+                        No existen cobros pendientes de honorarios.
+                    </p>
+                )}
+            </div>
         </div>
     );
 };
@@ -141,12 +269,18 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     handleShareViaWhatsApp,
     passwordVisible,
     setPasswordVisible,
+    handleExtraAction,
     handleRentaRefundAction,
     handleElderlyRefundAction,
     handleRevertDeclaration,
     handleCancelDeclaration,
     handleEmail,
     onChangeIvaFrequency,
+    prepaidPeriods = [],
+    advanceCredits = 0,
+    totalAdvanceBalance = 0,
+    totalDebt = 0,
+    debtBreakdown = []
 }) => {
     const { toast } = useToast();
     const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;
@@ -172,6 +306,20 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     proofInputRef={proofInputRef}
                     onRevertDeclaration={handleRevertDeclaration}
                     onCancelDeclaration={handleCancelDeclaration}
+                />
+            </div>
+
+            {/* ── FILA 1.5: Panel de Estado Financiero, Anticipos y Deuda ── */}
+            <div className="w-full">
+                <FinancialOverviewCard
+                    client={client}
+                    prepaidPeriods={prepaidPeriods}
+                    advanceCredits={advanceCredits}
+                    totalAdvanceBalance={totalAdvanceBalance}
+                    totalDebt={totalDebt}
+                    debtBreakdown={debtBreakdown}
+                    handleWhatsApp={handleWhatsApp}
+                    handleQuickPay={handleQuickPay}
                 />
             </div>
 

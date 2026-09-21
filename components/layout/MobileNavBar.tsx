@@ -16,8 +16,8 @@ interface MobileNavBarProps {
 }
 
 export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScreen, onNavigate }) => {
-    // 5 ítems más usados — incluye Firmas y Facturador
-    const desiredScreens = ['home', 'clients', 'firmas', 'sri_facturacion', 'settings'];
+    // 5 ítems más usados — incluye Declaraciones SRI, Directorio, Firmas y Facturador
+    const desiredScreens = ['declaraciones', 'clients', 'firmas', 'sri_facturacion', 'home'];
     const mobileItems = desiredScreens
         .map(screenName => navItems.find(i => i.screen === screenName))
         .filter(Boolean) as NavItem[];
