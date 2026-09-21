@@ -8,7 +8,7 @@ interface VirtualClientListProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     variant?: 'tactical' | 'zen';
@@ -24,7 +24,7 @@ interface ClientRowProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     variant?: 'tactical' | 'zen';

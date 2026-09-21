@@ -4,7 +4,7 @@ import {
     AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Command, Copy,
     Database, ExternalLink, Eye, EyeOff, FileText, HandCoins, Loader2,
     MessageCircle, ShieldAlert, Sparkles, TrendingUp, UploadCloud, Users,
-    Vault, Wallet, X, Zap, KeyRound, ShieldOff, ShieldCheck, PhoneCall
+    Vault, Wallet, X, Zap, KeyRound, ShieldOff, ShieldCheck, PhoneCall, Trash2
 } from 'lucide-react';
 import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -19,7 +19,7 @@ import { processBulkPdfs, BulkProcessResult } from '../services/bulkOperations';
 import { BulkUploadReportModal } from '../components/features/BulkUploadReportModal';
 import { ChatBot } from '../components/features/ChatBot';
 import { VirtualClientList } from '../components/features/VirtualClientList';
-import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
+import { TaxComplianceMatrix, arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 import { ComplianceReportExport } from '../components/features/ComplianceReportExport';
 import { IvaFrequency } from '../types';
 import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary, isPeriodBeforeClientStart } from '../services/complianceEngine';
@@ -54,7 +54,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [showIntelligencePanels]);
 
     // Auto-detección de Campaña Mensual
-    const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | 'trash' | ComplianceColor>(() => {
+    const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | 'trash' | 'inactive' | ComplianceColor>(() => {
         return (sessionStorage.getItem('dashboard_filter') as any) || 'mensual';
     });
     const [inboxTab, setInboxTab] = useState<'pendientes' | 'cobros' | 'completados'>(() => {
@@ -227,10 +227,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             }
 
             // 2. Filter logic for "allResults" (workspaceData)
-            // Lógica de Papelera: Si estamos en la pestaña trash, solo mostrar isDeleted.
-            // Si NO estamos en trash, ocultar isDeleted (y también !c.isActive).
+            // Lógica de Papelera e Inactivos:
             if (filter === 'trash') {
                 if (!c.isDeleted) continue;
+            } else if (filter === 'inactive') {
+                if (c.isDeleted || (c.isActive ?? true)) continue;
             } else {
                 if (c.isDeleted || !c.isActive) continue;
             }
@@ -264,7 +265,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 filterMatch = !!(ivaDecl && !ivaDecl.proof_file && (ivaDecl.status === DeclarationStatus.Enviada || ivaDecl.status === DeclarationStatus.Pagada));
             } else if (filter === 'digital-mando') {
                 filterMatch = true;
-            } else if (filter === 'trash') {
+            } else if (filter === 'trash' || filter === 'inactive') {
                 filterMatch = true;
             }
 
@@ -569,7 +570,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         }
 
         const updatedHistory = [...(client.declarations ?? [])];
-        const idx = updatedHistory.findIndex(d => d.period === period);
+        const matchingIndices = updatedHistory
+            .map((d, i) => (arePeriodsEqual(d.period, period) || d.period === period) ? i : -1)
+            .filter(i => i !== -1);
         
         let newStatus: DeclarationStatus;
         let updates: Partial<Declaration> = { updatedAt: nowIso };
@@ -605,8 +608,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             ...updates
         };
 
-        if (idx > -1) {
-            updatedHistory[idx] = { ...updatedHistory[idx], ...newEntry };
+        if (matchingIndices.length > 0) {
+            matchingIndices.forEach(mIdx => {
+                updatedHistory[mIdx] = {
+                    ...updatedHistory[mIdx],
+                    ...updates,
+                    status: newStatus
+                };
+            });
         } else {
             updatedHistory.push(newEntry as Declaration);
         }
@@ -635,22 +644,24 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         for (const client of activeList) {
             const period = getPeriod(client, today);
             const history = [...(client.declarations || [])];
-            const idx = history.findIndex(d => d.period === period);
+            const matchingIndices = history
+                .map((d, i) => (arePeriodsEqual(d.period, period) || d.period === period) ? i : -1)
+                .filter(i => i !== -1);
 
             const updates: Partial<Declaration> = { updatedAt: nowIso };
-            let newStatus = history[idx]?.status || DeclarationStatus.Pendiente;
+            let newStatus = DeclarationStatus.Pendiente;
 
             if (markAllMode === 'declared' || markAllMode === 'both') {
                 newStatus = DeclarationStatus.Enviada;
-                updates.declaredAt = updates.declaredAt || history[idx]?.declaredAt || nowIso;
+                updates.declaredAt = nowIso;
             }
             if (markAllMode === 'paid' || markAllMode === 'both') {
                 newStatus = DeclarationStatus.Pagada;
                 updates.is_paid = true;
                 updates.paidAt = nowIso;
-                updates.transactionId = updates.transactionId || `BLK-${Date.now().toString().slice(-4)}`;
+                updates.transactionId = `BLK-${Date.now().toString().slice(-4)}`;
                 // Si marcamos como pagado, también debe estar declarado
-                updates.declaredAt = updates.declaredAt || history[idx]?.declaredAt || nowIso;
+                updates.declaredAt = updates.declaredAt || nowIso;
                 if (markAllMode === 'both') newStatus = DeclarationStatus.Pagada;
             }
 
@@ -660,8 +671,28 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 ...updates
             };
 
-            if (idx > -1) {
-                history[idx] = { ...history[idx], ...newEntry };
+            if (matchingIndices.length > 0) {
+                matchingIndices.forEach(mIdx => {
+                    const existing = history[mIdx];
+                    let itemStatus = existing.status || DeclarationStatus.Pendiente;
+                    const itemUpdates: Partial<Declaration> = { updatedAt: nowIso };
+                    if (markAllMode === 'declared' || markAllMode === 'both') {
+                        itemStatus = DeclarationStatus.Enviada;
+                        itemUpdates.declaredAt = itemUpdates.declaredAt || existing.declaredAt || nowIso;
+                    }
+                    if (markAllMode === 'paid' || markAllMode === 'both') {
+                        itemStatus = DeclarationStatus.Pagada;
+                        itemUpdates.is_paid = true;
+                        itemUpdates.paidAt = nowIso;
+                        itemUpdates.transactionId = itemUpdates.transactionId || `BLK-${Date.now().toString().slice(-4)}`;
+                        itemUpdates.declaredAt = itemUpdates.declaredAt || existing.declaredAt || nowIso;
+                    }
+                    history[mIdx] = {
+                        ...existing,
+                        ...itemUpdates,
+                        status: itemStatus
+                    };
+                });
             } else {
                 history.push(newEntry as Declaration);
             }
@@ -858,6 +889,26 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <Zap size={14} className="text-tertiary" />
                                         <span>Facturación SRI</span>
                                     </button>
+                                    {clients.some(c => c.isDeleted) && (
+                                        <button
+                                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'trash' } })}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-rose-400 hover:text-white hover:bg-rose-500/20 transition-all whitespace-nowrap cursor-pointer"
+                                            title="Ver clientes en la Papelera de reciclaje"
+                                        >
+                                            <Trash2 size={14} className="text-rose-400" />
+                                            <span>Papelera ({clients.filter(c => c.isDeleted).length})</span>
+                                        </button>
+                                    )}
+                                    {clients.some(c => !c.isDeleted && !(c.isActive ?? true)) && (
+                                        <button
+                                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'inactive' } })}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-amber-400 hover:text-white hover:bg-amber-500/20 transition-all whitespace-nowrap cursor-pointer"
+                                            title="Ver clientes inactivos / pausados"
+                                        >
+                                            <Clock size={14} className="text-amber-400" />
+                                            <span>Inactivos ({clients.filter(c => !c.isDeleted && !(c.isActive ?? true)).length})</span>
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-2 shrink-0">

@@ -410,16 +410,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (existingIndex !== -1) {
       if (currentClients[existingIndex].isDeleted) {
         console.log("Restaurando cliente previamente borrado via addClient sync.");
-        const updates = { ...client, isDeleted: false };
+        const updates = { ...client, isDeleted: false, isActive: true };
         get().updateClient(currentClients[existingIndex].id, updates);
       } else {
-        console.warn("RUC ya existe y está activo.");
+        console.warn("RUC ya existe y está activo. Actualizando datos.");
+        const updates = { ...client, isDeleted: false, isActive: typeof client.isActive === 'boolean' ? client.isActive : true };
+        get().updateClient(currentClients[existingIndex].id, updates);
       }
       return;
     }
 
     const nowIso = new Date().toISOString();
-    const newClient = { ...client, isDeleted: false, createdAt: nowIso, updatedAt: nowIso };
+    const newClient = { ...client, isDeleted: false, isActive: typeof client.isActive === 'boolean' ? client.isActive : true, createdAt: nowIso, updatedAt: nowIso };
     const newClients = [newClient, ...currentClients];
     set({ clients: newClients });
 

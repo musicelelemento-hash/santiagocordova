@@ -92,6 +92,8 @@ export interface Declaration {
     paidAt?: string;
     transactionId?: string;
     amount?: number;
+    is_advance?: boolean;
+    paymentMethod?: string;
     reminders?: Array<{ date: string; channel: 'email' | 'whatsapp', type: ReminderType }>;
     isPriority?: boolean;
     proof_file?: StoredFile;

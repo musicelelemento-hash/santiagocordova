@@ -580,11 +580,28 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const { action, period } = confirmation;
         const now = new Date().toISOString();
         const updatedHistory = [...(editedClient.declarations || [])];
-        const idx = updatedHistory.findIndex(d => d.period === period);
-        if (idx === -1) {
-            updatedHistory.push({ period, status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente, is_paid: action === 'pay', declaredAt: action === 'declare' ? now : undefined, paidAt: action === 'pay' ? now : undefined, updatedAt: now });
+        const matchingIndices = updatedHistory
+            .map((d, i) => (arePeriodsEqual(d.period, period) || d.period === period) ? i : -1)
+            .filter(i => i !== -1);
+
+        if (matchingIndices.length === 0) {
+            updatedHistory.push({
+                period,
+                status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
+                is_paid: action === 'pay',
+                declaredAt: action === 'declare' ? now : undefined,
+                paidAt: action === 'pay' ? now : undefined,
+                updatedAt: now
+            });
         } else {
-            updatedHistory[idx] = { ...updatedHistory[idx], ...(action === 'declare' ? { status: DeclarationStatus.Enviada, declaredAt: now } : {}), ...(action === 'pay' ? { is_paid: true, paidAt: now } : {}), updatedAt: now };
+            matchingIndices.forEach(idx => {
+                updatedHistory[idx] = {
+                    ...updatedHistory[idx],
+                    ...(action === 'declare' ? { status: DeclarationStatus.Enviada, declaredAt: now } : {}),
+                    ...(action === 'pay' ? { is_paid: true, paidAt: now } : {}),
+                    updatedAt: now
+                };
+            });
         }
         const updatedClient = { ...editedClient, declarations: updatedHistory };
         setEditedClient(updatedClient);

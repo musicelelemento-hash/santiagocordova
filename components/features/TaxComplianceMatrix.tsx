@@ -105,7 +105,7 @@ interface TaxComplianceMatrixProps {
     onViewClient: (client: Client) => void;
     onUploadReceipt: (client: Client, period: string, type: TaxObligationType) => void;
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
-    onTogglePayment?: (client: Client, period: string, type: TaxObligationType, isPaid: boolean) => void;
+    onTogglePayment?: (client: Client, period: string, type: TaxObligationType | TaxObligationType[], isPaid: boolean) => void;
     onTogglePriority?: (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => void;
     onNavigateToBilling?: (clientRuc: string, period?: string, description?: string) => void;
     theme?: 'light' | 'dark';
@@ -2541,9 +2541,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             if (onTogglePayment) {
-                                                                                obligations.forEach(ob => {
-                                                                                    onTogglePayment(client, p, ob.type as any, !allPaid);
-                                                                                });
+                                                                                onTogglePayment(client, p, obligations.map(ob => ob.type as TaxObligationType), !allPaid);
                                                                             }
                                                                         }}
                                                                         className={`w-full py-0.5 px-1.5 rounded-lg text-[7px] font-black uppercase tracking-wider font-mono transition-all flex items-center justify-center gap-1 border ${

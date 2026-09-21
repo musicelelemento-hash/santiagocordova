@@ -60,7 +60,17 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const reminderConfig = reminderConfigProp || storeReminderConfig;
 
     const { toast } = useToast();
-    const [activeTab, setActiveTab] = useState<'receivable' | 'projected' | 'collected'>('receivable');
+    const [activeTab, setActiveTab] = useState<'receivable' | 'projected' | 'collected' | 'advances'>('receivable');
+
+    // Adelanto Modal States
+    const [isAdelantoModalOpen, setIsAdelantoModalOpen] = useState(false);
+    const [selectedClientForAdelanto, setSelectedClientForAdelanto] = useState<Client | null>(null);
+    const [adelantoClientSearch, setAdelantoClientSearch] = useState('');
+    const [adelantoType, setAdelantoType] = useState<'periods' | 'credit'>('periods');
+    const [selectedAdelantoPeriods, setSelectedAdelantoPeriods] = useState<string[]>([]);
+    const [adelantoFreeAmount, setAdelantoFreeAmount] = useState<number>(50);
+    const [adelantoPaymentMethod, setAdelantoPaymentMethod] = useState<'transferencia' | 'efectivo' | 'tarjeta' | 'deposito'>('transferencia');
+    const [adelantoReference, setAdelantoReference] = useState('');
     const [viewMode, setViewMode] = useState<'clients' | 'grid' | 'matrix' | 'list'>(() => {
         return (localStorage.getItem('sc_cobranza_view_mode') as 'clients' | 'grid' | 'matrix' | 'list') || 'clients';
     });
@@ -616,6 +626,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 };
                 if (diff <= 0) {
                     projected.push(item);
+                } else {
+                    // Período activo con plazo vencido sin declarar: deuda pendiente por recaudar
+                    receivable.push(item);
                 }
             });
         });
@@ -625,7 +638,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const moraCounts = useMemo(() => {
         const baseList = activeTab === 'receivable' ? financialData.receivable
             : activeTab === 'projected' ? financialData.projected
-            : financialData.collected;
+            : activeTab === 'collected' ? financialData.collected
+            : [];
 
         let filtered = baseList;
         if (searchTerm) {
@@ -644,7 +658,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const currentList = useMemo(() => {
         let list = activeTab === 'receivable' ? [...financialData.receivable]
             : activeTab === 'projected' ? [...financialData.projected]
-                : [...financialData.collected];
+            : activeTab === 'collected' ? [...financialData.collected]
+            : [];
                 
         if (searchTerm) {
             const lower = searchTerm.toLowerCase();
@@ -944,6 +959,249 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
     }, [clients, serviceFees, searchTerm, moraFilter, activeTab, isRecalculating]);
 
+    // Helper: Detectar si un período está en el futuro
+    const isFuturePeriod = (p: string): boolean => {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        if (!p) return false;
+        if (p.includes('-S')) {
+            const [yStr, sStr] = p.split('-S');
+            const y = parseInt(yStr, 10);
+            const s = parseInt(sStr, 10);
+            const currentS = currentMonth <= 6 ? 1 : 2;
+            return y > currentYear || (y === currentYear && s > currentS);
+        }
+        if (p.length === 7 && p.includes('-')) {
+            const [yStr, mStr] = p.split('-');
+            const y = parseInt(yStr, 10);
+            const m = parseInt(mStr, 10);
+            return y > currentYear || (y === currentYear && m > currentMonth);
+        }
+        if (/^\d{4}$/.test(p)) {
+            return parseInt(p, 10) >= currentYear;
+        }
+        return false;
+    };
+
+    // Helper: Generar opciones de períodos futuros según frecuencia
+    const getFuturePeriodsForClient = (client: Client): { key: string; label: string; amount: number; isAlreadyPaid: boolean }[] => {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const fee = getClientServiceFee(client, serviceFees);
+        const freq = getClientIvaFrequency(client);
+        const result: { key: string; label: string; amount: number; isAlreadyPaid: boolean }[] = [];
+        const declarations = client.declarations || [];
+
+        if (freq === 'Mensual') {
+            for (let i = 1; i <= 12; i++) {
+                let m = currentMonth + i;
+                let y = currentYear;
+                while (m > 12) {
+                    m -= 12;
+                    y += 1;
+                }
+                const key = `${y}-${String(m).padStart(2, '0')}`;
+                const isAlreadyPaid = declarations.some(d => (arePeriodsEqual(d.period, key) || d.period === key) && d.is_paid);
+                result.push({
+                    key,
+                    label: formatPeriodForDisplay(key),
+                    amount: fee,
+                    isAlreadyPaid
+                });
+            }
+        } else if (freq === 'Semestral') {
+            let currentS = currentMonth <= 6 ? 1 : 2;
+            let s = currentS;
+            let y = currentYear;
+            for (let i = 0; i < 4; i++) {
+                s += 1;
+                if (s > 2) {
+                    s = 1;
+                    y += 1;
+                }
+                const key = `${y}-S${s}`;
+                const isAlreadyPaid = declarations.some(d => (arePeriodsEqual(d.period, key) || d.period === key) && d.is_paid);
+                result.push({
+                    key,
+                    label: `${s}º Semestre ${y}`,
+                    amount: fee,
+                    isAlreadyPaid
+                });
+            }
+        } else {
+            for (let i = 0; i < 3; i++) {
+                const y = currentYear + i;
+                const key = y.toString();
+                const isAlreadyPaid = declarations.some(d => (arePeriodsEqual(d.period, key) || d.period === key) && d.is_paid);
+                result.push({
+                    key,
+                    label: `Renta Anual ${y}`,
+                    amount: fee,
+                    isAlreadyPaid
+                });
+            }
+        }
+
+        return result;
+    };
+
+    // Cartera de Adelantos y Anticipos Consolidados
+    const advancesData = useMemo(() => {
+        const list: {
+            client: Client;
+            prepaidPeriods: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[];
+            totalPrepaid: number;
+            advanceCredits: number;
+            totalAdvanceBalance: number;
+            freq: 'Mensual' | 'Semestral' | 'Popular';
+        }[] = [];
+
+        let totalAllAdvances = 0;
+        let totalPrepaidPeriodsCount = 0;
+        let clientsWithAdvancesCount = 0;
+
+        clients.forEach(client => {
+            if (client.isDeleted || client.isActive === false || isCourtesyClient(client)) return;
+            const fee = getClientServiceFee(client, serviceFees);
+            const prepaid: { period: string; amount: number; paidAt?: string; status: string; is_advance?: boolean }[] = [];
+
+            (client.declarations || []).forEach(decl => {
+                if (decl.is_paid && (decl.is_advance || decl.status === DeclarationStatus.Pendiente || isFuturePeriod(decl.period))) {
+                    prepaid.push({
+                        period: decl.period,
+                        amount: decl.amount || fee,
+                        paidAt: decl.paidAt,
+                        status: decl.status,
+                        is_advance: decl.is_advance
+                    });
+                }
+            });
+
+            const advanceCredits = client.advanceCredits || 0;
+            const totalPrepaid = prepaid.reduce((sum, p) => sum + p.amount, 0);
+            const totalAdvanceBalance = totalPrepaid + advanceCredits;
+
+            if (prepaid.length > 0 || advanceCredits > 0) {
+                clientsWithAdvancesCount++;
+                totalAllAdvances += totalAdvanceBalance;
+                totalPrepaidPeriodsCount += prepaid.length;
+
+                list.push({
+                    client,
+                    prepaidPeriods: prepaid.sort((a, b) => a.period.localeCompare(b.period)),
+                    totalPrepaid,
+                    advanceCredits,
+                    totalAdvanceBalance,
+                    freq: getClientIvaFrequency(client)
+                });
+            }
+        });
+
+        return {
+            list: list.sort((a, b) => b.totalAdvanceBalance - a.totalAdvanceBalance),
+            totalAllAdvances,
+            totalPrepaidPeriodsCount,
+            clientsWithAdvancesCount
+        };
+    }, [clients, serviceFees]);
+
+    // Registrar Adelanto Confirmado (Períodos Futuros o Saldo a Favor)
+    const handleConfirmAdelanto = async () => {
+        if (!selectedClientForAdelanto) {
+            toast.error("Por favor, selecciona un cliente para registrar el adelanto.");
+            return;
+        }
+        const client = selectedClientForAdelanto;
+        const nowIso = new Date().toISOString();
+        const transactionId = `PAY-ADV-${Date.now().toString().slice(-6)}`;
+        const fee = getClientServiceFee(client, serviceFees);
+
+        if (adelantoType === 'periods') {
+            if (selectedAdelantoPeriods.length === 0) {
+                toast.error("Selecciona al menos un período futuro para prepagar.");
+                return;
+            }
+
+            const history = [...(client.declarations || [])];
+            const paidPeriodsReceipt: { period: string; amount: number }[] = [];
+            let totalAmount = 0;
+
+            selectedAdelantoPeriods.forEach(periodKey => {
+                const existingIdx = history.findIndex(d => arePeriodsEqual(d.period, periodKey) || d.period === periodKey);
+                const existing = existingIdx > -1 ? history[existingIdx] : null;
+                const periodAmount = existing?.amount || fee;
+
+                const entry: any = {
+                    ...(existing || {}),
+                    period: periodKey,
+                    status: existing?.status || DeclarationStatus.Pendiente,
+                    is_paid: true,
+                    is_advance: true,
+                    paidAt: nowIso,
+                    paymentMethod: adelantoPaymentMethod,
+                    transactionId,
+                    amount: periodAmount,
+                    updatedAt: nowIso
+                };
+
+                if (existingIdx > -1) {
+                    history[existingIdx] = entry;
+                } else {
+                    history.push(entry);
+                }
+
+                paidPeriodsReceipt.push({ period: periodKey, amount: periodAmount });
+                totalAmount += periodAmount;
+            });
+
+            const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
+            store.updateClient(client.id, { declarations: history });
+            const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+            setClients(newClients);
+            await db.setLocal('clients', newClients);
+
+            setIsAdelantoModalOpen(false);
+            setReceiptData({
+                transactionId,
+                clientName: client.name,
+                clientRuc: client.ruc,
+                client: updatedClient,
+                paymentDate: safeFormat(new Date(), 'PPpp'),
+                paidPeriods: paidPeriodsReceipt,
+                totalAmount
+            });
+            setIsReceiptOpen(true);
+            toast.success(`¡Adelanto de $${totalAmount.toFixed(2)} registrado para ${client.name} (${selectedAdelantoPeriods.length} períodos)!`);
+        } else {
+            if (!adelantoFreeAmount || adelantoFreeAmount <= 0) {
+                toast.error("Ingresa un monto válido para el saldo a favor.");
+                return;
+            }
+
+            const newCredits = (client.advanceCredits || 0) + adelantoFreeAmount;
+            const updatedClient = { ...client, advanceCredits: newCredits, updatedAt: nowIso };
+            store.updateClient(client.id, { advanceCredits: newCredits });
+            const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+            setClients(newClients);
+            await db.setLocal('clients', newClients);
+
+            setIsAdelantoModalOpen(false);
+            setReceiptData({
+                transactionId,
+                clientName: client.name,
+                clientRuc: client.ruc,
+                client: updatedClient,
+                paymentDate: safeFormat(new Date(), 'PPpp'),
+                paidPeriods: [{ period: 'SALDO A FAVOR (CRÉDITO)', amount: adelantoFreeAmount }],
+                totalAmount: adelantoFreeAmount
+            });
+            setIsReceiptOpen(true);
+            toast.success(`¡Saldo a favor de $${adelantoFreeAmount.toFixed(2)} registrado para ${client.name}!`);
+        }
+    };
+
     const generateClientWhatsAppCobroMsg = (profile: any) => {
         const unpaidPeriods = profile.periods.filter((p: any) => p.status === 'due_declared' || p.status === 'due_pending');
         const periodsBreakdown = unpaidPeriods.map((p: any) => 
@@ -1028,131 +1286,161 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const handlePaySinglePeriod = async (client: Client, period: string, amount: number) => {
         const nowIso = new Date().toISOString();
         const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
-        const history = [...(client.declarations || [])];
-        const declIdx = history.findIndex(d => arePeriodsEqual(d.period, period) || d.period === period);
-        const existingDecl = declIdx > -1 ? history[declIdx] : null;
+        const freshClient = (clients.find(c => c.id === client.id) || client);
+        const history = [...(freshClient.declarations || [])];
 
-        const entry: any = {
-            ...(existingDecl || {}),
-            period,
-            status: DeclarationStatus.Pagada,
-            is_paid: true,
-            paidAt: nowIso,
-            transactionId,
-            amount,
-            updatedAt: nowIso
-        };
+        const matchingIndices = history
+            .map((d, i) => (arePeriodsEqual(d.period, period) || d.period === period) ? i : -1)
+            .filter(i => i !== -1);
 
-        if (declIdx > -1) {
-            history[declIdx] = entry;
+        if (matchingIndices.length > 0) {
+            matchingIndices.forEach(idx => {
+                history[idx] = {
+                    ...history[idx],
+                    status: DeclarationStatus.Pagada,
+                    is_paid: true,
+                    paidAt: nowIso,
+                    transactionId,
+                    amount: history[idx].amount || amount,
+                    updatedAt: nowIso
+                };
+            });
         } else {
-            history.push(entry);
+            history.push({
+                period,
+                status: DeclarationStatus.Pagada,
+                is_paid: true,
+                paidAt: nowIso,
+                transactionId,
+                amount,
+                updatedAt: nowIso
+            } as any);
         }
 
-        const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
+        const updatedClient = { ...freshClient, declarations: history, updatedAt: nowIso };
         
         // Persistir en Zustand Store y Local DB
-        store.updateClient(client.id, { declarations: history });
-        const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+        store.updateClient(freshClient.id, { declarations: history });
+        const newClients = clients.map(c => c.id === freshClient.id ? updatedClient : c);
         setClients(newClients);
         await db.setLocal('clients', newClients);
 
         setSelectedCellAction(null);
         setReceiptData({
             transactionId,
-            clientName: client.name,
-            clientRuc: client.ruc,
+            clientName: freshClient.name,
+            clientRuc: freshClient.ruc,
             client: updatedClient,
             paymentDate: safeFormat(new Date(), 'PPpp'),
             paidPeriods: [{ period, amount }],
             totalAmount: amount
         });
         setIsReceiptOpen(true);
-        toast.success(`Pago de $${amount.toFixed(2)} registrado para ${client.name} (${formatPeriodForDisplay(period)})`);
+        toast.success(`Pago de $${amount.toFixed(2)} registrado para ${freshClient.name} (${formatPeriodForDisplay(period)})`);
     };
 
     // Revertir o Desmarcar Pago (Volver a Pendiente)
     const handleUnmarkPaidPeriod = async (client: Client, period: string) => {
         const nowIso = new Date().toISOString();
-        const history = [...(client.declarations || [])];
-        const declIdx = history.findIndex(d => arePeriodsEqual(d.period, period) || d.period === period);
+        const freshClient = (clients.find(c => c.id === client.id) || client);
+        const history = [...(freshClient.declarations || [])];
+        const matchingIndices = history
+            .map((d, i) => (arePeriodsEqual(d.period, period) || d.period === period) ? i : -1)
+            .filter(i => i !== -1);
         
-        if (declIdx > -1) {
-            history[declIdx] = {
-                ...history[declIdx],
-                status: history[declIdx].proof_file ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
+        matchingIndices.forEach(idx => {
+            history[idx] = {
+                ...history[idx],
+                status: history[idx].proof_file ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
                 is_paid: false,
                 paidAt: undefined,
                 updatedAt: nowIso
             };
-        }
+        });
 
-        const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
-        store.updateClient(client.id, { declarations: history });
-        const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+        const updatedClient = { ...freshClient, declarations: history, updatedAt: nowIso };
+        store.updateClient(freshClient.id, { declarations: history });
+        const newClients = clients.map(c => c.id === freshClient.id ? updatedClient : c);
         setClients(newClients);
         await db.setLocal('clients', newClients);
 
         setSelectedCellAction(null);
-        toast.info(`Pago de ${formatPeriodForDisplay(period)} revertido a pendiente para ${client.name}`);
+        toast.info(`Pago de ${formatPeriodForDisplay(period)} revertido a pendiente para ${freshClient.name}`);
     };
 
     // Liquidar toda la deuda de un cliente en 1 Clic desde la fila de la Matriz
     const handleLiquidateClientDirect = async (client: Client) => {
         const nowIso = new Date().toISOString();
         const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
-        const fee = getClientServiceFee(client, serviceFees);
+        const freshClient = (clients.find(c => c.id === client.id) || client);
+        const fee = getClientServiceFee(freshClient, serviceFees);
         
         const unpaidPeriods: { period: string; amount: number }[] = [];
         let totalAmount = 0;
-        const history = [...(client.declarations || [])];
+        const history = [...(freshClient.declarations || [])];
 
         matrixPeriods.forEach(p => {
-            if (isPeriodBeforeClientStart(client, p.key)) return;
-            const decl = history.find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
-            if (!decl || !isPaid(decl, client)) {
-                const itemAmount = decl?.amount || fee;
-                unpaidPeriods.push({ period: p.key, amount: itemAmount });
-                totalAmount += itemAmount;
-                
-                const declIdx = history.findIndex(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
-                const entry: any = {
-                    ...(decl || {}),
+            if (isPeriodBeforeClientStart(freshClient, p.key)) return;
+            const matchingIndices = history
+                .map((d, i) => (arePeriodsEqual(d.period, p.key) || d.period === p.key) ? i : -1)
+                .filter(i => i !== -1);
+            
+            if (matchingIndices.length > 0) {
+                const hasUnpaid = matchingIndices.some(idx => !isPaid(history[idx], freshClient));
+                if (hasUnpaid) {
+                    const itemAmount = history[matchingIndices[0]]?.amount || fee;
+                    unpaidPeriods.push({ period: p.key, amount: itemAmount });
+                    totalAmount += itemAmount;
+                    
+                    matchingIndices.forEach(idx => {
+                        history[idx] = {
+                            ...history[idx],
+                            status: DeclarationStatus.Pagada,
+                            is_paid: true,
+                            paidAt: nowIso,
+                            transactionId,
+                            amount: history[idx].amount || itemAmount,
+                            updatedAt: nowIso
+                        };
+                    });
+                }
+            } else {
+                unpaidPeriods.push({ period: p.key, amount: fee });
+                totalAmount += fee;
+                history.push({
                     period: p.key,
                     status: DeclarationStatus.Pagada,
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
-                    amount: itemAmount,
+                    amount: fee,
                     updatedAt: nowIso
-                };
-                if (declIdx > -1) history[declIdx] = entry;
-                else history.push(entry);
+                } as any);
             }
         });
 
         if (unpaidPeriods.length === 0) {
-            toast.info(`${client.name} ya está al día con todas sus obligaciones.`);
+            toast.info(`${freshClient.name} ya está al día con todas sus obligaciones.`);
             return;
         }
 
-        const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
-        store.updateClient(client.id, { declarations: history });
-        const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+        const updatedClient = { ...freshClient, declarations: history, updatedAt: nowIso };
+        store.updateClient(freshClient.id, { declarations: history });
+        const newClients = clients.map(c => c.id === freshClient.id ? updatedClient : c);
         setClients(newClients);
         await db.setLocal('clients', newClients);
 
         setReceiptData({
             transactionId,
-            clientName: client.name,
-            clientRuc: client.ruc,
+            clientName: freshClient.name,
+            clientRuc: freshClient.ruc,
             client: updatedClient,
             paymentDate: safeFormat(new Date(), 'PPpp'),
             paidPeriods: unpaidPeriods,
             totalAmount
         });
         setIsReceiptOpen(true);
-        toast.success(`¡Deuda de $${totalAmount.toFixed(2)} liquidada exitosamente para ${client.name}!`);
+        toast.success(`¡Deuda de $${totalAmount.toFixed(2)} liquidada exitosamente para ${freshClient.name}!`);
     };
 
     // Liquidar todos los cobros pendientes de un mes/período en toda la columna de la Matriz
@@ -1167,29 +1455,46 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             if (isPeriodBeforeClientStart(client, periodKey) || isCourtesyClient(client)) return;
             const fee = getClientServiceFee(client, serviceFees);
             const history = [...(client.declarations || [])];
-            const declIdx = history.findIndex(d => arePeriodsEqual(d.period, periodKey) || d.period === periodKey);
-            const decl = declIdx > -1 ? history[declIdx] : null;
+            const matchingIndices = history
+                .map((d, i) => (arePeriodsEqual(d.period, periodKey) || d.period === periodKey) ? i : -1)
+                .filter(i => i !== -1);
 
-            if (!decl || !isPaid(decl, client)) {
-                const itemAmount = decl?.amount || fee;
-                const entry: any = {
-                    ...(decl || {}),
+            if (matchingIndices.length > 0) {
+                const hasUnpaid = matchingIndices.some(idx => !isPaid(history[idx], client));
+                if (hasUnpaid) {
+                    const itemAmount = history[matchingIndices[0]]?.amount || fee;
+                    matchingIndices.forEach(idx => {
+                        history[idx] = {
+                            ...history[idx],
+                            status: DeclarationStatus.Pagada,
+                            is_paid: true,
+                            paidAt: nowIso,
+                            transactionId,
+                            amount: history[idx].amount || itemAmount,
+                            updatedAt: nowIso
+                        };
+                    });
+
+                    newClients[clientIdx] = { ...client, declarations: history, updatedAt: nowIso };
+                    store.updateClient(client.id, { declarations: history });
+                    updatedCount++;
+                    totalAmount += itemAmount;
+                }
+            } else {
+                history.push({
                     period: periodKey,
                     status: DeclarationStatus.Pagada,
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
-                    amount: itemAmount,
+                    amount: fee,
                     updatedAt: nowIso
-                };
-
-                if (declIdx > -1) history[declIdx] = entry;
-                else history.push(entry);
+                } as any);
 
                 newClients[clientIdx] = { ...client, declarations: history, updatedAt: nowIso };
                 store.updateClient(client.id, { declarations: history });
                 updatedCount++;
-                totalAmount += itemAmount;
+                totalAmount += fee;
             }
         });
 
@@ -1223,24 +1528,32 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             if (clientIdx === -1) return;
 
             const history = [...(newClients[clientIdx].declarations || [])];
-            const declIdx = history.findIndex(d => arePeriodsEqual(d.period, period) || d.period === period);
-            const existingDecl = declIdx > -1 ? history[declIdx] : null;
+            const matchingIndices = history
+                .map((d, i) => (arePeriodsEqual(d.period, period) || d.period === period) ? i : -1)
+                .filter(i => i !== -1);
 
-            const entry: any = {
-                ...(existingDecl || {}),
-                period,
-                status: DeclarationStatus.Pagada,
-                is_paid: true,
-                paidAt: nowIso,
-                transactionId,
-                amount,
-                updatedAt: nowIso
-            };
-
-            if (declIdx > -1) {
-                history[declIdx] = entry;
+            if (matchingIndices.length > 0) {
+                matchingIndices.forEach(idx => {
+                    history[idx] = {
+                        ...history[idx],
+                        status: DeclarationStatus.Pagada,
+                        is_paid: true,
+                        paidAt: nowIso,
+                        transactionId,
+                        amount: history[idx].amount || amount,
+                        updatedAt: nowIso
+                    };
+                });
             } else {
-                history.push(entry);
+                history.push({
+                    period,
+                    status: DeclarationStatus.Pagada,
+                    is_paid: true,
+                    paidAt: nowIso,
+                    transactionId,
+                    amount,
+                    updatedAt: nowIso
+                } as any);
             }
 
             newClients[clientIdx] = { ...newClients[clientIdx], declarations: history, updatedAt: nowIso };
@@ -1328,6 +1641,19 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto font-mono">
+                    <button 
+                        onClick={() => {
+                            setSelectedClientForAdelanto(null);
+                            setSelectedAdelantoPeriods([]);
+                            setIsAdelantoModalOpen(true);
+                        }}
+                        className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
+                        title="Registrar un pago por adelantado mensual, semestral o anual para un cliente"
+                    >
+                        <LucideIcons.Sparkles size={14} className="text-amber-300" />
+                        <span>➕ REGISTRAR ADELANTO</span>
+                    </button>
+
                     <button 
                         onClick={handleSyncAllDeclaredAsPaid}
                         className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
@@ -1419,7 +1745,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     {[
                         { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-rose-500 dark:text-rose-400' },
                         { id: 'projected', label: 'Proyectado', icon: LucideIcons.Timer, color: 'text-amber-500 dark:text-amber-400' },
-                        { id: 'collected', label: 'Efectivo', icon: LucideIcons.CheckCircle, color: 'text-[#00A896]' }
+                        { id: 'collected', label: 'Efectivo', icon: LucideIcons.CheckCircle, color: 'text-[#00A896]' },
+                        { id: 'advances', label: 'Adelantos', icon: LucideIcons.Zap, color: 'text-amber-400' }
                     ].map(tab => (
                         <button 
                             key={tab.id} 
@@ -1434,6 +1761,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             {tab.id === 'receivable' && financialData.receivable.length > 0 && (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ml-1 ${activeTab === tab.id ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'}`}>
                                     {financialData.receivable.length}
+                                </span>
+                            )}
+                            {tab.id === 'advances' && advancesData.clientsWithAdvancesCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ml-1 ${activeTab === tab.id ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-amber-500/20 text-amber-400'}`}>
+                                    {advancesData.clientsWithAdvancesCount}
                                 </span>
                             )}
                         </button>
@@ -1617,8 +1949,167 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
                     </div>
 
-                    {/* VISTA 1: POR CLIENTE (CARTERA CONSOLIDADA & TIRA DE PERÍODOS) */}
-                    {viewMode === 'clients' ? (
+                    {/* VISTA 1: TAB ADELANTOS DEDICADO O VISTAS HABITUALES */}
+                    {activeTab === 'advances' ? (
+                        <div className="relative z-10 p-4 sm:p-6 space-y-6 max-h-[850px] overflow-y-auto no-scrollbar font-mono">
+                            {/* Strip de KPIs de Adelantos */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Total Adelantado / Saldo a Favor</p>
+                                        <p className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                                            ${advancesData.totalAllAdvances.toFixed(2)}
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-amber-500/20 text-amber-500 rounded-xl">
+                                        <LucideIcons.Sparkles size={22} />
+                                    </div>
+                                </div>
+                                <div className="p-5 rounded-2xl bg-[#00A896]/10 border border-[#00A896]/20 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-[#00A896] uppercase tracking-widest">Clientes con Prepago</p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                                            {advancesData.clientsWithAdvancesCount} Clientes
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-[#00A896]/20 text-[#00A896] rounded-xl">
+                                        <LucideIcons.Users size={22} />
+                                    </div>
+                                </div>
+                                <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Períodos Prepagados</p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                                            {advancesData.totalPrepaidPeriodsCount} Períodos
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-blue-500/20 text-blue-500 rounded-xl">
+                                        <LucideIcons.CalendarCheck size={22} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Lista de Clientes con Adelanto */}
+                            {advancesData.list.length === 0 ? (
+                                <div className="py-20 flex flex-col items-center justify-center text-slate-500 font-mono text-center">
+                                    <div className="p-6 rounded-3xl bg-slate-100 dark:bg-white/5 mb-4 border border-slate-200 dark:border-white/10">
+                                        <LucideIcons.Sparkles size={48} className="text-amber-500" />
+                                    </div>
+                                    <p className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">No hay clientes con pagos adelantados registrados</p>
+                                    <p className="text-xs text-slate-400 mt-1 max-w-md">Puedes registrar abonos futuros mensuales, semestrales o anuales para que el cliente quede cubierto por anticipado.</p>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedClientForAdelanto(null);
+                                            setSelectedAdelantoPeriods([]);
+                                            setIsAdelantoModalOpen(true);
+                                        }}
+                                        className="mt-6 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+                                    >
+                                        ➕ Registrar Primer Adelanto
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {advancesData.list.map(({ client, prepaidPeriods, totalPrepaid, advanceCredits, totalAdvanceBalance, freq }) => (
+                                        <div
+                                            key={client.id}
+                                            className="relative rounded-[2rem] p-5 sm:p-6 border bg-white dark:bg-[#051424]/95 border-slate-200 dark:border-white/10 shadow-lg flex flex-col justify-between"
+                                        >
+                                            <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-full bg-gradient-to-r from-amber-400 via-emerald-500 to-teal-500" />
+
+                                            <div>
+                                                <div className="flex items-start justify-between gap-3 mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                                                            {client.name.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-sm text-slate-900 dark:text-white uppercase truncate font-display">
+                                                                {client.name}
+                                                            </h4>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono">{client.ruc}</span>
+                                                                <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#00A896]/15 text-[#00A896] font-bold">
+                                                                    {freq === 'Semestral' ? 'IVA Semestral' : freq === 'Popular' ? 'RIMPE Popular (Anual)' : 'IVA Mensual'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold font-mono">
+                                                        Total Adelanto: ${totalAdvanceBalance.toFixed(2)}
+                                                    </span>
+                                                </div>
+
+                                                {/* Detalle Saldo a Favor si existe */}
+                                                {advanceCredits > 0 && (
+                                                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-3 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <LucideIcons.Coins size={16} className="text-amber-500" />
+                                                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">Saldo a Favor Disponible (Crédito)</span>
+                                                        </div>
+                                                        <span className="text-sm font-black text-amber-600 dark:text-amber-400 font-mono">${advanceCredits.toFixed(2)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Períodos Prepagados */}
+                                                {prepaidPeriods.length > 0 && (
+                                                    <div className="space-y-2 mb-4">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Períodos Prepagados ({prepaidPeriods.length}):</p>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {prepaidPeriods.map(p => (
+                                                                <div
+                                                                    key={p.period}
+                                                                    className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 text-xs font-bold flex items-center gap-2"
+                                                                >
+                                                                    <LucideIcons.CheckCircle size={12} />
+                                                                    <span>{formatPeriodForDisplay(p.period)}</span>
+                                                                    <span className="font-mono font-black">${p.amount.toFixed(0)}</span>
+                                                                    <span className="text-[9px] opacity-75 font-normal">Prepagado</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedClientForAdelanto(client);
+                                                        setSelectedAdelantoPeriods([]);
+                                                        setIsAdelantoModalOpen(true);
+                                                    }}
+                                                    className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold uppercase transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                                >
+                                                    <LucideIcons.Plus size={14} />
+                                                    <span>Agregar Más Adelanto</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setReceiptData({
+                                                            transactionId: `REC-ADV-${client.id.slice(0, 6)}`,
+                                                            clientName: client.name,
+                                                            clientRuc: client.ruc,
+                                                            client,
+                                                            paymentDate: safeFormat(new Date(), 'PPpp'),
+                                                            paidPeriods: prepaidPeriods.map(p => ({ period: p.period, amount: p.amount })),
+                                                            totalAmount: totalAdvanceBalance
+                                                        });
+                                                        setIsReceiptOpen(true);
+                                                    }}
+                                                    className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
+                                                    title="Ver recibo de adelantos"
+                                                >
+                                                    <LucideIcons.Printer size={15} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ) : viewMode === 'clients' ? (
                         <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
                             {consolidatedClients.length === 0 ? (
                                 <div className="col-span-full py-24 flex flex-col items-center justify-center text-slate-500 font-mono">
@@ -1797,6 +2288,19 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                         <span>Liquidar (${profile.totalDebt.toFixed(0)})</span>
                                                     </button>
                                                 )}
+
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedClientForAdelanto(profile.client);
+                                                        setSelectedAdelantoPeriods([]);
+                                                        setIsAdelantoModalOpen(true);
+                                                    }}
+                                                    className="px-3 py-2.5 bg-amber-500/15 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white border border-amber-500/30 rounded-xl text-xs font-bold uppercase transition-all shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                                                    title="Registrar adelanto de honorarios para este cliente"
+                                                >
+                                                    <LucideIcons.Zap size={14} />
+                                                    <span className="hidden sm:inline">Adelantar</span>
+                                                </button>
 
                                                 <button
                                                     onClick={() => setSelectedClientExpediente(profile)}
@@ -2133,19 +2637,46 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30 text-[10px] font-black font-mono shadow-sm">
                                                                 ${totalUnpaidDebt.toFixed(2)}
                                                             </span>
-                                                            <button
-                                                                onClick={() => handleLiquidateClientDirect(client)}
-                                                                className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white text-[8px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-0.5 border border-white/10"
-                                                                title={`Liquidar toda la deuda acumulada de $${totalUnpaidDebt.toFixed(2)} en 1 solo clic`}
-                                                            >
-                                                                <LucideIcons.Zap size={9} />
-                                                                <span>Pagar Todo</span>
-                                                            </button>
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    onClick={() => handleLiquidateClientDirect(client)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white text-[8px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-0.5 border border-white/10"
+                                                                    title={`Liquidar toda la deuda acumulada de $${totalUnpaidDebt.toFixed(2)} en 1 solo clic`}
+                                                                >
+                                                                    <LucideIcons.Zap size={9} />
+                                                                    <span>Pagar</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedClientForAdelanto(client);
+                                                                        setSelectedAdelantoPeriods([]);
+                                                                        setIsAdelantoModalOpen(true);
+                                                                    }}
+                                                                    className="px-1.5 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white border border-amber-500/30 text-[8px] font-bold uppercase transition-all shadow-sm cursor-pointer active:scale-95"
+                                                                    title="Registrar adelanto para este cliente"
+                                                                >
+                                                                    <span>+Adelanto</span>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-[#00A896] border border-emerald-500/30 text-[9px] font-bold">
-                                                            AL DÍA
-                                                        </span>
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-[#00A896] border border-emerald-500/30 text-[9px] font-bold">
+                                                                AL DÍA
+                                                            </span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedClientForAdelanto(client);
+                                                                    setSelectedAdelantoPeriods([]);
+                                                                    setIsAdelantoModalOpen(true);
+                                                                }}
+                                                                className="px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-600 dark:text-amber-400 hover:text-white border border-amber-500/30 text-[8px] font-bold uppercase transition-all shadow-sm cursor-pointer active:scale-95 flex items-center gap-0.5"
+                                                                title="Registrar adelanto para este cliente"
+                                                            >
+                                                                <LucideIcons.Sparkles size={8} />
+                                                                <span>Adelantar</span>
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </td>
 
@@ -2541,6 +3072,347 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         )}
                     </div>
                 )}
+            </Modal>
+
+            {/* MODAL 0: REGISTRAR ADELANTO / PREPAGO INTELIGENTE */}
+            <Modal isOpen={isAdelantoModalOpen} onClose={() => setIsAdelantoModalOpen(false)} title="Registrar Adelanto / Prepago de Honorarios">
+                <div className="p-4 sm:p-6 space-y-6 font-mono text-slate-900 dark:text-white max-h-[80vh] overflow-y-auto no-scrollbar">
+                    {/* Paso 1: Seleccionar Cliente si no está preseleccionado */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                            1. Selecciona el Cliente / Contribuyente
+                        </label>
+                        {selectedClientForAdelanto ? (
+                            <div className="p-4 rounded-2xl bg-[#00A896]/10 border border-[#00A896]/30 flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-sm uppercase text-slate-900 dark:text-white font-display">
+                                        {selectedClientForAdelanto.name}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-mono text-[#00A896] font-bold">{selectedClientForAdelanto.ruc}</span>
+                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 font-bold">
+                                            {getClientIvaFrequency(selectedClientForAdelanto) === 'Semestral' ? 'Semestral' : getClientIvaFrequency(selectedClientForAdelanto) === 'Popular' ? 'RIMPE Popular (Anual)' : 'Mensual'}
+                                        </span>
+                                        <span className="text-xs font-bold text-amber-500">
+                                            Tarifa: ${getClientServiceFee(selectedClientForAdelanto, serviceFees).toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setSelectedClientForAdelanto(null);
+                                        setSelectedAdelantoPeriods([]);
+                                    }}
+                                    className="text-xs text-rose-500 hover:underline cursor-pointer font-bold"
+                                >
+                                    Cambiar
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar por Nombre o RUC..."
+                                        value={adelantoClientSearch}
+                                        onChange={e => setAdelantoClientSearch(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-[#0b1326] border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-medium text-slate-900 dark:text-white uppercase focus:outline-none focus:border-[#00A896]"
+                                    />
+                                </div>
+                                <div className="max-h-48 overflow-y-auto divide-y divide-slate-200 dark:divide-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
+                                    {clients
+                                        .filter(c => !c.isDeleted && c.isActive && !isCourtesyClient(c))
+                                        .filter(c => {
+                                            if (!adelantoClientSearch) return true;
+                                            const q = adelantoClientSearch.toLowerCase();
+                                            return c.name.toLowerCase().includes(q) || c.ruc.includes(q);
+                                        })
+                                        .slice(0, 10)
+                                        .map(c => (
+                                            <div
+                                                key={c.id}
+                                                onClick={() => {
+                                                    setSelectedClientForAdelanto(c);
+                                                    setSelectedAdelantoPeriods([]);
+                                                }}
+                                                className="p-3 hover:bg-[#00A896]/10 cursor-pointer flex items-center justify-between transition-colors"
+                                            >
+                                                <div>
+                                                    <p className="font-bold text-xs uppercase text-slate-900 dark:text-white truncate max-w-[280px]">{c.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">{c.ruc} • {getClientIvaFrequency(c)}</p>
+                                                </div>
+                                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                                    ${getClientServiceFee(c, serviceFees).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {selectedClientForAdelanto && (
+                        <>
+                            {/* Paso 2: Tipo de Adelanto (Períodos Futuros vs Saldo a Favor) */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                                    2. Modalidad del Adelanto
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAdelantoType('periods')}
+                                        className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
+                                            adelantoType === 'periods'
+                                                ? 'bg-[#00A896]/15 border-[#00A896] text-slate-900 dark:text-white shadow-md'
+                                                : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 font-bold text-xs uppercase">
+                                            <LucideIcons.CalendarCheck size={16} className={adelantoType === 'periods' ? 'text-[#00A896]' : 'text-slate-400'} />
+                                            <span>Prepagar Períodos</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 leading-tight">
+                                            {getClientIvaFrequency(selectedClientForAdelanto) === 'Mensual' ? 'Meses específicos (1, 3, 6, 12 meses)' : getClientIvaFrequency(selectedClientForAdelanto) === 'Semestral' ? 'Semestres específicos (1 o 2 semestres)' : 'Renta Anual específica'}
+                                        </p>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setAdelantoType('credit')}
+                                        className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all flex flex-col gap-1 ${
+                                            adelantoType === 'credit'
+                                                ? 'bg-amber-500/15 border-amber-500 text-slate-900 dark:text-white shadow-md'
+                                                : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 font-bold text-xs uppercase">
+                                            <LucideIcons.Coins size={16} className={adelantoType === 'credit' ? 'text-amber-500' : 'text-slate-400'} />
+                                            <span>Saldo a Favor (Crédito Libre)</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 leading-tight">
+                                            Monto libre en dinero que queda acreditado a la cuenta del cliente
+                                        </p>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Detalle según modalidad */}
+                            {adelantoType === 'periods' ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                            3. Selecciona los Períodos a Prepagar
+                                        </label>
+                                        {/* Presets Rápidos */}
+                                        <div className="flex items-center gap-1.5">
+                                            {getClientIvaFrequency(selectedClientForAdelanto) === 'Mensual' && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const fut = getFuturePeriodsForClient(selectedClientForAdelanto);
+                                                            setSelectedAdelantoPeriods(fut.slice(0, 1).map(p => p.key));
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-white/10 text-[9px] font-bold uppercase hover:bg-[#00A896] hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        1 Mes
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const fut = getFuturePeriodsForClient(selectedClientForAdelanto);
+                                                            setSelectedAdelantoPeriods(fut.slice(0, 3).map(p => p.key));
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-white/10 text-[9px] font-bold uppercase hover:bg-[#00A896] hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        3 Meses (Trim.)
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const fut = getFuturePeriodsForClient(selectedClientForAdelanto);
+                                                            setSelectedAdelantoPeriods(fut.slice(0, 6).map(p => p.key));
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-white/10 text-[9px] font-bold uppercase hover:bg-[#00A896] hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        6 Meses (Sem.)
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const fut = getFuturePeriodsForClient(selectedClientForAdelanto);
+                                                            setSelectedAdelantoPeriods(fut.slice(0, 12).map(p => p.key));
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-white/10 text-[9px] font-bold uppercase hover:bg-[#00A896] hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        12 Meses (Año)
+                                                    </button>
+                                                </>
+                                            )}
+                                            {getClientIvaFrequency(selectedClientForAdelanto) === 'Semestral' && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const fut = getFuturePeriodsForClient(selectedClientForAdelanto);
+                                                            setSelectedAdelantoPeriods(fut.slice(0, 1).map(p => p.key));
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-white/10 text-[9px] font-bold uppercase hover:bg-[#00A896] hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        1 Semestre
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const fut = getFuturePeriodsForClient(selectedClientForAdelanto);
+                                                            setSelectedAdelantoPeriods(fut.slice(0, 2).map(p => p.key));
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-white/10 text-[9px] font-bold uppercase hover:bg-[#00A896] hover:text-white transition-colors cursor-pointer"
+                                                    >
+                                                        Año Completo (2 Sem.)
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Grilla de Períodos Futuros Disponibles */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto no-scrollbar p-1">
+                                        {getFuturePeriodsForClient(selectedClientForAdelanto).map(p => {
+                                            const isSelected = selectedAdelantoPeriods.includes(p.key);
+                                            return (
+                                                <button
+                                                    key={p.key}
+                                                    type="button"
+                                                    disabled={p.isAlreadyPaid}
+                                                    onClick={() => {
+                                                        if (isSelected) {
+                                                            setSelectedAdelantoPeriods(prev => prev.filter(k => k !== p.key));
+                                                        } else {
+                                                            setSelectedAdelantoPeriods(prev => [...prev, p.key]);
+                                                        }
+                                                    }}
+                                                    className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                                                        p.isAlreadyPaid
+                                                            ? 'bg-emerald-500/10 border-emerald-500/30 opacity-60 cursor-not-allowed'
+                                                            : isSelected
+                                                            ? 'bg-[#00A896]/20 border-[#00A896] text-slate-900 dark:text-white shadow-md ring-1 ring-[#00A896]'
+                                                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-slate-400'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-bold text-xs uppercase">{p.label}</span>
+                                                        {p.isAlreadyPaid ? (
+                                                            <span className="text-[9px] text-emerald-500 font-bold">Pagado</span>
+                                                        ) : isSelected ? (
+                                                            <LucideIcons.CheckCircle size={14} className="text-[#00A896]" />
+                                                        ) : (
+                                                            <LucideIcons.Square size={14} className="text-slate-400" />
+                                                        )}
+                                                    </div>
+                                                    <span className="text-sm font-black font-mono mt-1 text-[#00A896]">
+                                                        ${p.amount.toFixed(2)}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                                        3. Monto del Saldo a Favor a Acreditar
+                                    </label>
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative flex-1">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-lg text-slate-400">$</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="1"
+                                                value={adelantoFreeAmount}
+                                                onChange={e => setAdelantoFreeAmount(parseFloat(e.target.value) || 0)}
+                                                className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-[#0b1326] border border-slate-200 dark:border-white/10 rounded-xl text-lg font-mono font-black text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
+                                            />
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                            {[20, 50, 100, 200].map(amt => (
+                                                <button
+                                                    key={amt}
+                                                    type="button"
+                                                    onClick={() => setAdelantoFreeAmount(amt)}
+                                                    className="px-3 py-3 rounded-xl bg-slate-200 dark:bg-white/10 text-xs font-bold font-mono hover:bg-amber-500 hover:text-white transition-colors cursor-pointer"
+                                                >
+                                                    ${amt}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Paso 4: Forma de Pago y Referencia */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-white/10">
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
+                                        Forma de Pago
+                                    </label>
+                                    <select
+                                        value={adelantoPaymentMethod}
+                                        onChange={e => setAdelantoPaymentMethod(e.target.value as any)}
+                                        className="w-full p-3 bg-slate-50 dark:bg-[#0b1326] border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-bold uppercase text-slate-900 dark:text-white"
+                                    >
+                                        <option value="transferencia">Transferencia Bancaria</option>
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="tarjeta">Tarjeta de Crédito / Débito</option>
+                                        <option value="deposito">Depósito Bancario</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">
+                                        Referencia / N° Comprobante (Opcional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: Transf #123456"
+                                        value={adelantoReference}
+                                        onChange={e => setAdelantoReference(e.target.value)}
+                                        className="w-full p-3 bg-slate-50 dark:bg-[#0b1326] border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono text-slate-900 dark:text-white uppercase"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Resumen Final y Botón de Confirmación */}
+                            <div className="p-4 rounded-2xl bg-gradient-to-r from-[#00A896]/15 to-teal-500/15 border border-[#00A896]/30 flex items-center justify-between">
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                                        Total a Registrar
+                                    </span>
+                                    <span className="text-2xl font-black text-[#00A896] font-mono">
+                                        ${adelantoType === 'periods'
+                                            ? (selectedAdelantoPeriods.length * getClientServiceFee(selectedClientForAdelanto, serviceFees)).toFixed(2)
+                                            : adelantoFreeAmount.toFixed(2)} USD
+                                    </span>
+                                    {adelantoType === 'periods' && (
+                                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                                            {selectedAdelantoPeriods.length} período(s) seleccionado(s)
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmAdelanto}
+                                    disabled={adelantoType === 'periods' ? selectedAdelantoPeriods.length === 0 : adelantoFreeAmount <= 0}
+                                    className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer border border-white/10"
+                                >
+                                    Confirmar Adelanto
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </Modal>
 
             {/* MODAL 1: LIQUIDAR TRANSACCIÓN FINANCIERA (Stitch Obsidian Luxury) */}

@@ -11,7 +11,7 @@ interface ClientCardProps {
     client: Client;
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     compact?: boolean;
@@ -116,7 +116,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleAction = (e: React.MouseEvent, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
+    const handleAction = (e: React.MouseEvent, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge', customPeriod?: string) => {
         e.stopPropagation();
         if (onQuickAction) onQuickAction(client, action, customPeriod);
     };
@@ -445,6 +445,17 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             >
                                 <LucideIcons.AlertTriangle size={14} />
                                 Notificación Suspensión
+                            </button>
+                        </div>
+                    ) : !client.isActive && !client.isDeleted ? (
+                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            <button
+                                onClick={(e) => handleAction(e, 'activate')}
+                                className="flex-1 sm:flex-none flex items-center justify-center h-10 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-mono font-bold text-[10px] uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                                title="Reactivar cliente"
+                            >
+                                <LucideIcons.Play size={14} className="mr-1.5" />
+                                Reactivar
                             </button>
                         </div>
                     ) : (

@@ -487,7 +487,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                         <td className="py-4 px-5 text-center font-bold text-on-surface-variant">{idx + 1}</td>
                                                         <td className="py-4 px-5">
                                                             <button
-                                                                onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                                                onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
                                                                 className="font-bold text-on-surface hover:text-tertiary transition-colors uppercase tracking-tight text-left block font-display text-sm cursor-pointer"
                                                             >
                                                                 {client.name}

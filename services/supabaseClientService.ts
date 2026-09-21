@@ -784,6 +784,12 @@ export const SupabaseService = {
         const finalProof = (dHasUrl || !existingHasUrl) ? (d.proof_file || existing.proof_file) : existing.proof_file;
         const finalStatus = (d.status === 'Enviada' || d.status === 'Pagada' || !existing.status) ? d.status : existing.status;
         
+        const existingTime = existing.updatedAt || existing.updated_at ? new Date(existing.updatedAt || existing.updated_at).getTime() : 0;
+        const incomingTime = d.updatedAt || d.updated_at ? new Date(d.updatedAt || d.updated_at).getTime() : 0;
+        const resolvedIsPaid = (existingTime > 0 && incomingTime > 0)
+          ? (incomingTime >= existingTime ? isPaid : existing.is_paid)
+          : (typeof isPaid === 'boolean' ? isPaid : existing.is_paid);
+
         declMap.set(key, {
           ...existing,
           ...d,
@@ -791,7 +797,7 @@ export const SupabaseService = {
           period: d.period || existing.period,
           status: finalStatus,
           proof_file: finalProof,
-          is_paid: isPaid || existing.is_paid,
+          is_paid: resolvedIsPaid,
           // CRITICAL FIX: Preservar la marca de notificado si CUALQUIERA de las fuentes la tiene en true
           isNotifiedWhatsApp: Boolean(d.is_notified_whatsapp || d.isNotifiedWhatsApp || existing.isNotifiedWhatsApp),
           notifiedWhatsAppAt: d.notified_whatsapp_at || d.notifiedWhatsAppAt || existing.notifiedWhatsAppAt || undefined,

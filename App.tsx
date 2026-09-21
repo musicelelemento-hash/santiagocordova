@@ -812,20 +812,38 @@ const App: React.FC = () => {
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
 
-        {/* Mobile Top Bar + Drawer (acceso a los 21 módulos en móvil) */}
-        <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 bg-[#051424]/95 backdrop-blur-2xl border-b border-white/10 no-print">
-          <button
-            onClick={() => setIsMobileDrawerOpen(true)}
-            aria-label="Abrir menú de módulos"
-            className="w-10 h-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:border-[#00A896]/40 transition-all active:scale-95"
-          >
-            <Menu size={20} />
-          </button>
-          <span className="font-display font-bold text-white text-sm tracking-wide truncate max-w-[55%] text-center">
-            {activeScreen === 'home' ? 'Centro de Control' : (navItems.find(i => i.screen === activeScreen)?.label ?? '')}
-          </span>
-          <div className="w-10" />
-        </div>
+        {/* Mobile Header Único (menú + título + acciones) */}
+        <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-4 py-2.5 glass-zen border-b border-white/20 shadow-xl no-print">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              onClick={() => setIsMobileDrawerOpen(true)}
+              aria-label="Abrir menú de módulos"
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-[#00A896]/40 transition-all active:scale-95"
+            >
+              <Menu size={18} />
+            </button>
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-600 to-emerald-500 p-[1.5px] shrink-0">
+              <div className="w-full h-full rounded-[8px] bg-white dark:bg-[#0b1326] flex items-center justify-center">
+                <Logo className="w-4 h-4 text-sky-600 dark:text-white" />
+              </div>
+            </div>
+            <span className="font-display font-bold text-sm tracking-wide truncate max-w-[36vw] text-slate-800 dark:text-white">
+              {activeScreen === 'home' ? 'Centro de Control' : (navItems.find(i => i.screen === activeScreen)?.label ?? '')}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setIsUploadModalOpen(true)} aria-label="Gestión inmediata" className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:scale-110 active:scale-95 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+              <Zap size={14} className="fill-current" />
+            </button>
+            <div className="scale-75 origin-right">
+              <NotificationBell clients={clients} navigate={navigate} />
+            </div>
+            <button onClick={toggleTheme} aria-label="Cambiar tema" className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-800/40 border border-slate-200 dark:border-white/10 text-sky-600 dark:text-yellow-400 shadow-lg hover:scale-110 active:scale-95 transition-transform">
+              {theme === 'dark' ? <Sun size={14} fill="currentColor" /> : <Moon size={14} fill="currentColor" />}
+            </button>
+          </div>
+        </header>
         <MobileDrawer
           isOpen={isMobileDrawerOpen}
           onClose={() => setIsMobileDrawerOpen(false)}
@@ -1065,31 +1083,7 @@ const App: React.FC = () => {
             </div>
           </header>
 
-          {/* Mobile Ultra-Premium Header */}
-          <header className="flex md:hidden fixed top-0 w-full z-50 items-center justify-between px-5 py-3 glass-zen border-b border-white/20 shadow-xl no-print">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-slate-800 dark:bg-white flex items-center justify-center shadow-md pointer-events-none">
-                <Logo className="w-5 h-5 text-white dark:text-slate-900" />
-              </div>
-              <span className="font-sans font-medium text-slate-800 dark:text-white text-sm tracking-wide">Directorio</span>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button onClick={() => setIsUploadModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:scale-110 active:scale-95 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                <Zap size={14} className="fill-current" />
-              </button>
-              
-              <div className="scale-75 origin-right">
-                <NotificationBell clients={clients} navigate={navigate} />
-              </div>
-
-              <button onClick={toggleTheme} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 text-sky-600 dark:text-yellow-400 shadow-lg hover:scale-110 active:scale-95 transition-transform">
-                {theme === 'dark' ? <Sun size={14} fill="currentColor" /> : <Moon size={14} fill="currentColor" />}
-              </button>
-            </div>
-          </header>
-
-          <main className="flex-grow px-4 pt-24 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
+          <main className="flex-grow px-4 pt-20 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
               <div key={activeScreen} className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <Suspense fallback={<ScreenLoader />}>

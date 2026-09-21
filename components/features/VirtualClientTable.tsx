@@ -12,7 +12,7 @@ interface VirtualClientTableProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge') => void;
+    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
     isTrashView?: boolean;
@@ -25,7 +25,7 @@ interface TableRowProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge') => void;
+    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
     isTrashView?: boolean;
@@ -317,13 +317,23 @@ const TableRow = memo(({ index, style, clients, serviceFees, onView, onQuickActi
                             VER
                             <LucideIcons.ArrowRight size={13} />
                         </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all shadow-md ${isCampaignDone ? 'bg-surface-low text-on-surface-variant' : 'bg-primary text-white shadow-primary/20 hover:shadow-primary/40'}`}
-                        >
-                            {isCampaignDone ? <LucideIcons.Check size={13} strokeWidth={3} /> : <LucideIcons.Upload size={13} />}
-                            {isCampaignDone ? 'LISTO' : 'CARGAR'}
-                        </button>
+                        {!(client.isActive ?? true) ? (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onQuickAction(client, 'activate'); }}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 border border-emerald-500/30 shadow-sm"
+                            >
+                                <LucideIcons.Play size={13} />
+                                REACTIVAR
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
+                                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all shadow-md ${isCampaignDone ? 'bg-surface-low text-on-surface-variant' : 'bg-primary text-white shadow-primary/20 hover:shadow-primary/40'}`}
+                            >
+                                {isCampaignDone ? <LucideIcons.Check size={13} strokeWidth={3} /> : <LucideIcons.Upload size={13} />}
+                                {isCampaignDone ? 'LISTO' : 'CARGAR'}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

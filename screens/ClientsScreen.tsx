@@ -50,6 +50,7 @@ const OBLIGATION_GROUPS = [
     { id: 'semestral', label: 'IVA Semestral', icon: Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'rimpe_emp', label: 'Rimpe Emprendedor', icon: Zap, color: 'text-purple-400 bg-purple-500/10 ring-purple-500/20' },
     { id: 'matrix', label: 'Declaraciones', icon: LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'inactive', label: 'Inactivos', icon: Clock, color: 'text-amber-500 bg-amber-500/10 ring-amber-500/20' },
     { id: 'trash', label: 'Papelera', icon: Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
 ];
 
@@ -252,7 +253,24 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     }, [clients, serviceFees]);
 
     const trashCount = useMemo(() => clients.filter(c => c.isDeleted).length, [clients]);
+    const inactiveCount = useMemo(() => clients.filter(c => !c.isDeleted && !(c.isActive ?? true)).length, [clients]);
     const soloPlanCount = useMemo(() => clients.filter(c => !c.isDeleted && (c.requiresDeclarations === false || c.clientType === 'solo_plan')).length, [clients]);
+
+    // Búsqueda inteligente: detectar si el término coincide con clientes en la Papelera
+    const trashSearchMatches = useMemo(() => {
+        const query = debouncedSearchTerm.toLowerCase().trim();
+        if (!query || activeGroupTab === 'trash' || activeGroupTab === 'papelera') return [];
+        const normalizedQuery = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const terms = normalizedQuery.split(/\s+/).filter(t => t.length > 0);
+        return clients.filter(client => {
+            if (!client.isDeleted) return false;
+            const haystack = `${client.name} ${client.ruc} ${client.tradeName || ''} ${client.notes || ''}`
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase();
+            return terms.every(term => haystack.includes(term));
+        });
+    }, [clients, debouncedSearchTerm, activeGroupTab]);
 
     useEffect(() => {
         if (initialClientData) {
@@ -263,18 +281,22 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     const filteredClients = useMemo(() => {
         return clients.filter(client => {
-            // Lógica de Papelera: Si estamos en la pestaña trash/papelera, solo mostrar isDeleted.
-            // Si NO estamos en trash, ocultar isDeleted.
+            // Lógica de Papelera e Inactivos:
             if (activeGroupTab === 'trash' || activeGroupTab === 'papelera') {
                 if (!client.isDeleted) return false;
+            } else if (activeGroupTab === 'inactive') {
+                if (client.isDeleted || (client.isActive ?? true)) return false;
             } else {
                 if (client.isDeleted) return false;
             }
 
-            const statusMatch = filterOption === 'all' ||
-                (filterOption === 'active' && (client.isActive ?? true)) ||
-                (filterOption === 'inactive' && !(client.isActive ?? true));
-            if (!statusMatch) return false;
+            // Filtro de estado solo si no estamos en pestaña de inactivos o papelera
+            if (activeGroupTab !== 'inactive' && activeGroupTab !== 'trash' && activeGroupTab !== 'papelera') {
+                const statusMatch = filterOption === 'all' ||
+                    (filterOption === 'active' && (client.isActive ?? true)) ||
+                    (filterOption === 'inactive' && !(client.isActive ?? true));
+                if (!statusMatch) return false;
+            }
 
             // Smart Search Filtering (Unified with App.tsx tag logic)
             const query = debouncedSearchTerm.toLowerCase().trim();
@@ -487,17 +509,28 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const handleCreateClient = (client: Client) => {
         const existingClient = clients.find(c => c.id === client.id || c.ruc === client.ruc);
         if (existingClient) {
+            const isRestoring = !!existingClient.isDeleted;
             const mergedClient: Client = {
                 ...client,
                 id: existingClient.id,
                 declarations: existingClient.declarations,
                 vault: existingClient.vault,
-                createdAt: existingClient.createdAt
+                createdAt: existingClient.createdAt,
+                isDeleted: false, // Forzar activo al re-crear/re-agregar
+                isActive: typeof client.isActive === 'boolean' ? client.isActive : true
             };
             updateClient(existingClient.id, mergedClient);
-            toast.success('Perfil de cliente actualizado exitosamente');
+            if (isRestoring) {
+                toast.success(`Cliente ${existingClient.name} restaurado de la Papelera y actualizado exitosamente`);
+            } else {
+                toast.success('Perfil de cliente actualizado exitosamente');
+            }
         } else {
-            addClient(client);
+            addClient({
+                ...client,
+                isDeleted: false,
+                isActive: typeof client.isActive === 'boolean' ? client.isActive : true
+            });
             toast.success('Cliente creado exitosamente');
         }
         setIsModalOpen(false);
@@ -511,13 +544,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const handleTogglePaymentFromMatrix = (client: Client, period: string, type: TaxObligationType | TaxObligationType[], isPaid: boolean) => {
         const types = Array.isArray(type) ? type : [type];
         const now = new Date().toISOString();
-        let updatedHistory = [...(client.declarations || [])];
+        const freshClient = clients.find(c => c.id === client.id) || client;
+        let updatedHistory = [...(freshClient.declarations || [])];
 
         types.forEach(t => {
             let targetPeriod = period;
             if (t === 'ICE' && !period.includes(':ICE')) targetPeriod = `${period}:ICE`;
             else if (t === 'PVP' && !period.includes(':PVP')) targetPeriod = `${period}:PVP`;
             else if (t === 'DEVOLUCION' && !period.includes(':DEV')) targetPeriod = `${period}:DEV`;
+            else if (t === 'ANEXO' && !period.includes(':ANEXO') && !period.includes(':ANEXO_ICE')) targetPeriod = `${period}:ANEXO`;
 
             const idx = updatedHistory.findIndex(d => {
                 const matchPeriod = d.period === targetPeriod || d.period === period || arePeriodsEqual(d.period, targetPeriod) || arePeriodsEqual(d.period, period);
@@ -545,7 +580,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             }
         });
 
-        updateClient(client.id, { declarations: updatedHistory });
+        updateClient(freshClient.id, { declarations: updatedHistory });
         toast.success(isPaid ? `Pago de honorarios (${period}) registrado` : `Pago de honorarios (${period}) revertido`);
 
         if (isPaid) {
@@ -611,10 +646,16 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         navigate('clients');
     };
 
-    const handleQuickAction = (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
+    const handleQuickAction = (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'activate' | 'restore' | 'purge', customPeriod?: string) => {
         const today = new Date();
         const period = customPeriod || getPeriod(client, today);
         const nowIso = today.toISOString();
+
+        if (action === 'activate') {
+            updateClient(client.id, { isActive: true });
+            toast.success(`${client.name} reactivado correctamente`);
+            return;
+        }
 
         if (action === 'deactivate') {
             updateClient(client.id, { isActive: false });
@@ -641,27 +682,35 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         // CRITICAL FIX: Leer siempre el cliente FRESCO del store, no el snapshot del card
         const freshClient = clients.find(c => c.id === client.id) || client;
         const history = [...(freshClient.declarations || [])];
-        const idx = history.findIndex(d => arePeriodsEqual(d.period, period));
         const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
 
-        const existingEntry = history[idx];
-        const newEntry = {
-            period,
-            status: newStatus,
-            updatedAt: nowIso,
-            ...(action === 'declare' ? { declaredAt: nowIso } : {}),
-            ...(action === 'pay' ? { is_paid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
-        };
+        const matchingIndices = history
+            .map((d, i) => arePeriodsEqual(d.period, period) ? i : -1)
+            .filter(i => i !== -1);
 
-        if (idx > -1) {
-            history[idx] = { ...existingEntry, ...newEntry };
+        if (matchingIndices.length > 0) {
+            matchingIndices.forEach(idx => {
+                history[idx] = {
+                    ...history[idx],
+                    status: newStatus,
+                    updatedAt: nowIso,
+                    ...(action === 'declare' ? { declaredAt: nowIso } : {}),
+                    ...(action === 'pay' ? { is_paid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
+                };
+            });
         } else {
-            history.push(newEntry as Declaration);
+            history.push({
+                period,
+                status: newStatus,
+                updatedAt: nowIso,
+                ...(action === 'declare' ? { declaredAt: nowIso } : {}),
+                ...(action === 'pay' ? { is_paid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
+            } as Declaration);
         }
 
         const updates: Partial<Client> = { declarations: history };
 
-        updateClient(client.id, updates);
+        updateClient(freshClient.id, updates);
 
         // AJUSTE CRÍTICO: Sincronizar el cliente seleccionado si está abierto en el modal
         if (selectedClient && selectedClient.id === client.id) {
@@ -1273,6 +1322,40 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         </div>
                     </div>
 
+                    {/* Acceso Directo de Alta Visibilidad: Papelera e Inactivos */}
+                    {(trashCount > 0 || inactiveCount > 0) && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {trashCount > 0 && (
+                                <button
+                                    onClick={() => setActiveGroupTab('trash')}
+                                    className={`px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border cursor-pointer ${
+                                        activeGroupTab === 'trash' || activeGroupTab === 'papelera'
+                                            ? 'bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-500/25'
+                                            : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                                    }`}
+                                    title="Ver clientes en la Papelera de reciclaje"
+                                >
+                                    <Trash2 size={13} />
+                                    <span>Papelera ({trashCount})</span>
+                                </button>
+                            )}
+                            {inactiveCount > 0 && (
+                                <button
+                                    onClick={() => setActiveGroupTab('inactive')}
+                                    className={`px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 border cursor-pointer ${
+                                        activeGroupTab === 'inactive'
+                                            ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/25'
+                                            : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                    }`}
+                                    title="Ver clientes desactivados / pausados"
+                                >
+                                    <Clock size={13} />
+                                    <span>Inactivos ({inactiveCount})</span>
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
                         {[
                             { id: 'matrix', label: '📊 Matriz Declaraciones', icon: LayoutGrid },
@@ -1286,7 +1369,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             { id: 'rimpe_np', label: '🏪 RIMPE NP', icon: Store },
                             { id: 'general', label: '🏛️ Rég. General', icon: Briefcase },
                             { id: 'solo_plan', label: 'Solo Plan / Firma', icon: Zap, badge: soloPlanCount, badgeStyle: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
-                            { id: 'trash', label: 'Papelera', icon: Trash2, badge: trashCount, badgeStyle: 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300' },
+                            { id: 'inactive', label: 'Inactivos', icon: Clock, badge: inactiveCount, badgeStyle: 'bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+                            { id: 'trash', label: 'Papelera', icon: Trash2, badge: trashCount, badgeStyle: 'bg-rose-500/20 text-rose-600 dark:text-rose-400' },
                         ].map((tab) => {
                             const isSelected = activeGroupTab === tab.id || 
                                 (tab.id === 'all' && activeGroupTab === 'directorio') || 
@@ -1542,6 +1626,76 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 )
             }
+
+            {/* SMART SEARCH MATCH IN PAPELERA BANNER */}
+            {trashSearchMatches.length > 0 && (
+                <div className="mb-6 p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-rose-500/15 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
+                            <Trash2 size={22} />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                                💡 Coincidencia en la Papelera de Reciclaje
+                            </h4>
+                            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+                                {trashSearchMatches.length === 1
+                                    ? `El cliente "${trashSearchMatches[0].name}" (RUC ${trashSearchMatches[0].ruc}) está en la papelera.`
+                                    : `Hay ${trashSearchMatches.length} clientes en la papelera que coinciden con tu búsqueda: ${trashSearchMatches.map(c => c.name).join(', ')}`}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        {trashSearchMatches.length === 1 && (
+                            <button
+                                onClick={() => {
+                                    const target = trashSearchMatches[0];
+                                    restoreClient(target.id)
+                                        .then(() => toast.success(`Cliente ${target.name} restaurado correctamente`))
+                                        .catch(err => toast.error(`Error al restaurar: ${err?.message || err}`));
+                                }}
+                                className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+                            >
+                                <CheckCircle2 size={14} /> Restaurar Ahora
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setActiveGroupTab('trash')}
+                            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all active:scale-95 cursor-pointer"
+                        >
+                            <Trash2 size={14} /> Ver en Papelera ({trashSearchMatches.length})
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* BANNER CLIENTES DESACTIVADOS / INACTIVOS */}
+            {activeGroupTab === 'inactive' && (
+                <div className="mb-8 p-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
+                            <Clock size={20} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-widest">Clientes Desactivados / En Pausa</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Estos clientes tienen su gestión tributaria suspendida temporalmente. No generan alertas de mora ni obligaciones en la matriz.</p>
+                        </div>
+                    </div>
+                    {sortedClients.length > 0 && (
+                        <button
+                            onClick={() => {
+                                if (window.confirm(`¿Desea reactivar a todos los ${sortedClients.length} clientes inactivos?`)) {
+                                    sortedClients.forEach(c => updateClient(c.id, { isActive: true }));
+                                    toast.success(`${sortedClients.length} clientes reactivados`);
+                                }
+                            }}
+                            className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all shrink-0 cursor-pointer"
+                        >
+                            Reactivar Todos
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* PAPELERA BANNER */}
             {activeGroupTab === 'trash' && sortedClients.length > 0 && (
