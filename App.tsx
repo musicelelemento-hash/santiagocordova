@@ -955,9 +955,16 @@ const App: React.FC = () => {
                                         className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-between group/item"
                                     >
                                         <div className="flex flex-col min-w-0 pr-2">
-                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide group-hover/item:text-primary transition-colors truncate">
-                                                {highlightText(c.tradeName || c.name, globalSearchQuery)}
-                                            </span>
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide group-hover/item:text-primary transition-colors truncate">
+                                                    {highlightText(c.name, globalSearchQuery)}
+                                                </span>
+                                                {(c.taxProfile?.alias || c.tradeName) && (
+                                                    <span className="text-[9px] font-bold font-display text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/20 px-1.5 py-0.5 rounded truncate shrink-0" title={`Alias: ${c.taxProfile?.alias || c.tradeName}`}>
+                                                        "{c.taxProfile?.alias || c.tradeName}"
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-[10px] font-mono font-bold text-slate-400 mt-1">
                                                 RUC: {highlightText(c.ruc, globalSearchQuery)}
                                             </span>
@@ -1009,9 +1016,16 @@ const App: React.FC = () => {
                                                 className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all flex items-center justify-between group/recent text-xs"
                                             >
                                                 <div className="flex flex-col min-w-0 pr-2">
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover/recent:text-primary transition-all uppercase truncate max-w-[220px]">
-                                                        {c.tradeName || c.name}
-                                                    </span>
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300 group-hover/recent:text-primary transition-all uppercase truncate max-w-[220px]">
+                                                            {c.name}
+                                                        </span>
+                                                        {(c.taxProfile?.alias || c.tradeName) && (
+                                                            <span className="text-[9px] font-bold font-display text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/20 px-1.5 py-0.5 rounded truncate shrink-0" title={`Alias: ${c.taxProfile?.alias || c.tradeName}`}>
+                                                                "{c.taxProfile?.alias || c.tradeName}"
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-[9px] font-mono text-slate-400 mt-0.5">RUC: {c.ruc}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">

@@ -1054,7 +1054,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="w-full h-full bg-slate-50 dark:bg-[#020b14] border-none dark:border-white/5 md:rounded-[2.5rem] flex flex-col relative overflow-hidden group/modal shadow-[0_32px_64px_-12px_rgba(0,0,0,0.4)] animate-in fade-in duration-700">
+        <div className="w-full h-full bg-slate-50 dark:bg-[#020b14] border-none flex flex-col relative overflow-hidden group/modal animate-in fade-in duration-300">
             {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4 font-mono">
                 <div className="flex items-center gap-1.5 p-1.5 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 dark:border-t-white/20 rounded-[2.5rem] shadow-2xl shadow-black/40 pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">

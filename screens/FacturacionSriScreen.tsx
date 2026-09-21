@@ -4564,9 +4564,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                               className="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-between text-xs font-semibold"
                             >
                               <div className="flex flex-col">
-                                <span className="text-slate-800 dark:text-slate-200 uppercase truncate max-w-[280px]">
-                                  {c.tradeName || c.name}
-                                </span>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-slate-800 dark:text-slate-200 uppercase truncate max-w-[240px]">
+                                    {c.name}
+                                  </span>
+                                  {(c.taxProfile?.alias || c.tradeName) && (
+                                    <span className="text-[9px] font-bold font-display text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/20 px-1.5 py-0.5 rounded truncate shrink-0" title={`Alias: ${c.taxProfile?.alias || c.tradeName}`}>
+                                      "{c.taxProfile?.alias || c.tradeName}"
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-[9px] font-mono text-slate-400 mt-0.5">RUC: {c.ruc}</span>
                               </div>
                               <ChevronRight size={12} className="text-slate-400" />

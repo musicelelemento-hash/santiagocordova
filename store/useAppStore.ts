@@ -686,7 +686,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       quickNote: cleanAlias
     };
     await get().updateClient(clientId, {
-      tradeName: cleanAlias || client.tradeName,
+      tradeName: cleanAlias,
       taxProfile: updatedTaxProfile as any
     });
   },

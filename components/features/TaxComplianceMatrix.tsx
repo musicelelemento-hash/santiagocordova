@@ -1939,18 +1939,26 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 <span className="text-sm font-black leading-none">{client.ruc[8]}</span>
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex items-center gap-1.5 min-w-0">
                                                     <h4 
                                                         onClick={() => onViewClient(client)}
                                                         className="font-bold text-sm text-white truncate hover:text-[#00A896] cursor-pointer transition-colors"
-                                                        title="Ver Expediente Completo"
+                                                        title={client.name}
                                                     >
-                                                        {client.tradeName || client.name}
+                                                        {client.name}
                                                     </h4>
                                                     {client.isPriority && (
                                                         <LucideIcons.Star size={12} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                                                     )}
                                                 </div>
+                                                {(client.taxProfile?.alias || client.tradeName) && (
+                                                    <div className="flex items-center gap-1 mt-0.5">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold font-display bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 shadow-sm truncate max-w-full" title={`Alias: ${client.taxProfile?.alias || client.tradeName}`}>
+                                                            <LucideIcons.Tag size={9} />
+                                                            <span className="truncate">"{client.taxProfile?.alias || client.tradeName}"</span>
+                                                        </span>
+                                                    </div>
+                                                )}
                                                 <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">
                                                     RUC: <code className="text-slate-300">{client.ruc}</code>
                                                 </p>
@@ -2270,14 +2278,22 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         {client.ruc[8]}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <h4 className="font-bold text-xs text-white truncate max-w-[170px] group-hover/row:text-[#00A896] transition-colors">
-                                                                {client.tradeName || client.name}
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <h4 className="font-bold text-xs text-white truncate max-w-[170px] group-hover/row:text-[#00A896] transition-colors" title={client.name}>
+                                                                {client.name}
                                                             </h4>
                                                             {client.isPriority && (
                                                                 <LucideIcons.Star size={10} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                                                             )}
                                                         </div>
+                                                        {(client.taxProfile?.alias || client.tradeName) && (
+                                                            <div className="flex items-center gap-1 mt-0.5">
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold font-display text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/20 rounded truncate max-w-[160px]" title={`Alias / Reconocimiento: ${client.taxProfile?.alias || client.tradeName}`}>
+                                                                    <LucideIcons.Tag size={8} />
+                                                                    <span className="truncate">"{client.taxProfile?.alias || client.tradeName}"</span>
+                                                                </span>
+                                                            </div>
+                                                        )}
 
                                                         <div className="flex items-center gap-2 mt-0.5 font-mono">
                                                             {(() => {
@@ -2667,7 +2683,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         Comprobante & Facturación SRI
                                     </h3>
                                     <p className="text-xs font-semibold text-slate-400 font-mono">
-                                        {activeCellModal.client.tradeName || activeCellModal.client.name} — <span className="font-mono text-[#00A896]">{activeCellModal.period}</span> ({activeCellModal.obType})
+                                        {activeCellModal.client.name} {activeCellModal.client.taxProfile?.alias ? `("${activeCellModal.client.taxProfile.alias}")` : ''} — <span className="font-mono text-[#00A896]">{activeCellModal.period}</span> ({activeCellModal.obType})
                                     </p>
                                 </div>
                             </div>
@@ -3196,7 +3212,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-black text-white uppercase tracking-wider font-display">Comprobante Registrado</h3>
-                                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{postUploadModal.client.tradeName || postUploadModal.client.name}</p>
+                                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{postUploadModal.client.name} {postUploadModal.client.taxProfile?.alias ? `("${postUploadModal.client.taxProfile.alias}")` : ''}</p>
                                 </div>
                             </div>
                             <button

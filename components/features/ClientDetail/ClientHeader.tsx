@@ -122,9 +122,24 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         try {
             await updateClientAlias(client.id, aliasInput);
             setIsEditingAlias(false);
-            toast.success("Alias de reconocimiento guardado.");
+            if (aliasInput.trim()) {
+                toast.success("Alias de reconocimiento guardado.");
+            } else {
+                toast.success("Alias eliminado correctamente.");
+            }
         } catch (e) {
             toast.error("Error al guardar alias.");
+        }
+    };
+
+    const handleRemoveAlias = async () => {
+        try {
+            await updateClientAlias(client.id, "");
+            setAliasInput("");
+            setIsEditingAlias(false);
+            toast.success("Alias eliminado correctamente.");
+        } catch (e) {
+            toast.error("Error al eliminar alias.");
         }
     };
 
@@ -368,6 +383,16 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                     >
                                         <Check size={14} strokeWidth={3} />
                                     </button>
+                                    {currentAlias && (
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveAlias}
+                                            className="p-1 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all"
+                                            title="Eliminar alias"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => { setAliasInput(currentAlias); setIsEditingAlias(false); }}
