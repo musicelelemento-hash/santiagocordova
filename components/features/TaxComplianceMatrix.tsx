@@ -1,29 +1,4 @@
 
-export function arePeriodsEqual(p1?: string, p2?: string): boolean {
-    if (!p1 || !p2) return false;
-    const clean1 = p1.split(':')[0].trim().toUpperCase();
-    const clean2 = p2.split(':')[0].trim().toUpperCase();
-    if (clean1 === clean2) return true;
-
-    const norm1 = clean1.replace('-1S', '-S1').replace('1S', 'S1').replace('-2S', '-S2').replace('2S', 'S2');
-    const norm2 = clean2.replace('-1S', '-S1').replace('1S', 'S1').replace('-2S', '-S2').replace('2S', 'S2');
-    if (norm1 === norm2) return true;
-
-    const y1 = clean1.match(/\b(20\d{2})\b/)?.[1];
-    const y2 = clean2.match(/\b(20\d{2})\b/)?.[1];
-    if (y1 && y2 && y1 !== y2) return false;
-
-    const isS1_1 = norm1.includes('S1') || norm1.endsWith('-06');
-    const isS1_2 = norm2.includes('S1') || norm2.endsWith('-06');
-    if (isS1_1 && isS1_2 && y1 === y2) return true;
-
-    const isS2_1 = norm1.includes('S2') || norm1.endsWith('-12');
-    const isS2_2 = norm2.includes('S2') || norm2.endsWith('-12');
-    if (isS2_1 && isS2_2 && y1 === y2) return true;
-
-    return false;
-}
-
 export function getP12RemainingDays(client: Client): number | null {
     if (!client.signatureExpirationDate) return null;
     const expDate = new Date(client.signatureExpirationDate);
@@ -54,7 +29,8 @@ import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredF
 import { signPublicStorageUrl } from '../../services/fileService';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
+import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
+export { arePeriodsEqual };
 import { useToast } from '../../context/ToastContext';
 import { openClientInNewWindow } from '../../utils/windowManager';
 

@@ -21,11 +21,14 @@ interface ClientCardProps {
     customPeriod?: string;
     isTrashView?: boolean;
     isCobrosView?: boolean;
+    onNavigate?: (screen: any, options?: any) => void;
+    onEditClient?: (client: Client) => void;
 }
 
 
-export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false, isCobrosView = false }) => {
+export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false, isCobrosView = false, onNavigate, onEditClient }) => {
     const [copied, setCopied] = React.useState(false);
+    const [copiedPass, setCopiedPass] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
     const today = new Date();
@@ -279,9 +282,9 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             )}
                         </div>
 
-                        {/* RUC Badge & 9th Digit Semaphore (Stitch Token) */}
+                        {/* RUC Badge & 9th Digit Semaphore & Clave SRI */}
                         <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
-                            <button onClick={handleCopy} className="group/copy flex items-center gap-2 px-2.5 py-1 -ml-1 rounded-lg transition-all bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200/50 dark:border-white/10 text-slate-600 dark:text-slate-300">
+                            <button onClick={handleCopy} className="group/copy flex items-center gap-2 px-2.5 py-1 -ml-1 rounded-lg transition-all bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200/50 dark:border-white/10 text-slate-600 dark:text-slate-300 cursor-pointer">
                                 <span className="w-2 h-2 rounded-full bg-[#00A896] shadow-[0_0_6px_#00A896]"></span>
                                 <span className="font-mono text-xs font-bold tracking-wider text-slate-900 dark:text-slate-100">{client.ruc}</span>
                                 <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 border-l border-slate-300 dark:border-white/10 pl-1.5">
@@ -289,12 +292,30 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                 </span>
                                 {copied ? <LucideIcons.Check size={12} className="text-emerald-500" /> : <LucideIcons.Copy size={12} className="opacity-40 group-hover/copy:opacity-100 transition-opacity text-slate-400" />}
                             </button>
+
+                            {client.sriPassword && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigator.clipboard.writeText(client.sriPassword || '');
+                                        setCopiedPass(true);
+                                        setTimeout(() => setCopiedPass(false), 2000);
+                                    }}
+                                    className="group/pass flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-600 dark:text-amber-300 font-mono text-xs font-bold cursor-pointer"
+                                    title={copiedPass ? "¡Clave SRI copiada al portapapeles!" : `Copiar Clave SRI (${client.sriPassword.slice(0, 2)}••••)`}
+                                >
+                                    <LucideIcons.Key size={12} className="text-amber-500" />
+                                    <span>{copiedPass ? "¡Clave Copiada!" : "Clave SRI"}</span>
+                                    {copiedPass ? <LucideIcons.Check size={12} className="text-emerald-500" /> : <LucideIcons.Copy size={12} className="opacity-40 group-hover/pass:opacity-100" />}
+                                </button>
+                            )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                             <button 
                                 onClick={(e) => { e.stopPropagation(); onView(client, 'vault'); }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-300 hover:bg-purple-500/20 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-purple-500/20"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-300 hover:bg-purple-500/20 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-purple-500/20 active:scale-95 cursor-pointer"
                                 title="Abrir Bóveda de Claves y Firma"
                             >
                                 <LucideIcons.Lock size={12} />
@@ -303,17 +324,54 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             {client.phones && client.phones.length > 0 && client.phones[0] && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(client.phones![0]), '_blank'); }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A896]/10 text-[#00A896] hover:bg-[#00A896]/20 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-[#00A896]/20"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A896]/10 text-[#00A896] hover:bg-[#00A896]/20 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-[#00A896]/20 active:scale-95 cursor-pointer"
                                     title="Abrir chat de WhatsApp"
                                 >
                                     <LucideIcons.MessageCircle size={12} />
                                     <span>WhatsApp</span>
                                 </button>
                             )}
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onNavigate) {
+                                        onNavigate('sri_facturacion', {
+                                            clientId: client.id,
+                                            ruc: client.ruc,
+                                            name: client.name,
+                                            tradeName: client.tradeName,
+                                            email: client.email,
+                                            phones: client.phones,
+                                            amount: fee,
+                                            description: `HONORARIOS CONTABLES - DECLARACION IVA ${formatPeriodForDisplay(currentPeriod)}`
+                                        });
+                                    }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-amber-500/20 active:scale-95 cursor-pointer"
+                                title={`Facturación Electrónica SRI ($${fee.toFixed(2)})`}
+                            >
+                                <LucideIcons.Receipt size={12} />
+                                <span>Facturar</span>
+                            </button>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onEditClient) {
+                                        onEditClient(client);
+                                    } else {
+                                        onView(client, 'profile');
+                                    }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-blue-500/20 active:scale-95 cursor-pointer"
+                                title="Editar datos del cliente"
+                            >
+                                <LucideIcons.Edit3 size={12} />
+                                <span>Editar</span>
+                            </button>
                             {client.email && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${client.email}`; }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-slate-200 dark:border-white/5"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-slate-200 dark:border-white/5 active:scale-95 cursor-pointer"
                                 >
                                     <LucideIcons.Mail size={12} />
                                     <span>Email</span>
@@ -472,7 +530,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         </div>
                     ) : (
                         client.isActive && !client.isDeleted && (
-                            <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                <button
+                                    onClick={(e) => handleAction(e, 'deactivate')}
+                                    className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:border-rose-500/30 bg-slate-100 dark:bg-white/5 hover:bg-rose-500/10 text-slate-500 hover:text-rose-500 transition-all active:scale-95 cursor-pointer"
+                                    title="Pausar cliente temporalmente"
+                                >
+                                    <LucideIcons.Pause size={14} />
+                                </button>
                                 <button
                                     onClick={(e) => !isDeclared && handleAction(e, 'declare', currentPeriod)}
                                     disabled={isDeclared}

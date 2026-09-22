@@ -16,6 +16,8 @@ interface VirtualClientListProps {
     customPeriod?: string;
     isTrashView?: boolean;
     isCobrosView?: boolean;
+    onNavigate?: (screen: any, options?: any) => void;
+    onEditClient?: (client: Client) => void;
 }
 
 interface ClientRowProps {
@@ -32,9 +34,11 @@ interface ClientRowProps {
     customPeriod?: string;
     isTrashView?: boolean;
     isCobrosView?: boolean;
+    onNavigate?: (screen: any, options?: any) => void;
+    onEditClient?: (client: Client) => void;
 }
 
-const ClientRow = memo(({ index, style, clients, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, variant = 'zen', frequency, customPeriod, isTrashView, isCobrosView }: ClientRowProps) => {
+const ClientRow = memo(({ index, style, clients, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, variant = 'zen', frequency, customPeriod, isTrashView, isCobrosView, onNavigate, onEditClient }: ClientRowProps) => {
     const client = clients[index];
 
     const itemStyle = {
@@ -60,6 +64,8 @@ const ClientRow = memo(({ index, style, clients, serviceFees, onView, onQuickAct
                 customPeriod={customPeriod}
                 isTrashView={isTrashView}
                 isCobrosView={isCobrosView}
+                onNavigate={onNavigate}
+                onEditClient={onEditClient}
             />
         </div>
     );
@@ -123,6 +129,8 @@ export const VirtualClientList: React.FC<VirtualClientListProps> = (props) => {
                             customPeriod={props.customPeriod}
                             isTrashView={props.isTrashView}
                             isCobrosView={props.isCobrosView}
+                            onNavigate={props.onNavigate}
+                            onEditClient={props.onEditClient}
                         />
                     </div>
                 ))}

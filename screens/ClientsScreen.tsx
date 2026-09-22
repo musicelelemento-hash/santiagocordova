@@ -9,7 +9,7 @@ import {
     Download, Copy, FileSpreadsheet, Building2,
     KeyRound
 } from 'lucide-react';
-import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
+import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat, isSriPasswordUpdated } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
 import { v4 as uuidv4 } from 'uuid';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
@@ -101,7 +101,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status' | 'pending_obligations' | 'pending_payments'>(() => (sessionStorage.getItem('clients_sort') as any) || '9th_digit');
     const [filterOption, setFilterOption] = useState<'active' | 'inactive' | 'all'>('active');
     const [isComboModalOpen, setIsComboModalOpen] = useState(false);
-    const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => (sessionStorage.getItem('clients_view_mode') as any) || 'list');
+    const [viewMode, setViewMode] = useState<'cards' | 'list' | 'analytics'>(() => (sessionStorage.getItem('clients_view_mode') as any) || 'list');
+    const [selectedDigitFilter, setSelectedDigitFilter] = useState<string | null>(null);
     const receiptFileInputRef = useRef<HTMLInputElement>(null);
     const bulkFileInputRef = useRef<HTMLInputElement>(null);
     const [receiptUploadState, setReceiptUploadState] = useState<{ client: Client, period?: string, obligationType?: TaxObligationType } | null>(null);
@@ -358,6 +359,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             if (!searchMatch) return false;
 
+            // Filtro por 9no Dígito del RUC (Calendario Tributario SRI)
+            if (selectedDigitFilter !== null && client.ruc[8] !== selectedDigitFilter) {
+                return false;
+            }
+
             // SI HAY BÚSQUEDA ACTIVADA, saltamos los filtros de pestañas para mostrar resultados globales
             if (query) return true;
 
@@ -462,7 +468,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             return true;
         });
-    }, [clients, debouncedSearchTerm, filterOption, activeGroupTab, regimeFilter, initialFilter]);
+    }, [clients, debouncedSearchTerm, filterOption, activeGroupTab, regimeFilter, initialFilter, selectedDigitFilter]);
 
     // --- LÓGICA DE ORDENAMIENTO MEJORADA ---
     const sortedClients = useMemo(() => {
@@ -524,6 +530,67 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             return valA - valB;
         });
     }, [filteredClients, sortOption]);
+
+    // Conteo por 9no Dígito para el Calendario SRI
+    const digitCounts = useMemo(() => {
+        const counts: Record<string, number> = {
+            '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0, '0': 0
+        };
+        const activePool = clients.filter(c => !c.isDeleted && (filterOption === 'all' || (filterOption === 'active' ? (c.isActive ?? true) : !(c.isActive ?? true))));
+        activePool.forEach(c => {
+            const d = c.ruc?.[8];
+            if (d && counts[d] !== undefined) {
+                counts[d]++;
+            }
+        });
+        return counts;
+    }, [clients, filterOption]);
+
+    // Métricas Ejecutivas del Directorio
+    const directoryStats = useMemo(() => {
+        const inView = sortedClients;
+        const total = inView.length;
+        let totalMonthlyRevenue = 0;
+        let alDiaCount = 0;
+        let conDeudaCount = 0;
+        let totalDeuda = 0;
+        let keysUpdatedCount = 0;
+        let signaturesExpiringSoon = 0;
+        const today = new Date();
+
+        inView.forEach(c => {
+            const fee = getClientServiceFee(c, serviceFees);
+            if (!c.isCourtesy) totalMonthlyRevenue += fee;
+
+            const debtSummary = getClientDebtSummary(c, serviceFees, today);
+            const undeclaredSummary = getClientUndeclaredSummary(c, today);
+
+            if (debtSummary.totalDebt > 0) {
+                conDeudaCount++;
+                totalDeuda += debtSummary.totalDebt;
+            } else if (!undeclaredSummary.hasPendingObligation) {
+                alDiaCount++;
+            }
+
+            const keyStatus = isSriPasswordUpdated(c);
+            if (keyStatus.isUpdated) keysUpdatedCount++;
+
+            if (c.signatureExpirationDate) {
+                const diffDays = differenceInCalendarDays(new Date(c.signatureExpirationDate), today);
+                if (diffDays <= 30 && diffDays >= 0) signaturesExpiringSoon++;
+            }
+        });
+
+        return {
+            total,
+            totalMonthlyRevenue,
+            alDiaCount,
+            conDeudaCount,
+            totalDeuda,
+            keysUpdatedCount,
+            signaturesExpiringSoon
+        };
+    }, [sortedClients, serviceFees]);
 
     const handleCreateClient = (client: Client) => {
         const existingClient = clients.find(c => c.id === client.id || c.ruc === client.ruc);
@@ -1531,18 +1598,30 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             </div>
                         )}
                     </div>
-                    <div className="flex bg-surface-medium p-1 rounded-xl border border-outline-variant/20">
+                    <div className="flex bg-surface-medium p-1 rounded-xl border border-outline-variant/20 gap-1">
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                            title="Vista Tabla Completa con Operaciones Directas"
                         >
                             <LayoutList size={16} />
+                            <span className="hidden sm:inline">Tabla</span>
                         </button>
                         <button 
                             onClick={() => setViewMode('cards')}
-                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                            title="Vista Tarjetas Tácticas"
                         >
                             <LayoutGrid size={16} />
+                            <span className="hidden sm:inline">Tarjetas</span>
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('analytics')}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'analytics' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                            title="Panel Analítico y Métricas"
+                        >
+                            <FileSpreadsheet size={16} />
+                            <span className="hidden sm:inline">Panel</span>
                         </button>
                     </div>
                 </div>
@@ -1808,7 +1887,136 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         transition={{ duration: 0.4 }}
                         className="pb-20"
                     >
-                        {activeGroupTab === 'all' ? (
+                        {/* CINTA DE INTELIGENCIA Y KPIS DE LA VISTA */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 px-1">
+                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
+                                <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+                                    <Users size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Clientes</span>
+                                    <span className="text-base font-black font-mono text-slate-900 dark:text-white leading-none">{directoryStats.total}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
+                                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+                                    <DollarSign size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Fact. Proyectada</span>
+                                    <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400 leading-none">${directoryStats.totalMonthlyRevenue.toFixed(0)}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
+                                <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-500 shrink-0">
+                                    <ShieldCheck size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Al Día</span>
+                                    <span className="text-base font-black font-mono text-teal-600 dark:text-teal-400 leading-none">{directoryStats.alDiaCount}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
+                                <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+                                    <AlertCircle size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Pendientes</span>
+                                    <span className="text-base font-black font-mono text-rose-600 dark:text-rose-400 leading-none">{directoryStats.conDeudaCount}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
+                                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+                                    <KeyRound size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Claves SRI OK</span>
+                                    <span className="text-base font-black font-mono text-amber-600 dark:text-amber-400 leading-none">{directoryStats.keysUpdatedCount} / {directoryStats.total}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
+                                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 shrink-0">
+                                    <FileText size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Firmas Vencen</span>
+                                    <span className="text-base font-black font-mono text-purple-600 dark:text-purple-400 leading-none">{directoryStats.signaturesExpiringSoon}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* BARRA DE 9NO DÍGITO RUC (CALENDARIO TRIBUTARIO SRI) */}
+                        <div className="mb-6 px-1 flex flex-col gap-2">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <span className="flex items-center gap-2">
+                                    <Clock size={13} className="text-[#00A896]" />
+                                    <span>Filtro Rápido por 9no Dígito (Vencimientos SRI):</span>
+                                </span>
+                                {selectedDigitFilter !== null && (
+                                    <button
+                                        onClick={() => setSelectedDigitFilter(null)}
+                                        className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <X size={12} /> Mostrar Todos
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                                <button
+                                    onClick={() => setSelectedDigitFilter(null)}
+                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer border ${
+                                        selectedDigitFilter === null
+                                            ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                                            : 'bg-surface-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 border-outline-variant/30'
+                                    }`}
+                                >
+                                    Todos ({clients.filter(c => !c.isDeleted).length})
+                                </button>
+                                {[
+                                    { digit: '1', day: '10' },
+                                    { digit: '2', day: '12' },
+                                    { digit: '3', day: '14' },
+                                    { digit: '4', day: '16' },
+                                    { digit: '5', day: '18' },
+                                    { digit: '6', day: '20' },
+                                    { digit: '7', day: '22' },
+                                    { digit: '8', day: '24' },
+                                    { digit: '9', day: '26' },
+                                    { digit: '0', day: '28' },
+                                ].map(({ digit, day }) => {
+                                    const count = digitCounts[digit] || 0;
+                                    const isSelected = selectedDigitFilter === digit;
+                                    return (
+                                        <button
+                                            key={digit}
+                                            onClick={() => setSelectedDigitFilter(isSelected ? null : digit)}
+                                            className={`px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5 ${
+                                                isSelected
+                                                    ? 'bg-[#00A896] text-white border-[#00A896] shadow-sm shadow-[#00A896]/30'
+                                                    : 'bg-surface-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-outline-variant/30 hover:border-[#00A896]/30'
+                                            }`}
+                                            title={`Dígito ${digit} vence el día ${day} de cada período`}
+                                        >
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-[#00A896]'}`} />
+                                            <span className="font-black text-xs">Díg {digit}</span>
+                                            <span className="text-[9px] opacity-75 font-normal">(Día {day})</span>
+                                            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                                                isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-300'
+                                            }`}>
+                                                {count}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {viewMode === 'analytics' ? (
                             <ClientsDashboard
                                 clients={sortedClients}
                                 serviceFees={serviceFees}
@@ -1825,6 +2033,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 frequency={frequencyForList}
                                 isTrashView={activeGroupTab === 'trash'}
                                 isCobrosView={false}
+                                onNavigate={navigate}
+                                onEditClient={(c) => handleOpenClientDetails(c, 'profile')}
                             />
                         ) : (
                             <VirtualClientList
@@ -1836,6 +2046,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 frequency={frequencyForList}
                                 isTrashView={activeGroupTab === 'trash'}
                                 isCobrosView={false}
+                                onNavigate={navigate}
+                                onEditClient={(c) => handleOpenClientDetails(c, 'profile')}
                             />
                         )}
                     </motion.div>

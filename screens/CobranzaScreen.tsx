@@ -2,8 +2,8 @@ import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
-import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary } from '../services/complianceEngine';
-import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
+import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary, arePeriodsEqual } from '../services/complianceEngine';
+
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
 import {
     AlertTriangle, CheckCircle, MessageSquare, DollarSign,
@@ -43,6 +43,13 @@ const defaultBusinessProfile: BusinessProfile = {
     email: 'info@santiagocordova.com',
     authNumber: '0000000000'
 };
+
+// Helper puro: Determinar frecuencia de IVA del Contribuyente (Mensual, Semestral o Rimpe Popular)
+export function getClientIvaFrequency(client: Client): 'Mensual' | 'Semestral' | 'Popular' {
+    if (client.regime === TaxRegime.RimpeNegocioPopular) return 'Popular';
+    if (client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor) return 'Semestral';
+    return 'Mensual';
+}
 
 export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ 
     reminderConfigProp,
@@ -705,13 +712,6 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             }
         });
     }, [financialData, activeTab, searchTerm, moraFilter]);
-
-    // Helper: Determinar frecuencia de IVA del Contribuyente (Mensual, Semestral o Rimpe Popular)
-    const getClientIvaFrequency = (client: Client): 'Mensual' | 'Semestral' | 'Popular' => {
-        if (client.regime === TaxRegime.RimpeNegocioPopular) return 'Popular';
-        if (client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor) return 'Semestral';
-        return 'Mensual';
-    };
 
     // Períodos Fiscales para la Matriz de Cobranzas (Mensuales o Semestrales)
     const matrixPeriods = useMemo(() => {
