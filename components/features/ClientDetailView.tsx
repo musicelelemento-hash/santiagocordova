@@ -281,8 +281,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             true // Handled generally
         );
 
-        const fullyPaid = isIvaPaid && isRentaPaid && (!editedClient.taxProfile?.requiresIce || true) && (!editedClient.taxProfile?.requiresAnexoPvp || true);
-        const fullyDeclared = isIvaDeclared && isRentaDeclared && isIceOk && isPvpOk;
+        const needsIva = requiresIva(editedClient);
+        const fullyPaid = (!needsIva || isIvaPaid) && (!needsRenta || isRentaPaid) && (!editedClient.taxProfile?.requiresIce || true) && (!editedClient.taxProfile?.requiresAnexoPvp || true);
+        const fullyDeclared = (!needsIva || isIvaDeclared) && (!needsRenta || isRentaDeclared) && isIceOk && isPvpOk;
 
         // --- CÁLCULO DE DEUDA Y DESGLOSE ---
         const pending = (editedClient.declarations || []).filter(d => !d.is_paid);
@@ -329,10 +330,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
         let cmd = null;
         if (activeWorkflowDeclaration) {
+            const isAnnual = activeWorkflowDeclaration.period.length === 4;
             cmd = {
-                type: 'iva',
+                type: isAnnual ? 'renta' : 'iva',
                 period: activeWorkflowDeclaration.period,
-                title: `IVA ${formatPeriodForDisplay(activeWorkflowDeclaration.period)}`,
+                title: isAnnual ? `Renta ${activeWorkflowDeclaration.period}` : `IVA ${formatPeriodForDisplay(activeWorkflowDeclaration.period)}`,
                 isDeclared: activeWorkflowDeclaration.status === DeclarationStatus.Enviada || activeWorkflowDeclaration.status === DeclarationStatus.Pagada,
                 is_paid: !!activeWorkflowDeclaration.is_paid,
                 amount: activeWorkflowDeclaration.amount ?? getClientServiceFee(editedClient, serviceFees, activeWorkflowDeclaration.period)

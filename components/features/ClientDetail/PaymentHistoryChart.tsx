@@ -1,21 +1,30 @@
 import React, { memo } from 'react';
 import { ResponsiveContainer, AreaChart as RechartsAreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import * as LucideIcons from 'lucide-react';
-import { Client, Declaration, DeclarationStatus } from '../../../types';
+import { Client, Declaration, DeclarationStatus, TaxRegime } from '../../../types';
 import { subMonths, subYears } from 'date-fns';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../../../services/sri';
 import { isPast } from 'date-fns';
 
 const getRecentPeriods = (client: Client, count: number): string[] => {
     if (!client) return [];
+    const isPopular = client.regime === TaxRegime.RimpeNegocioPopular ||
+                      client.taxProfile?.ivaFrequency === 'Ninguno' ||
+                      !!client.regime?.toLowerCase().includes('popular');
+    const isSemestral = !isPopular && client.taxProfile?.ivaFrequency === 'Semestral';
+
     const periods: string[] = [];
     let currentDate = new Date();
     for (let i = 0; i < count; i++) {
         const period = getPeriod(client, currentDate);
         if (!periods.includes(period)) periods.push(period);
-        if ((client.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual') { currentDate = subMonths(currentDate, 1); }
-        else if (client.taxProfile?.ivaFrequency === 'Semestral') { currentDate = subMonths(currentDate, 6); }
-        else { currentDate = subYears(currentDate, 1); }
+        if (isPopular) {
+            currentDate = subYears(currentDate, 1);
+        } else if (isSemestral) {
+            currentDate = subMonths(currentDate, 6);
+        } else {
+            currentDate = subMonths(currentDate, 1);
+        }
     }
     return periods.slice(0, count).reverse();
 };

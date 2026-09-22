@@ -4,7 +4,7 @@ import {
     UploadCloud, Eye, RotateCcw, XCircle, CheckCircle2, Clock, Activity, Zap,
     Copy, Check, Tag
 } from 'lucide-react';
-import { Client, DeclarationStatus, TaxObligationType, Declaration } from '../../../types';
+import { Client, DeclarationStatus, TaxObligationType, Declaration, TaxRegime } from '../../../types';
 import { formatPeriodForDisplay, isFuturePeriod } from '../../../services/sri';
 import { getClientServiceFee } from '../../../services/clientService';
 import { useToast } from '../../../context/ToastContext';
@@ -38,6 +38,12 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
     setPreviewItem
 }) => {
     const { toast } = useToast();
+
+    // Detección precisa de régimen y si requiere IVA
+    const isPopular = client.regime === TaxRegime.RimpeNegocioPopular ||
+                      client.taxProfile?.ivaFrequency === 'Ninguno' ||
+                      !!client.regime?.toLowerCase().includes('popular');
+    const needsIva = !isPopular && (complianceStats?.iva?.needed ?? (client.taxProfile?.ivaFrequency !== 'Ninguno'));
 
     // Extracción de obligaciones activas de complianceStats o del cliente
     const ivaData = complianceStats?.iva;
@@ -180,14 +186,14 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                 <div className="flex items-center gap-2 font-mono">
                     <span className="px-3 py-1 bg-white/5 border border-white/10 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider">
-                        {client.taxProfile?.ivaFrequency || 'Mensual'}
+                        {isPopular ? 'RIMPE Negocio Popular (Anual)' : (client.taxProfile?.ivaFrequency || 'Mensual')}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                        (ivaPaid && (!rentaData?.needed || rentaPaid))
+                        ((!needsIva || ivaPaid) && (!rentaData?.needed || rentaPaid))
                             ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
                             : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                     }`}>
-                        {(ivaPaid && (!rentaData?.needed || rentaPaid)) ? '✓ Honorarios al Día' : '⚠ Cobro Pendiente'}
+                        {((!needsIva || ivaPaid) && (!rentaData?.needed || rentaPaid)) ? '✓ Honorarios al Día' : '⚠ Cobro Pendiente'}
                     </span>
                 </div>
             </div>
@@ -205,8 +211,8 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-xs font-medium">
-                        {/* FILA 1: IVA */}
-                        {ivaPeriod && (
+                        {/* FILA 1: IVA (Solo para contribuyentes con obligación de IVA mensual o semestral) */}
+                        {needsIva && ivaPeriod && (
                             <tr className="hover:bg-white/5 transition-all">
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
@@ -316,7 +322,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                         </div>
                                         <div>
                                             <p className="font-bold text-white font-display">
-                                                Impuesto a la Renta Anual
+                                                {isPopular ? 'Renta RIMPE Negocio Popular (Cuota Fija)' : 'Impuesto a la Renta Anual'}
                                             </p>
                                             <p className="text-[11px] text-slate-400 font-mono mt-0.5">
                                                 Período: {rentaPeriod}

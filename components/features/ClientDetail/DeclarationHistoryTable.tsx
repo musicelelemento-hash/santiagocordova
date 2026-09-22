@@ -1,6 +1,6 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Declaration, DeclarationStatus, Client } from '../../../types';
+import { Declaration, DeclarationStatus, Client, TaxRegime } from '../../../types';
 import { formatPeriodForDisplay, safeFormat, isFuturePeriod } from '../../../services/sri';
 
 interface DeclarationHistoryTableProps {
@@ -141,7 +141,15 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                         )}
                                     </div>
                                     <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
-                                        {decl.type || 'IVA MENSUAL'}
+                                        {decl.type || (
+                                            client.regime === TaxRegime.RimpeNegocioPopular
+                                                ? 'RENTA RIMPE POPULAR'
+                                                : decl.period?.length === 4
+                                                    ? 'RENTA ANUAL'
+                                                    : decl.period?.includes('S')
+                                                        ? 'IVA SEMESTRAL'
+                                                        : 'IVA MENSUAL'
+                                        )}
                                     </p>
                                 </div>
                             </div>

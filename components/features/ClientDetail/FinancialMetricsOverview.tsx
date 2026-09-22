@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Client, TaxRegime } from '../../../types';
 import { formatPeriodForDisplay } from '../../../services/sri';
 import {
     BarChart3, ShoppingCart, ShoppingBag, Coins, TrendingUp, TrendingDown,
     Download, Copy, Sparkles, Calendar, Layers, ArrowUpRight, ArrowDownRight,
-    PieChart, ShieldCheck, CheckCircle2, FileSpreadsheet
+    PieChart, ShieldCheck, CheckCircle2, FileSpreadsheet, Award, AlertCircle
 } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 
@@ -59,31 +59,78 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 }) => {
     const { toast } = useToast();
 
-    // 1. Obtener lista de períodos disponibles (declaraciones o últimos 12 meses)
+    // Detección precisa de régimen y cadencia
+    const isPopular = client.regime === TaxRegime.RimpeNegocioPopular ||
+                      client.taxProfile?.ivaFrequency === 'Ninguno' ||
+                      !!client.regime?.toLowerCase().includes('popular');
+    const isSemestral = !isPopular && (client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor);
+    const isMensual = !isPopular && !isSemestral;
+    const isGeneralRegime = !isPopular && (client.regime === TaxRegime.General || !client.regime?.toLowerCase().includes('rimpe'));
+
+    // 1. Obtener lista de períodos disponibles según el régimen del cliente
     const availablePeriods = useMemo(() => {
         const periodsSet = new Set<string>();
         if (client.declarations && client.declarations.length > 0) {
             client.declarations.forEach(d => {
                 if (d.period && d.period.startsWith('202')) {
-                    periodsSet.add(d.period);
+                    if (isPopular) {
+                        // Para Negocio Popular, aceptar períodos anuales (4 dígitos) o derivar el año
+                        if (d.period.length === 4) {
+                            periodsSet.add(d.period);
+                        } else if (d.period.includes('-')) {
+                            periodsSet.add(d.period.split('-')[0]);
+                        }
+                    } else if (isSemestral) {
+                        if (d.period.includes('S')) {
+                            periodsSet.add(d.period);
+                        }
+                    } else {
+                        periodsSet.add(d.period);
+                    }
                 }
             });
         }
 
-        // Generar últimos 12 meses por defecto
         const now = new Date();
-        for (let i = 0; i < 12; i++) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const p = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-            periodsSet.add(p);
+        const currentYearNum = now.getFullYear();
+
+        if (isPopular) {
+            // Generar últimos 5 años fiscales para RIMPE Negocio Popular
+            for (let i = 0; i < 5; i++) {
+                periodsSet.add((currentYearNum - i).toString());
+            }
+        } else if (isSemestral) {
+            // Generar últimos semestres
+            for (let i = 0; i < 3; i++) {
+                const y = currentYearNum - i;
+                periodsSet.add(`${y}-S2`);
+                periodsSet.add(`${y}-S1`);
+            }
+        } else {
+            // Generar últimos 12 meses por defecto para Régimen General / Mensual
+            for (let i = 0; i < 12; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const p = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+                periodsSet.add(p);
+            }
         }
 
         return Array.from(periodsSet).sort().reverse();
-    }, [client.declarations]);
+    }, [client.declarations, isPopular, isSemestral]);
 
-    const [selectedPeriod, setSelectedPeriod] = useState<string>(availablePeriods[0] || '2026-07');
+    const [selectedPeriod, setSelectedPeriod] = useState<string>(() => {
+        if (availablePeriods.length > 0) return availablePeriods[0];
+        return isPopular ? (new Date().getFullYear() - 1).toString() : '2026-07';
+    });
 
-    // NUEVO: Calcular Ventas YTD (Year-to-Date) del año en curso
+    // Sincronizar selección si cambia la cartera de períodos disponibles
+    useEffect(() => {
+        if (availablePeriods.length > 0 && !availablePeriods.includes(selectedPeriod)) {
+            setSelectedPeriod(availablePeriods[0]);
+        }
+    }, [availablePeriods, selectedPeriod]);
+
+    // Ventas YTD / Anuales del cliente
     const currentYear = new Date().getFullYear().toString();
     const ytdSales = useMemo(() => {
         let total = 0;
@@ -93,12 +140,60 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                     const meta = (d.proof_file?.metadata as any) || {};
                     const v15 = meta.ventas15 ?? meta.base15 ?? (d.amount ? d.amount * 4 : 0);
                     const v0 = meta.ventas0 ?? meta.base0 ?? 0;
-                    total += v15 + v0;
+                    const v5 = meta.ventas5 ?? 0;
+                    total += v15 + v0 + v5;
                 }
             });
         }
         return total;
     }, [client.declarations, currentYear]);
+
+    // 3. Declaración activa seleccionada
+    const activeDeclaration = useMemo(() => {
+        return (client.declarations || []).find(d => d.period === selectedPeriod);
+    }, [client.declarations, selectedPeriod]);
+
+    // Ingresos anuales para Negocio Popular (Año seleccionado o en curso)
+    const annualRevenueNp = useMemo(() => {
+        if (!isPopular) return ytdSales;
+        const targetYear = selectedPeriod.length === 4 ? selectedPeriod : currentYear;
+        let total = 0;
+        let count = 0;
+        if (client.declarations) {
+            client.declarations.forEach(d => {
+                if (d.period && d.period.startsWith(targetYear)) {
+                    const meta = (d.proof_file?.metadata as any) || {};
+                    const v15 = meta.ventas15 ?? meta.base15 ?? 0;
+                    const v0 = meta.ventas0 ?? meta.base0 ?? (d.amount ? d.amount * 4 : 0);
+                    const v5 = meta.ventas5 ?? 0;
+                    total += v15 + v0 + v5;
+                    count++;
+                }
+            });
+        }
+        if (total === 0 && activeDeclaration) {
+            const meta = (activeDeclaration.proof_file?.metadata as any) || {};
+            const v15 = meta.ventas15 ?? meta.base15 ?? 0;
+            const v0 = meta.ventas0 ?? meta.base0 ?? (activeDeclaration.amount ? activeDeclaration.amount * 4 : 0);
+            total = v15 + v0;
+        }
+        return total;
+    }, [isPopular, selectedPeriod, currentYear, client.declarations, activeDeclaration, ytdSales]);
+
+    // Tabla SRI RIMPE Negocio Popular (Decreto Ley Orgánica de Economía Familiar)
+    // Ingresos brutos hasta $20,000 anuales. Cuotas fijas anuales:
+    const npTaxBrackets = [
+        { limit: 2500, tax: 0, msg: "Cuota Fija $0.00 (Exento)" },
+        { limit: 5000, tax: 5, msg: "Cuota Fija $5.00" },
+        { limit: 10000, tax: 15, msg: "Cuota Fija $15.00" },
+        { limit: 15000, tax: 35, msg: "Cuota Fija $35.00" },
+        { limit: 20000, tax: 60, msg: "Cuota Fija Máxima $60.00" },
+        { limit: Infinity, tax: 60, msg: "Excluido de Negocio Popular (Supera $20,000)" }
+    ];
+
+    const currentNpBracket = useMemo(() => {
+        return npTaxBrackets.find(b => annualRevenueNp <= b.limit) || npTaxBrackets[npTaxBrackets.length - 1];
+    }, [annualRevenueNp]);
 
     // Tabla SRI Régimen General 2024
     const taxBrackets = [
@@ -118,41 +213,51 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
         return taxBrackets.find(b => ytdSales <= b.limit) || taxBrackets[taxBrackets.length - 1];
     }, [ytdSales]);
 
-    const isGeneralRegime = client.regime === TaxRegime.General || !client.regime?.toLowerCase().includes('rimpe');
-
-    // 2. Mapear datos mensuales históricos para la gráfica comparativa (últimos 6 meses)
+    // 2. Mapear datos históricos para la gráfica comparativa (últimos períodos)
     const historyData = useMemo(() => {
-        const last6 = availablePeriods.slice(0, 6).reverse();
-        return last6.map(p => {
+        const lastSlice = availablePeriods.slice(0, 6).reverse();
+        return lastSlice.map(p => {
             const decl = (client.declarations || []).find(d => d.period === p);
             const meta = (decl?.proof_file?.metadata as any) || {};
 
-            const v15 = meta.ventas15 ?? meta.base15 ?? (decl?.amount ? decl.amount * 4 : 0);
-            const v0 = meta.ventas0 ?? meta.base0 ?? 0;
-            const ivaVentas = meta.montoIvaVentas ?? (v15 * 0.15);
-            const totalVentas = v15 + v0 + ivaVentas;
+            const v15 = meta.ventas15 ?? meta.base15 ?? 0;
+            const v0 = meta.ventas0 ?? meta.base0 ?? (decl?.amount && isPopular ? decl.amount * 4 : 0);
+            const v5 = meta.ventas5 ?? 0;
+            const ivaVentas = isPopular ? 0 : (meta.montoIvaVentas ?? (v15 * 0.15));
+            const totalVentas = v15 + v0 + v5 + ivaVentas;
 
-            const c15 = meta.compras15 ?? (v15 * 0.4);
+            const c15 = meta.compras15 ?? (isPopular ? 0 : v15 * 0.4);
             const c0 = meta.compras0 ?? 0;
-            const ivaCompras = meta.montoIvaCompras ?? (c15 * 0.15);
-            const totalCompras = c15 + c0 + ivaCompras;
+            const c5 = meta.compras5 ?? 0;
+            const ivaCompras = isPopular ? 0 : (meta.montoIvaCompras ?? (c15 * 0.15));
+            const totalCompras = c15 + c0 + c5 + ivaCompras;
 
-            const retIva = meta.retIva ?? (ivaVentas * 0.3);
-            const retRenta = meta.retRenta ?? (v15 * 0.0175);
+            const retIva = isPopular ? 0 : (meta.retIva ?? (ivaVentas * 0.3));
+            const retRenta = meta.retRenta ?? (totalVentas * 0.0175);
             const totalRet = retIva + retRenta;
+
+            let displayName = formatPeriodForDisplay(p);
+            if (isPopular && p.length === 4) {
+                displayName = `Año ${p}`;
+            }
 
             return {
                 period: p,
-                monthName: formatPeriodForDisplay(p),
+                displayName,
+                monthName: displayName,
                 totalVentas,
                 totalCompras,
                 totalRet,
                 ventas15: v15,
+                ventas0: v0,
+                ventas5: v5,
                 compras15: c15,
+                compras0: c0,
+                compras5: c5,
                 hasDecl: !!decl
             };
         });
-    }, [availablePeriods, client.declarations]);
+    }, [availablePeriods, client.declarations, isPopular]);
 
     // Encontrar valor máximo para escalar las barras proporcionalmente
     const maxBarVal = useMemo(() => {
@@ -164,39 +269,53 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
         return max;
     }, [historyData]);
 
-    // 3. Declaración activa seleccionada
-    const activeDeclaration = useMemo(() => {
-        return (client.declarations || []).find(d => d.period === selectedPeriod);
-    }, [client.declarations, selectedPeriod]);
-
-    // 4. Métricas detalladas del mes seleccionado
+    // 4. Métricas detalladas del período seleccionado (con soporte multi-tarifa 0%, 5%, 8%, 15% y retenciones)
     const metrics = useMemo(() => {
         const meta = (activeDeclaration?.proof_file?.metadata as any) || {};
 
-        // Cada bloque recuerda si lo dijo el SRI o si lo calculamos nosotros.
-        const rVentas = leerCifra(
+        // Base 15%
+        const rVentas15 = leerCifra(
             [meta.ventas15, meta.base15],
-            () => (activeDeclaration?.amount ? activeDeclaration.amount * 4 : 0)
+            () => (isPopular ? 0 : (activeDeclaration?.amount ? activeDeclaration.amount * 4 : 0))
         );
-        const ventas15 = rVentas.valor;
-        const ventas0 = leerCifra([meta.ventas0, meta.base0], () => 0).valor;
-        const montoIvaVentas = leerCifra([meta.montoIvaVentas], () => ventas15 * 0.15).valor;
-        const totalVentas = ventas15 + ventas0 + montoIvaVentas;
+        const ventas15 = rVentas15.valor;
 
-        const rCompras = leerCifra([meta.compras15], () => ventas15 * 0.4);
-        const compras15 = rCompras.valor;
+        // Base 0% (Para Negocio Popular sus ventas son Notas de Venta con tarifa 0%)
+        const rVentas0 = leerCifra(
+            [meta.ventas0, meta.base0],
+            () => (isPopular ? (activeDeclaration?.amount ? activeDeclaration.amount * 4 : 0) : 0)
+        );
+        const ventas0 = rVentas0.valor;
+
+        // Base 5% y 8%
+        const ventas5 = leerCifra([meta.ventas5], () => 0).valor;
+        const ventas8 = leerCifra([meta.ventas8], () => 0).valor;
+
+        const montoIvaVentas = isPopular
+            ? 0
+            : leerCifra([meta.montoIvaVentas], () => (ventas15 * 0.15) + (ventas5 * 0.05) + (ventas8 * 0.08)).valor;
+        const totalVentas = ventas15 + ventas0 + ventas5 + ventas8 + montoIvaVentas;
+
+        // Compras multi-tarifa
+        const rCompras15 = leerCifra([meta.compras15], () => (isPopular ? 0 : ventas15 * 0.4));
+        const compras15 = rCompras15.valor;
         const compras0 = leerCifra([meta.compras0], () => 0).valor;
-        const montoIvaCompras = leerCifra([meta.montoIvaCompras], () => compras15 * 0.15).valor;
-        const totalCompras = compras15 + compras0 + montoIvaCompras;
+        const compras5 = leerCifra([meta.compras5], () => 0).valor;
+        const compras8 = leerCifra([meta.compras8], () => 0).valor;
+        const montoIvaCompras = isPopular
+            ? 0
+            : leerCifra([meta.montoIvaCompras], () => (compras15 * 0.15) + (compras5 * 0.05)).valor;
+        const totalCompras = compras15 + compras0 + compras5 + compras8 + montoIvaCompras;
 
-        const rRetIva = leerCifra([meta.retIva], () => montoIvaVentas * 0.3);
+        // Retenciones
+        const rRetIva = leerCifra([meta.retIva], () => (isPopular ? 0 : montoIvaVentas * 0.3));
         const retIva = rRetIva.valor;
-        const rRetRenta = leerCifra([meta.retRenta], () => ventas15 * 0.0175);
+        const rRetRenta = leerCifra([meta.retRenta], () => (totalVentas * 0.0175));
         const retRenta = rRetRenta.valor;
         const totalRetenciones = retIva + retRenta;
 
-        const origenVentas: OrigenCifra = rVentas.origen;
-        const origenCompras: OrigenCifra = rCompras.origen;
+        const origenVentas: OrigenCifra = isPopular ? rVentas0.origen : rVentas15.origen;
+        const origenCompras: OrigenCifra = rCompras15.origen;
         const origenRetenciones: OrigenCifra =
             (rRetIva.origen === 'sri' && rRetRenta.origen === 'sri') ? 'sri' : 'estimado';
 
@@ -204,17 +323,24 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
         const nc0 = meta.nc0 ?? 0;
         const totalNC = meta.ncTotal ?? (nc15 + nc0);
 
-        // Resultado impositivo neto (IVA Ventas - IVA Compras - Retenciones IVA)
+        // Resultado impositivo:
+        // Negocio Popular -> Cuota fija anual según tramo ($0, $5, $15, $35 o $60)
+        // General / Emprendedor -> Saldo IVA Ventas - Compras - Retenciones
+        const cuotaFijaNp = currentNpBracket.tax;
         const resultadoNetoIva = montoIvaVentas - montoIvaCompras - retIva;
-        const esCreditoFavor = resultadoNetoIva <= 0;
+        const esCreditoFavor = isPopular ? false : resultadoNetoIva <= 0;
 
         return {
             ventas15,
             ventas0,
+            ventas5,
+            ventas8,
             montoIvaVentas,
             totalVentas,
             compras15,
             compras0,
+            compras5,
+            compras8,
             montoIvaCompras,
             totalCompras,
             retIva,
@@ -223,7 +349,8 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
             nc15,
             nc0,
             totalNC,
-            resultadoNetoIva: Math.abs(resultadoNetoIva),
+            cuotaFijaNp,
+            resultadoNetoIva: isPopular ? cuotaFijaNp : Math.abs(resultadoNetoIva),
             esCreditoFavor,
             origenVentas,
             origenCompras,
@@ -232,7 +359,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                        || origenCompras === 'estimado'
                        || origenRetenciones === 'estimado'
         };
-    }, [activeDeclaration]);
+    }, [activeDeclaration, isPopular, currentNpBracket.tax]);
 
     const handleCopy = (label: string, val: number) => {
         navigator.clipboard.writeText(val.toFixed(2));
@@ -296,25 +423,29 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight flex items-center gap-2">
                                 Métricas & Histórico SRI
                                 <span className="bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] text-[10px] font-mono font-bold uppercase px-3 py-1 rounded-full tracking-wider shadow-[0_0_8px_rgba(0,168,150,0.2)]">
-                                    Form 2011 IVA
+                                    {isPopular ? 'Form. Renta RIMPE' : isSemestral ? 'Form. 2011 IVA Semestral' : 'Form. 2011 IVA Mensual'}
                                 </span>
                             </h2>
                             <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                Análisis gráfico comparativo de ventas, compras y retenciones procesadas
+                                {isPopular
+                                    ? 'Control anual de ingresos brutos, gastos y cuota fija anual RIMPE Negocio Popular'
+                                    : 'Análisis gráfico comparativo de ventas, compras y retenciones procesadas'}
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <div className="relative z-10 flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    {/* Selector de Mes */}
+                    {/* Selector de Período Dinámico */}
                     <div className={`flex items-center gap-2 border rounded-2xl px-4 py-2.5 text-xs font-mono font-bold ${
                         isDark
                             ? 'bg-[#0b1326]/80 border-white/10 text-slate-300'
                             : 'bg-slate-50 border-slate-200 text-slate-700'
                     }`}>
                         <Calendar size={14} className="text-[#00A896]" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mes:</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {isPopular ? 'Año Fiscal:' : isSemestral ? 'Semestre:' : 'Mes:'}
+                        </span>
                         <select
                             value={selectedPeriod}
                             onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -322,7 +453,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                         >
                             {availablePeriods.map(p => (
                                 <option key={p} value={p} className={isDark ? 'bg-[#051424] text-white' : 'bg-white text-slate-900'}>
-                                    {formatPeriodForDisplay(p)} ({p})
+                                    {isPopular && p.length === 4 ? `Año Fiscal ${p}` : `${formatPeriodForDisplay(p)} (${p})`}
                                 </option>
                             ))}
                         </select>
@@ -338,8 +469,59 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 </div>
             </div>
 
-            {/* TERMÓMETRO DE LÍMITE DE RENTA (INTELIGENCIA FINANCIERA) */}
-            {isGeneralRegime && (
+            {/* TERMÓMETRO INTELIGENTE (RIMPE NEGOCIO POPULAR O RÉGIMEN GENERAL) */}
+            {isPopular ? (
+                <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
+                    isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
+                }`}>
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
+                        <div>
+                            <h3 className={`text-base font-black font-display flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                <Sparkles size={18} className="text-[#C9A96E]" />
+                                Termómetro RIMPE Negocio Popular ({selectedPeriod.length === 4 ? `Año Fiscal ${selectedPeriod}` : `Año ${currentYear}`})
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-1 max-w-md">
+                                Monitoreo del límite anual de $20,000.00 para mantenerse en Negocio Popular y cálculo de cuota fija SRI.
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-1">Ingresos Brutos Anuales</p>
+                            <p className={`text-3xl font-black font-mono tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                ${(annualRevenueNp || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-mono font-bold">
+                            <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                Tramo Oficial: <strong className="text-[#00A896]">{currentNpBracket.msg}</strong>
+                            </span>
+                            <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                Tope Categoría: $20,000.00
+                            </span>
+                        </div>
+                        <div className="w-full h-3.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden flex border border-white/5">
+                            <div 
+                                className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                    annualRevenueNp > 20000 
+                                        ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]' 
+                                        : annualRevenueNp > 15000 
+                                            ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b]' 
+                                            : 'bg-[#00A896] shadow-[0_0_8px_#00A896]'
+                                }`}
+                                style={{ width: `${Math.min(100, ((annualRevenueNp || 0) / 20000) * 100)}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-slate-400 font-medium">
+                            {annualRevenueNp > 20000 
+                                ? "⚠️ Ha superado el límite de $20,000.00 de Negocio Popular. El SRI requerirá pasar a RIMPE Emprendedor o Régimen General."
+                                : `Dispone de $${Math.max(0, 20000 - annualRevenueNp).toLocaleString('en-US', { minimumFractionDigits: 2 })} de margen antes de superar la categoría de Negocio Popular.`
+                            }
+                        </p>
+                    </div>
+                </div>
+            ) : isGeneralRegime ? (
                 <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
                     isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
                 }`}>
@@ -347,7 +529,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                         <div>
                             <h3 className={`text-base font-black font-display flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 <Sparkles size={18} className="text-amber-400" />
-                                Termómetro de Renta (YTD ${currentYear})
+                                Termómetro de Renta (YTD {currentYear})
                             </h3>
                             <p className="text-xs text-slate-400 mt-1 max-w-md">
                                 Monitoreo inteligente de sus ventas acumuladas frente a la tabla del Impuesto a la Renta.
@@ -385,9 +567,9 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                         </p>
                     </div>
                 </div>
-            )}
+            ) : null}
 
-            {/* GRÁFICO COMPARATIVO DE EVOLUCIÓN MENSUAL */}
+            {/* GRÁFICO COMPARATIVO DE EVOLUCIÓN */}
             <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
                 isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
             }`}>
@@ -395,20 +577,32 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                     <div>
                         <h3 className={`text-base font-black font-display flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             <TrendingUp size={18} className="text-[#00A896]" />
-                            Evolución de Flujo Financiero (Últimos Meses)
+                            {isPopular
+                                ? 'Evolución de Ingresos y Gastos (Histórico Anual)'
+                                : isSemestral
+                                    ? 'Evolución de Flujo Financiero (Últimos Semestres)'
+                                    : 'Evolución de Flujo Financiero (Últimos Meses)'}
                         </h3>
-                        <p className="text-xs text-slate-400">Comparativa directa entre Ventas (🟢), Compras (🔵) y Retenciones (🟣)</p>
+                        <p className="text-xs text-slate-400">
+                            {isPopular
+                                ? 'Comparativa anual entre Ingresos Brutos (🟢), Gastos (🔵) y Retenciones Renta (🟣)'
+                                : 'Comparativa directa entre Ventas (🟢), Compras (🔵) y Retenciones (🟣)'}
+                        </p>
                     </div>
 
                     {/* Leyenda */}
                     <div className="flex items-center gap-4 text-xs font-mono font-bold">
                         <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-[#00A896] shadow-[0_0_6px_#00A896]"></span>
-                            <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Ventas</span>
+                            <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>
+                                {isPopular ? 'Ingresos' : 'Ventas'}
+                            </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-[#2B6AFF] shadow-[0_0_6px_#2B6AFF]"></span>
-                            <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Compras</span>
+                            <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>
+                                {isPopular ? 'Gastos' : 'Compras'}
+                            </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-[#C9A96E] shadow-[0_0_6px_#C9A96E]"></span>
@@ -441,17 +635,17 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             >
                                 {/* Contenedor de Barras */}
                                 <div className="h-32 w-full flex items-end justify-center gap-1.5 mb-3 px-2">
-                                    {/* Barra Ventas */}
+                                    {/* Barra Ventas / Ingresos */}
                                     <div
                                         style={{ height: `${vHeight}px` }}
                                         className="w-3 rounded-t-md bg-gradient-to-t from-teal-700 to-[#00A896] transition-all duration-500 hover:brightness-125"
-                                        title={`Ventas: $${item.totalVentas.toFixed(2)}`}
+                                        title={`${isPopular ? 'Ingresos' : 'Ventas'}: $${item.totalVentas.toFixed(2)}`}
                                     ></div>
-                                    {/* Barra Compras */}
+                                    {/* Barra Compras / Gastos */}
                                     <div
                                         style={{ height: `${cHeight}px` }}
                                         className="w-3 rounded-t-md bg-gradient-to-t from-indigo-700 to-[#2B6AFF] transition-all duration-500 hover:brightness-125"
-                                        title={`Compras: $${item.totalCompras.toFixed(2)}`}
+                                        title={`${isPopular ? 'Gastos' : 'Compras'}: $${item.totalCompras.toFixed(2)}`}
                                     ></div>
                                     {/* Barra Retenciones */}
                                     <div
@@ -464,7 +658,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                                 <span className={`text-[10px] font-mono font-bold uppercase tracking-tight text-center ${
                                     isSelected ? 'text-[#00A896]' : isDark ? 'text-slate-400' : 'text-slate-600'
                                 }`}>
-                                    {item.monthName.split(' ')[0]}
+                                    {item.displayName || item.monthName.split(' ')[0]}
                                 </span>
                                 <span className="text-[9px] font-mono opacity-50">{item.period}</span>
                             </div>
@@ -473,12 +667,12 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 </div>
             </div>
 
-            {/* 4 CARDS PRINCIPALES DE MÉTRICAS KPI (DEL MES SELECCIONADO) */}
+            {/* 4 CARDS PRINCIPALES DE MÉTRICAS KPI (DEL PERÍODO SELECCIONADO) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
-                {/* KPI 1: VENTAS */}
+                {/* KPI 1: VENTAS / INGRESOS */}
                 <div
-                    onClick={() => handleCopy('Total Ventas', metrics.totalVentas)}
+                    onClick={() => handleCopy('Total Ventas/Ingresos', metrics.totalVentas)}
                     className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                         isDark
                             ? 'bg-[#051424]/90 border-[#00A896]/30 border-t-white/20 hover:border-[#00A896]/60 shadow-black/40'
@@ -490,25 +684,29 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             <ShoppingCart size={22} />
                         </div>
                         <span className="text-[10px] font-mono font-bold uppercase text-[#00A896] bg-[#00A896]/15 px-2.5 py-1 rounded-lg border border-[#00A896]/30">
-                            VENTAS
+                            {isPopular ? 'INGRESOS' : 'VENTAS'}
                         </span>
                     </div>
                     <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                        <span>Ventas Brutas Totales</span>
+                        <span>{isPopular ? 'Ingresos Brutos Ejercicio' : 'Ventas Brutas Totales'}</span>
                         <SelloEstimado origen={metrics.origenVentas} que="las ventas" />
                     </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalVentas.toFixed(2)}
                     </div>
                     <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>Base 15%: <strong className="text-[#00A896]">${metrics.ventas15.toFixed(2)}</strong></span>
+                        {isPopular ? (
+                            <span>Tarifa 0%: <strong className="text-[#00A896]">Notas de Venta</strong></span>
+                        ) : (
+                            <span>Base 15%: <strong className="text-[#00A896]">${metrics.ventas15.toFixed(2)}</strong></span>
+                        )}
                         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                     </div>
                 </div>
 
-                {/* KPI 2: COMPRAS */}
+                {/* KPI 2: COMPRAS / GASTOS */}
                 <div
-                    onClick={() => handleCopy('Total Compras', metrics.totalCompras)}
+                    onClick={() => handleCopy('Total Compras/Gastos', metrics.totalCompras)}
                     className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                         isDark
                             ? 'bg-[#051424]/90 border-[#2B6AFF]/30 border-t-white/20 hover:border-[#2B6AFF]/60 shadow-black/40'
@@ -520,25 +718,29 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             <ShoppingBag size={22} />
                         </div>
                         <span className="text-[10px] font-mono font-bold uppercase text-[#2B6AFF] bg-[#2B6AFF]/15 px-2.5 py-1 rounded-lg border border-[#2B6AFF]/30">
-                            COMPRAS
+                            {isPopular ? 'GASTOS' : 'COMPRAS'}
                         </span>
                     </div>
                     <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                        <span>Compras Facturadas SRI</span>
+                        <span>{isPopular ? 'Gastos del Ejercicio' : 'Compras Facturadas SRI'}</span>
                         <SelloEstimado origen={metrics.origenCompras} que="las compras" />
                     </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalCompras.toFixed(2)}
                     </div>
                     <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>IVA Compras: <strong className="text-[#2B6AFF]">${metrics.montoIvaCompras.toFixed(2)}</strong></span>
+                        {isPopular ? (
+                            <span>Compras justificadas: <strong className="text-[#2B6AFF]">${metrics.totalCompras.toFixed(2)}</strong></span>
+                        ) : (
+                            <span>IVA Compras: <strong className="text-[#2B6AFF]">${metrics.montoIvaCompras.toFixed(2)}</strong></span>
+                        )}
                         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                     </div>
                 </div>
 
                 {/* KPI 3: RETENCIONES */}
                 <div
-                    onClick={() => handleCopy('Total Retenciones', metrics.totalRetenciones)}
+                    onClick={() => handleCopy('Total Retenciones', isPopular ? metrics.retRenta : metrics.totalRetenciones)}
                     className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                         isDark
                             ? 'bg-[#051424]/90 border-[#C9A96E]/30 border-t-white/20 hover:border-[#C9A96E]/60 shadow-black/40'
@@ -554,142 +756,252 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                         </span>
                     </div>
                     <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1 flex items-center gap-2">
-                        <span>Retenciones Recibidas</span>
+                        <span>{isPopular ? 'Retenciones Renta Recibidas' : 'Retenciones Recibidas'}</span>
                         <SelloEstimado origen={metrics.origenRetenciones} que="las retenciones" />
                     </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        ${metrics.totalRetenciones.toFixed(2)}
+                        ${(isPopular ? metrics.retRenta : metrics.totalRetenciones).toFixed(2)}
                     </div>
                     <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>Ret. IVA (609): <strong className="text-[#C9A96E]">${metrics.retIva.toFixed(2)}</strong></span>
+                        {isPopular ? (
+                            <span>Ret. Fuente Renta: <strong className="text-[#C9A96E]">${metrics.retRenta.toFixed(2)}</strong></span>
+                        ) : (
+                            <span>Ret. IVA (609): <strong className="text-[#C9A96E]">${metrics.retIva.toFixed(2)}</strong></span>
+                        )}
                         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                     </div>
                 </div>
 
                 {/* KPI 4: RESULTADO IMPOSITIVO */}
                 <div className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
-                    metrics.esCreditoFavor
+                    isPopular
                         ? isDark
-                            ? 'bg-[#051424]/90 border-[#00A896]/40 border-t-white/20 hover:border-[#00A896]/70 shadow-black/40'
-                            : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400'
-                        : isDark
-                            ? 'bg-[#051424]/90 border-amber-500/40 border-t-white/20 hover:border-amber-500/70 shadow-black/40'
+                            ? 'bg-[#051424]/90 border-[#C9A96E]/40 border-t-white/20 hover:border-[#C9A96E]/70 shadow-black/40'
                             : 'bg-amber-50/50 border-amber-200 hover:border-amber-400'
+                        : metrics.esCreditoFavor
+                            ? isDark
+                                ? 'bg-[#051424]/90 border-[#00A896]/40 border-t-white/20 hover:border-[#00A896]/70 shadow-black/40'
+                                : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400'
+                            : isDark
+                                ? 'bg-[#051424]/90 border-amber-500/40 border-t-white/20 hover:border-amber-500/70 shadow-black/40'
+                                : 'bg-amber-50/50 border-amber-200 hover:border-amber-400'
                 }`}>
                     <div className="flex justify-between items-start mb-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform ${
-                            metrics.esCreditoFavor
-                                ? 'bg-[#00A896]/20 border border-[#00A896]/30 text-[#00A896]'
-                                : 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
+                            isPopular
+                                ? 'bg-[#C9A96E]/20 border border-[#C9A96E]/30 text-[#C9A96E]'
+                                : metrics.esCreditoFavor
+                                    ? 'bg-[#00A896]/20 border border-[#00A896]/30 text-[#00A896]'
+                                    : 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
                         }`}>
-                            <TrendingUp size={22} />
+                            {isPopular ? <Award size={22} /> : <TrendingUp size={22} />}
                         </div>
                         <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-lg border ${
-                            metrics.esCreditoFavor
-                                ? 'text-[#00A896] bg-[#00A896]/15 border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
-                                : 'text-amber-400 bg-amber-500/15 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+                            isPopular
+                                ? 'text-[#C9A96E] bg-[#C9A96E]/15 border-[#C9A96E]/30 shadow-[0_0_8px_rgba(201,169,110,0.2)]'
+                                : metrics.esCreditoFavor
+                                    ? 'text-[#00A896] bg-[#00A896]/15 border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                    : 'text-amber-400 bg-amber-500/15 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
                         }`}>
-                            {metrics.esCreditoFavor ? 'A FAVOR' : 'A PAGAR'}
+                            {isPopular ? 'CUOTA FIJA' : metrics.esCreditoFavor ? 'A FAVOR' : 'A PAGAR'}
                         </span>
                     </div>
                     <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">
-                        {metrics.esCreditoFavor ? 'Crédito Tributario IVA' : 'Impuesto a Pagar SRI'}
+                        {isPopular ? 'Impuesto Anual RIMPE' : metrics.esCreditoFavor ? 'Crédito Tributario IVA' : 'Impuesto a Pagar SRI'}
                     </div>
                     <div className={`text-2xl font-black font-mono tracking-tight ${
-                        metrics.esCreditoFavor ? 'text-[#00A896]' : 'text-amber-400'
+                        isPopular ? 'text-[#C9A96E]' : metrics.esCreditoFavor ? 'text-[#00A896]' : 'text-amber-400'
                     }`}>
                         ${metrics.resultadoNetoIva.toFixed(2)}
                     </div>
                     <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>{metrics.esCreditoFavor ? '🟢 Sin Pago Pendiente' : '⚠️ Pago Requerido'}</span>
-                        <Sparkles size={12} className={metrics.esCreditoFavor ? 'text-[#00A896]' : 'text-amber-400'} />
+                        {isPopular ? (
+                            <span>{currentNpBracket.msg.split('(')[0]}</span>
+                        ) : (
+                            <span>{metrics.esCreditoFavor ? '🟢 Sin Pago Pendiente' : '⚠️ Pago Requerido'}</span>
+                        )}
+                        <Sparkles size={12} className={isPopular ? 'text-[#C9A96E]' : metrics.esCreditoFavor ? 'text-[#00A896]' : 'text-amber-400'} />
                     </div>
                 </div>
 
             </div>
 
-            {/* TABLA DE DESGLOSE DETALLADO CASILLEROS FORMULARIO 2011 */}
+            {/* TABLA DE DESGLOSE DETALLADO CASILLEROS (ADAPTADA AL RÉGIMEN) */}
             <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl ${
                 isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
             }`}>
                 <h3 className={`text-base font-black font-display mb-6 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     <Layers size={18} className="text-[#00A896]" />
-                    Desglose por Casilleros Formulario 2011 ({formatPeriodForDisplay(selectedPeriod)})
+                    {isPopular
+                        ? `Desglose Formulario Renta RIMPE Popular (${isPopular && selectedPeriod.length === 4 ? `Año Fiscal ${selectedPeriod}` : formatPeriodForDisplay(selectedPeriod)})`
+                        : `Desglose por Casilleros Formulario 2011 (${formatPeriodForDisplay(selectedPeriod)})`}
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
-                    {/* VENTAS */}
-                    <div className={`p-5 rounded-2xl border space-y-3 ${
-                        isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
-                    }`}>
-                        <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                            <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">🛍️ Ventas (Ingresos)</span>
-                            <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalVentas.toFixed(2)}</span>
+                {isPopular ? (
+                    /* DESGLOSE ESPECÍFICO RIMPE NEGOCIO POPULAR */
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
+                        {/* COL 1: INGRESOS BRUTOS */}
+                        <div className={`p-5 rounded-2xl border space-y-3 ${
+                            isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">🛍️ Actividad RIMPE</span>
+                                <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalVentas.toFixed(2)}</span>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Notas de Venta (Tarifa 0%):</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.totalVentas.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Obligación IVA:</span>
+                                    <strong className="text-emerald-400">Exento de Form. 104</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Comprobante Emitido:</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>Nota de Venta</strong>
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-2 text-xs">
-                            <div className="flex justify-between text-slate-400">
-                                <span>Ventas 15% (Cas. 401):</span>
-                                <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.ventas15.toFixed(2)}</strong>
-                            </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>Ventas 0% (Cas. 402/403):</span>
-                                <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.ventas0.toFixed(2)}</strong>
-                            </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>IVA Generado (15%):</span>
-                                <strong className="text-[#00A896]">${metrics.montoIvaVentas.toFixed(2)}</strong>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* COMPRAS */}
-                    <div className={`p-5 rounded-2xl border space-y-3 ${
-                        isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
-                    }`}>
-                        <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                            <span className="text-xs font-bold text-[#2B6AFF] uppercase tracking-wider">🛒 Compras (Egresos)</span>
-                            <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalCompras.toFixed(2)}</span>
+                        {/* COL 2: COMPRAS Y GASTOS */}
+                        <div className={`p-5 rounded-2xl border space-y-3 ${
+                            isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span className="text-xs font-bold text-[#2B6AFF] uppercase tracking-wider">🛒 Gastos Deducibles</span>
+                                <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalCompras.toFixed(2)}</span>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Gastos Registrados SRI:</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.totalCompras.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Crédito Tributario IVA:</span>
+                                    <strong className="text-slate-400">No aplica (Costo/Gasto)</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Sustento Tributario:</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>Facturas Proveedor</strong>
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-2 text-xs">
-                            <div className="flex justify-between text-slate-400">
-                                <span>Compras 15% (Cas. 500):</span>
-                                <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.compras15.toFixed(2)}</strong>
-                            </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>Compras 0% (Cas. 507):</span>
-                                <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.compras0.toFixed(2)}</strong>
-                            </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>Crédito IVA (Cas. 564):</span>
-                                <strong className="text-[#2B6AFF]">${metrics.montoIvaCompras.toFixed(2)}</strong>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* RETENCIONES */}
-                    <div className={`p-5 rounded-2xl border space-y-3 ${
-                        isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
-                    }`}>
-                        <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                            <span className="text-xs font-bold text-[#C9A96E] uppercase tracking-wider">🟣 Retenciones Recibidas</span>
-                            <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalRetenciones.toFixed(2)}</span>
-                        </div>
-                        <div className="space-y-2 text-xs">
-                            <div className="flex justify-between text-slate-400">
-                                <span>Retenciones IVA (Cas. 609):</span>
-                                <strong className="text-[#C9A96E]">${metrics.retIva.toFixed(2)}</strong>
+                        {/* COL 3: LIQUIDACIÓN DE CUOTA RIMPE */}
+                        <div className={`p-5 rounded-2xl border space-y-3 ${
+                            isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span className="text-xs font-bold text-[#C9A96E] uppercase tracking-wider">📜 Cuota Fija Anual</span>
+                                <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.cuotaFijaNp.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>Retenciones Renta (Cas. 610):</span>
-                                <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.retRenta.toFixed(2)}</strong>
-                            </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>Notas de Crédito Total:</span>
-                                <strong className="text-amber-400">${metrics.totalNC.toFixed(2)}</strong>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Cuota RIMPE Anual:</span>
+                                    <strong className="text-[#C9A96E]">${metrics.cuotaFijaNp.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Retenciones Renta que le hicieron:</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.retRenta.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Impuesto Neto Estimado:</span>
+                                    <strong className={metrics.cuotaFijaNp > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                                        ${Math.max(0, metrics.cuotaFijaNp - metrics.retRenta).toFixed(2)}
+                                    </strong>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    /* DESGLOSE RÉGIMEN GENERAL / EMPRENDEDOR FORM 2011 (CON MULTI-TARIFA) */
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
+                        {/* VENTAS */}
+                        <div className={`p-5 rounded-2xl border space-y-3 ${
+                            isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">🛍️ Ventas (Ingresos)</span>
+                                <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalVentas.toFixed(2)}</span>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Ventas 15% (Cas. 401):</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.ventas15.toFixed(2)}</strong>
+                                </div>
+                                {metrics.ventas5 > 0 && (
+                                    <div className="flex justify-between text-slate-400">
+                                        <span>Ventas 5% (Cas. 404):</span>
+                                        <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.ventas5.toFixed(2)}</strong>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Ventas 0% (Cas. 402/403):</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.ventas0.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>IVA Generado:</span>
+                                    <strong className="text-[#00A896]">${metrics.montoIvaVentas.toFixed(2)}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* COMPRAS */}
+                        <div className={`p-5 rounded-2xl border space-y-3 ${
+                            isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span className="text-xs font-bold text-[#2B6AFF] uppercase tracking-wider">🛒 Compras (Egresos)</span>
+                                <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalCompras.toFixed(2)}</span>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Compras 15% (Cas. 500):</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.compras15.toFixed(2)}</strong>
+                                </div>
+                                {metrics.compras5 > 0 && (
+                                    <div className="flex justify-between text-slate-400">
+                                        <span>Compras 5% (Cas. 501):</span>
+                                        <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.compras5.toFixed(2)}</strong>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Compras 0% (Cas. 507):</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.compras0.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Crédito IVA (Cas. 564):</span>
+                                    <strong className="text-[#2B6AFF]">${metrics.montoIvaCompras.toFixed(2)}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RETENCIONES */}
+                        <div className={`p-5 rounded-2xl border space-y-3 ${
+                            isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span className="text-xs font-bold text-[#C9A96E] uppercase tracking-wider">🟣 Retenciones Recibidas</span>
+                                <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalRetenciones.toFixed(2)}</span>
+                            </div>
+                            <div className="space-y-2 text-xs">
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Retenciones IVA (Cas. 609):</span>
+                                    <strong className="text-[#C9A96E]">${metrics.retIva.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Retenciones Renta (Cas. 610):</span>
+                                    <strong className={isDark ? 'text-white' : 'text-slate-800'}>${metrics.retRenta.toFixed(2)}</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-400">
+                                    <span>Notas de Crédito Total:</span>
+                                    <strong className="text-amber-400">${metrics.totalNC.toFixed(2)}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
         </div>
