@@ -319,6 +319,56 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                 </span>
                             )}
 
+                            {/* Telemetría Auditoría de Clave SRI (Verificada por Nueva Luz) */}
+                            {(() => {
+                                const cred = (client.taxProfile as any)?.sriCredencial;
+                                const hasPass = !!(client.sriPassword || (client as any).sri_password);
+                                if (!hasPass) {
+                                    return (
+                                        <span title="No se ha registrado clave del SRI para este contribuyente" className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-slate-500/15 text-slate-400 uppercase tracking-wider border border-slate-500/20 flex items-center gap-1.5 shadow-sm">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                            <span>⚪ Sin Clave SRI</span>
+                                        </span>
+                                    );
+                                }
+                                if (cred?.estado === 'ok' || cred?.ultimo_ingreso) {
+                                    const dateStr = cred.ultimo_ingreso ? new Date(cred.ultimo_ingreso).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                                    return (
+                                        <span title={`Clave verificada por la extensión Nueva Luz. Último acceso exitoso al portal SRI: ${cred.ultimo_ingreso || 'Reciente'}`} className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-400 uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                            <span>🟢 Clave Operativa {dateStr ? `· ${dateStr}` : ''}</span>
+                                        </span>
+                                    );
+                                }
+                                if (cred?.estado === 'incorrecta') {
+                                    return (
+                                        <span title={`El SRI rechazó esta clave: ${cred.motivo || 'Contraseña incorrecta'}`} className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-rose-500/15 text-rose-400 uppercase tracking-wider border border-rose-500/30 flex items-center gap-1.5 animate-pulse shadow-sm">
+                                            <span>🔴 Clave Rechazada por SRI</span>
+                                        </span>
+                                    );
+                                }
+                                if (cred?.estado === 'bloqueada') {
+                                    return (
+                                        <span title="La cuenta del SRI se encuentra temporalmente bloqueada por exceso de intentos" className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-rose-600/20 text-rose-300 uppercase tracking-wider border border-rose-600/40 flex items-center gap-1.5 animate-pulse shadow-sm">
+                                            <span>⛔ SRI Bloqueado</span>
+                                        </span>
+                                    );
+                                }
+                                if (cred?.estado === 'caducada') {
+                                    return (
+                                        <span title="El portal del SRI exige cambio obligatorio de clave" className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-amber-500/15 text-amber-400 uppercase tracking-wider border border-amber-500/30 flex items-center gap-1.5 animate-pulse shadow-sm">
+                                            <span>🟡 Clave por Vencer</span>
+                                        </span>
+                                    );
+                                }
+                                return (
+                                    <span title="Clave guardada en el sistema. Pendiente de comprobación en un ingreso con la extensión." className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-sky-500/10 text-sky-400 uppercase tracking-wider border border-sky-500/20 flex items-center gap-1.5 shadow-sm">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                                        <span>🔵 Clave Registrada</span>
+                                    </span>
+                                );
+                            })()}
+
                             {client.isCourtesy && (
                                 <span className="px-3 py-1 rounded-full text-[9px] font-mono font-bold bg-sky-500/10 text-sky-500 dark:text-sky-400 uppercase tracking-wider border border-sky-500/20">
                                     Cortesía

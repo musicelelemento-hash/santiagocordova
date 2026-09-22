@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -585,8 +585,24 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
     cardText += `🔄 <b>Frecuencia IVA:</b> ${obligationsText}\n`;
     cardText += `📅 <b>Inicio Obligaciones:</b> <code>${clientStartPeriod}</code>\n`;
     cardText += `📧 <b>Email:</b> ${client.email || '<i>(vacío)</i>'}\n`;
-    cardText += `📞 <b>Telf:</b> ${client.phones ? client.phones.join(', ') : '<i>(vacío)</i>'}\n`;
-    cardText += `🔑 <b>Clave SRI:</b> <code>${client.sri_password ? maskSecret(client.sri_password) : '<i>(vacío)</i>'}</code>\n`;
+    const sriCred = rawTaxProfile.sriCredencial;
+    let sriStatusText = '';
+    if (!client.sri_password && !client.sriPassword) {
+        sriStatusText = '⚪ <i>Sin clave</i>';
+    } else if (sriCred?.estado === 'ok' || sriCred?.ultimo_ingreso) {
+        const d = sriCred.ultimo_ingreso ? new Date(sriCred.ultimo_ingreso).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        sriStatusText = `🟢 <b>Operativa</b> (Acceso SRI: ${d || 'Confirmado'})`;
+    } else if (sriCred?.estado === 'incorrecta') {
+        sriStatusText = `🔴 <b>Rechazada</b> (${sriCred.motivo || 'Clave errónea'})`;
+    } else if (sriCred?.estado === 'bloqueada') {
+        sriStatusText = `⚠️ <b>Bloqueada por SRI</b>`;
+    } else if (sriCred?.estado === 'caducada') {
+        sriStatusText = `🟡 <b>Caducada / Por Vencer</b>`;
+    } else {
+        sriStatusText = `🟡 Registrada (Pendiente verificación)`;
+    }
+
+    cardText += `🔑 <b>Clave SRI:</b> <code>${client.sri_password ? maskSecret(client.sri_password) : '<i>(vacío)</i>'}</code> (${sriStatusText})\n`;
     cardText += `🔑 <b>Clave Firma:</b> <code>${client.signature_password ? maskSecret(client.signature_password) : '<i>(vacío)</i>'}</code>\n`;
     if (client.signature_expiration) cardText += `⏳ <b>Vence Firma:</b> ${client.signature_expiration}\n`;
     if (client.notes) cardText += `📝 <b>Notas:</b> ${client.notes}\n`;
@@ -719,7 +735,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     }
 
     // Trigger proactive report
-    if (['reporte', 'reporte matutino', 'forzar reporte', 'reporte proactivo', 'enviar reporte'].includes(t)) {
+    if (['reporte', 'reporte matutino', 'forzar reporte', 'reporte proactivo', 'enviar reporte', 'reporte diario', '/reporte', '/reporte_diario', 'resumen diario', 'reporte operativo'].includes(t)) {
         await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
         await triggerProactiveReport(bot, chatId);
         return true;
@@ -2808,8 +2824,8 @@ bot.on('callback_query:data', async (ctx) => {
             await ctx.reply("🧾 ¿A qué cliente le deseas emitir la factura? (Escribe el nombre o RUC). Baku.");
         } else if (cmd === 'quick_report') {
             await ctx.replyWithChatAction('typing');
-            const summary = await getDatabaseSummary();
-            await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML' });
+            const report = await generateDailyOperationalReport();
+            await ctx.reply(report, { parse_mode: 'HTML' });
         }
         return;
     }

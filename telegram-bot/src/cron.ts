@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { Bot } from 'grammy';
-import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getDebtorClientsRaw, getCredentialStatus, convertMarkdownToTelegramHtml } from './database_ops';
+import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getDebtorClientsRaw, getCredentialStatus, convertMarkdownToTelegramHtml, generateDailyOperationalReport } from './database_ops';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
 import { searchEmails, sendEmail } from './gmail';
@@ -14,62 +14,42 @@ export async function triggerProactiveReport(bot: Bot, chatId?: string) {
     const targetChatId = chatId || adminChatId;
 
     try {
-        const summary = await getDatabaseSummary();
-        const deadlines = await getUpcomingDeadlines();
+        console.log(`⏰ Generando reporte proactivo operativo para chat ${targetChatId}...`);
+        const operationalReport = await generateDailyOperationalReport();
 
-        // Fetch pending tasks from Supabase
-        const { data: tasks } = await supabase
-            .from('tasks')
-            .select('*')
-            .eq('status', 'Pendiente')
-            .order('due_date', { ascending: true });
+        let finalMessage = operationalReport;
 
-        let tasksList = "No hay tareas pendientes en la agenda hoy.";
-        if (tasks && tasks.length > 0) {
-            tasksList = tasks.map(t => `- [ ] ${t.title} (Vence: ${t.due_date || 'Sin fecha'})${t.description ? ` - ${t.description}` : ''}`).join('\n');
+        // Opcional: intentar enriquecer con un briefing ejecutivo de IA si está disponible
+        try {
+            const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Redacta un saludo militar/ejecutivo matutino de máximo 2 líneas destacando la acción prioritaria del día para el despacho contable.`;
+            const prompt = `Reporte operativo consolidado:\n${operationalReport}\n\nGenera un saludo y recomendación ejecutiva concisa.`;
+            
+            // Timeout de 5s para que no bloquee ni cause demoras
+            const aiIntro = await Promise.race([
+                generateAiText({ prompt, systemInstruction: systemPrompt }),
+                new Promise<string>((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 5000))
+            ]);
+
+            if (aiIntro && aiIntro.trim().length > 10) {
+                const formattedIntro = convertMarkdownToTelegramHtml(aiIntro.trim());
+                finalMessage = `🫡 <b>BRIEFING EJECUTIVO:</b>\n${formattedIntro}\n\n${operationalReport}`;
+            }
+        } catch (aiError: any) {
+            console.warn("ℹ️ IA en reposo o con timeout. Enviando reporte nativo de Supabase:", aiError.message);
+            // Sin problemas: finalMessage ya tiene el reporte estructurado
         }
 
-        const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es de madrugada (3:30 AM) y estás preparando el reporte operativo del día para el Comandante. Tu tarea es mandarle un resumen consolidado de la CARTERA ESTRATÉGICA y de su AGENDA DE TRABAJO usando estricto LENGUAJE TÉCNICO CONTABLE y TONO EJECUTIVO DE ALTA CONFIABILIDAD.`;
-        const prompt = `
-Contexto actual de la base de datos:
---- 
-INFORMACIÓN CONSOLIDADA (RESUMEN ESTRATÉGICO):
-${summary}
-
-VENCIMIENTOS SRI (PRÓXIMOS 7 DÍAS):
-${deadlines}
-
-AGENDA DE TAREAS PENDIENTES:
-${tasksList}
----
-
-INSTRUCCIONES DE REDACCIÓN:
-1. Comienza con un saludo breve y firme ("Comandante", "Santiago", "Reporte de operaciones listo").
-2. Destaca el Health Score de la cartera y la Cartera por Cobrar inmediatamente.
-3. Sé extremadamente específico sobre los tipos de obligaciones que vencen pronto.
-4. Muestra un bloque con sus tareas pendientes para hoy, incitándolo de forma formal a resolverlas.
-5. Identifica una oportunidad de gestión inmediata (ej: "Hoy podemos liquidar 3 declaraciones de IVA de la lista de prioridad").
-6. Mantén un formato limpio, con uso de emojis profesionales y negritas estratégicas.
-7. Termina con una pregunta de mando táctico (ej: "¿Damos luz verde a la gestión de cobros hoy?").
-8. El reporte debe ser altamente resumido y conciso. La longitud total del reporte NO DEBE superar los 3000 caracteres bajo ninguna circunstancia.
-
-Genera el mensaje directamente para Telegram.
-`;
-
-        const aiResponse = await generateAiText({ prompt, systemInstruction: systemPrompt });
-        const htmlResponse = convertMarkdownToTelegramHtml(aiResponse);
-
         try {
-            await bot.api.sendMessage(targetChatId, htmlResponse, { parse_mode: 'HTML' });
+            await bot.api.sendMessage(targetChatId, finalMessage, { parse_mode: 'HTML' });
         } catch (htmlError) {
-            console.warn("⚠️ Failed to send cron report with HTML, falling back to plain text:", htmlError);
-            await bot.api.sendMessage(targetChatId, aiResponse);
+            console.warn("⚠️ Error enviando HTML en reporte proactivo, enviando sin tags:", htmlError);
+            await bot.api.sendMessage(targetChatId, finalMessage.replace(/<[^>]+>/g, ''));
         }
         console.log(`✅ Reporte proactivo enviado a chat ${targetChatId}.`);
     } catch (error: any) {
         console.error("❌ Error en reporte proactivo:", error);
         try {
-            await bot.api.sendMessage(targetChatId, `⚠️ Comandante, intenté generar tu reporte, pero hubo un error de conexión con la IA (${error.message}). Por favor, pídeme un 'resumen general' cuando puedas.`);
+            await bot.api.sendMessage(targetChatId, `⚠️ <b>Error al consultar base de datos:</b> ${error.message}`, { parse_mode: 'HTML' });
         } catch (e) {}
     }
 }

@@ -33,6 +33,19 @@ export function getP12RemainingDays(client: Client): number | null {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+export function getClientPastYearDebts(client: Client, selectedYear: number): Declaration[] {
+    const decls = client.declarations || [];
+    return decls.filter(d => {
+        const p = d.period || '';
+        const match = p.match(/\b(20\d{2})\b/);
+        if (!match) return false;
+        const yr = parseInt(match[1], 10);
+        if (yr >= selectedYear) return false;
+        const isPaid = d.is_paid || d.status === DeclarationStatus.Pagada;
+        return !isPaid;
+    });
+}
+
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
@@ -57,6 +70,19 @@ import { SupabaseService } from '../../services/supabaseClientService';
 import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendFullClientsMatrixToExtension } from '../../services/extensionBridge';
 
 type MatrixMode = 'IVA' | 'RENTA';
+
+// Período objetivo del lote enviado a la extensión: el mes calendario anterior
+// (mismo criterio que usa la extensión en auto_batch_period/workflowPeriod).
+// Solo los clientes cuyo clientStartPeriod ya pasó deben entrar a la cola.
+function targetPeriodForDeclaration(type: 'mensual' | 'semestral' | 'renta'): string {
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const y = prev.getFullYear();
+    const m = prev.getMonth() + 1;
+    if (type === 'renta') return String(y);
+    if (type === 'semestral') return `${y}-S${m <= 6 ? 1 : 2}`;
+    return `${y}-${String(m).padStart(2, '0')}`;
+}
 
 export function formatDeclarationInvoiceDescription(period: string, obType: TaxObligationType = 'IVA'): { description: string; fiscalPeriod: string } {
     const monthNames = [
@@ -132,6 +158,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
+    const [filterPastYearDebts, setFilterPastYearDebts] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [densityMode, setDensityMode] = useState<'compact' | 'detailed'>(() => {
         return (localStorage.getItem('sc_matrix_density') as 'compact' | 'detailed') || 'compact';
@@ -957,6 +984,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 return false;
             }
 
+            if (filterPastYearDebts) {
+                const pastDebts = getClientPastYearDebts(c, selectedYear);
+                if (pastDebts.length === 0) return false;
+            }
+
             if (selectedDigitFilter !== null) {
                 const digit = getNinthDigit(c.ruc);
                 if (digit !== selectedDigitFilter) return false;
@@ -1078,7 +1110,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || (a.tradeName || a.name).localeCompare(b.tradeName || b.name);
         });
-    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption, searchTerm]);
+    }, [clients, frequency, matrixMode, isWorkspaceMode, filterPastYearDebts, selectedYear, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption, searchTerm]);
+
+    const clientsWithPastDebtsCount = useMemo(() => {
+        return clients.filter(c => {
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan') return false;
+            return getClientPastYearDebts(c, selectedYear).length > 0;
+        }).length;
+    }, [clients, selectedYear]);
 
     // ── SUPER DOCK DE COMPROBANTES MASIVOS & SELECCIÓN ──
     const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
@@ -1541,8 +1580,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         <button
                             onClick={() => {
                                 const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
-                                sendBatchDeclarationToExtension(filteredClients, type, 'declare');
-                                toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${filteredClients.length} clientes a la extensión para declaración en bucle.`);
+                                const targetPeriod = targetPeriodForDeclaration(type);
+                                const bucleClients = filteredClients.filter(c => !isPeriodBeforeClientStart(c, targetPeriod));
+                                sendBatchDeclarationToExtension(bucleClients, type, 'declare');
+                                toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${bucleClients.length} clientes a la extensión para declaración en bucle.`);
                             }}
                             className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#00A896]/20 cursor-pointer border border-white/10 active:scale-95"
                             title="Iniciar automatización completa (Auditar, Llenar formulario y Declarar)"
@@ -1554,8 +1595,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         <button
                             onClick={() => {
                                 const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
-                                sendBatchDeclarationToExtension(filteredClients, type, 'recover_pdf_only');
-                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se han enviado ${filteredClients.length} clientes a la extensión para buscar únicamente PDFs faltantes.`);
+                                const targetPeriod = targetPeriodForDeclaration(type);
+                                const bucleClients = filteredClients.filter(c => !isPeriodBeforeClientStart(c, targetPeriod));
+                                sendBatchDeclarationToExtension(bucleClients, type, 'recover_pdf_only');
+                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se han enviado ${bucleClients.length} clientes a la extensión para buscar únicamente PDFs faltantes.`);
                             }}
                             className="px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-95"
                             title="Desacoplado: Ir directo a buscar y descargar PDFs de comprobantes emitidos sin llenar formularios"
@@ -1737,6 +1780,27 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             ))}
                         </select>
                     )}
+
+                    {/* Filtro Deudas de Años Anteriores */}
+                    <button
+                        onClick={() => setFilterPastYearDebts(!filterPastYearDebts)}
+                        className={`px-3.5 py-2.5 rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 border shadow-sm active:scale-95 cursor-pointer ${
+                            filterPastYearDebts
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
+                                : 'bg-[#0b1326]/80 text-slate-400 border-white/10 hover:text-amber-300 hover:border-amber-500/30'
+                        }`}
+                        title="Filtrar clientes con declaraciones por pagar de años anteriores a este ciclo"
+                    >
+                        <LucideIcons.History size={12} className={filterPastYearDebts ? 'text-amber-400' : ''} />
+                        <span>Años Anteriores</span>
+                        {clientsWithPastDebtsCount > 0 && (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
+                                filterPastYearDebts ? 'bg-amber-400 text-slate-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}>
+                                {clientsWithPastDebtsCount}
+                            </span>
+                        )}
+                    </button>
 
                     {/* Workspace desk switcher */}
                     <button
@@ -2021,6 +2085,27 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 </span>
                                             );
                                         })()}
+
+                                        {/* Badge de Clave SRI Verificada / Auditoría Nueva Luz */}
+                                        {(() => {
+                                            const keyInfo = isSriPasswordUpdated(client);
+                                            if (!client.sriPassword) return null;
+                                            return (
+                                                <span
+                                                    title={keyInfo.tooltip}
+                                                    className={`px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider flex items-center gap-1 border ${
+                                                        keyInfo.label === 'Operativa'
+                                                            ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                                            : keyInfo.label === 'Rechazada'
+                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse'
+                                                            : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                                    }`}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${keyInfo.label === 'Operativa' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                                    <span>Clave: {keyInfo.label}{keyInfo.dateStr ? ` (${keyInfo.dateStr.split(' ')[0]})` : ''}</span>
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
 
                                     {/* Quick 1-Tap Action Chips */}
@@ -2169,6 +2254,107 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             })}
                                         </div>
                                     </div>
+
+                                    {/* Alerta de Deuda de Años Anteriores & Liquidación en 1-Tap */}
+                                    {(() => {
+                                        const pastDebts = getClientPastYearDebts(client, selectedYear);
+                                        if (pastDebts.length === 0) return null;
+                                        const totalPastFee = pastDebts.reduce((acc, d) => acc + getClientServiceFee(client, serviceFees, d.period), 0);
+
+                                        return (
+                                            <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col gap-2 font-mono">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5 text-amber-400 text-[10px] font-bold">
+                                                        <LucideIcons.AlertTriangle size={12} className="shrink-0 animate-pulse" />
+                                                        <span>Deuda Años Anteriores ({pastDebts.length} pend.)</span>
+                                                    </div>
+                                                    <span className="text-[10px] font-black text-amber-300">${totalPastFee.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {pastDebts.map(d => (
+                                                        <div 
+                                                            key={d.period}
+                                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-[9px] text-amber-200"
+                                                        >
+                                                            <span 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const yrMatch = d.period.match(/\b(20\d{2})\b/);
+                                                                    if (yrMatch) setSelectedYear(parseInt(yrMatch[1], 10));
+                                                                }}
+                                                                className="font-bold cursor-pointer hover:underline"
+                                                                title="Clic para cambiar el año de la matriz a este período"
+                                                            >
+                                                                {d.period}
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (onTogglePayment) {
+                                                                        onTogglePayment(client, d.period, (d.type as any) || 'IVA', true);
+                                                                    } else {
+                                                                        const nowIso = new Date().toISOString();
+                                                                        const freshClient = clients.find(c => c.id === client.id) || client;
+                                                                        const updatedHistory = (freshClient.declarations || []).map(dh => {
+                                                                            if (dh.period === d.period && (dh.type || 'IVA') === (d.type || 'IVA')) {
+                                                                                return { ...dh, is_paid: true, paidAt: nowIso, status: DeclarationStatus.Pagada, updatedAt: nowIso };
+                                                                            }
+                                                                            return dh;
+                                                                        });
+                                                                        useAppStore.getState().updateClient(freshClient.id, { declarations: updatedHistory });
+                                                                    }
+                                                                    toast.success(`Período ${d.period} de ${client.tradeName || client.name} marcado como pagado`);
+                                                                }}
+                                                                className="p-0.5 text-emerald-400 hover:bg-emerald-500/30 rounded transition-colors"
+                                                                title={`Marcar ${d.period} como pagado`}
+                                                            >
+                                                                <LucideIcons.Check size={10} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const nowIso = new Date().toISOString();
+                                                            const freshClient = clients.find(c => c.id === client.id) || client;
+                                                            let updatedHistory = [...(freshClient.declarations || [])];
+
+                                                            pastDebts.forEach(pastDecl => {
+                                                                const idx = updatedHistory.findIndex(dh => dh.period === pastDecl.period && (dh.type || 'IVA') === (pastDecl.type || 'IVA'));
+                                                                if (idx !== -1) {
+                                                                    updatedHistory[idx] = {
+                                                                        ...updatedHistory[idx],
+                                                                        is_paid: true,
+                                                                        paidAt: nowIso,
+                                                                        status: DeclarationStatus.Pagada,
+                                                                        updatedAt: nowIso
+                                                                    };
+                                                                } else {
+                                                                    updatedHistory.push({
+                                                                        ...pastDecl,
+                                                                        is_paid: true,
+                                                                        paidAt: nowIso,
+                                                                        status: DeclarationStatus.Pagada,
+                                                                        updatedAt: nowIso
+                                                                    });
+                                                                }
+                                                                if (onTogglePayment) {
+                                                                    onTogglePayment(client, pastDecl.period, (pastDecl.type as any) || 'IVA', true);
+                                                                }
+                                                            });
+
+                                                            useAppStore.getState().updateClient(freshClient.id, { declarations: updatedHistory });
+                                                            toast.success(`Se liquidaron ${pastDebts.length} períodos de años anteriores para ${client.tradeName || client.name}`);
+                                                        }}
+                                                        className="px-2 py-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[9px] font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
+                                                        title="Liquidar todas las deudas de años anteriores para este cliente"
+                                                    >
+                                                        ⚡ Liquidar ({pastDebts.length})
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 {/* Card Footer: Quick Actions */}
@@ -2352,6 +2538,37 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             <span className="text-[8px] text-slate-500 truncate max-w-[90px]">
                                                                 {client.regime ? (client.regime.includes('Emprendedor') ? 'Emprendedor' : client.regime.includes('Popular') ? 'Popular' : 'General') : 'General'}
                                                             </span>
+
+                                                            {/* Telemetría Clave SRI */}
+                                                            {(() => {
+                                                                const keyInfo = isSriPasswordUpdated(client);
+                                                                if (!client.sriPassword) return null;
+                                                                return (
+                                                                    <span title={keyInfo.tooltip} className="inline-flex items-center gap-1 text-[8px] font-mono">
+                                                                        <span className={`w-1.5 h-1.5 rounded-full ${keyInfo.label === 'Operativa' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                                                        <span className={keyInfo.label === 'Operativa' ? 'text-emerald-400/80' : 'text-rose-400/80'}>{keyInfo.label}</span>
+                                                                    </span>
+                                                                );
+                                                            })()}
+
+                                                            {/* Tag Deuda Años Anteriores */}
+                                                            {(() => {
+                                                                const pastDebts = getClientPastYearDebts(client, selectedYear);
+                                                                if (pastDebts.length === 0) return null;
+                                                                return (
+                                                                    <span 
+                                                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 cursor-pointer"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setFilterPastYearDebts(true);
+                                                                        }}
+                                                                        title={`Deuda en ${pastDebts.length} período(s) de años anteriores: ${pastDebts.map(d => d.period).join(', ')}. Clic para filtrar.`}
+                                                                    >
+                                                                        <LucideIcons.AlertTriangle size={8} />
+                                                                        <span>{pastDebts.length} prev.</span>
+                                                                    </span>
+                                                                );
+                                                            })()}
                                                         </div>
 
                                                         <div className="flex items-center gap-2 mt-1">

@@ -2760,3 +2760,292 @@ export function getClientPortalShareText(client: any): string {
            `<code>Estimado(a) ${client.name}, le saluda el despacho de Santiago Córdoba Asesoría Contable. Puede revisar en tiempo real el estado de sus declaraciones SRI, comprobantes y cuentas bancarias en su Portal de Cliente ingresando su RUC ${client.ruc} en: ${portalUrl}</code>`;
 }
 
+/**
+ * ⚡ REPORTE DIARIO OPERATIVO BLINDADO — BAKU 3.0
+/**
+ * Determina si un período dado es anterior al inicio de obligaciones registrado para el cliente.
+ * Si es anterior, para ese período el cliente es "No Aplica".
+ */
+export function isPeriodBeforeClientStart(clientStartPeriod: string | undefined | null, period: string): boolean {
+    if (!clientStartPeriod) return false;
+    const cleanPeriod = period.split(':')[0].trim();
+    const start = clientStartPeriod.trim();
+    if (!start) return false;
+
+    // Caso 1: Período mensual (ej: '2026-08')
+    if (/^\d{4}-\d{2}$/.test(cleanPeriod)) {
+        if (/^\d{4}-\d{2}$/.test(start)) {
+            return cleanPeriod < start;
+        }
+        if (start.includes('-S')) {
+            const [sYearStr, sSemStr] = start.split('-S');
+            const sYear = parseInt(sYearStr, 10);
+            const sSem = parseInt(sSemStr, 10);
+            const sStartMonth = sSem === 1 ? 1 : 7;
+            const startMonthStr = `${sYear}-${String(sStartMonth).padStart(2, '0')}`;
+            return cleanPeriod < startMonthStr;
+        }
+        if (start.length === 4) {
+            return cleanPeriod < `${start}-01`;
+        }
+    }
+
+    // Caso 2: Período semestral (ej: '2026-S1')
+    if (cleanPeriod.includes('-S')) {
+        const [pYearStr, pSemStr] = cleanPeriod.split('-S');
+        const pYear = parseInt(pYearStr, 10);
+        const pSem = parseInt(pSemStr, 10);
+
+        if (start.includes('-S')) {
+            const [sYearStr, sSemStr] = start.split('-S');
+            const sYear = parseInt(sYearStr, 10);
+            const sSem = parseInt(sSemStr, 10);
+            if (pYear < sYear) return true;
+            if (pYear === sYear && pSem < sSem) return true;
+            return false;
+        } else if (start.length === 7) { // YYYY-MM
+            const sYear = parseInt(start.substring(0, 4), 10);
+            const sMonth = parseInt(start.substring(5, 7), 10);
+            const sSem = sMonth <= 6 ? 1 : 2;
+            if (pYear < sYear) return true;
+            if (pYear === sYear && pSem < sSem) return true;
+            return false;
+        } else if (start.length === 4) {
+            return pYear < parseInt(start, 10);
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Genera el informe consolidado directamente desde Supabase sin depender de IA.
+ * Identifica con precisión quirúrgica:
+ * 1. Claves SRI faltantes, cortas o con error de autenticación (bloqueadas/rechazadas).
+ * 2. Declaraciones pendientes del período activo (IVA mensual / semestral) respetando clientStartPeriod (No Aplica).
+ * 3. Identificación separada de clientes RIMPE Negocio Popular (Anual / Manual).
+ * 4. Vencimientos próximos según el noveno dígito del RUC.
+ * 5. Cartera vencida y honorarios pendientes de cobro (omitiendo períodos previos al inicio).
+ * 6. Tareas de la agenda del día.
+ */
+export async function generateDailyOperationalReport(): Promise<string> {
+    console.log("📊 [Baku] Generando Reporte Diario Operativo desde Supabase...");
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*, sri_declaraciones(*)')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) {
+            return `⚡ <b>REPORTE DIARIO OPERATIVO — BAKU</b>\n\nNo hay clientes activos registrados en el sistema.`;
+        }
+
+        // Tareas pendientes
+        const { data: tasks } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('status', 'Pendiente')
+            .order('due_date', { ascending: true })
+            .limit(5);
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1 to 12
+        const todayDay = now.getDate();
+
+        // Período activo de IVA que se declara este mes (mes anterior)
+        const prevMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+        const prevMonthNum = currentMonth === 1 ? 12 : currentMonth - 1;
+        const activeIvaPeriod = `${prevMonthYear}-${String(prevMonthNum).padStart(2, '0')}`;
+
+        const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
+
+        // Colecciones de auditoría
+        const missingKeyClients: Array<{ name: string; ruc: string; reason: string }> = [];
+        const pendingMonthlyDecl: Array<{ name: string; ruc: string; dueDay: number | string }> = [];
+        const popularClients: Array<{ name: string; ruc: string }> = [];
+        const semestralClients: Array<{ name: string; ruc: string }> = [];
+        const upcomingDueThisWeek: Array<{ name: string; ruc: string; dueDay: number; status: string }> = [];
+        const debtorsList: Array<{ name: string; debt: number }> = [];
+        let totalDebt = 0;
+        let alDiaMonthlyCount = 0;
+        let noAplicaMonthlyCount = 0;
+        let verifiedKeyCount = 0;
+
+        clients.forEach((c: any) => {
+            const regime = (c.regime || 'Régimen General').trim();
+            const isPopular = regime === 'Rimpe Negocio Popular' || 
+                              c.tax_profile?.ivaFrequency === 'Ninguno' || 
+                              regime.toLowerCase().includes('popular');
+            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            
+            // 1. Auditoría de Credenciales
+            const pass = (c.sri_password || c.sriPassword || '').trim();
+            const sriCred = c.tax_profile?.sriCredencial;
+            if (!pass) {
+                missingKeyClients.push({ name: c.name, ruc: c.ruc, reason: 'Sin clave guardada' });
+            } else if (sriCred?.estado === 'incorrecta') {
+                missingKeyClients.push({ name: c.name, ruc: c.ruc, reason: 'Clave rechazada por el SRI' });
+            } else if (sriCred?.estado === 'bloqueada') {
+                missingKeyClients.push({ name: c.name, ruc: c.ruc, reason: 'Cuenta SRI bloqueada' });
+            } else if (sriCred?.estado === 'caducada') {
+                missingKeyClients.push({ name: c.name, ruc: c.ruc, reason: 'Clave caducada' });
+            } else if (pass.length < 6) {
+                missingKeyClients.push({ name: c.name, ruc: c.ruc, reason: 'Clave corta (< 6)' });
+            } else if (sriCred?.estado === 'ok' || sriCred?.ultimo_ingreso) {
+                verifiedKeyCount++;
+            }
+
+            // Unificar declaraciones (sri_declaraciones + declaration_history)
+            const declTable = c.sri_declaraciones || [];
+            const declJson = Array.isArray(c.declaration_history) ? c.declaration_history : [];
+            const allDecls = [...declTable, ...declJson];
+
+            // Noveno dígito y día de vencimiento
+            const ninthChar = String(c.ruc || '').charAt(8);
+            const ninthDigit = parseInt(ninthChar, 10);
+            const dueDay = !isNaN(ninthDigit) && SRI_DUE_DATES[ninthDigit] !== undefined ? SRI_DUE_DATES[ninthDigit] : 'N/A';
+
+            // Inicio de Obligaciones ("No Aplica")
+            const startPeriod = c.tax_profile?.clientStartPeriod || c.clientStartPeriod || c.client_start_period || '';
+
+            // 2. Clasificación de Régimen y Declaraciones
+            if (isPopular) {
+                popularClients.push({ name: c.name, ruc: c.ruc });
+            } else if (ivaFreq === 'Semestral') {
+                semestralClients.push({ name: c.name, ruc: c.ruc });
+            } else {
+                // Verificar si para el período activo aplica o NO APLICA (inicio posterior)
+                if (isPeriodBeforeClientStart(startPeriod, activeIvaPeriod)) {
+                    noAplicaMonthlyCount++;
+                } else {
+                    // Mensual: revisar si ya declaró el período activo
+                    const declared = allDecls.some((d: any) => {
+                        const cleanP = String(d.period || '').split(':')[0].trim();
+                        return cleanP === activeIvaPeriod && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
+                    });
+
+                    if (declared) {
+                        alDiaMonthlyCount++;
+                    } else {
+                        pendingMonthlyDecl.push({ name: c.name, ruc: c.ruc, dueDay });
+                    }
+
+                    // Vencimiento próximo (próximos 5 días)
+                    if (typeof dueDay === 'number') {
+                        const daysUntil = dueDay - todayDay;
+                        if (daysUntil >= 0 && daysUntil <= 5) {
+                            upcomingDueThisWeek.push({
+                                name: c.name,
+                                ruc: c.ruc,
+                                dueDay,
+                                status: declared ? '✅ Al Día' : '🚨 Pendiente'
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 3. Cartera de Honorarios (omitiendo períodos previos al inicio de obligaciones)
+            const feeKey = ivaFreq === 'Mensual' ? 'monthly' : ivaFreq === 'Semestral' ? 'semestral' : undefined;
+            const ivaFee = feeKey ? (c.fee_structure?.[feeKey] ?? (ivaFreq === 'Semestral' ? 10 : 5)) : 0;
+            const rentaFee = c.fee_structure?.annual ?? 10;
+
+            const unpaidIva = allDecls.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file) && !isPeriodBeforeClientStart(startPeriod, d.period));
+            const unpaidRenta = allDecls.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file) && !isPeriodBeforeClientStart(startPeriod, d.period));
+            const clientDebt = (unpaidIva.length * ivaFee) + (unpaidRenta.length * rentaFee);
+
+            if (clientDebt > 0) {
+                totalDebt += clientDebt;
+                debtorsList.push({ name: c.name, debt: clientDebt });
+            }
+        });
+
+        // Ordenar listas
+        debtorsList.sort((a, b) => b.debt - a.debt);
+        upcomingDueThisWeek.sort((a, b) => a.dueDay - b.dueDay);
+
+        // Armar el mensaje HTML
+        let msg = `⚡ <b>REPORTE DIARIO OPERATIVO — BAKU 3.0</b>\n`;
+        msg += `📅 <i>${now.toLocaleDateString('es-EC', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</i>\n\n`;
+
+        // 1. Alerta de Credenciales
+        msg += `🔐 <b>ESTADO DE CLAVES SRI:</b>\n`;
+        if (verifiedKeyCount > 0) {
+            msg += `• 🟢 Operativas y Verificadas: <b>${verifiedKeyCount}</b> clientes (acceso comprobado por Nueva Luz)\n`;
+        }
+        if (missingKeyClients.length === 0) {
+            msg += `✅ <i>Todas las claves SRI registradas se encuentran operativas.</i>\n\n`;
+        } else {
+            msg += `🚨 <b>${missingKeyClients.length} Clientes con Observación de Clave:</b>\n`;
+            missingKeyClients.slice(0, 10).forEach(c => {
+                msg += `• <b>${c.name}</b> (<code>${c.ruc}</code>): <i>${c.reason}</i>\n`;
+            });
+            if (missingKeyClients.length > 10) {
+                msg += `<i>...y ${missingKeyClients.length - 10} clientes más con observaciones.</i>\n`;
+            }
+            msg += `\n`;
+        }
+
+        // 2. Declaraciones del Período Activo
+        msg += `📑 <b>DECLARACIONES IVA PERÍODO ${activeIvaPeriod}:</b>\n`;
+        msg += `• Al Día: <b>${alDiaMonthlyCount}</b> clientes\n`;
+        msg += `• Pendientes: <b>${pendingMonthlyDecl.length}</b> clientes\n`;
+        if (noAplicaMonthlyCount > 0) {
+            msg += `• No Aplica (Inicio posterior): <b>${noAplicaMonthlyCount}</b> clientes\n`;
+        }
+        if (pendingMonthlyDecl.length > 0) {
+            msg += `\n🚨 <b>Próximos pendientes de enviar:</b>\n`;
+            pendingMonthlyDecl.slice(0, 8).forEach(c => {
+                msg += `• <b>${c.name}</b> (Vence día ${c.dueDay})\n`;
+            });
+            if (pendingMonthlyDecl.length > 8) {
+                msg += `<i>...y ${pendingMonthlyDecl.length - 8} pendientes más.</i>\n`;
+            }
+        }
+        msg += `\n`;
+
+        // 3. Negocio Popular (como Silvio Stalin)
+        msg += `🏷️ <b>RIMPE NEGOCIO POPULAR (${popularClients.length} clientes):</b>\n`;
+        msg += `ℹ️ <i>Exentos de IVA mensual. Su declaración es de Impuesto a la Renta Anual (Gestión Manual).</i>\n\n`;
+
+        // 4. Vencimientos en los próximos 5 días
+        if (upcomingDueThisWeek.length > 0) {
+            msg += `⏰ <b>VENCIMIENTOS SRI EN LOS PRÓXIMOS 5 DÍAS:</b>\n`;
+            upcomingDueThisWeek.forEach(c => {
+                msg += `• Día ${c.dueDay}: <b>${c.name}</b> — ${c.status}\n`;
+            });
+            msg += `\n`;
+        }
+
+        // 5. Cobranza y Finanzas
+        msg += `💰 <b>CARTERA Y HONORARIOS:</b>\n`;
+        msg += `• Total por Cobrar: <b>$${totalDebt.toFixed(2)}</b> (${debtorsList.length} clientes)\n`;
+        if (debtorsList.length > 0) {
+            debtorsList.slice(0, 4).forEach(d => {
+                msg += `• ${d.name}: <b>$${d.debt.toFixed(2)}</b>\n`;
+            });
+        }
+        msg += `\n`;
+
+        // 6. Agenda / Tareas
+        if (tasks && tasks.length > 0) {
+            msg += `📋 <b>AGENDA DE TAREAS ACTIVAS:</b>\n`;
+            tasks.forEach(t => {
+                msg += `• [ ] <b>${t.title}</b>${t.due_date ? ` (Vence: ${t.due_date})` : ''}\n`;
+            });
+            msg += `\n`;
+        }
+
+        msg += `⚡ <i>Baku 3.0 · Asistente Fiscal Conectado a Supabase</i>`;
+        return msg;
+    } catch (e: any) {
+        console.error("❌ Error en generateDailyOperationalReport:", e);
+        return `❌ Error generando reporte operativo: ${e.message}`;
+    }
+}
+
+
+

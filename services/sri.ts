@@ -40,11 +40,36 @@ export interface SriPasswordStatusInfo {
 }
 
 export const isSriPasswordUpdated = (client: Client): SriPasswordStatusInfo => {
-    if (!client || !client.sriPassword) {
+    if (!client || (!client.sriPassword && !(client as any).sri_password)) {
         return { isUpdated: false, label: 'Sin Clave', tooltip: 'Sin clave SRI registrada' };
     }
 
-    const pass = client.sriPassword.trim();
+    // 1. Telemetría de Auditoría Real por Nueva Luz 3.0 (Supabase)
+    const sriCred = (client.taxProfile as any)?.sriCredencial;
+    if (sriCred) {
+        if (sriCred.estado === 'incorrecta') {
+            return { isUpdated: false, label: 'Rechazada', tooltip: `🔴 Clave SRI Rechazada: ${sriCred.motivo || 'Incorrecta'}` };
+        }
+        if (sriCred.estado === 'bloqueada') {
+            return { isUpdated: false, label: 'Bloqueada', tooltip: `⛔ Cuenta SRI Bloqueada por exceso de intentos` };
+        }
+        if (sriCred.estado === 'caducada') {
+            return { isUpdated: false, label: 'Caducada', tooltip: `🟡 El SRI exige cambio de clave` };
+        }
+        if (sriCred.estado === 'ok' || sriCred.ultimo_ingreso) {
+            const formattedDate = sriCred.ultimo_ingreso 
+                ? new Date(sriCred.ultimo_ingreso).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                : '';
+            return {
+                isUpdated: true,
+                label: 'Operativa',
+                tooltip: `🟢 Clave Verificada por Nueva Luz (Último acceso SRI: ${formattedDate || 'Confirmado'})`,
+                dateStr: formattedDate
+            };
+        }
+    }
+
+    const pass = (client.sriPassword || (client as any).sri_password || '').trim();
     if (pass.endsWith('@')) {
         return { isUpdated: true, label: 'Clave @', tooltip: '🔑 Clave SRI Actualizada (termina en @)' };
     }

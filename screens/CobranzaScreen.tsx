@@ -89,7 +89,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         decl?: any;
     } | null>(null);
 
-    const [moraFilter, setMoraFilter] = useState<'all' | 'al_dia' | 'atrasado' | 'mora_critica'>('all');
+    const [moraFilter, setMoraFilter] = useState<'all' | 'al_dia' | 'atrasado' | 'mora_critica' | 'anios_anteriores'>('all');
     const [matrixFrequency, setMatrixFrequency] = useState<'Mensual' | 'Semestral' | 'all'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isRecalculating, setIsRecalculating] = useState(false);
@@ -647,11 +647,17 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             filtered = filtered.filter(i => i.clientName.toLowerCase().includes(lower) || i.ruc.includes(lower) || i.period.toLowerCase().includes(lower));
         }
 
+        const currentYear = new Date().getFullYear();
+
         return {
             all: filtered.length,
             al_dia: filtered.filter(i => (i.daysDiff || 0) <= 0).length,
             atrasado: filtered.filter(i => (i.daysDiff || 0) > 0 && (i.daysDiff || 0) <= 30).length,
-            mora_critica: filtered.filter(i => (i.daysDiff || 0) > 30).length
+            mora_critica: filtered.filter(i => (i.daysDiff || 0) > 30).length,
+            anios_anteriores: filtered.filter(i => {
+                const y = parseInt(String(i.period || '').split('-')[0], 10);
+                return !isNaN(y) && y < currentYear;
+            }).length
         };
     }, [financialData, activeTab, searchTerm]);
 
@@ -667,11 +673,16 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         }
 
         if (moraFilter !== 'all') {
+            const currentYear = new Date().getFullYear();
             list = list.filter(i => {
                 const diff = i.daysDiff || 0;
                 if (moraFilter === 'al_dia') return diff <= 0;
                 if (moraFilter === 'atrasado') return diff > 0 && diff <= 30;
                 if (moraFilter === 'mora_critica') return diff > 30;
+                if (moraFilter === 'anios_anteriores') {
+                    const y = parseInt(String(i.period || '').split('-')[0], 10);
+                    return !isNaN(y) && y < currentYear;
+                }
                 return true;
             });
         }
@@ -932,10 +943,32 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // Orden cronológico (más recientes primero)
             periodsList.sort((a, b) => b.period.localeCompare(a.period));
 
+            // Separación de deuda de año actual vs años anteriores
+            const currentYear = now.getFullYear();
+            let currentYearDebt = 0;
+            let pastYearsDebt = 0;
+            const pastYearsPeriods: any[] = [];
+
+            periodsList.forEach(p => {
+                const pYear = parseInt(String(p.period || '').split('-')[0], 10);
+                const isUnpaidDebt = p.status === 'due_declared' || p.status === 'due_pending';
+                if (!isNaN(pYear) && pYear < currentYear) {
+                    if (isUnpaidDebt) {
+                        pastYearsDebt += p.amount;
+                        pastYearsPeriods.push(p);
+                    }
+                } else {
+                    if (isUnpaidDebt) {
+                        currentYearDebt += p.amount;
+                    }
+                }
+            });
+
             // Filtro de mora
             if (moraFilter === 'al_dia' && totalDebt > 0) return;
             if (moraFilter === 'atrasado' && (maxDaysOverdue <= 0 || maxDaysOverdue > 30)) return;
             if (moraFilter === 'mora_critica' && maxDaysOverdue <= 30) return;
+            if (moraFilter === 'anios_anteriores' && pastYearsDebt <= 0) return;
 
             // Filtro de pestaña activa
             if (activeTab === 'receivable' && totalDebt === 0) return;
@@ -948,7 +981,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 totalPaid,
                 pendingCount,
                 maxDaysOverdue,
-                periods: periodsList
+                periods: periodsList,
+                currentYearDebt,
+                pastYearsDebt,
+                pastYearsPeriods,
+                hasPastYearsDebt: pastYearsDebt > 0
             });
         });
 
@@ -1366,6 +1403,63 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
         setSelectedCellAction(null);
         toast.info(`Pago de ${formatPeriodForDisplay(period)} revertido a pendiente para ${freshClient.name}`);
+    };
+
+    // Liquidar todas las deudas de años anteriores para un cliente en 1 Clic
+    const handleLiquidatePastYears = async (client: Client, periodsToLiquidate: any[]) => {
+        if (!periodsToLiquidate || periodsToLiquidate.length === 0) return;
+        const confirmMsg = `¿Deseas marcar como PAGADOS los ${periodsToLiquidate.length} períodos de años anteriores (${periodsToLiquidate.map(p => p.label).join(', ')}) para ${client.name}?`;
+        if (!window.confirm(confirmMsg)) return;
+
+        const nowIso = new Date().toISOString();
+        const transactionId = `PAY-HIST-${Date.now().toString().slice(-6)}`;
+        const freshClient = (clients.find(c => c.id === client.id) || client);
+        const fee = getClientServiceFee(freshClient, serviceFees);
+        const history = [...(freshClient.declarations || [])];
+
+        periodsToLiquidate.forEach(p => {
+            const matchingIndices = history
+                .map((d, i) => (arePeriodsEqual(d.period, p.period) || d.period === p.period) ? i : -1)
+                .filter(i => i !== -1);
+
+            if (matchingIndices.length > 0) {
+                matchingIndices.forEach(idx => {
+                    history[idx] = {
+                        ...history[idx],
+                        status: DeclarationStatus.Pagada,
+                        is_paid: true,
+                        paidAt: nowIso,
+                        transactionId,
+                        amount: history[idx].amount || p.amount || fee,
+                        updatedAt: nowIso
+                    };
+                });
+            } else {
+                history.push({
+                    period: p.period,
+                    status: DeclarationStatus.Pagada,
+                    is_paid: true,
+                    paidAt: nowIso,
+                    transactionId,
+                    amount: p.amount || fee,
+                    updatedAt: nowIso
+                } as any);
+            }
+        });
+
+        const updatedClient = { ...freshClient, declarations: history, updatedAt: nowIso };
+        store.updateClient(freshClient.id, { declarations: history });
+        const newClients = clients.map(c => c.id === freshClient.id ? updatedClient : c);
+        setClients(newClients);
+        await db.setLocal('clients', newClients);
+
+        try {
+            await SupabaseService.upsertClient(updatedClient);
+        } catch (e) {
+            console.warn('Error syncing declaration_history to Supabase:', e);
+        }
+
+        toast.success(`Se liquidaron ${periodsToLiquidate.length} períodos de años anteriores para ${freshClient.name}`);
     };
 
     // Liquidar toda la deuda de un cliente en 1 Clic desde la fila de la Matriz
@@ -1868,7 +1962,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     { id: 'all', label: 'Todos', count: moraCounts.all },
                                     { id: 'al_dia', label: 'Al Día', count: moraCounts.al_dia, color: 'text-[#00A896]' },
                                     { id: 'atrasado', label: '1-30d', count: moraCounts.atrasado, color: 'text-amber-500' },
-                                    { id: 'mora_critica', label: '>30d Mora', count: moraCounts.mora_critica, color: 'text-rose-500' }
+                                    { id: 'mora_critica', label: '>30d Mora', count: moraCounts.mora_critica, color: 'text-rose-500' },
+                                    { id: 'anios_anteriores', label: '📅 Años Anteriores', count: moraCounts.anios_anteriores, color: 'text-purple-400' }
                                 ].map(filter => (
                                     <button
                                         key={filter.id}
@@ -2189,27 +2284,69 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     </div>
                                                 </div>
 
-                                                {/* Resumen Financiero del Cliente */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#020b14]/90 border border-slate-200 dark:border-white/5 mb-4 font-mono">
+                                                {/* Resumen Financiero del Cliente con desglose Año Actual vs Años Anteriores */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#020b14]/90 border border-slate-200 dark:border-white/5 mb-4 font-mono">
                                                     <div>
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Deuda Acumulada</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Deuda Total</span>
                                                         <span className={`text-xl font-black tracking-tight ${hasDebt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'}`}>
                                                             ${profile.totalDebt.toFixed(2)}
                                                         </span>
                                                     </div>
                                                     <div>
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Tarifa Mensual</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Año Actual</span>
                                                         <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                                            ${profile.fee.toFixed(2)}/mes
+                                                            ${profile.currentYearDebt.toFixed(2)}
                                                         </span>
                                                     </div>
-                                                    <div className="col-span-2 sm:col-span-1">
+                                                    <div>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Años Previos</span>
+                                                        <span className={`text-sm font-black ${profile.pastYearsDebt > 0 ? 'text-amber-500 dark:text-amber-400 animate-pulse' : 'text-slate-400'}`}>
+                                                            ${profile.pastYearsDebt.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <div>
                                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Días Máx Mora</span>
                                                         <span className={`text-sm font-bold ${profile.maxDaysOverdue > 30 ? 'text-rose-500' : profile.maxDaysOverdue > 0 ? 'text-amber-500' : 'text-slate-400'}`}>
                                                             {profile.maxDaysOverdue > 0 ? `${profile.maxDaysOverdue} días` : '0 días (Al Día)'}
                                                         </span>
                                                     </div>
                                                 </div>
+
+                                                {/* SECCIÓN ESPECIAL: DEUDAS DE AÑOS ANTERIORES CON BOTÓN DE LIQUIDACIÓN RÁPIDA */}
+                                                {profile.hasPastYearsDebt && (
+                                                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 font-mono shadow-sm">
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 shrink-0">
+                                                                <LucideIcons.History size={16} />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                                                        Deuda de Años Anteriores
+                                                                    </span>
+                                                                    <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px]">
+                                                                        ${profile.pastYearsDebt.toFixed(2)}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                                    {profile.pastYearsPeriods.map((p: any) => (
+                                                                        <span key={p.period} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
+                                                                            {p.label}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleLiquidatePastYears(profile.client, profile.pastYearsPeriods)}
+                                                            className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-black rounded-xl text-[10px] uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
+                                                            title="Marcar todas las deudas de años anteriores como pagadas en 1 clic"
+                                                        >
+                                                            <LucideIcons.CheckCheck size={14} />
+                                                            <span>⚡ Liquidar Años Anteriores (${profile.pastYearsDebt.toFixed(0)})</span>
+                                                        </button>
+                                                    </div>
+                                                )}
 
                                                 {/* TIRA DE PERÍODOS Y COMPROBANTES (COMO EN DECLARACIONES) */}
                                                 <div className="mb-4 space-y-1.5">
@@ -2222,7 +2359,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     </div>
 
                                                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 pt-0.5">
-                                                        {profile.periods.slice(0, 6).map((p: any) => {
+                                                        {profile.periods.slice(0, 12).map((p: any) => {
                                                             const isPaidP = p.status === 'paid';
                                                             const isDeclaredP = p.status === 'due_declared';
                                                             const isPendingP = p.status === 'due_pending';
