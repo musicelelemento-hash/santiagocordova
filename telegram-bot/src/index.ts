@@ -284,8 +284,9 @@ export async function showInteractiveDebtors(ctx: any, page: number = 1, isEdit:
 
         kb.row(
             InlineKeyboard.text('🔄 Refrescar', `baku_page_debt:${data.page}`),
-            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+            InlineKeyboard.text('🔙 Hub Finanzas', 'baku_hub:finances')
         );
+        kb.row(InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home'));
 
         if (isEdit) {
             try {
@@ -337,8 +338,9 @@ export async function showInteractiveDeadlines(ctx: any, isEdit: boolean = false
 
         kb.row(
             InlineKeyboard.text('🔄 Refrescar', 'baku_nav:deadlines'),
-            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+            InlineKeyboard.text('🔙 Hub Tributario', 'baku_hub:sri')
         );
+        kb.row(InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home'));
 
         if (isEdit) {
             try {
@@ -2393,7 +2395,10 @@ bot.on('callback_query:data', async (ctx) => {
                      `👤 <b>Titular:</b> ${res.clientName}\n` +
                      `🔑 <b>Clave:</b> <code>${res.password || 'No registrada'}</code>\n\n` +
                      `<i>Archivo recuperado directamente de la Bóveda Segura de Baku.</i>`,
-            parse_mode: 'HTML'
+            parse_mode: 'HTML',
+            reply_markup: new InlineKeyboard()
+                .text('🔙 Bóveda de Firmas', 'baku_cmd:browse_vault')
+                .text('🏠 Menú Principal', 'baku_nav:home')
         });
         return;
     }
@@ -2410,7 +2415,12 @@ bot.on('callback_query:data', async (ctx) => {
             `🔑 <b>Clave de Firma Electrónica</b>\n\n` +
             `👤 <b>Titular:</b> ${res.clientName}\n` +
             `🔐 <b>Contraseña:</b> <code>${res.password || 'No registrada'}</code>`,
-            { parse_mode: 'HTML' }
+            {
+                parse_mode: 'HTML',
+                reply_markup: new InlineKeyboard()
+                    .text('🔙 Bóveda de Firmas', 'baku_cmd:browse_vault')
+                    .text('🏠 Menú Principal', 'baku_nav:home')
+            }
         );
         return;
     }
