@@ -99,6 +99,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
+    const [isSyncMatrixModalOpen, setIsSyncMatrixModalOpen] = useState(false);
+    const [isSyncingMatrix, setIsSyncingMatrix] = useState(false);
 
     // Fast SRI Invoicing States
     const [isFastBillingOpen, setIsFastBillingOpen] = useState(false);
@@ -588,6 +590,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // 1. Process explicit declarations in client.declarations
             (client.declarations || []).forEach(decl => {
                 if (isPeriodBeforeClientStart(client, decl.period)) return;
+                const clientIvaFreq = getClientIvaFrequency(client);
+                const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(decl.period?.split(':')[0] || '');
+                if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat && !decl.proof_file) {
+                    return;
+                }
                 processedPeriods.add(decl.period);
 
                 const amount = decl.amount || fee;
@@ -872,6 +879,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // 1. Declaraciones existentes
             (client.declarations || []).forEach(decl => {
                 if (isPeriodBeforeClientStart(client, decl.period)) return;
+                const clientIvaFreq = getClientIvaFrequency(client);
+                const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(decl.period?.split(':')[0] || '');
+                if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat && !decl.proof_file) {
+                    return;
+                }
                 processedPeriods.add(decl.period);
                 const amount = decl.amount || fee;
                 const dueDate = getDueDateForPeriod(client, decl.period) || now;
@@ -995,6 +1007,90 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             return a.client.name.localeCompare(b.client.name);
         });
     }, [clients, serviceFees, searchTerm, moraFilter, activeTab, isRecalculating]);
+
+    // Resumen consolidado global de deudas de años anteriores para liquidación en 1 sola acción
+    const allPastYearsDebtsSummary = useMemo(() => {
+        let totalDebt = 0;
+        let totalPeriods = 0;
+        const clientsWithPastDebts: { client: Client; periods: any[]; amount: number }[] = [];
+
+        consolidatedClients.forEach(c => {
+            if (c.hasPastYearsDebt && c.pastYearsPeriods.length > 0) {
+                totalDebt += c.pastYearsDebt;
+                totalPeriods += c.pastYearsPeriods.length;
+                clientsWithPastDebts.push({
+                    client: c.client,
+                    periods: c.pastYearsPeriods,
+                    amount: c.pastYearsDebt
+                });
+            }
+        });
+
+        return {
+            totalDebt,
+            totalPeriods,
+            clientsCount: clientsWithPastDebts.length,
+            clientsWithPastDebts
+        };
+    }, [consolidatedClients]);
+
+    // CANDIDATOS PARA SINCRONIZACIÓN CON MATRIZ FISCAL (Declaraciones Enviadas/con PDF pero no pagadas)
+    const matrixSyncCandidates = useMemo(() => {
+        let totalAmount = 0;
+        let totalDeclarations = 0;
+        const candidates: {
+            client: Client;
+            declarations: { decl: any; index: number; amount: number; period: string; proofFile?: any; isDeclaredStatus: boolean }[];
+            clientTotal: number;
+        }[] = [];
+
+        clients.forEach(client => {
+            if (client.isDeleted || client.isActive === false || isCourtesyClient(client)) return;
+            const fee = getClientServiceFee(client, serviceFees);
+            const clientDecls: { decl: any; index: number; amount: number; period: string; proofFile?: any; isDeclaredStatus: boolean }[] = [];
+            let clientTotal = 0;
+
+            (client.declarations || []).forEach((decl, idx) => {
+                if (isPeriodBeforeClientStart(client, decl.period)) return;
+                const clientIvaFreq = getClientIvaFrequency(client);
+                const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(decl.period?.split(':')[0] || '');
+                if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat && !decl.proof_file) {
+                    return;
+                }
+                const hasProofOrDeclared = (decl.status === DeclarationStatus.Enviada || isDeclared(decl) || !!decl.proof_file);
+                const unpaid = !decl.is_paid && decl.status !== DeclarationStatus.Pagada;
+                if (hasProofOrDeclared && unpaid) {
+                    const amount = (decl.amount && decl.amount > 0) ? decl.amount : fee;
+                    clientDecls.push({
+                        decl,
+                        index: idx,
+                        amount,
+                        period: decl.period,
+                        proofFile: decl.proof_file,
+                        isDeclaredStatus: decl.status === DeclarationStatus.Enviada || isDeclared(decl)
+                    });
+                    clientTotal += amount;
+                }
+            });
+
+            if (clientDecls.length > 0) {
+                totalAmount += clientTotal;
+                totalDeclarations += clientDecls.length;
+                candidates.push({
+                    client,
+                    declarations: clientDecls,
+                    clientTotal
+                });
+            }
+        });
+
+        return {
+            candidates,
+            totalDeclarations,
+            totalAmount,
+            clientsCount: candidates.length
+        };
+    }, [clients, serviceFees]);
 
     // Helper: Detectar si un período está en el futuro
     const isFuturePeriod = (p: string): boolean => {
@@ -1462,6 +1558,79 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         toast.success(`Se liquidaron ${periodsToLiquidate.length} períodos de años anteriores para ${freshClient.name}`);
     };
 
+    // Liquidar de una sola vez TODAS las deudas de años anteriores para toda la cartera
+    const handleLiquidateAllPastYears = async () => {
+        if (allPastYearsDebtsSummary.clientsCount === 0) {
+            toast.info("No hay deudas de años anteriores pendientes por liquidar.");
+            return;
+        }
+
+        const confirmMsg = `¿Desea liquidar TODAS las deudas de años anteriores de una sola vez?\n\n• Clientes: ${allPastYearsDebtsSummary.clientsCount}\n• Períodos adeudados: ${allPastYearsDebtsSummary.totalPeriods}\n• Monto Total: $${allPastYearsDebtsSummary.totalDebt.toFixed(2)}\n\nEsta acción marcará como pagados todos los períodos históricos de estos clientes.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        setIsRecalculating(true);
+        const nowIso = new Date().toISOString();
+        let updatedClientsList = [...clients];
+
+        try {
+            for (const item of allPastYearsDebtsSummary.clientsWithPastDebts) {
+                const freshClient = updatedClientsList.find(c => c.id === item.client.id) || item.client;
+                const history = [...(freshClient.declarations || [])];
+                const transactionId = `BATCH-PAST-${Date.now().toString().slice(-6)}`;
+                const fee = getClientServiceFee(freshClient, serviceFees);
+
+                item.periods.forEach(p => {
+                    const matchingIndices = history
+                        .map((d, i) => (arePeriodsEqual(d.period, p.period) || d.period === p.period) ? i : -1)
+                        .filter(i => i !== -1);
+
+                    if (matchingIndices.length > 0) {
+                        matchingIndices.forEach(idx => {
+                            history[idx] = {
+                                ...history[idx],
+                                status: DeclarationStatus.Pagada,
+                                is_paid: true,
+                                paidAt: nowIso,
+                                transactionId,
+                                amount: history[idx].amount || p.amount || fee,
+                                updatedAt: nowIso
+                            };
+                        });
+                    } else {
+                        history.push({
+                            period: p.period,
+                            status: DeclarationStatus.Pagada,
+                            is_paid: true,
+                            paidAt: nowIso,
+                            transactionId,
+                            amount: p.amount || fee,
+                            updatedAt: nowIso
+                        } as any);
+                    }
+                });
+
+                const updatedClient = { ...freshClient, declarations: history, updatedAt: nowIso };
+                store.updateClient(freshClient.id, { declarations: history });
+                updatedClientsList = updatedClientsList.map(c => c.id === freshClient.id ? updatedClient : c);
+
+                try {
+                    await SupabaseService.upsertClient(updatedClient);
+                } catch (e) {
+                    console.warn(`Error syncing client ${freshClient.name} to Supabase:`, e);
+                }
+            }
+
+            setClients(updatedClientsList);
+            await db.setLocal('clients', updatedClientsList);
+            toast.success(`🎉 Se liquidaron ${allPastYearsDebtsSummary.totalPeriods} períodos de años anteriores en ${allPastYearsDebtsSummary.clientsCount} clientes ($${allPastYearsDebtsSummary.totalDebt.toFixed(2)}) de una sola vez.`);
+        } catch (err: any) {
+            console.error('Error liquidando deudas de años anteriores:', err);
+            toast.error(`Error al liquidar en lote: ${err?.message || err}`);
+        } finally {
+            setIsRecalculating(false);
+        }
+    };
+
     // Liquidar toda la deuda de un cliente en 1 Clic desde la fila de la Matriz
     const handleLiquidateClientDirect = async (client: Client) => {
         const nowIso = new Date().toISOString();
@@ -1681,36 +1850,79 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     };
 
     const handleSyncAllDeclaredAsPaid = () => {
-        let count = 0;
-        const nowIso = new Date().toISOString();
-        const updatedClients = clients.map(client => {
-            let hasChanges = false;
-            const decls = [...(client.declarations || [])];
+        setIsSyncMatrixModalOpen(true);
+    };
 
-            decls.forEach((decl, idx) => {
-                if ((decl.status === DeclarationStatus.Enviada || decl.proof_file) && !decl.is_paid && decl.status !== DeclarationStatus.Pagada) {
-                    decls[idx] = {
-                        ...decl,
-                        status: DeclarationStatus.Pagada,
-                        is_paid: true,
-                        paidAt: nowIso,
+    const handleExecuteMatrixSync = async () => {
+        if (matrixSyncCandidates.totalDeclarations === 0) {
+            toast.info("Cobranza ya se encuentra 100% sincronizada y al día con la Matriz.");
+            setIsSyncMatrixModalOpen(false);
+            return;
+        }
+
+        setIsSyncingMatrix(true);
+        const nowIso = new Date().toISOString();
+        const batchTimestamp = Date.now();
+        let updatedCount = 0;
+        let totalSettled = 0;
+
+        try {
+            for (const item of matrixSyncCandidates.candidates) {
+                const currentClient = clients.find(c => c.id === item.client.id) || item.client;
+                const decls = [...(currentClient.declarations || [])];
+                let clientModified = false;
+
+                item.declarations.forEach(d => {
+                    if (decls[d.index]) {
+                        decls[d.index] = {
+                            ...decls[d.index],
+                            status: DeclarationStatus.Pagada,
+                            is_paid: true,
+                            paidAt: nowIso,
+                            paymentMethod: 'Sincronización Matriz',
+                            transactionId: `SYNC-MATRIZ-${batchTimestamp}-${d.period}`,
+                            updatedAt: nowIso
+                        };
+                        clientModified = true;
+                        updatedCount++;
+                        totalSettled += d.amount;
+                    }
+                });
+
+                if (clientModified) {
+                    const updatedClient = {
+                        ...currentClient,
+                        declarations: decls,
                         updatedAt: nowIso
                     };
-                    hasChanges = true;
-                    count++;
+                    store.updateClient(currentClient.id, { declarations: decls });
+                    await SupabaseService.upsertClient(updatedClient).catch(e => {
+                        console.warn(`[SyncMatriz] Fallo persistencia Supabase para ${currentClient.name}:`, e);
+                    });
                 }
-            });
-
-            if (hasChanges) {
-                store.updateClient(client.id, { declarations: decls });
             }
-            return client;
-        });
 
-        if (count > 0) {
-            toast.success(`¡${count} cobros sincronizados y marcados como PAGADOS exitosamente!`);
-        } else {
-            toast.info("Cobranza ya se encuentra 100% sincronizada y al día con la Matriz.");
+            toast.success(`⚡ ¡${updatedCount} cobros ($${totalSettled.toFixed(2)}) en ${matrixSyncCandidates.clientsCount} clientes sincronizados y marcados como PAGADOS!`);
+            setIsSyncMatrixModalOpen(false);
+        } catch (err: any) {
+            console.error("Error al sincronizar con la matriz:", err);
+            toast.error(`Error durante la sincronización: ${err.message || 'Error desconocido'}`);
+        } finally {
+            setIsSyncingMatrix(false);
+        }
+    };
+
+    const handleRefreshDataFromCloud = async () => {
+        setIsSyncingMatrix(true);
+        try {
+            await store.loadFromDB();
+            toast.success("✅ Datos sincronizados con la nube y la Matriz Fiscal exitosamente.");
+            setIsSyncMatrixModalOpen(false);
+        } catch (err: any) {
+            console.error("Error al recargar datos:", err);
+            toast.error("Error al refrescar datos desde la nube.");
+        } finally {
+            setIsSyncingMatrix(false);
         }
     };
 
@@ -1749,12 +1961,21 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </button>
 
                     <button 
-                        onClick={handleSyncAllDeclaredAsPaid}
-                        className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
-                        title="Marcar como pagados en lote todos los cobros cuyas declaraciones ya están enviadas en la Matriz"
+                        onClick={() => setIsSyncMatrixModalOpen(true)}
+                        className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border cursor-pointer w-full sm:w-auto
+                            ${matrixSyncCandidates.totalDeclarations > 0
+                                ? 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white shadow-lg shadow-amber-500/20 active:scale-95 border-white/10'
+                                : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'}`}
+                        title={matrixSyncCandidates.totalDeclarations > 0 
+                            ? `Hay ${matrixSyncCandidates.totalDeclarations} cobros pendientes de declaraciones enviadas/con PDF ($${matrixSyncCandidates.totalAmount.toFixed(2)})`
+                            : "Cobranza al día con la Matriz Fiscal (0 pendientes de cobro)"}
                     >
-                        <LucideIcons.RefreshCw size={14} />
-                        <span>⚡ Sincronizar con Matriz</span>
+                        <LucideIcons.RefreshCw size={14} className={isSyncingMatrix ? "animate-spin text-amber-300" : matrixSyncCandidates.totalDeclarations > 0 ? "text-white" : "text-emerald-400"} />
+                        <span>
+                            {matrixSyncCandidates.totalDeclarations > 0
+                                ? `⚡ Sincronizar con Matriz ($${matrixSyncCandidates.totalAmount.toFixed(2)} · ${matrixSyncCandidates.totalDeclarations})`
+                                : `⚡ Matriz al Día (0 pend.)`}
+                        </span>
                     </button>
 
                     <button 
@@ -2026,6 +2247,18 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 justify-end">
+                            {allPastYearsDebtsSummary.clientsCount > 0 && (
+                                <button
+                                    onClick={handleLiquidateAllPastYears}
+                                    disabled={isRecalculating}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black uppercase tracking-wider font-mono shadow-md shadow-purple-600/30 transition-all cursor-pointer active:scale-95 shrink-0"
+                                    title="Liquidar todas las deudas de años anteriores para todos los clientes de una sola vez"
+                                >
+                                    <LucideIcons.Zap size={14} className="text-yellow-300" />
+                                    <span>⚡ Liquidar Años Anteriores (${allPastYearsDebtsSummary.totalDebt.toFixed(2)}) De Una Sola</span>
+                                </button>
+                            )}
+
                             <button
                                 onClick={handleExportCsv}
                                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold uppercase tracking-wider border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-sm active:scale-95"
@@ -2206,6 +2439,37 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
                     ) : viewMode === 'clients' ? (
                         <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
+                            {/* Banner Global de Liquidación en 1 Sola Acción */}
+                            {allPastYearsDebtsSummary.clientsCount > 0 && (
+                                <div className="col-span-full p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-purple-900/30 to-purple-950/40 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg font-mono">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                            <LucideIcons.History size={18} />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-black text-purple-200 uppercase tracking-wider">Deudas de Años Anteriores ({allPastYearsDebtsSummary.clientsCount} clientes)</span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/30 text-purple-200 border border-purple-500/50">
+                                                    ${allPastYearsDebtsSummary.totalDebt.toFixed(2)} total
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-purple-300/80 mt-0.5">
+                                                Hay {allPastYearsDebtsSummary.totalPeriods} períodos adeudados de años fiscales anteriores al actual.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleLiquidateAllPastYears}
+                                        disabled={isRecalculating}
+                                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-wider shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all shrink-0"
+                                        title="Liquidar todas las deudas de años anteriores para todos los clientes de una sola vez"
+                                    >
+                                        <LucideIcons.Zap size={14} className="text-yellow-300" />
+                                        <span>⚡ Liquidar Años Anteriores (${allPastYearsDebtsSummary.totalDebt.toFixed(2)}) De Una Sola</span>
+                                    </button>
+                                </div>
+                            )}
+
                             {consolidatedClients.length === 0 ? (
                                 <div className="col-span-full py-24 flex flex-col items-center justify-center text-slate-500 font-mono">
                                     <div className="p-6 rounded-3xl bg-slate-100 dark:bg-white/5 mb-4 border border-slate-200 dark:border-white/10">
@@ -3820,6 +4084,155 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* MODAL: SINCRONIZACIÓN INTELIGENTE CON MATRIZ FISCAL */}
+            <Modal 
+                isOpen={isSyncMatrixModalOpen} 
+                onClose={() => !isSyncingMatrix && setIsSyncMatrixModalOpen(false)} 
+                title="Sincronización Inteligente con Matriz Fiscal"
+            >
+                <div className="p-4 sm:p-6 space-y-6 font-mono text-slate-900 dark:text-white max-h-[82vh] overflow-y-auto no-scrollbar">
+                    {/* ENCABEZADO Y PROPÓSITO TÉCNICO */}
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                            <LucideIcons.RefreshCw size={20} className={isSyncingMatrix ? "animate-spin" : ""} />
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-amber-300 uppercase tracking-wide">
+                                Conciliación Contable: Matriz SRI ↔ Cobranzas
+                            </h4>
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                                Esta función detecta automáticamente todas las declaraciones que ya fueron <strong className="text-white">presentadas al SRI</strong> o que ya cuentan con su <strong className="text-white">comprobante oficial PDF</strong> en la Matriz Fiscal, pero que aún figuran pendientes de pago en tus cuentas por cobrar.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* METRIC STRIP */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Clientes Detectados</span>
+                            <span className="text-2xl font-black text-amber-400">{matrixSyncCandidates.clientsCount}</span>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Declaraciones con PDF</span>
+                            <span className="text-2xl font-black text-amber-400">{matrixSyncCandidates.totalDeclarations}</span>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total a Liquidar</span>
+                            <span className="text-2xl font-black text-[#00A896]">${matrixSyncCandidates.totalAmount.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    {/* LISTA DETALLADA DE CANDIDATOS */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                Desglose de Clientes con Declaraciones Presentadas
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                                {matrixSyncCandidates.totalDeclarations} comprobante(s)
+                            </span>
+                        </div>
+
+                        {matrixSyncCandidates.candidates.length > 0 ? (
+                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
+                                {matrixSyncCandidates.candidates.map(({ client, declarations, clientTotal }) => (
+                                    <div 
+                                        key={client.id}
+                                        className="p-3.5 rounded-xl bg-[#020b14]/70 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-500/30 transition-all"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-xs text-white truncate uppercase font-display">{client.name}</p>
+                                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                                <span className="text-[10px] text-[#00A896] font-mono">{client.ruc}</span>
+                                                <span className="text-[9px] text-slate-400">•</span>
+                                                {declarations.map(d => (
+                                                    <span 
+                                                        key={d.period}
+                                                        className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold flex items-center gap-1"
+                                                    >
+                                                        <span>{formatPeriodForDisplay(d.period)}</span>
+                                                        <span className="text-white">${d.amount.toFixed(2)}</span>
+                                                        {d.proofFile && <LucideIcons.FileText size={10} className="text-amber-400" />}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right shrink-0">
+                                            <span className="text-xs font-black text-[#00A896] block">${clientTotal.toFixed(2)}</span>
+                                            <span className="text-[9px] text-slate-400">por liquidar</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
+                                <LucideIcons.CheckCircle size={28} className="text-emerald-400 mx-auto" />
+                                <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                                    ¡Excelente! Cobranza 100% Sincronizada
+                                </p>
+                                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                                    No hay declaraciones presentadas ante el SRI pendientes de cobro. Toda declaración enviada ya figura como Pagada.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* OPCIONES DE ACCIÓN DUAL */}
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-wider">
+                            <LucideIcons.ShieldCheck size={16} className="text-[#00A896]" />
+                            <span>¿Qué acción deseas ejecutar?</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                                onClick={handleExecuteMatrixSync}
+                                disabled={matrixSyncCandidates.totalDeclarations === 0 || isSyncingMatrix}
+                                className={`p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border cursor-pointer
+                                    ${matrixSyncCandidates.totalDeclarations > 0 && !isSyncingMatrix
+                                        ? 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white border-white/10 shadow-lg shadow-amber-500/20 active:scale-95'
+                                        : 'bg-white/5 text-slate-500 border-white/5 cursor-not-allowed'}`}
+                            >
+                                <LucideIcons.Zap size={15} />
+                                <span>
+                                    {isSyncingMatrix 
+                                        ? 'Sincronizando...' 
+                                        : `Liquidar y Cobrar Todo ($${matrixSyncCandidates.totalAmount.toFixed(2)})`}
+                                </span>
+                            </button>
+
+                            <button
+                                onClick={handleRefreshDataFromCloud}
+                                disabled={isSyncingMatrix}
+                                className="p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 cursor-pointer active:scale-95"
+                                title="Recargar clientes y declaraciones desde Supabase sin modificar cobros"
+                            >
+                                <LucideIcons.RefreshCw size={14} className={isSyncingMatrix ? "animate-spin" : ""} />
+                                <span>Solo Refrescar Datos Nube</span>
+                            </button>
+                        </div>
+
+                        <p className="text-[10px] text-slate-400 text-center leading-normal">
+                            💡 <strong>Liquidar y Cobrar:</strong> Marca las declaraciones como pagadas, genera recibos contables y persiste en Supabase.
+                            <br />
+                            🔄 <strong>Refrescar Datos:</strong> Actualiza tu pantalla con los últimos comprobantes subidos por Nueva Luz 3.0 sin alterar estados de pago.
+                        </p>
+                    </div>
+
+                    {/* BOTÓN CERRAR */}
+                    <div className="pt-1">
+                        <button
+                            onClick={() => setIsSyncMatrixModalOpen(false)}
+                            disabled={isSyncingMatrix}
+                            className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
+                        >
+                            Cerrar Ventana
+                        </button>
+                    </div>
+                </div>
             </Modal>
 
             {/* BARRA FLOTANTE FIJA PARA LIQUIDACIÓN EN LOTE (Stitch Obsidian Luxury Sticky Bar) */}

@@ -1119,6 +1119,74 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         }).length;
     }, [clients, selectedYear]);
 
+    const allPastYearsDebtsTotalAmount = useMemo(() => {
+        let total = 0;
+        clients.forEach(c => {
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan') return;
+            const debts = getClientPastYearDebts(c, selectedYear);
+            debts.forEach(d => {
+                total += getClientServiceFee(c, serviceFees, d.period);
+            });
+        });
+        return total;
+    }, [clients, selectedYear, serviceFees]);
+
+    // Liquidar de una sola vez TODAS las deudas de años anteriores para toda la matriz
+    const handleLiquidateAllPastYearsGlobal = () => {
+        const clientsWithDebts = clients.filter(c => {
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan') return false;
+            return getClientPastYearDebts(c, selectedYear).length > 0;
+        });
+
+        if (clientsWithDebts.length === 0) {
+            toast.info("No hay deudas de años anteriores pendientes por liquidar.");
+            return;
+        }
+
+        let totalPeriods = 0;
+        clientsWithDebts.forEach(c => {
+            totalPeriods += getClientPastYearDebts(c, selectedYear).length;
+        });
+
+        const confirmMsg = `¿Desea liquidar TODAS las deudas de años anteriores de una sola vez?\n\n• Clientes: ${clientsWithDebts.length}\n• Períodos adeudados: ${totalPeriods}\n• Monto Total: $${allPastYearsDebtsTotalAmount.toFixed(2)}\n\nEsta acción marcará como pagados todos los períodos anteriores al año fiscal ${selectedYear}.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        const nowIso = new Date().toISOString();
+        clientsWithDebts.forEach(client => {
+            const debts = getClientPastYearDebts(client, selectedYear);
+            const freshClient = clients.find(c => c.id === client.id) || client;
+            let updatedHistory = [...(freshClient.declarations || [])];
+
+            debts.forEach(pastDecl => {
+                const idx = updatedHistory.findIndex(dh => dh.period === pastDecl.period && (dh.type || 'IVA') === (pastDecl.type || 'IVA'));
+                if (idx !== -1) {
+                    updatedHistory[idx] = {
+                        ...updatedHistory[idx],
+                        is_paid: true,
+                        paidAt: nowIso,
+                        status: DeclarationStatus.Pagada,
+                        updatedAt: nowIso
+                    };
+                } else {
+                    updatedHistory.push({
+                        ...pastDecl,
+                        is_paid: true,
+                        paidAt: nowIso,
+                        status: DeclarationStatus.Pagada,
+                        updatedAt: nowIso
+                    });
+                }
+                if (onTogglePayment) {
+                    onTogglePayment(client, pastDecl.period, (pastDecl.type as any) || 'IVA', true);
+                }
+            });
+
+            useAppStore.getState().updateClient(freshClient.id, { declarations: updatedHistory });
+        });
+
+        toast.success(`🎉 Se liquidaron con éxito ${totalPeriods} períodos de años anteriores en ${clientsWithDebts.length} clientes ($${allPastYearsDebtsTotalAmount.toFixed(2)}) de una sola vez.`);
+    };
+
     // ── SUPER DOCK DE COMPROBANTES MASIVOS & SELECCIÓN ──
     const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
     const isAllSelected = filteredClients.length > 0 && selectedClientIds.length === filteredClients.length;
@@ -1802,6 +1870,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         )}
                     </button>
 
+                    {/* Botón Global para Liquidar Años Anteriores de una sola */}
+                    {clientsWithPastDebtsCount > 0 && (
+                        <button
+                            onClick={handleLiquidateAllPastYearsGlobal}
+                            className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-wider font-mono shadow-md shadow-purple-600/30 flex items-center gap-1.5 border border-white/10 active:scale-95 cursor-pointer"
+                            title="Liquidar todas las deudas de años anteriores para todos los clientes de una sola vez"
+                        >
+                            <LucideIcons.Zap size={13} className="text-yellow-300" />
+                            <span>⚡ Liquidar Años Anteriores (${allPastYearsDebtsTotalAmount.toFixed(2)}) De Una Sola</span>
+                        </button>
+                    )}
+
                     {/* Workspace desk switcher */}
                     <button
                         onClick={() => setIsWorkspaceMode(!isWorkspaceMode)}
@@ -1974,6 +2054,36 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             {/* Mobile Cards vs Matrix Table View */}
             {viewLayout === 'cards' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 font-sans mb-28">
+                    {/* Banner Global de Liquidación Años Anteriores */}
+                    {clientsWithPastDebtsCount > 0 && (
+                        <div className="col-span-full p-4 rounded-3xl bg-gradient-to-r from-purple-950/40 via-purple-900/30 to-purple-950/40 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl font-mono mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                    <LucideIcons.History size={20} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-black text-purple-200 uppercase tracking-wider">Deudas de Años Anteriores ({clientsWithPastDebtsCount} clientes)</span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/30 text-purple-200 border border-purple-500/50">
+                                            ${allPastYearsDebtsTotalAmount.toFixed(2)} total
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-purple-300/80 mt-0.5">
+                                        Hay obligaciones tributarias por pagar correspondientes a años anteriores a {selectedYear}.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleLiquidateAllPastYearsGlobal}
+                                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-wider font-mono shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all shrink-0"
+                                title="Liquidar todas las deudas de años anteriores para todos los clientes de una sola vez"
+                            >
+                                <LucideIcons.Zap size={14} className="text-yellow-300" />
+                                <span>⚡ Liquidar Años Anteriores (${allPastYearsDebtsTotalAmount.toFixed(2)}) De Una Sola</span>
+                            </button>
+                        </div>
+                    )}
+
                     {filteredClients.map((client) => {
                         const currentDigit = parseInt(client.ruc[8], 10);
                         const p12Days = getP12RemainingDays(client);
