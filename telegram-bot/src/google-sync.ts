@@ -52,7 +52,7 @@ export async function syncToSheets(clients: any[]) {
         });
 
         // Add header
-        rows.unshift(['RUC', 'NOMBRE', 'RÉGIMEN', 'RENTA 2025', 'NOTAS']);
+        rows.unshift(['RUC', 'NOMBRE', 'RÉGIMEN', `RENTA ${prevYear}`, 'NOTAS']);
 
         await sheets.spreadsheets.values.update({
             spreadsheetId,

@@ -43,6 +43,7 @@ import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'd
 import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
 import { useToast } from '../../context/ToastContext';
+import { openClientInNewWindow } from '../../utils/windowManager';
 
 import { SriCampaignWidget } from './SriCampaignWidget';
 import { SalaDeEnvio } from './SalaDeEnvio';
@@ -1950,6 +1951,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     {client.isPriority && (
                                                         <LucideIcons.Star size={12} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                                                     )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openClientInNewWindow(client.id);
+                                                        }}
+                                                        className="p-1 rounded-lg text-slate-400 hover:text-[#00A896] hover:bg-[#00A896]/15 transition-all cursor-pointer shrink-0"
+                                                        title="Abrir expediente en ventana aparte"
+                                                    >
+                                                        <LucideIcons.ExternalLink size={12} />
+                                                    </button>
                                                 </div>
                                                 {(client.taxProfile?.alias || client.tradeName) && (
                                                     <div className="flex items-center gap-1 mt-0.5">
@@ -2285,6 +2297,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             {client.isPriority && (
                                                                 <LucideIcons.Star size={10} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                                                             )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openClientInNewWindow(client.id);
+                                                                }}
+                                                                className="p-0.5 rounded text-slate-400 hover:text-[#00A896] hover:bg-[#00A896]/15 transition-all opacity-60 hover:opacity-100 cursor-pointer shrink-0"
+                                                                title="Abrir expediente en ventana aparte (sin salirte de las declaraciones)"
+                                                            >
+                                                                <LucideIcons.ExternalLink size={10} />
+                                                            </button>
                                                         </div>
                                                         {(client.taxProfile?.alias || client.tradeName) && (
                                                             <div className="flex items-center gap-1 mt-0.5">

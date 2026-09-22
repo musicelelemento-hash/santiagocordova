@@ -75,7 +75,7 @@ export function getVoiceStatus() {
     return {
         elevenLabs: !!ELEVENLABS_API_KEY,
         voiceId: ELEVENLABS_VOICE_ID,
-        googleCloud: false
+        googleCloud: !!credentials
     };
 }
 

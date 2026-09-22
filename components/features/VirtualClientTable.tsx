@@ -7,6 +7,7 @@ import { getClientServiceFee } from '../../services/clientService';
 import { TaxFrequency, getClientDebtSummary } from '../../services/complianceEngine';
 import { isPast, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
+import { openClientInNewWindow } from '../../utils/windowManager';
 
 interface VirtualClientTableProps {
     clients: Client[];
@@ -130,6 +131,17 @@ const TableRow = memo(({ index, style, clients, serviceFees, onView, onQuickActi
                     >
                         {client.name}
                     </span>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openClientInNewWindow(client.id);
+                        }}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#00A896] hover:bg-[#00A896]/15 transition-all opacity-60 group-hover/row:opacity-100 cursor-pointer shrink-0"
+                        title="Abrir expediente en ventana aparte"
+                    >
+                        <LucideIcons.ExternalLink size={12} />
+                    </button>
                     {(client.taxProfile?.alias || client.tradeName) && (
                         <span className="text-[11px] font-bold text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/30 px-2 py-0.5 rounded-lg shrink-0 flex items-center gap-1 font-display" title="Alias / Reconocimiento">
                             <LucideIcons.Tag size={10} />

@@ -4,6 +4,7 @@ import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue, isSriPasswordUpdated, formatPeriodForDisplay } from '../../../services/sri';
 import { useAppStore } from '../../../store/useAppStore';
 import { useToast } from '../../../context/ToastContext';
+import { openClientInNewWindow } from '../../../utils/windowManager';
 
 interface ClientHeaderProps {
     client: Client;
@@ -164,6 +165,22 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                             <Edit size={13} strokeWidth={2.5} />
                             Editar Expediente
                         </button>
+                        {typeof window !== 'undefined' && !window.location.search.includes('standalone=true') && (
+                            <>
+                                <div className="w-[1px] h-4 bg-slate-200 dark:bg-white/10 mx-0.5" />
+                                <button
+                                    onClick={() => {
+                                        openClientInNewWindow(client.id);
+                                        onBack();
+                                    }}
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#00A896]/10 text-[#00A896] hover:bg-[#00A896] hover:text-white rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all active:scale-95 border border-[#00A896]/20 shadow-sm"
+                                    title="Desprender a ventana independiente (cierra esta capa y abre el expediente en ventana aparte)"
+                                >
+                                    <ExternalLink size={13} strokeWidth={2.5} />
+                                    <span className="hidden sm:inline">Ventana Aparte</span>
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2">

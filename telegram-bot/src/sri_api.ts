@@ -5,6 +5,10 @@ const DEFAULT_API_URL = process.env.VITE_FACTURACION_API_URL || 'https://factura
 const API_PREFIX = '/api/v1';
 const API_KEY = process.env.FACTURACION_API_KEY || '';
 
+// ─── Idempotencia: claves de acceso (facturas) que ya se están firmando/enviando ──
+// Evita que un reintento del flujo o una doble llamada duplique el envío al SRI.
+const inflightInvoices = new Set<string>();
+
 // ─── Retry helper para manejar cold-starts de Render (502/503/504) ────────────
 async function withRetry<T>(
     fn: () => Promise<T>,
@@ -209,6 +213,38 @@ export async function emitInvoice(client: any, concept: string, amount: number, 
         }
     };
 
+    // ── Idempotencia: no re-firmar/re-enviar un comprobante que ya se procesó ──
+    if (inflightInvoices.has(key)) {
+        throw new Error(`La factura con clave ${key} ya está en proceso en esta sesión (protección anti-duplicado SRI).`);
+    }
+
+    const { data: existingInvoice, error: existingErr } = await supabase
+        .from('sri_comprobantes')
+        .select('*')
+        .eq('clave_acceso', key)
+        .maybeSingle();
+    if (existingErr) throw existingErr;
+
+    if (existingInvoice && (existingInvoice.estado === 'Autorizado' || existingInvoice.estado === 'Enviado')) {
+        console.log(`🛡️ Idempotencia: clave ${key} ya ${existingInvoice.estado} en Supabase. Devolviendo comprobante existente sin re-enviar.`);
+        const comprobante = {
+            id: existingInvoice.id,
+            tipo: existingInvoice.tipo || 'factura',
+            secuencial: existingInvoice.secuencial,
+            claveAcceso: key,
+            rucReceptor: existingInvoice.ruc_receptor,
+            nombreReceptor: existingInvoice.nombre_receptor,
+            fechaEmision: existingInvoice.fecha_emision,
+            total: existingInvoice.total,
+            estado: existingInvoice.estado,
+            ambiente: existingInvoice.ambiente,
+            xml: existingInvoice.xml || ''
+        };
+        return { comprobante, emisor, payload, duplicate: true };
+    }
+
+    inflightInvoices.add(key);
+    try {
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': API_KEY
@@ -290,5 +326,8 @@ export async function emitInvoice(client: any, concept: string, amount: number, 
         created_at: new Date().toISOString()
     });
 
-    return { comprobante: resultComprobante, emisor, payload };
+    return { comprobante: resultComprobante, emisor, payload, duplicate: false };
+    } finally {
+        inflightInvoices.delete(key);
+    }
 }

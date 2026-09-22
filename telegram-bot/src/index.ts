@@ -2058,7 +2058,8 @@ bot.on('callback_query:data', async (ctx) => {
             try { await ctx.api.deleteMessage(chatId, wakeMsg.message_id); } catch(e) {}
             
             await ctx.replyWithDocument(new InputFile(pdfBuffer, `RIDE_factura_${result.emisor.emisorEstab}_${result.emisor.emisorPtoEmi}_${result.comprobante.secuencial}.pdf`), {
-                caption: `✅ Factura generada y autorizada con éxito.\n\n**Concepto:** ${concept}\n**Total:** $${total.toFixed(2)}`,
+                caption: `✅ Factura generada y autorizada con éxito.\n\n**Concepto:** ${concept}\n**Total:** $${total.toFixed(2)}` +
+                    ((result as any).duplicate ? `\n\n🛡️ Este comprobante ya estaba autorizado previamente — no se re-envió al SRI.` : ''),
                 parse_mode: 'Markdown'
             });
         } catch (error: any) {

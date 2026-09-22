@@ -65,6 +65,7 @@ const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalU
 const SalesComboModal = React.lazy(() => import('./components/features/SalesComboModal').then(m => ({ default: m.SalesComboModal })));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const GlobalNewClientModal = React.lazy(() => import('./components/features/GlobalNewClientModal').then(m => ({ default: m.GlobalNewClientModal })));
+const ClientDetailView = React.lazy(() => import('./components/features/ClientDetailView').then(m => ({ default: m.ClientDetailView })));
 
 const ScreenLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[300px] w-full py-16">
@@ -804,6 +805,45 @@ const App: React.FC = () => {
       <MusicPage onBack={() => setAppState('landing')} />
     </Suspense>
   );
+
+  // ── Modo Ventana Independiente (Pop-out Window para expediente de cliente) ──
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isStandaloneClient = searchParams?.get('standalone') === 'true';
+  const standaloneClientId = searchParams?.get('clientId') || searchParams?.get('clientIdToView');
+
+  if (isStandaloneClient && standaloneClientId) {
+    const targetClient = clients.find(c => c.id === standaloneClientId);
+    return (
+      <ToastProvider>
+        <div className={`font-body w-screen h-screen flex flex-col ${theme === 'dark' ? 'bg-gradient-obsidian dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 overflow-hidden relative`}>
+          <Suspense fallback={<ScreenLoader />}>
+            {targetClient ? (
+              <ClientDetailView
+                client={targetClient}
+                onSave={(updatedClient) => updateClient(updatedClient.id, updatedClient)}
+                onBack={() => window.close()}
+                serviceFees={serviceFees}
+                sriCredentials={sriCredentials}
+                initialTab={(window as any).__TEMP_INITIAL_TAB__ || (searchParams?.get('initialTab') as any)}
+              />
+            ) : isStoreLoaded ? (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <p className="text-sm font-bold text-slate-400 mb-4">No se encontró el expediente solicitado o fue eliminado.</p>
+                <button
+                  onClick={() => window.close()}
+                  className="px-4 py-2 bg-[#00A896] text-white font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Cerrar Ventana
+                </button>
+              </div>
+            ) : (
+              <ScreenLoader />
+            )}
+          </Suspense>
+        </div>
+      </ToastProvider>
+    );
+  }
 
   return (
     <ToastProvider>

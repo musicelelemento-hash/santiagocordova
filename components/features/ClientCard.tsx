@@ -6,6 +6,7 @@ import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
 import { getClientCompliance, getClientDebtSummary, getClientUndeclaredSummary } from '../../services/complianceEngine';
+import { openClientInNewWindow } from '../../utils/windowManager';
 
 interface ClientCardProps {
     client: Client;
@@ -177,6 +178,17 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             <h3 className="font-display font-black text-lg sm:text-xl truncate text-slate-900 dark:text-white tracking-tight group-hover/card:text-[#00A896] transition-colors" title={client.name}>
                                 {client.name}
                             </h3>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    openClientInNewWindow(client.id);
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-[#00A896] hover:bg-[#00A896]/15 transition-all opacity-70 hover:opacity-100 cursor-pointer"
+                                title="Abrir expediente en ventana aparte"
+                            >
+                                <LucideIcons.ExternalLink size={13} />
+                            </button>
                             {(client.taxProfile?.alias || client.tradeName) && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-display bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 shadow-sm" title="Alias / Reconocimiento">
                                     <LucideIcons.Tag size={10} />
