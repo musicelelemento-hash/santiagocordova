@@ -5,14 +5,40 @@ import { getClientDebtSummary, getClientUndeclaredSummary } from '../../services
 import { getClientServiceFee } from '../../services/clientService';
 import { getWhatsAppUrl } from '../../services/sri';
 
+export type QuickFilterKey = 
+    | null
+    | 'total'
+    | 'fact-proyectada'
+    | 'al-dia'
+    | 'con-deuda'
+    | 'claves-ok'
+    | 'firmas-vencen'
+    | 'regimen-general'
+    | 'rimpe-emprendedor'
+    | 'rimpe-popular'
+    | 'iva-mensual'
+    | 'iva-semestral'
+    | 'exentos'
+    | 'vencidos'
+    | 'en-proceso';
+
 interface ClientsDashboardProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
     onExportCSV?: () => void;
+    onSelectQuickFilter?: (filter: QuickFilterKey) => void;
+    activeQuickFilter?: QuickFilterKey;
 }
 
-export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, serviceFees, onView, onExportCSV }) => {
+export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ 
+    clients, 
+    serviceFees, 
+    onView, 
+    onExportCSV,
+    onSelectQuickFilter,
+    activeQuickFilter
+}) => {
     const today = useMemo(() => new Date(), []);
 
     const stats = useMemo(() => {
@@ -78,13 +104,14 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
     }, [clients, serviceFees, today]);
 
     const REGIME_CONFIG = [
-        { key: 'Régimen General', label: 'Régimen General', color: 'bg-primary', textColor: 'text-primary' },
-        { key: 'Rimpe Emprendedor', label: 'Rimpe Emprendedor', color: 'bg-violet-500', textColor: 'text-violet-400' },
-        { key: 'Rimpe Negocio Popular', label: 'Rimpe Negocio Popular', color: 'bg-emerald-500', textColor: 'text-emerald-400' },
+        { key: 'Régimen General', filterKey: 'regimen-general' as QuickFilterKey, label: 'Régimen General', color: 'bg-primary', textColor: 'text-primary' },
+        { key: 'Rimpe Emprendedor', filterKey: 'rimpe-emprendedor' as QuickFilterKey, label: 'Rimpe Emprendedor', color: 'bg-violet-500', textColor: 'text-violet-400' },
+        { key: 'Rimpe Negocio Popular', filterKey: 'rimpe-popular' as QuickFilterKey, label: 'Rimpe Negocio Popular', color: 'bg-emerald-500', textColor: 'text-emerald-400' },
     ];
 
     const kpis = [
         {
+            key: 'total' as QuickFilterKey,
             label: 'Clientes Activos',
             value: stats.total,
             sub: `${stats.deletedCount} en papelera`,
@@ -92,8 +119,10 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
             color: 'text-primary',
             bg: 'bg-primary/10',
             border: 'border-primary/20',
+            hint: 'Ver todos los activos'
         },
         {
+            key: 'al-dia' as QuickFilterKey,
             label: 'Al Día',
             value: stats.alDia,
             sub: `${stats.total > 0 ? Math.round(stats.alDia / stats.total * 100) : 0}% del total`,
@@ -101,8 +130,10 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
             color: 'text-emerald-400',
             bg: 'bg-emerald-500/10',
             border: 'border-emerald-500/20',
+            hint: 'Ver clientes al día'
         },
         {
+            key: 'con-deuda' as QuickFilterKey,
             label: 'Con Deuda',
             value: stats.debtors,
             sub: `$${stats.totalDebt.toFixed(0)} pendiente`,
@@ -110,8 +141,10 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
             color: 'text-rose-400',
             bg: 'bg-rose-500/10',
             border: 'border-rose-500/20',
+            hint: 'Ver clientes con deuda'
         },
         {
+            key: 'fact-proyectada' as QuickFilterKey,
             label: 'Honorarios/Mes',
             value: `$${stats.estimatedMonthlyRevenue.toFixed(0)}`,
             sub: 'estimado cartera',
@@ -119,6 +152,7 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
             color: 'text-amber-400',
             bg: 'bg-amber-500/10',
             border: 'border-amber-500/20',
+            hint: 'Ver cartera facturable'
         },
     ];
 
@@ -131,42 +165,79 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
         <div className="space-y-8 pb-20">
             {/* KPI Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {kpis.map((kpi) => (
-                    <div
-                        key={kpi.label}
-                        className={`glass-card-premium p-5 rounded-2xl border ${kpi.border} hover:scale-[1.02] transition-transform cursor-default`}
-                    >
-                        <div className="flex items-start justify-between mb-3">
-                            <div className={`p-2.5 rounded-xl ${kpi.bg} border ${kpi.border}`}>
-                                <kpi.icon size={16} className={kpi.color} />
+                {kpis.map((kpi) => {
+                    const isSelected = activeQuickFilter === kpi.key;
+                    return (
+                        <div
+                            key={kpi.label}
+                            onClick={() => onSelectQuickFilter?.(isSelected ? null : kpi.key)}
+                            className={`glass-card-premium p-5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden ${
+                                isSelected 
+                                    ? 'border-primary ring-2 ring-primary ring-offset-2 ring-offset-slate-900 shadow-lg scale-[1.02] bg-primary/5' 
+                                    : `${kpi.border} hover:scale-[1.02] hover:border-primary/50 hover:shadow-md`
+                            }`}
+                            title={`Clic para filtrar: ${kpi.hint}`}
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className={`p-2.5 rounded-xl ${kpi.bg} border ${kpi.border}`}>
+                                    <kpi.icon size={16} className={kpi.color} />
+                                </div>
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                                    isSelected 
+                                        ? 'bg-primary text-white shadow-xs' 
+                                        : 'text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10'
+                                }`}>
+                                    {isSelected ? '✓ Activo' : 'Ver →'}
+                                </span>
                             </div>
+                            <p className={`text-2xl font-black font-mono ${kpi.color}`}>{kpi.value}</p>
+                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">{kpi.label}</p>
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">{kpi.sub}</p>
                         </div>
-                        <p className={`text-2xl font-black font-mono ${kpi.color}`}>{kpi.value}</p>
-                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">{kpi.label}</p>
-                        <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">{kpi.sub}</p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Breakdown Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* By Regime */}
                 <div className="glass-card-premium p-6 rounded-2xl border border-slate-200/30 dark:border-white/10">
-                    <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <LucideIcons.BarChart2 size={12} />
-                        Distribución por Régimen
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <LucideIcons.BarChart2 size={12} />
+                            Distribución por Régimen
+                        </h3>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Clic para filtrar</span>
+                    </div>
                     <div className="space-y-3">
                         {REGIME_CONFIG.map(r => {
                             const count = stats.byRegime[r.key] || 0;
                             const pct = stats.total > 0 ? Math.round(count / stats.total * 100) : 0;
+                            const isSelected = activeQuickFilter === r.filterKey;
                             return (
-                                <div key={r.key}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className={`text-[9px] font-bold uppercase tracking-wider ${r.textColor}`}>{r.label}</span>
-                                        <span className="text-[10px] font-black font-mono text-slate-700 dark:text-slate-200">
-                                            {count} <span className="text-slate-400 font-normal">({pct}%)</span>
+                                <div 
+                                    key={r.key}
+                                    onClick={() => onSelectQuickFilter?.(isSelected ? null : r.filterKey)}
+                                    className={`p-2.5 -mx-2.5 rounded-xl cursor-pointer transition-all border ${
+                                        isSelected 
+                                            ? 'bg-primary/10 border-primary/40 ring-1 ring-primary/30' 
+                                            : 'border-transparent hover:bg-slate-100/70 dark:hover:bg-white/5 hover:border-slate-200/50 dark:hover:border-white/10'
+                                    }`}
+                                    title={`Clic para ver los ${count} clientes en ${r.label}`}
+                                >
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${r.textColor}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-primary animate-pulse' : r.color}`} />
+                                            {r.label}
                                         </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-black font-mono text-slate-700 dark:text-slate-200">
+                                                {count} <span className="text-slate-400 font-normal">({pct}%)</span>
+                                            </span>
+                                            <span className="text-[8px] font-bold text-slate-400 opacity-60 group-hover:opacity-100">
+                                                {isSelected ? '✓' : '→'}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="h-1.5 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
                                         <div
@@ -182,24 +253,46 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
 
                 {/* IVA Frequency & Status */}
                 <div className="glass-card-premium p-6 rounded-2xl border border-slate-200/30 dark:border-white/10">
-                    <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                        <LucideIcons.PieChart size={12} />
-                        IVA &amp; Estado General
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <LucideIcons.PieChart size={12} />
+                            IVA &amp; Estado General
+                        </h3>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Clic para filtrar</span>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { label: 'IVA Mensual', value: stats.mensual, color: 'text-primary', bg: 'bg-primary/10' },
-                            { label: 'IVA Semestral', value: stats.semestral, color: 'text-violet-400', bg: 'bg-violet-500/10' },
-                            { label: 'Exentos', value: stats.noiva, color: 'text-slate-400', bg: 'bg-slate-500/10' },
-                            { label: 'Vencidos', value: stats.vencidos, color: 'text-rose-400', bg: 'bg-rose-500/10' },
-                            { label: 'En Proceso', value: stats.ordenes, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                            { label: 'Al Día', value: stats.alDia, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                        ].map(item => (
-                            <div key={item.label} className={`flex items-center gap-2.5 p-2.5 rounded-xl ${item.bg}`}>
-                                <span className={`text-lg font-black font-mono ${item.color}`}>{item.value}</span>
-                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide leading-tight">{item.label}</span>
-                            </div>
-                        ))}
+                            { key: 'iva-mensual' as QuickFilterKey, label: 'IVA Mensual', value: stats.mensual, color: 'text-primary', bg: 'bg-primary/10' },
+                            { key: 'iva-semestral' as QuickFilterKey, label: 'IVA Semestral', value: stats.semestral, color: 'text-violet-400', bg: 'bg-violet-500/10' },
+                            { key: 'exentos' as QuickFilterKey, label: 'Exentos', value: stats.noiva, color: 'text-slate-400', bg: 'bg-slate-500/10' },
+                            { key: 'vencidos' as QuickFilterKey, label: 'Vencidos', value: stats.vencidos, color: 'text-rose-400', bg: 'bg-rose-500/10' },
+                            { key: 'en-proceso' as QuickFilterKey, label: 'En Proceso', value: stats.ordenes, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                            { key: 'al-dia' as QuickFilterKey, label: 'Al Día', value: stats.alDia, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                        ].map(item => {
+                            const isSelected = activeQuickFilter === item.key;
+                            return (
+                                <div 
+                                    key={item.label} 
+                                    onClick={() => onSelectQuickFilter?.(isSelected ? null : item.key)}
+                                    className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all border ${
+                                        isSelected 
+                                            ? 'bg-primary/15 border-primary ring-2 ring-primary/40 shadow-sm scale-[1.02]' 
+                                            : `${item.bg} border-transparent hover:scale-[1.03] hover:ring-1 hover:ring-primary/40 active:scale-95`
+                                    }`}
+                                    title={`Clic para filtrar ${item.value} clientes en ${item.label}`}
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <span className={`text-lg font-black font-mono shrink-0 ${item.color}`}>{item.value}</span>
+                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide leading-tight truncate">
+                                            {item.label}
+                                        </span>
+                                    </div>
+                                    <span className="text-[8px] font-bold text-slate-400 opacity-60 shrink-0">
+                                        {isSelected ? '✓' : '→'}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

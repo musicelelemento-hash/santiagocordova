@@ -32,13 +32,135 @@ import { GlobalUploadModal } from '../components/features/GlobalUploadModal';
 import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
-import { ClientsDashboard } from '../components/features/ClientsDashboard';
+import { ClientsDashboard, QuickFilterKey } from '../components/features/ClientsDashboard';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
 import { downloadStoredFile } from '../services/fileService';
 import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { useCampaignContext } from '../hooks/useCampaignContext';
 import { CampaignBanner } from '../components/ui/CampaignBanner';
 import { useDebounce } from '../hooks/useDebounce';
+
+const QUICK_FILTER_META: Record<NonNullable<QuickFilterKey>, {
+    title: string;
+    description: string;
+    badge: string;
+    icon: any;
+    accentColor: string;
+    bgAccent: string;
+}> = {
+    'total': {
+        title: 'Directorio de Clientes Activos',
+        description: 'Mostrando todos los clientes con estado activo en el sistema contable.',
+        badge: 'Todos los Activos',
+        icon: Users,
+        accentColor: 'text-primary',
+        bgAccent: 'bg-primary/10 border-primary/30',
+    },
+    'fact-proyectada': {
+        title: 'Clientes con Facturación / Honorarios Mensuales',
+        description: 'Mostrando clientes con tarifa mensual configurada mayor a $0 (cartera facturable activa).',
+        badge: 'Facturación Mensual',
+        icon: DollarSign,
+        accentColor: 'text-emerald-500',
+        bgAccent: 'bg-emerald-500/10 border-emerald-500/30',
+    },
+    'al-dia': {
+        title: 'Clientes Al Día (100% Cumplimiento)',
+        description: 'Mostrando clientes que no tienen deudas pendientes de honorarios ni obligaciones tributarias atrasadas.',
+        badge: 'Al Día',
+        icon: ShieldCheck,
+        accentColor: 'text-teal-500',
+        bgAccent: 'bg-teal-500/10 border-teal-500/30',
+    },
+    'con-deuda': {
+        title: 'Clientes con Saldo Pendiente de Cobro',
+        description: 'Mostrando clientes con valores pendientes por honorarios profesionales de servicios contables.',
+        badge: 'Pendientes de Pago',
+        icon: AlertCircle,
+        accentColor: 'text-rose-500',
+        bgAccent: 'bg-rose-500/10 border-rose-500/30',
+    },
+    'claves-ok': {
+        title: 'Clientes con Contraseñas SRI en Bóveda',
+        description: 'Mostrando clientes que tienen credencial del portal SRI registrada y sincronizada en su bóveda de seguridad.',
+        badge: 'Claves SRI OK',
+        icon: KeyRound,
+        accentColor: 'text-amber-500',
+        bgAccent: 'bg-amber-500/10 border-amber-500/30',
+    },
+    'firmas-vencen': {
+        title: 'Firmas Electrónicas por Vencer (≤ 30 días)',
+        description: 'Mostrando clientes cuyo certificado de firma electrónica o facturador está próximo a expirar en los siguientes 30 días.',
+        badge: 'Firmas por Vencer',
+        icon: FileText,
+        accentColor: 'text-purple-500',
+        bgAccent: 'bg-purple-500/10 border-purple-500/30',
+    },
+    'regimen-general': {
+        title: 'Régimen General SRI',
+        description: 'Mostrando clientes que tributan bajo Régimen General (declaraciones mensuales/semestrales ordinarias).',
+        badge: 'Régimen General',
+        icon: Building2,
+        accentColor: 'text-primary',
+        bgAccent: 'bg-primary/10 border-primary/30',
+    },
+    'rimpe-emprendedor': {
+        title: 'RIMPE Emprendedor',
+        description: 'Mostrando contribuyentes bajo el Régimen RIMPE Emprendedor (declaraciones semestrales de IVA y Renta anual).',
+        badge: 'RIMPE Emprendedor',
+        icon: Zap,
+        accentColor: 'text-violet-400',
+        bgAccent: 'bg-violet-500/10 border-violet-500/30',
+    },
+    'rimpe-popular': {
+        title: 'RIMPE Negocio Popular',
+        description: 'Mostrando clientes catalogados como Negocio Popular (exentos de declaración periódica de IVA).',
+        badge: 'RIMPE Negocio Popular',
+        icon: Store,
+        accentColor: 'text-emerald-400',
+        bgAccent: 'bg-emerald-500/10 border-emerald-500/30',
+    },
+    'iva-mensual': {
+        title: 'Obligación de IVA Mensual',
+        description: 'Mostrando clientes obligados a presentar su formulario 104 de IVA cada mes según su 9no dígito.',
+        badge: 'IVA Mensual',
+        icon: Clock,
+        accentColor: 'text-primary',
+        bgAccent: 'bg-primary/10 border-primary/30',
+    },
+    'iva-semestral': {
+        title: 'Obligación de IVA Semestral',
+        description: 'Mostrando clientes con periodicidad semestral de IVA (Enero/Julio) o RIMPE Emprendedor.',
+        badge: 'IVA Semestral',
+        icon: Briefcase,
+        accentColor: 'text-violet-400',
+        bgAccent: 'bg-violet-500/10 border-violet-500/30',
+    },
+    'exentos': {
+        title: 'Clientes Exentos de IVA',
+        description: 'Mostrando clientes que no declaran IVA (RIMPE Negocio Popular, tarifas exentas o frecuencia Ninguno).',
+        badge: 'Exentos de IVA',
+        icon: Shield,
+        accentColor: 'text-slate-400',
+        bgAccent: 'bg-slate-500/10 border-slate-500/30',
+    },
+    'vencidos': {
+        title: 'Obligaciones Tributarias Vencidas',
+        description: 'Mostrando clientes con períodos de declaración pendientes cuya fecha límite del SRI ya venció.',
+        badge: 'Declaraciones Vencidas',
+        icon: AlertTriangle,
+        accentColor: 'text-rose-400',
+        bgAccent: 'bg-rose-500/10 border-rose-500/30',
+    },
+    'en-proceso': {
+        title: 'Declaraciones En Proceso (Órdenes)',
+        description: 'Mostrando clientes con declaraciones pagadas que están en cola o proceso de presentación ante el SRI.',
+        badge: 'En Proceso',
+        icon: Sparkles,
+        accentColor: 'text-amber-400',
+        bgAccent: 'bg-amber-500/10 border-amber-500/30',
+    },
+};
 
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todos', icon: Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
@@ -103,6 +225,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isComboModalOpen, setIsComboModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'cards' | 'list' | 'analytics'>(() => (sessionStorage.getItem('clients_view_mode') as any) || 'list');
     const [selectedDigitFilter, setSelectedDigitFilter] = useState<string | null>(null);
+    const [quickFilter, setQuickFilter] = useState<QuickFilterKey>(null);
     const receiptFileInputRef = useRef<HTMLInputElement>(null);
     const bulkFileInputRef = useRef<HTMLInputElement>(null);
     const [receiptUploadState, setReceiptUploadState] = useState<{ client: Client, period?: string, obligationType?: TaxObligationType } | null>(null);
@@ -364,6 +487,61 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 return false;
             }
 
+            // Filtro Rápido Inteligente (Cinta Ejecutiva & Dashboard)
+            if (quickFilter) {
+                const today = new Date();
+                const debtSummary = getClientDebtSummary(client, serviceFees, today);
+                const undeclaredSummary = getClientUndeclaredSummary(client, today);
+                const regUpper = (client.regime || '').toUpperCase();
+                const isEmp = regUpper.includes('EMPRENDEDOR');
+                const isPop = regUpper.includes('POPULAR');
+                const ivaFreq = client.taxProfile?.ivaFrequency;
+
+                let matchesQuick = true;
+                if (quickFilter === 'fact-proyectada') {
+                    matchesQuick = !client.isCourtesy && getClientServiceFee(client, serviceFees) > 0;
+                } else if (quickFilter === 'al-dia') {
+                    const hasWorkOrder = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
+                    matchesQuick = !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation && !hasWorkOrder;
+                } else if (quickFilter === 'con-deuda') {
+                    matchesQuick = debtSummary.totalDebt > 0;
+                } else if (quickFilter === 'claves-ok') {
+                    matchesQuick = isSriPasswordUpdated(client).isUpdated;
+                } else if (quickFilter === 'firmas-vencen') {
+                    let isExpiring = false;
+                    if (client.signatureExpirationDate) {
+                        const diff = differenceInCalendarDays(new Date(client.signatureExpirationDate), today);
+                        if (diff <= 30 && diff >= 0) isExpiring = true;
+                    }
+                    if (client.facturadorConfig?.expirationDate) {
+                        const diff = differenceInCalendarDays(new Date(client.facturadorConfig.expirationDate), today);
+                        if (diff <= 30 && diff >= 0) isExpiring = true;
+                    }
+                    matchesQuick = isExpiring;
+                } else if (quickFilter === 'regimen-general') {
+                    matchesQuick = !isEmp && !isPop;
+                } else if (quickFilter === 'rimpe-emprendedor') {
+                    matchesQuick = isEmp;
+                } else if (quickFilter === 'rimpe-popular') {
+                    matchesQuick = isPop;
+                } else if (quickFilter === 'iva-mensual') {
+                    matchesQuick = ivaFreq === 'Mensual' || (!ivaFreq && !isEmp && !isPop);
+                } else if (quickFilter === 'iva-semestral') {
+                    matchesQuick = ivaFreq === 'Semestral' || isEmp;
+                } else if (quickFilter === 'exentos') {
+                    const isMensual = ivaFreq === 'Mensual' || (!ivaFreq && !isEmp && !isPop);
+                    const isSemestral = ivaFreq === 'Semestral' || isEmp;
+                    matchesQuick = !isMensual && !isSemestral;
+                } else if (quickFilter === 'vencidos') {
+                    matchesQuick = undeclaredSummary.overduePeriodsCount > 0;
+                } else if (quickFilter === 'en-proceso') {
+                    matchesQuick = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
+                }
+
+                if (!matchesQuick) return false;
+                if (!query) return true;
+            }
+
             // SI HAY BÚSQUEDA ACTIVADA, saltamos los filtros de pestañas para mostrar resultados globales
             if (query) return true;
 
@@ -468,7 +646,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             return true;
         });
-    }, [clients, debouncedSearchTerm, filterOption, activeGroupTab, regimeFilter, initialFilter, selectedDigitFilter]);
+    }, [clients, debouncedSearchTerm, filterOption, activeGroupTab, regimeFilter, initialFilter, selectedDigitFilter, quickFilter, serviceFees]);
 
     // --- LÓGICA DE ORDENAMIENTO MEJORADA ---
     const sortedClients = useMemo(() => {
@@ -546,10 +724,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         return counts;
     }, [clients, filterOption]);
 
-    // Métricas Ejecutivas del Directorio
+    // Métricas Ejecutivas del Directorio (Calculadas sobre el pool activo para estabilidad de la cinta)
     const directoryStats = useMemo(() => {
-        const inView = sortedClients;
-        const total = inView.length;
+        const activePool = clients.filter(c => !c.isDeleted && (filterOption === 'all' || (filterOption === 'active' ? (c.isActive ?? true) : !(c.isActive ?? true))));
+        const total = activePool.length;
         let totalMonthlyRevenue = 0;
         let alDiaCount = 0;
         let conDeudaCount = 0;
@@ -558,7 +736,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         let signaturesExpiringSoon = 0;
         const today = new Date();
 
-        inView.forEach(c => {
+        activePool.forEach(c => {
             const fee = getClientServiceFee(c, serviceFees);
             if (!c.isCourtesy) totalMonthlyRevenue += fee;
 
@@ -579,6 +757,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const diffDays = differenceInCalendarDays(new Date(c.signatureExpirationDate), today);
                 if (diffDays <= 30 && diffDays >= 0) signaturesExpiringSoon++;
             }
+            if (c.facturadorConfig?.expirationDate) {
+                const diffDays = differenceInCalendarDays(new Date(c.facturadorConfig.expirationDate), today);
+                if (diffDays <= 30 && diffDays >= 0) signaturesExpiringSoon++;
+            }
         });
 
         return {
@@ -590,7 +772,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             keysUpdatedCount,
             signaturesExpiringSoon
         };
-    }, [sortedClients, serviceFees]);
+    }, [clients, filterOption, serviceFees]);
 
     const handleCreateClient = (client: Client) => {
         const existingClient = clients.find(c => c.id === client.id || c.ruc === client.ruc);
@@ -1887,67 +2069,175 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         transition={{ duration: 0.4 }}
                         className="pb-20"
                     >
-                        {/* CINTA DE INTELIGENCIA Y KPIS DE LA VISTA */}
+                        {/* CINTA DE INTELIGENCIA Y KPIS DE LA VISTA (INTERACTIVA) */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 px-1">
-                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
-                                <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+                            {/* Clientes Activos */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuickFilter(prev => prev === 'total' ? null : 'total');
+                                    if (viewMode === 'analytics') setViewMode('list');
+                                }}
+                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                    quickFilter === 'total'
+                                        ? 'bg-primary/10 border-primary ring-2 ring-primary/40 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-primary/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                }`}
+                                title="Clic para filtrar y ver todos los clientes activos del despacho"
+                            >
+                                <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0 group-hover:scale-110 transition-transform">
                                     <Users size={16} />
                                 </div>
-                                <div className="min-w-0">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Clientes</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Clientes</span>
+                                        {quickFilter === 'total' && (
+                                            <span className="text-[8px] font-black text-primary uppercase">Activo</span>
+                                        )}
+                                    </div>
                                     <span className="text-base font-black font-mono text-slate-900 dark:text-white leading-none">{directoryStats.total}</span>
                                 </div>
-                            </div>
+                            </button>
 
-                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
-                                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+                            {/* Fact. Proyectada */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuickFilter(prev => prev === 'fact-proyectada' ? null : 'fact-proyectada');
+                                    if (viewMode === 'analytics') setViewMode('list');
+                                }}
+                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                    quickFilter === 'fact-proyectada'
+                                        ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/40 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-emerald-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                }`}
+                                title={`Clic para ver clientes con tarifa mensual configurada ($${directoryStats.totalMonthlyRevenue.toFixed(0)} proyectados)`}
+                            >
+                                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform">
                                     <DollarSign size={16} />
                                 </div>
-                                <div className="min-w-0">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Fact. Proyectada</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Fact. Proyectada</span>
+                                        {quickFilter === 'fact-proyectada' && (
+                                            <span className="text-[8px] font-black text-emerald-500 uppercase">Activo</span>
+                                        )}
+                                    </div>
                                     <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400 leading-none">${directoryStats.totalMonthlyRevenue.toFixed(0)}</span>
                                 </div>
-                            </div>
+                            </button>
 
-                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
-                                <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-500 shrink-0">
+                            {/* Al Día */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuickFilter(prev => prev === 'al-dia' ? null : 'al-dia');
+                                    if (viewMode === 'analytics') setViewMode('list');
+                                }}
+                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                    quickFilter === 'al-dia'
+                                        ? 'bg-teal-500/10 border-teal-500 ring-2 ring-teal-500/40 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-teal-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                }`}
+                                title={`Clic para ver los ${directoryStats.alDiaCount} clientes con declaraciones y honorarios al día`}
+                            >
+                                <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-500 shrink-0 group-hover:scale-110 transition-transform">
                                     <ShieldCheck size={16} />
                                 </div>
-                                <div className="min-w-0">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Al Día</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Al Día</span>
+                                        {quickFilter === 'al-dia' && (
+                                            <span className="text-[8px] font-black text-teal-500 uppercase">Activo</span>
+                                        )}
+                                    </div>
                                     <span className="text-base font-black font-mono text-teal-600 dark:text-teal-400 leading-none">{directoryStats.alDiaCount}</span>
                                 </div>
-                            </div>
+                            </button>
 
-                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
-                                <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+                            {/* Pendientes (Con Deuda) */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuickFilter(prev => prev === 'con-deuda' ? null : 'con-deuda');
+                                    if (viewMode === 'analytics') setViewMode('list');
+                                }}
+                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                    quickFilter === 'con-deuda'
+                                        ? 'bg-rose-500/10 border-rose-500 ring-2 ring-rose-500/40 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-rose-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                }`}
+                                title={`Clic para ver los ${directoryStats.conDeudaCount} clientes con valores pendientes de cobro`}
+                            >
+                                <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 shrink-0 group-hover:scale-110 transition-transform">
                                     <AlertCircle size={16} />
                                 </div>
-                                <div className="min-w-0">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Pendientes</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Pendientes</span>
+                                        {quickFilter === 'con-deuda' && (
+                                            <span className="text-[8px] font-black text-rose-500 uppercase">Activo</span>
+                                        )}
+                                    </div>
                                     <span className="text-base font-black font-mono text-rose-600 dark:text-rose-400 leading-none">{directoryStats.conDeudaCount}</span>
                                 </div>
-                            </div>
+                            </button>
 
-                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
-                                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+                            {/* Claves SRI OK */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuickFilter(prev => prev === 'claves-ok' ? null : 'claves-ok');
+                                    if (viewMode === 'analytics') setViewMode('list');
+                                }}
+                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                    quickFilter === 'claves-ok'
+                                        ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/40 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-amber-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                }`}
+                                title={`Clic para ver los ${directoryStats.keysUpdatedCount} clientes con contraseña SRI registrada en bóveda`}
+                            >
+                                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 shrink-0 group-hover:scale-110 transition-transform">
                                     <KeyRound size={16} />
                                 </div>
-                                <div className="min-w-0">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Claves SRI OK</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Claves SRI OK</span>
+                                        {quickFilter === 'claves-ok' && (
+                                            <span className="text-[8px] font-black text-amber-500 uppercase">Activo</span>
+                                        )}
+                                    </div>
                                     <span className="text-base font-black font-mono text-amber-600 dark:text-amber-400 leading-none">{directoryStats.keysUpdatedCount} / {directoryStats.total}</span>
                                 </div>
-                            </div>
+                            </button>
 
-                            <div className="bg-surface-lowest/70 backdrop-blur-md p-3.5 rounded-2xl border border-outline-variant/30 flex items-center gap-3 shadow-xs">
-                                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 shrink-0">
+                            {/* Firmas Vencen */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuickFilter(prev => prev === 'firmas-vencen' ? null : 'firmas-vencen');
+                                    if (viewMode === 'analytics') setViewMode('list');
+                                }}
+                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                    quickFilter === 'firmas-vencen'
+                                        ? 'bg-purple-500/10 border-purple-500 ring-2 ring-purple-500/40 shadow-md scale-[1.02]'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-purple-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                }`}
+                                title={`Clic para ver los ${directoryStats.signaturesExpiringSoon} clientes con firma o facturador por vencer en <= 30 días`}
+                            >
+                                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 shrink-0 group-hover:scale-110 transition-transform">
                                     <FileText size={16} />
                                 </div>
-                                <div className="min-w-0">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Firmas Vencen</span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-1">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block truncate">Firmas Vencen</span>
+                                        {quickFilter === 'firmas-vencen' && (
+                                            <span className="text-[8px] font-black text-purple-500 uppercase">Activo</span>
+                                        )}
+                                    </div>
                                     <span className="text-base font-black font-mono text-purple-600 dark:text-purple-400 leading-none">{directoryStats.signaturesExpiringSoon}</span>
                                 </div>
-                            </div>
+                            </button>
                         </div>
 
                         {/* BARRA DE 9NO DÍGITO RUC (CALENDARIO TRIBUTARIO SRI) */}
@@ -1968,7 +2258,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             </div>
                             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                                 <button
-                                    onClick={() => setSelectedDigitFilter(null)}
+                                    onClick={() => {
+                                        setSelectedDigitFilter(null);
+                                        if (viewMode === 'analytics') setViewMode('list');
+                                    }}
                                     className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer border ${
                                         selectedDigitFilter === null
                                             ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
@@ -1994,7 +2287,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     return (
                                         <button
                                             key={digit}
-                                            onClick={() => setSelectedDigitFilter(isSelected ? null : digit)}
+                                            onClick={() => {
+                                                setSelectedDigitFilter(isSelected ? null : digit);
+                                                if (viewMode === 'analytics') setViewMode('list');
+                                            }}
                                             className={`px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold transition-all shrink-0 cursor-pointer border flex items-center gap-1.5 ${
                                                 isSelected
                                                     ? 'bg-[#00A896] text-white border-[#00A896] shadow-sm shadow-[#00A896]/30'
@@ -2016,12 +2312,103 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             </div>
                         </div>
 
+                        {/* BANNER EXPLICATIVO DE FILTRO ACTIVO */}
+                        {(quickFilter !== null || selectedDigitFilter !== null) && (
+                            <div className="mb-5 p-4 rounded-2xl bg-surface-lowest/90 backdrop-blur-md border border-primary/30 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="flex items-start gap-3.5 min-w-0">
+                                    <div className={`p-2.5 rounded-xl border shrink-0 ${quickFilter ? QUICK_FILTER_META[quickFilter].bgAccent : 'bg-[#00A896]/10 border-[#00A896]/30'}`}>
+                                        {quickFilter ? (
+                                            React.createElement(QUICK_FILTER_META[quickFilter].icon, { size: 20, className: QUICK_FILTER_META[quickFilter].accentColor })
+                                        ) : (
+                                            <Clock size={20} className="text-[#00A896]" />
+                                        )}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                Filtro Inteligente Activo
+                                            </span>
+                                            {quickFilter && (
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${QUICK_FILTER_META[quickFilter].bgAccent} ${QUICK_FILTER_META[quickFilter].accentColor}`}>
+                                                    {QUICK_FILTER_META[quickFilter].badge}
+                                                </span>
+                                            )}
+                                            {selectedDigitFilter !== null && (
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#00A896]/10 border border-[#00A896]/30 text-[#00A896]">
+                                                    9no Dígito {selectedDigitFilter} (Vence día {[10,12,14,16,18,20,22,24,26,28][selectedDigitFilter === '0' ? 9 : parseInt(selectedDigitFilter) - 1]})
+                                                </span>
+                                            )}
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black font-mono bg-slate-200/60 dark:bg-white/10 text-slate-700 dark:text-slate-200">
+                                                {sortedClients.length} {sortedClients.length === 1 ? 'cliente' : 'clientes'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                            {quickFilter ? QUICK_FILTER_META[quickFilter].title : `Contribuyentes con 9no Dígito ${selectedDigitFilter}`}
+                                        </h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                                            {quickFilter 
+                                                ? QUICK_FILTER_META[quickFilter].description 
+                                                : `Mostrando clientes cuyo noveno dígito del RUC es ${selectedDigitFilter}, con fecha de vencimiento fiscal fijada por el SRI para el día correspondiente de cada período tributario.`}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                                    {/* Alternador de vista rápido */}
+                                    <div className="flex items-center bg-surface-medium rounded-xl p-1 border border-outline-variant/30 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewMode('list')}
+                                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${viewMode === 'list' ? 'bg-primary text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                            title="Ver en tabla detallada"
+                                        >
+                                            Tabla
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewMode('cards')}
+                                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${viewMode === 'cards' ? 'bg-primary text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                            title="Ver en tarjetas"
+                                        >
+                                            Tarjetas
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewMode('analytics')}
+                                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${viewMode === 'analytics' ? 'bg-primary text-white shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                            title="Ver dashboard analítico"
+                                        >
+                                            Dashboard
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setQuickFilter(null);
+                                            setSelectedDigitFilter(null);
+                                        }}
+                                        className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-rose-500/20 shadow-xs active:scale-95"
+                                        title="Quitar todos los filtros activos y volver a ver el directorio completo"
+                                    >
+                                        <X size={14} />
+                                        Quitar Filtro
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {viewMode === 'analytics' ? (
                             <ClientsDashboard
                                 clients={sortedClients}
                                 serviceFees={serviceFees}
                                 onView={handleOpenClientDetails}
                                 onExportCSV={handleExportCSV}
+                                onSelectQuickFilter={(f) => {
+                                    setQuickFilter(f);
+                                    setViewMode('list');
+                                }}
+                                activeQuickFilter={quickFilter}
                             />
                         ) : viewMode === 'list' ? (
                             <VirtualClientTable

@@ -13,6 +13,8 @@ import { getBackendUrl, syncDataToSheet } from '../services/sheetApi';
 import { extractDataFromSriPdf } from '../services/pdfExtraction';
 import { MigrationUtility } from '../services/migrationUtility';
 import { SriExtensionsStore } from '../components/features/SriExtensionsStore';
+import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
+import { db } from '../services/db';
 
 // Function to parse CSV content. Placed here to be self-contained within the component logic.
 const importClientsFromCSV = (
@@ -204,6 +206,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
     // Dos herramientas que existian sin forma de abrirse.
     const [isCertOpen, setIsCertOpen] = useState(false);
     const [isTarjetaOpen, setIsTarjetaOpen] = useState(false);
+    const [isClavesModalOpen, setIsClavesModalOpen] = useState(false);
     const [isEditingFees, setIsEditingFees] = useState(false);
     const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
     const [pdfUploadResults, setPdfUploadResults] = useState<{ total: number, success: number, error: number, existed: number } | null>(null);
@@ -352,54 +355,115 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
         const file = event.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 const content = e.target?.result as string;
-                // Updated: Now populates separate credentials DB
-                if (setSriCredentials) {
-                    const credentials = parseCredentialsCSV(content);
-                    if (Object.keys(credentials).length === 0) {
-                        alert("No se encontraron claves del SRI válidas en el archivo.");
-                        return;
-                    }
-                    setSriCredentials(prev => ({ ...prev, ...credentials }));
-                    alert(`Base de Datos Actualizada: ${Object.keys(credentials).length} claves importadas correctamente.`);
-                } else {
-                    // Fallback to old behavior if setSriCredentials not available (should not happen in app flow)
-                    importBrowserPasswordsToClients(content, clients, setClients);
+                if (!content) return;
+
+                const credentials = parseCredentialsCSV(content);
+                const credKeys = Object.keys(credentials);
+                if (credKeys.length === 0) {
+                    alert("No se encontraron claves del SRI válidas en el archivo.\n\nAsegúrese de exportar el archivo CSV desde Google Chrome (chrome://password-manager/settings) o su navegador.");
+                    return;
                 }
+
+                // 1. Guardar en la base de credenciales Bóveda
+                if (setSriCredentials) {
+                    setSriCredentials(prev => ({ ...prev, ...credentials }));
+                }
+
+                // 2. Asociar y actualizar clientes existentes de la cartera
+                const nowIso = new Date().toISOString();
+                let updatedCount = 0;
+                let alreadyMatchingCount = 0;
+                const clientsToSync: Client[] = [];
+
+                const updatedClients = clients.map(client => {
+                    const cleanRuc = (client.ruc || '').trim();
+                    const vaultPassword = credentials[cleanRuc] || credentials[cleanRuc.slice(0, 10)];
+                    if (vaultPassword) {
+                        if (client.sriPassword !== vaultPassword) {
+                            updatedCount++;
+                            const updated: Client = {
+                                ...client,
+                                sriPassword: vaultPassword,
+                                sriPasswordUpdatedAt: nowIso,
+                                updatedAt: nowIso
+                            };
+                            clientsToSync.push(updated);
+                            return updated;
+                        } else {
+                            alreadyMatchingCount++;
+                        }
+                    }
+                    return client;
+                });
+
+                if (updatedCount > 0) {
+                    setClients(updatedClients);
+                    // Persistencia granular en Supabase Postgres
+                    try {
+                        await db.bulkUpdate('sc_pro_clients', clientsToSync);
+                    } catch (err) {
+                        console.warn("Error en bulkUpdate cloud sync al importar claves:", err);
+                    }
+                }
+
+                const noEstan = credKeys.filter(k => k.length === 13 && !clients.some(c => c.ruc === k));
+
+                alert(
+                    `🔐 SINCRONIZACIÓN DE CONTRASEÑAS EXITOSA:\n\n` +
+                    `• ${credKeys.length} credenciales detectadas en el archivo CSV.\n` +
+                    `• ${updatedCount} clientes actualizados con nueva clave en el sistema y en la nube (Supabase).\n` +
+                    `• ${alreadyMatchingCount} clientes ya tenían la clave correcta.\n` +
+                    (noEstan.length > 0 ? `• ${noEstan.length} RUCs guardados en la Bóveda para futuros clientes.\n` : '') +
+                    `\nLas claves se han sincronizado con la extensión Nueva Luz 3.0.`
+                );
             };
             reader.readAsText(file);
         }
         if (passwordFileInputRef.current) passwordFileInputRef.current.value = "";
     };
 
-    const handleAutoLinkPasswords = () => {
+    const handleAutoLinkPasswords = async () => {
         if (!sriCredentials || Object.keys(sriCredentials).length === 0) {
-            alert("La base de credenciales del SRI está vacía. Por favor, suba un archivo CSV de claves primero.");
+            alert("La base de credenciales del SRI está vacía.\n\nPor favor, suba un archivo CSV de contraseñas de su navegador primero usando el botón 'SUBIR CSV CONTRASEÑAS NAVEGADOR'.");
             return;
         }
 
         let updatedCount = 0;
+        const nowIso = new Date().toISOString();
+        const clientsToSync: Client[] = [];
+
         const updatedClients = clients.map(client => {
-            const vaultPassword = sriCredentials[client.ruc];
+            const cleanRuc = (client.ruc || '').trim();
+            const vaultPassword = sriCredentials[cleanRuc] || sriCredentials[cleanRuc.slice(0, 10)];
             if (vaultPassword && client.sriPassword !== vaultPassword) {
                 updatedCount++;
-                return {
+                const updated: Client = {
                     ...client,
                     sriPassword: vaultPassword,
-                    updatedAt: new Date().toISOString()
+                    sriPasswordUpdatedAt: nowIso,
+                    updatedAt: nowIso
                 };
+                clientsToSync.push(updated);
+                return updated;
             }
             return client;
         });
 
         if (updatedCount === 0) {
-            alert("No se encontraron claves nuevas o faltantes para vincular. Todos los clientes coinciden con la base de credenciales.");
+            alert("No se encontraron claves nuevas o faltantes para vincular. Todos los clientes coinciden con la base de credenciales de la Bóveda.");
             return;
         }
 
         setClients(updatedClients);
-        alert(`Sincronización Exitosa: Se vincularon/actualizaron las claves de ${updatedCount} clientes.`);
+        try {
+            await db.bulkUpdate('sc_pro_clients', clientsToSync);
+        } catch (err) {
+            console.warn("Error en bulkUpdate cloud sync en auto-link:", err);
+        }
+
+        alert(`✅ Sincronización Exitosa: Se vincularon/actualizaron las claves de ${updatedCount} clientes en el sistema y en la nube.`);
     };
 
     const handleBulkPdfClick = () => {
@@ -774,16 +838,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         <Cloud size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">Sincronización Maestra en la Nube</h3>
+                                        <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight flex items-center gap-3">
+                                            Sincronización en la Nube
+                                            <span className="text-[9px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-amber-500/20 uppercase tracking-widest font-mono">
+                                                Google Sheets (Legacy)
+                                            </span>
+                                        </h3>
                                         <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="w-2 h-2 bg-[#00A896] rounded-full animate-pulse" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#00A896]">Google Workspace & Supabase Sync v5.0</p>
+                                            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Nube Activa: Supabase Postgres v5.0 (Automática)</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <p className="text-slate-300 text-xs sm:text-sm mb-6 leading-relaxed font-sans">
-                                    Punto de enlace con la base de datos distribuida en la nube. Configure la URL de acceso del backend para sincronización instantánea multi-dispositivo.
+                                    <strong>Nota Importante:</strong> El sistema ahora opera de forma nativa e instantánea con <strong>Supabase Postgres v5.0</strong>. La sincronización de clientes, declaraciones y comprobantes se realiza automáticamente en segundo plano. La URL de Google Apps Script a continuación es un enlace heredado de versiones anteriores y no es necesaria para la operación diaria.
                                 </p>
 
                                 <div className="flex flex-col sm:flex-row gap-3">
@@ -795,28 +864,28 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                             type="text"
                                             value={backendUrl}
                                             onChange={(e) => setBackendUrl(e.target.value)}
-                                            placeholder="https://script.google.com/macros/s/..."
+                                            placeholder="https://script.google.com/macros/s/... (Opcional - Legacy)"
                                             className="w-full pl-11 pr-4 py-3 bg-[#020b14] border border-white/10 rounded-2xl text-xs font-mono text-white placeholder-slate-500 outline-none focus:border-[#00A896]/50 transition-all"
                                         />
                                     </div>
                                     <button
                                         onClick={handleSaveBackendUrl}
                                         disabled={isSavingUrl}
-                                        className="px-6 py-3 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white font-bold uppercase tracking-wider text-xs rounded-2xl shadow-lg shadow-[#00A896]/20 transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+                                        className="px-6 py-3 bg-white/10 hover:bg-white/15 text-slate-300 font-bold uppercase tracking-wider text-xs rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/10"
                                     >
-                                        {isSavingUrl ? <Loader2 className="animate-spin" size={16} /> : <Zap size={16} />}
-                                        <span>Activar Enlace</span>
+                                        {isSavingUrl ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                                        <span>Guardar URL Legacy</span>
                                     </button>
                                 </div>
 
                                 <div className="mt-8 pt-6 border-t border-white/10">
                                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <History size={14} className="text-[#C9A96E]" />
-                                        Protocolos de Recuperación (Legacy)
+                                        Protocolo Histórico (Solo para rescate de datos de versiones antiguas)
                                     </h4>
                                     <div className="p-4 bg-[#020b14] border border-amber-500/20 rounded-2xl mb-4">
                                         <p className="text-xs text-amber-300/80 leading-relaxed font-sans">
-                                            Si migró desde Google Sheets y detecta inconsistencias, ejecute una recuperación forzada para restaurar registros históricos.
+                                            ⚠️ <strong>Precaución:</strong> No ejecutes esta recuperación a menos que estés migrando datos antiguos (2024 o anteriores) desde una hoja de cálculo Google Sheets. Si ejecutas esto sin necesitarlo, podrías sobreescribir datos limpios de Supabase con información vieja.
                                         </p>
                                     </div>
                                     <button
@@ -1200,37 +1269,149 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                 {/* --- MÓDULO: GESTIÓN DE BÓVEDA & BACKUPS --- */}
                 {(settingsTab === 'all' || settingsTab === 'backup') && (
-                    <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden font-mono">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="p-3.5 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896]">
-                                <Database size={24} />
+                    <div className="space-y-8 font-mono">
+                        {/* 1. BÓVEDA DE CONTRASEÑAS SRI & CARGA NAVEGADOR */}
+                        <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-amber-500/20 border-t-amber-500/40 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl text-amber-400 shrink-0">
+                                        <Key size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight flex items-center gap-3">
+                                            Bóveda de Contraseñas SRI
+                                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-widest font-mono">
+                                                Navegador ➔ Sistema
+                                            </span>
+                                        </h3>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+                                            Importación directa desde Chrome / Edge & Sincronización en Supabase
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsClavesModalOpen(true)}
+                                    className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-lg shadow-amber-500/20 cursor-pointer shrink-0"
+                                >
+                                    <Key size={14} />
+                                    <span>Abrir Gestor de Claves SRI</span>
+                                </button>
                             </div>
-                            <div>
-                                <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">Gestión de Bóveda & Backups</h3>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Seguridad y Resguardo Integral</p>
+
+                            <p className="text-slate-300 text-xs sm:text-sm mb-6 leading-relaxed font-sans max-w-3xl">
+                                ¿Tus contraseñas del SRI están guardadas en tu navegador? Puedes exportarlas en un archivo CSV y subirlas aquí. El sistema detectará automáticamente cada RUC, actualizará la clave del cliente en Supabase Postgres y la sincronizará en tiempo real con la extensión <strong>Nueva Luz 3.0</strong>.
+                            </p>
+
+                            {/* Acciones de Claves */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                                <input
+                                    type="file"
+                                    ref={passwordFileInputRef}
+                                    onChange={handlePasswordFileChange}
+                                    accept=".csv"
+                                    className="hidden"
+                                />
+                                <button
+                                    onClick={handlePasswordImportClick}
+                                    className="p-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400/50 rounded-2xl text-xs font-bold text-amber-300 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-amber-500/5 text-center"
+                                >
+                                    <Upload size={16} className="text-amber-400 shrink-0" />
+                                    <span>SUBIR CSV CONTRASEÑAS NAVEGADOR</span>
+                                </button>
+
+                                <button
+                                    onClick={handleAutoLinkPasswords}
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 hover:border-[#00A896]/40 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <Zap size={16} className="text-[#00A896] shrink-0" />
+                                    <span>VINCULAR CLAVES CON CLIENTES</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setIsClavesModalOpen(true)}
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 hover:border-amber-400/40 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <ShieldCheck size={16} className="text-amber-400 shrink-0" />
+                                    <span>ROTADOR & ASISTENTE (* ➔ @)</span>
+                                </button>
+                            </div>
+
+                            {/* Guía Rápida: Cómo exportar de Chrome */}
+                            <div className="p-4 bg-[#020b14]/80 border border-white/10 rounded-2xl text-xs text-slate-300 space-y-2">
+                                <p className="font-bold text-amber-300 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                                    <Info size={14} /> ¿Cómo exportar tus contraseñas desde Google Chrome?
+                                </p>
+                                <ol className="list-decimal list-inside space-y-1 text-slate-400 text-[11px] font-sans pl-1">
+                                    <li>En Google Chrome, abre una pestaña y escribe en la barra de direcciones: <code className="text-sky-400 bg-white/5 px-1.5 py-0.5 rounded font-mono">chrome://password-manager/settings</code></li>
+                                    <li>En la sección <strong>"Exportar contraseñas"</strong>, haz clic en <strong>"Descargar archivo"</strong> (se descargará un archivo <code className="text-amber-300 font-mono">.csv</code>).</li>
+                                    <li>Regresa aquí y presiona el botón ámbar <strong>"SUBIR CSV CONTRASEÑAS NAVEGADOR"</strong>.</li>
+                                </ol>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <button 
-                                onClick={handleExportJSON} 
-                                className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
-                            >
-                                <Download size={16} className="text-[#00A896]" /> RESPALDO JSON
-                            </button>
-                            <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
-                            <button 
-                                onClick={handleImportJSONClick} 
-                                className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
-                            >
-                                <Upload size={16} className="text-[#2B6AFF]" /> RESTAURAR JSON
-                            </button>
-                            <button 
-                                onClick={handleExport} 
-                                className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
-                            >
-                                <Download size={16} className="text-[#C9A96E]" /> EXPORTAR CSV
-                            </button>
+                        {/* 2. GESTIÓN DE EXPEDIENTES & RESPALDOS GENERALES */}
+                        <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3.5 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896] shrink-0">
+                                    <Database size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-display font-bold text-xl sm:text-2xl text-white tracking-tight">Gestión de Expedientes & Backups</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Seguridad, Exportación y Restauración Integral</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
+                                <input type="file" ref={bulkPdfInputRef} onChange={handleBulkPdfChange} accept="application/pdf" multiple className="hidden" />
+
+                                <button 
+                                    onClick={handleExportJSON} 
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <Download size={16} className="text-[#00A896] shrink-0" />
+                                    <span>RESPALDO JSON (TODO)</span>
+                                </button>
+
+                                <button 
+                                    onClick={handleImportJSONClick} 
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <Upload size={16} className="text-[#2B6AFF] shrink-0" />
+                                    <span>RESTAURAR JSON</span>
+                                </button>
+
+                                <button 
+                                    onClick={handleExport} 
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <Download size={16} className="text-[#C9A96E] shrink-0" />
+                                    <span>EXPORTAR CLIENTES CSV</span>
+                                </button>
+
+                                <button 
+                                    onClick={handleImportClick} 
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <Upload size={16} className="text-emerald-400 shrink-0" />
+                                    <span>IMPORTAR CLIENTES CSV</span>
+                                </button>
+
+                                <button 
+                                    onClick={handleBulkPdfClick} 
+                                    className="p-4 bg-[#020b14] hover:bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+                                >
+                                    <FileSearch size={16} className="text-purple-400 shrink-0" />
+                                    <span>{isUploadingPdfs ? 'EXTRAYENDO PDFS...' : 'CREAR CLIENTES DESDE PDFS'}</span>
+                                </button>
+                            </div>
+
+                            {pdfUploadResults && (
+                                <div className="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">
+                                    Resultados PDFs: Total {pdfUploadResults.total} • Nuevos {pdfUploadResults.success} • Existentes {pdfUploadResults.existed} • Errores {pdfUploadResults.error}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1278,6 +1459,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             </Modal>
         <TaxCertificateGeneratorModal isOpen={isCertOpen} onClose={() => setIsCertOpen(false)} />
         <DigitalBusinessCardModal isOpen={isTarjetaOpen} onClose={() => setIsTarjetaOpen(false)} />
+        <SriPasswordChangerModal isOpen={isClavesModalOpen} onClose={() => setIsClavesModalOpen(false)} />
         </div>
     );
 };
