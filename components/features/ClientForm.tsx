@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Client, TaxRegime, DeclarationStatus, StoredFile } from '../../types';
 import { validateIdentifier, validateSriPassword, getPeriod } from '../../services/sri';
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
@@ -10,6 +10,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '../../context/ToastContext';
 import { useAppStore } from '../../store/useAppStore';
+import { parseCredentialsCSV } from '../../services/csv';
 
 interface ClientFormProps {
     initialData?: Partial<Client>;
@@ -47,9 +48,14 @@ const newClientInitialState: Partial<Client> = {
 
 export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, onCancel, sriCredentials }) => {
     const { toast } = useToast();
-    const { clients } = useAppStore();
+    const store = useAppStore();
+    const clients = store.clients;
+    const storeSriCredentials = store.sriCredentials;
+    const setStoreSriCredentials = store.setSriCredentials;
     const [clientData, setClientData] = useState<Partial<Client>>({ ...newClientInitialState, ...initialData });
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const csvFileInputRef = useRef<HTMLInputElement>(null);
+    const [detectedPasswordSource, setDetectedPasswordSource] = useState<string | null>(null);
 
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [p12PasswordVisible, setP12PasswordVisible] = useState(false);
@@ -123,6 +129,114 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         }
     };
 
+    // Helper Inteligente: Auto-detectar la clave del SRI para un RUC o Cédula
+    const detectPasswordForRuc = useCallback((rawRuc?: string, overrideCreds?: Record<string, string>): { password: string; source: string } | null => {
+        if (!rawRuc) return null;
+        const clean = rawRuc.replace(/\D/g, '').trim();
+        if (clean.length < 10) return null;
+
+        const cedula = clean.slice(0, 10);
+        const ruc13 = clean.length === 10 ? `${clean}001` : clean;
+
+        const creds = overrideCreds || sriCredentials || storeSriCredentials || {};
+
+        // 1. Coincidencia exacta de 13 dígitos
+        if (creds[clean]) return { password: creds[clean], source: 'Bóveda de Credenciales' };
+        if (clean.length === 13 && creds[ruc13]) return { password: creds[ruc13], source: 'Bóveda de Credenciales' };
+
+        // 2. Coincidencia por 10 dígitos (cédula)
+        if (creds[cedula]) return { password: creds[cedula], source: 'Bóveda de Credenciales (por Cédula)' };
+
+        // 3. Búsqueda normalizada en todas las llaves de credenciales
+        for (const [k, pass] of Object.entries(creds)) {
+            const cleanK = k.replace(/\D/g, '').trim();
+            if (cleanK === clean || cleanK === cedula || (cleanK.length === 10 && clean.startsWith(cleanK)) || (clean.length === 10 && cleanK.startsWith(clean))) {
+                return { password: pass, source: 'Bóveda de Credenciales' };
+            }
+        }
+
+        // 4. Buscar en clientes existentes de la cartera
+        const existing = clients.find(c => {
+            const cRuc = (c.ruc || '').replace(/\D/g, '').trim();
+            return (cRuc === clean || cRuc.startsWith(cedula) || (clean.length === 10 && cRuc.startsWith(clean))) && !!c.sriPassword;
+        });
+        if (existing && existing.sriPassword) {
+            return { password: existing.sriPassword, source: `Expediente de ${existing.name}` };
+        }
+
+        return null;
+    }, [sriCredentials, storeSriCredentials, clients]);
+
+    // Intentar auto-detectar en montaje si viene con RUC inicial y sin clave
+    useEffect(() => {
+        if (!clientData.sriPassword && clientData.ruc) {
+            const detected = detectPasswordForRuc(clientData.ruc);
+            if (detected) {
+                setClientData(prev => ({ ...prev, sriPassword: detected.password }));
+                setDetectedPasswordSource(detected.source);
+            }
+        }
+    }, [clientData.ruc, detectPasswordForRuc]);
+
+    const handleRucChange = (val: string) => {
+        setClientData(prev => {
+            const next = { ...prev, ruc: val };
+            if (!prev.sriPassword) {
+                const detected = detectPasswordForRuc(val);
+                if (detected) {
+                    next.sriPassword = detected.password;
+                    setDetectedPasswordSource(detected.source);
+                    toast.success(`🔑 ¡Clave SRI detectada automáticamente (${detected.source}) y colocada!`);
+                }
+            }
+            return next;
+        });
+        checkExistingRuc(val);
+    };
+
+    const handleRucBlur = () => {
+        if (!clientData.sriPassword && clientData.ruc) {
+            const detected = detectPasswordForRuc(clientData.ruc);
+            if (detected) {
+                setClientData(prev => ({ ...prev, sriPassword: detected.password }));
+                setDetectedPasswordSource(detected.source);
+                toast.success(`🔑 ¡Clave SRI detectada automáticamente (${detected.source}) y colocada!`);
+            }
+        }
+    };
+
+    const handleQuickCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target?.result as string;
+            if (!content) return;
+
+            const creds = parseCredentialsCSV(content);
+            const totalKeys = Object.keys(creds).length;
+            if (totalKeys === 0) {
+                toast.error("No se encontraron claves válidas en el archivo CSV.");
+                return;
+            }
+
+            setStoreSriCredentials(prev => ({ ...prev, ...creds }));
+
+            const currentRuc = clientData.ruc || '';
+            const detected = detectPasswordForRuc(currentRuc, creds);
+            if (detected) {
+                setClientData(prev => ({ ...prev, sriPassword: detected.password }));
+                setDetectedPasswordSource(detected.source);
+                toast.success(`🎉 ¡${totalKeys} claves cargadas a la Bóveda! Clave para este RUC detectada y colocada.`);
+            } else {
+                toast.success(`✅ ¡${totalKeys} claves guardadas en Bóveda! Escribe o pega el RUC para autocompletar.`);
+            }
+        };
+        reader.readAsText(file);
+        if (csvFileInputRef.current) csvFileInputRef.current.value = '';
+    };
+
     const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -142,9 +256,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             const exists = clients.find(c => c.ruc === cleanRuc && c.id !== clientData.id);
 
             let passwordToUse = clientData.sriPassword;
-            if (!passwordToUse && sriCredentials && sriCredentials[extracted.ruc]) {
-                passwordToUse = sriCredentials[extracted.ruc];
-                toast.success("¡Clave encontrada en Bóveda!");
+            if (!passwordToUse) {
+                const detected = detectPasswordForRuc(extracted.ruc);
+                if (detected) {
+                    passwordToUse = detected.password;
+                    setDetectedPasswordSource(detected.source);
+                    toast.success(`🔑 ¡Clave SRI detectada automáticamente (${detected.source}) y colocada!`);
+                }
             }
 
             let certFile: StoredFile | undefined = undefined;
@@ -369,14 +487,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors" size={18} />
                                 <input
                                     type="text"
+                                    name="username"
+                                    id="client-ruc-input"
                                     value={clientData.ruc || ''}
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        setClientData({ ...clientData, ruc: val });
-                                        checkExistingRuc(val);
-                                    }}
+                                    onChange={e => handleRucChange(e.target.value)}
+                                    onBlur={handleRucBlur}
                                     className={`w-full pl-12 p-4 bg-surface-lowest dark:bg-surface-lowest border-0 rounded-2xl text-sm font-mono tracking-wider font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all ${validationErrors.ruc ? 'ring-2 ring-rose-400/50' : ''}`}
                                     placeholder="1790000000001"
+                                    autoComplete="username"
                                 />
                             </div>
                         </div>
@@ -514,21 +632,92 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
-                                <label className="text-xs font-medium text-slate-500 mb-1 block uppercase tracking-wider">Clave SRI</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                        Clave SRI
+                                    </label>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const detected = detectPasswordForRuc(clientData.ruc);
+                                                if (detected) {
+                                                    setClientData(prev => ({ ...prev, sriPassword: detected.password }));
+                                                    setDetectedPasswordSource(detected.source);
+                                                    toast.success(`🔑 ¡Clave detectada desde ${detected.source} y colocada!`);
+                                                } else {
+                                                    toast.info("No se encontró clave guardada para este RUC en la Bóveda. Puedes subir un CSV de contraseñas de tu navegador.");
+                                                }
+                                            }}
+                                            className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition-colors cursor-pointer px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20"
+                                            title="Buscar y colocar la clave guardada en la Bóveda para este RUC"
+                                        >
+                                            <Sparkles size={11} />
+                                            <span>Auto-detectar</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => csvFileInputRef.current?.click()}
+                                            className="text-[10px] font-bold text-[#00A896] hover:text-teal-300 flex items-center gap-1 transition-colors cursor-pointer px-1.5 py-0.5 rounded bg-[#00A896]/10 hover:bg-[#00A896]/20 border border-[#00A896]/20"
+                                            title="Subir archivo CSV de contraseñas exportado desde Chrome"
+                                        >
+                                            <Upload size={11} />
+                                            <span>Subir CSV</span>
+                                        </button>
+                                        <input
+                                            type="file"
+                                            ref={csvFileInputRef}
+                                            onChange={handleQuickCsvUpload}
+                                            accept=".csv"
+                                            className="hidden"
+                                        />
+                                    </div>
+                                </div>
                                 <div className="relative group">
-                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-400 transition-colors" size={16} />
                                     <input
                                         type={passwordVisible ? "text" : "password"}
+                                        name="password"
+                                        id="client-sri-password"
                                         value={clientData.sriPassword || ''}
-                                        onChange={e => setClientData({ ...clientData, sriPassword: e.target.value })}
-                                        className="w-full pl-10 pr-10 p-2.5 glass-card-premium rounded-xl text-sm font-mono font-medium"
+                                        onChange={e => {
+                                            setClientData({ ...clientData, sriPassword: e.target.value });
+                                            setDetectedPasswordSource(null);
+                                        }}
+                                        className={`w-full pl-10 pr-10 p-2.5 glass-card-premium rounded-xl text-sm font-mono font-medium outline-none transition-all ${
+                                            detectedPasswordSource ? 'border-amber-500/50 ring-1 ring-amber-500/30 bg-amber-500/5' : ''
+                                        }`}
                                         placeholder="••••••••"
-                                        autoComplete="new-password"
+                                        autoComplete="current-password"
                                     />
-                                    <button onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <button 
+                                        type="button"
+                                        onClick={() => setPasswordVisible(!passwordVisible)} 
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                    >
                                         {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
+                                {detectedPasswordSource && (
+                                    <div className="flex items-center justify-between gap-1.5 mt-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-300 font-bold animate-in fade-in">
+                                        <div className="flex items-center gap-1 truncate">
+                                            <Sparkles size={11} className="text-amber-400 shrink-0" />
+                                            <span className="truncate">Auto-detectada: {detectedPasswordSource}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setClientData(prev => ({ ...prev, sriPassword: '' }));
+                                                setDetectedPasswordSource(null);
+                                            }}
+                                            className="text-slate-400 hover:text-rose-400 uppercase text-[9px] font-bold tracking-wider shrink-0 transition-colors cursor-pointer"
+                                            title="Limpiar clave"
+                                        >
+                                            Quitar
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <div className="relative">
                                 <label className="text-xs font-medium text-slate-500 mb-1 block uppercase tracking-wider">Vence Firma Elec.</label>

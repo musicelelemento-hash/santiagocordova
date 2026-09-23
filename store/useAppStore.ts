@@ -948,6 +948,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           clients: localData,
           tasks: tasks || [],
           webOrders: webOrders || [],
+          sriCredentials: sriCredentials || {},
           serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
           reminderConfig: sanitizeReminderConfig(reminderConfig),
           ...(systemSettings ? { systemSettings: { ...get().systemSettings, ...systemSettings } } : {}),
@@ -1144,6 +1145,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             isLoaded: true,
             tasks: tasks || [],
             webOrders: webOrders || [],
+            sriCredentials: sriCredentials || {},
             serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
             reminderConfig: sanitizeReminderConfig(reminderConfig),
           });

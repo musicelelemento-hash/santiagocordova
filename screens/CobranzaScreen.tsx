@@ -23,6 +23,7 @@ import { CampaignBanner } from '../components/ui/CampaignBanner';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
 import { getFacturacionApiToken } from '../services/facturacionApi';
+import { downloadStoredFile } from '../services/fileService';
 
 interface CobranzaScreenProps {
     reminderConfigProp?: ReminderConfig;
@@ -108,6 +109,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
     const [isSyncMatrixModalOpen, setIsSyncMatrixModalOpen] = useState(false);
     const [isSyncingMatrix, setIsSyncingMatrix] = useState(false);
+    const [selectedSyncKeys, setSelectedSyncKeys] = useState<Set<string>>(new Set());
+    const [syncAuditSearch, setSyncAuditSearch] = useState('');
 
     // Fast SRI Invoicing States
     const [isFastBillingOpen, setIsFastBillingOpen] = useState(false);
@@ -1853,10 +1856,92 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         setIsSyncMatrixModalOpen(true);
     };
 
+    // Estadísticas de auditoría y selección para declaraciones presentadas sin cobrar
+    const selectedSyncStats = useMemo(() => {
+        let count = 0;
+        let total = 0;
+        matrixSyncCandidates.candidates.forEach(item => {
+            item.declarations.forEach(d => {
+                const key = `${item.client.id}__${d.period}`;
+                if (selectedSyncKeys.has(key)) {
+                    count++;
+                    total += d.amount;
+                }
+            });
+        });
+        return { count, total };
+    }, [matrixSyncCandidates, selectedSyncKeys]);
+
+    const handleToggleSyncKey = (clientId: string, period: string) => {
+        const key = `${clientId}__${period}`;
+        setSelectedSyncKeys(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
+
+    const handleToggleClientSyncKeys = (client: Client, declarations: any[]) => {
+        const clientKeys = declarations.map(d => `${client.id}__${d.period}`);
+        setSelectedSyncKeys(prev => {
+            const next = new Set(prev);
+            const allSelected = clientKeys.every(k => next.has(k));
+            if (allSelected) {
+                clientKeys.forEach(k => next.delete(k));
+            } else {
+                clientKeys.forEach(k => next.add(k));
+            }
+            return next;
+        });
+    };
+
+    const handleSelectAllSyncKeys = () => {
+        const all = new Set<string>();
+        matrixSyncCandidates.candidates.forEach(item => {
+            item.declarations.forEach(d => {
+                all.add(`${item.client.id}__${d.period}`);
+            });
+        });
+        setSelectedSyncKeys(all);
+    };
+
+    const handleDeselectAllSyncKeys = () => {
+        setSelectedSyncKeys(new Set());
+    };
+
+    const handleSendDeclaredWhatsAppCobro = (client: Client, declarations: any[]) => {
+        const periodsList = declarations.map(d => `• *${formatPeriodForDisplay(d.period)}*: $${d.amount.toFixed(2)} USD (Presentada SRI)`).join('\n');
+        const clientTotal = declarations.reduce((sum, d) => sum + d.amount, 0);
+        const text = `Estimado(a) *${client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe confirmamos que su(s) declaración(es) tributaria(s) ya fueron *presentadas con éxito ante el SRI*:\n\n${periodsList}\n\nTotal honorarios profesionales pendientes: *$${clientTotal.toFixed(2)} USD*.\n\n🏦 *Datos para transferencia bancaria:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor envíenos su comprobante de pago por este medio para emitirle su respectiva factura electrónica autorizada. ¡Muchas gracias por su puntualidad!`;
+        
+        const rawPhone = (client.phones && client.phones[0]) || '';
+        let cleanPhone = rawPhone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) cleanPhone = '593' + cleanPhone.slice(1);
+        if (cleanPhone.length >= 9 && !cleanPhone.startsWith('593')) cleanPhone = '593' + cleanPhone;
+
+        const url = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    };
+
+    // Candidatos filtrados por búsqueda en modal de auditoría
+    const filteredSyncCandidates = useMemo(() => {
+        if (!syncAuditSearch.trim()) return matrixSyncCandidates.candidates;
+        const q = syncAuditSearch.toLowerCase().trim();
+        return matrixSyncCandidates.candidates.filter(c => 
+            c.client.name.toLowerCase().includes(q) || 
+            c.client.ruc.includes(q)
+        );
+    }, [matrixSyncCandidates.candidates, syncAuditSearch]);
+
     const handleExecuteMatrixSync = async () => {
-        if (matrixSyncCandidates.totalDeclarations === 0) {
-            toast.info("Cobranza ya se encuentra 100% sincronizada y al día con la Matriz.");
-            setIsSyncMatrixModalOpen(false);
+        if (selectedSyncStats.count === 0) {
+            toast.info("Selecciona al menos una declaración para registrar su cobro.");
+            return;
+        }
+
+        const confirmMsg = `¿Confirmas registrar el cobro de ${selectedSyncStats.count} declaración(es) seleccionada(s) por un total de $${selectedSyncStats.total.toFixed(2)}?\n\nEsta acción marcará las obligaciones como PAGADAS en el sistema y guardará los cambios en Supabase.`;
+        if (!window.confirm(confirmMsg)) {
             return;
         }
 
@@ -1865,6 +1950,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const batchTimestamp = Date.now();
         let updatedCount = 0;
         let totalSettled = 0;
+        let affectedClientsCount = 0;
 
         try {
             for (const item of matrixSyncCandidates.candidates) {
@@ -1873,14 +1959,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 let clientModified = false;
 
                 item.declarations.forEach(d => {
-                    if (decls[d.index]) {
+                    const key = `${currentClient.id}__${d.period}`;
+                    if (selectedSyncKeys.has(key) && decls[d.index]) {
                         decls[d.index] = {
                             ...decls[d.index],
                             status: DeclarationStatus.Pagada,
                             is_paid: true,
                             paidAt: nowIso,
-                            paymentMethod: 'Sincronización Matriz',
-                            transactionId: `SYNC-MATRIZ-${batchTimestamp}-${d.period}`,
+                            paymentMethod: 'Cobro Declaración Liquidada',
+                            transactionId: `RECIBO-DECL-${batchTimestamp}-${d.period}`,
                             updatedAt: nowIso
                         };
                         clientModified = true;
@@ -1890,6 +1977,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 });
 
                 if (clientModified) {
+                    affectedClientsCount++;
                     const updatedClient = {
                         ...currentClient,
                         declarations: decls,
@@ -1902,11 +1990,23 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 }
             }
 
-            toast.success(`⚡ ¡${updatedCount} cobros ($${totalSettled.toFixed(2)}) en ${matrixSyncCandidates.clientsCount} clientes sincronizados y marcados como PAGADOS!`);
+            // Limpiar las keys liquidadas de la selección
+            setSelectedSyncKeys(prev => {
+                const next = new Set(prev);
+                matrixSyncCandidates.candidates.forEach(item => {
+                    item.declarations.forEach(d => {
+                        const key = `${item.client.id}__${d.period}`;
+                        next.delete(key);
+                    });
+                });
+                return next;
+            });
+
+            toast.success(`⚡ ¡${updatedCount} declaraciones ($${totalSettled.toFixed(2)}) en ${affectedClientsCount} clientes liquidadas y marcadas como PAGADAS!`);
             setIsSyncMatrixModalOpen(false);
         } catch (err: any) {
-            console.error("Error al sincronizar con la matriz:", err);
-            toast.error(`Error durante la sincronización: ${err.message || 'Error desconocido'}`);
+            console.error("Error al liquidar declaraciones seleccionadas:", err);
+            toast.error(`Error durante la liquidación: ${err.message || 'Error desconocido'}`);
         } finally {
             setIsSyncingMatrix(false);
         }
@@ -1964,17 +2064,17 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         onClick={() => setIsSyncMatrixModalOpen(true)}
                         className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border cursor-pointer w-full sm:w-auto
                             ${matrixSyncCandidates.totalDeclarations > 0
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white shadow-lg shadow-amber-500/20 active:scale-95 border-white/10'
+                                ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-yellow-600/20 hover:from-amber-500/30 hover:to-yellow-600/30 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/10 active:scale-95'
                                 : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'}`}
                         title={matrixSyncCandidates.totalDeclarations > 0 
-                            ? `Hay ${matrixSyncCandidates.totalDeclarations} cobros pendientes de declaraciones enviadas/con PDF ($${matrixSyncCandidates.totalAmount.toFixed(2)})`
-                            : "Cobranza al día con la Matriz Fiscal (0 pendientes de cobro)"}
+                            ? `Auditoría: ${matrixSyncCandidates.totalDeclarations} declaraciones presentadas ante el SRI cuyo honorario aún no ha sido cobrado ($${matrixSyncCandidates.totalAmount.toFixed(2)})`
+                            : "Cobranza al día: no hay declaraciones presentadas pendientes de cobro."}
                     >
-                        <LucideIcons.RefreshCw size={14} className={isSyncingMatrix ? "animate-spin text-amber-300" : matrixSyncCandidates.totalDeclarations > 0 ? "text-white" : "text-emerald-400"} />
+                        <LucideIcons.ClipboardList size={15} className={matrixSyncCandidates.totalDeclarations > 0 ? "text-amber-400" : "text-emerald-400"} />
                         <span>
                             {matrixSyncCandidates.totalDeclarations > 0
-                                ? `⚡ Sincronizar con Matriz ($${matrixSyncCandidates.totalAmount.toFixed(2)} · ${matrixSyncCandidates.totalDeclarations})`
-                                : `⚡ Matriz al Día (0 pend.)`}
+                                ? `📋 Declarado sin Cobrar (${matrixSyncCandidates.totalDeclarations} · $${matrixSyncCandidates.totalAmount.toFixed(2)})`
+                                : `✓ Cobranza al Día (0 pend.)`}
                         </span>
                     </button>
 
@@ -4090,20 +4190,28 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             <Modal 
                 isOpen={isSyncMatrixModalOpen} 
                 onClose={() => !isSyncingMatrix && setIsSyncMatrixModalOpen(false)} 
-                title="Sincronización Inteligente con Matriz Fiscal"
+                title="Auditoría: Declaraciones Presentadas sin Cobrar"
             >
                 <div className="p-4 sm:p-6 space-y-6 font-mono text-slate-900 dark:text-white max-h-[82vh] overflow-y-auto no-scrollbar">
                     {/* ENCABEZADO Y PROPÓSITO TÉCNICO */}
                     <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
-                            <LucideIcons.RefreshCw size={20} className={isSyncingMatrix ? "animate-spin" : ""} />
+                        <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                            <LucideIcons.ClipboardCheck size={22} className={isSyncingMatrix ? "animate-spin" : ""} />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-sm font-bold text-amber-300 uppercase tracking-wide">
-                                Conciliación Contable: Matriz SRI ↔ Cobranzas
-                            </h4>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold uppercase tracking-wider border border-amber-500/30">
+                                    Auditoría Contable
+                                </span>
+                                <h4 className="text-sm font-bold text-amber-300 uppercase tracking-wide">
+                                    Presentadas en SRI vs. Cobradas en Estudio
+                                </h4>
+                            </div>
                             <p className="text-xs text-slate-300 leading-relaxed">
-                                Esta función detecta automáticamente todas las declaraciones que ya fueron <strong className="text-white">presentadas al SRI</strong> o que ya cuentan con su <strong className="text-white">comprobante oficial PDF</strong> en la Matriz Fiscal, pero que aún figuran pendientes de pago en tus cuentas por cobrar.
+                                Se detectaron declaraciones que ya fueron <strong className="text-white">presentadas al SRI</strong> (estado Enviada o con comprobante PDF oficial), pero cuyos honorarios profesionales aún no se han registrado como pagados.
+                            </p>
+                            <p className="text-[11px] text-amber-200/80 leading-normal">
+                                🛡️ Selecciona con la casilla <strong className="text-white">[✓]</strong> únicamente aquellas que tu cliente ya canceló por transferencia o efectivo para liquidarlas con seguridad.
                             </p>
                         </div>
                     </div>
@@ -4111,67 +4219,211 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     {/* METRIC STRIP */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Clientes Detectados</span>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Clientes con Pendientes</span>
                             <span className="text-2xl font-black text-amber-400">{matrixSyncCandidates.clientsCount}</span>
+                            <span className="text-[9px] text-slate-500 block mt-0.5">en cartera activa</span>
                         </div>
                         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Declaraciones con PDF</span>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Declarado sin Cobrar</span>
                             <span className="text-2xl font-black text-amber-400">{matrixSyncCandidates.totalDeclarations}</span>
+                            <span className="text-[10px] font-bold text-amber-300/80 block mt-0.5">${matrixSyncCandidates.totalAmount.toFixed(2)} USD</span>
                         </div>
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total a Liquidar</span>
-                            <span className="text-2xl font-black text-[#00A896]">${matrixSyncCandidates.totalAmount.toFixed(2)}</span>
+                        <div className={`p-4 rounded-2xl border text-center transition-all ${
+                            selectedSyncStats.count > 0 
+                                ? 'bg-[#00A896]/15 border-[#00A896]/40 shadow-lg shadow-[#00A896]/10' 
+                                : 'bg-white/5 border-white/10'
+                        }`}>
+                            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Seleccionado para Cobrar</span>
+                            <span className={`text-2xl font-black ${selectedSyncStats.count > 0 ? 'text-[#00A896]' : 'text-slate-400'}`}>
+                                {selectedSyncStats.count}
+                            </span>
+                            <span className={`text-[10px] font-bold block mt-0.5 ${selectedSyncStats.count > 0 ? 'text-white' : 'text-slate-500'}`}>
+                                ${selectedSyncStats.total.toFixed(2)} USD
+                            </span>
                         </div>
                     </div>
 
-                    {/* LISTA DETALLADA DE CANDIDATOS */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                Desglose de Clientes con Declaraciones Presentadas
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                                {matrixSyncCandidates.totalDeclarations} comprobante(s)
-                            </span>
-                        </div>
+                    {/* BARRA DE HERRAMIENTAS Y BÚSQUEDA */}
+                    {matrixSyncCandidates.candidates.length > 0 && (
+                        <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                                <div className="relative flex-1">
+                                    <LucideIcons.Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input 
+                                        type="text"
+                                        value={syncAuditSearch}
+                                        onChange={e => setSyncAuditSearch(e.target.value)}
+                                        placeholder="Filtrar por nombre o RUC de cliente..."
+                                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
+                                    />
+                                    {syncAuditSearch && (
+                                        <button 
+                                            onClick={() => setSyncAuditSearch('')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
 
-                        {matrixSyncCandidates.candidates.length > 0 ? (
-                            <div className="space-y-2 max-h-60 overflow-y-auto pr-1 no-scrollbar">
-                                {matrixSyncCandidates.candidates.map(({ client, declarations, clientTotal }) => (
-                                    <div 
-                                        key={client.id}
-                                        className="p-3.5 rounded-xl bg-[#020b14]/70 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-500/30 transition-all"
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button 
+                                        type="button"
+                                        onClick={handleSelectAllSyncKeys}
+                                        className="px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
+                                        title="Marcar todas las declaraciones detectadas"
                                     >
-                                        <div className="min-w-0">
-                                            <p className="font-bold text-xs text-white truncate uppercase font-display">{client.name}</p>
-                                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                                <span className="text-[10px] text-[#00A896] font-mono">{client.ruc}</span>
-                                                <span className="text-[9px] text-slate-400">•</span>
-                                                {declarations.map(d => (
-                                                    <span 
-                                                        key={d.period}
-                                                        className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold flex items-center gap-1"
+                                        <LucideIcons.CheckSquare size={13} />
+                                        <span>Seleccionar Todos</span>
+                                    </button>
+
+                                    <button 
+                                        type="button"
+                                        onClick={handleDeselectAllSyncKeys}
+                                        className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
+                                        title="Desmarcar todas"
+                                    >
+                                        <LucideIcons.Square size={13} />
+                                        <span>Deseleccionar</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                                <span>
+                                    Mostrando {filteredSyncCandidates.length} de {matrixSyncCandidates.clientsCount} clientes con declaraciones presentadas
+                                </span>
+                                <span className="font-bold text-amber-400">
+                                    {selectedSyncStats.count} de {matrixSyncCandidates.totalDeclarations} marcadas
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* LISTA DETALLADA DE CANDIDATOS CON CHECKBOXES INDIVIDUALES */}
+                    <div className="space-y-3">
+                        {filteredSyncCandidates.length > 0 ? (
+                            <div className="space-y-3 max-h-72 overflow-y-auto pr-1 no-scrollbar">
+                                {filteredSyncCandidates.map(({ client, declarations, clientTotal }) => {
+                                    const clientKeys = declarations.map(d => `${client.id}__${d.period}`);
+                                    const selectedForClient = declarations.filter(d => selectedSyncKeys.has(`${client.id}__${d.period}`));
+                                    const isAllClientSelected = declarations.length > 0 && selectedForClient.length === declarations.length;
+                                    const isPartialClientSelected = selectedForClient.length > 0 && !isAllClientSelected;
+                                    const clientSelectedAmount = selectedForClient.reduce((sum, d) => sum + d.amount, 0);
+
+                                    return (
+                                        <div 
+                                            key={client.id}
+                                            className={`p-3.5 rounded-xl border transition-all ${
+                                                selectedForClient.length > 0
+                                                    ? 'bg-amber-500/5 border-amber-500/40 shadow-sm'
+                                                    : 'bg-[#020b14]/70 border-white/10 hover:border-white/20'
+                                            }`}
+                                        >
+                                            {/* CABECERA DE CLIENTE */}
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/5">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <input 
+                                                        type="checkbox"
+                                                        id={`client-check-${client.id}`}
+                                                        checked={isAllClientSelected}
+                                                        ref={el => { if (el) el.indeterminate = isPartialClientSelected; }}
+                                                        onChange={() => handleToggleClientSyncKeys(client, declarations)}
+                                                        className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 bg-slate-800 cursor-pointer"
+                                                    />
+                                                    <label htmlFor={`client-check-${client.id}`} className="min-w-0 cursor-pointer">
+                                                        <p className="font-bold text-xs text-white truncate uppercase font-display hover:text-amber-300 transition-colors">
+                                                            {client.name}
+                                                        </p>
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <span className="text-[10px] text-[#00A896] font-mono">{client.ruc}</span>
+                                                            <span className="text-[9px] text-slate-500">•</span>
+                                                            <span className="text-[9px] text-slate-400 uppercase">{client.regime || 'General'}</span>
+                                                        </div>
+                                                    </label>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleSendDeclaredWhatsAppCobro(client, declarations)}
+                                                        title="Cobrar por WhatsApp detallando declaraciones presentadas"
+                                                        className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer"
                                                     >
-                                                        <span>{formatPeriodForDisplay(d.period)}</span>
-                                                        <span className="text-white">${d.amount.toFixed(2)}</span>
-                                                        {d.proofFile && <LucideIcons.FileText size={10} className="text-amber-400" />}
-                                                    </span>
-                                                ))}
+                                                        <LucideIcons.MessageSquare size={11} />
+                                                        <span>Cobrar WhatsApp</span>
+                                                    </button>
+
+                                                    <div className="text-right">
+                                                        <span className="text-xs font-black text-amber-400 block">${clientTotal.toFixed(2)}</span>
+                                                        {selectedForClient.length > 0 && (
+                                                            <span className="text-[9px] font-bold text-emerald-400 block">
+                                                                (${clientSelectedAmount.toFixed(2)} selecc.)
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* DECLARACIONES INDIVIDUALES CON CASILLA */}
+                                            <div className="pt-2.5 flex flex-wrap gap-2">
+                                                {declarations.map(d => {
+                                                    const key = `${client.id}__${d.period}`;
+                                                    const isChecked = selectedSyncKeys.has(key);
+
+                                                    return (
+                                                        <div 
+                                                            key={d.period}
+                                                            onClick={() => handleToggleSyncKey(client.id, d.period)}
+                                                            className={`px-2.5 py-1.5 rounded-lg border text-[10px] flex items-center gap-2 transition-all cursor-pointer select-none ${
+                                                                isChecked
+                                                                    ? 'bg-amber-500/20 border-amber-500 text-white shadow-sm'
+                                                                    : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/20'
+                                                            }`}
+                                                        >
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={() => {}} // handled by parent onClick
+                                                                className="w-3.5 h-3.5 rounded border-slate-600 text-amber-500 bg-slate-800 pointer-events-none"
+                                                            />
+                                                            <span className="font-bold text-amber-300">{formatPeriodForDisplay(d.period)}</span>
+                                                            <span className="font-mono text-white font-black">${d.amount.toFixed(2)}</span>
+
+                                                            {d.proofFile && (
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        downloadStoredFile(d.proofFile);
+                                                                    }}
+                                                                    title="Ver/Descargar Comprobante PDF oficial del SRI"
+                                                                    className="px-1.5 py-0.5 rounded bg-amber-500/30 hover:bg-amber-500/50 text-amber-200 text-[9px] font-bold flex items-center gap-1 border border-amber-500/40 transition-all cursor-pointer"
+                                                                >
+                                                                    <LucideIcons.FileText size={10} className="text-amber-300" />
+                                                                    <span>PDF</span>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-
-                                        <div className="text-right shrink-0">
-                                            <span className="text-xs font-black text-[#00A896] block">${clientTotal.toFixed(2)}</span>
-                                            <span className="text-[9px] text-slate-400">por liquidar</span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
+                            </div>
+                        ) : matrixSyncCandidates.candidates.length > 0 ? (
+                            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-center space-y-1">
+                                <p className="text-xs text-slate-300 font-bold">No se encontraron clientes coincidentes con "{syncAuditSearch}"</p>
+                                <button onClick={() => setSyncAuditSearch('')} className="text-[11px] text-amber-400 hover:underline">
+                                    Limpiar filtro de búsqueda
+                                </button>
                             </div>
                         ) : (
                             <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
                                 <LucideIcons.CheckCircle size={28} className="text-emerald-400 mx-auto" />
                                 <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
-                                    ¡Excelente! Cobranza 100% Sincronizada
+                                    ¡Excelente! Cobranza 100% al Día
                                 </p>
                                 <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
                                     No hay declaraciones presentadas ante el SRI pendientes de cobro. Toda declaración enviada ya figura como Pagada.
@@ -4180,27 +4432,29 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         )}
                     </div>
 
-                    {/* OPCIONES DE ACCIÓN DUAL */}
+                    {/* ACCIONES DEL MODAL CON SEGURIDAD REFORZADA */}
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
                         <div className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-wider">
                             <LucideIcons.ShieldCheck size={16} className="text-[#00A896]" />
-                            <span>¿Qué acción deseas ejecutar?</span>
+                            <span>Acciones Contables Disponibles</span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <button
                                 onClick={handleExecuteMatrixSync}
-                                disabled={matrixSyncCandidates.totalDeclarations === 0 || isSyncingMatrix}
-                                className={`p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border cursor-pointer
-                                    ${matrixSyncCandidates.totalDeclarations > 0 && !isSyncingMatrix
-                                        ? 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white border-white/10 shadow-lg shadow-amber-500/20 active:scale-95'
+                                disabled={selectedSyncStats.count === 0 || isSyncingMatrix}
+                                className={`p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border
+                                    ${selectedSyncStats.count > 0 && !isSyncingMatrix
+                                        ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-[#00A896] hover:from-emerald-600 hover:to-teal-600 text-white border-white/15 shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer'
                                         : 'bg-white/5 text-slate-500 border-white/5 cursor-not-allowed'}`}
                             >
                                 <LucideIcons.Zap size={15} />
                                 <span>
                                     {isSyncingMatrix 
-                                        ? 'Sincronizando...' 
-                                        : `Liquidar y Cobrar Todo ($${matrixSyncCandidates.totalAmount.toFixed(2)})`}
+                                        ? 'Liquidando...' 
+                                        : selectedSyncStats.count > 0
+                                            ? `⚡ Liquidar Seleccionados (${selectedSyncStats.count} · $${selectedSyncStats.total.toFixed(2)})`
+                                            : '⚡ Liquidar Seleccionados (Marca casillas)'}
                                 </span>
                             </button>
 
@@ -4208,7 +4462,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 onClick={handleRefreshDataFromCloud}
                                 disabled={isSyncingMatrix}
                                 className="p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 cursor-pointer active:scale-95"
-                                title="Recargar clientes y declaraciones desde Supabase sin modificar cobros"
+                                title="Recargar clientes y declaraciones desde Supabase sin modificar cobros ni liquidar dinero"
                             >
                                 <LucideIcons.RefreshCw size={14} className={isSyncingMatrix ? "animate-spin" : ""} />
                                 <span>Solo Refrescar Datos Nube</span>
@@ -4216,9 +4470,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
 
                         <p className="text-[10px] text-slate-400 text-center leading-normal">
-                            💡 <strong>Liquidar y Cobrar:</strong> Marca las declaraciones como pagadas, genera recibos contables y persiste en Supabase.
+                            🛡️ <strong>Seguridad Contable:</strong> "Liquidar Seleccionados" registrará el cobro <u>exclusivamente</u> de las casillas marcadas con [✓].
                             <br />
-                            🔄 <strong>Refrescar Datos:</strong> Actualiza tu pantalla con los últimos comprobantes subidos por Nueva Luz 3.0 sin alterar estados de pago.
+                            🔄 <strong>Refrescar Datos:</strong> Re-sincroniza comprobantes subidos por Nueva Luz 3.0 desde Supabase sin alterar saldos ni cobros.
                         </p>
                     </div>
 
