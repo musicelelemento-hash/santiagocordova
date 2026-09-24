@@ -2,10 +2,11 @@ import React from 'react';
 import {
     ShieldCheck, AlertTriangle, Send, DollarSign, MessageCircle, FileText,
     UploadCloud, Eye, RotateCcw, XCircle, CheckCircle2, Clock, Activity, Zap,
-    Copy, Check, Tag
+    Copy, Check, Tag, MinusCircle
 } from 'lucide-react';
 import { Client, DeclarationStatus, TaxObligationType, Declaration, TaxRegime } from '../../../types';
 import { formatPeriodForDisplay, isFuturePeriod } from '../../../services/sri';
+import { isPeriodBeforeClientStart } from '../../../services/complianceEngine';
 import { getClientServiceFee } from '../../../services/clientService';
 import { useToast } from '../../../context/ToastContext';
 import { extractDeclarationCifras, formatDeclarationSummary } from '../../../utils/declarationFormatter';
@@ -43,24 +44,28 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
     const isPopular = client.regime === TaxRegime.RimpeNegocioPopular ||
                       client.taxProfile?.ivaFrequency === 'Ninguno' ||
                       !!client.regime?.toLowerCase().includes('popular');
-    const needsIva = !isPopular && (complianceStats?.iva?.needed ?? (client.taxProfile?.ivaFrequency !== 'Ninguno'));
 
     // Extracción de obligaciones activas de complianceStats o del cliente
     const ivaData = complianceStats?.iva;
     const rentaData = complianceStats?.renta;
 
     const ivaPeriod = ivaData?.period || '';
-    const ivaDeclared = ivaData?.isDeclared || false;
-    const ivaPaid = ivaData?.is_paid || false;
+    const isIvaBeforeStart = !!ivaData?.isBeforeStart || (!!ivaPeriod && isPeriodBeforeClientStart(client, ivaPeriod));
+    const needsIva = !isPopular && (complianceStats?.iva?.needed ?? (client.taxProfile?.ivaFrequency !== 'Ninguno'));
+    const showIvaRow = (!isPopular && (client.taxProfile?.ivaFrequency !== 'Ninguno')) && !!ivaPeriod;
+
+    const ivaDeclared = isIvaBeforeStart || (ivaData?.isDeclared || false);
+    const ivaPaid = isIvaBeforeStart || (ivaData?.is_paid || false);
     const ivaDeclItem = (client.declarations || []).find(d => d.period === ivaPeriod);
     const isIvaAdvance = ivaPaid && (!!ivaDeclItem?.is_advance || isFuturePeriod(ivaPeriod));
 
     const rentaPeriod = rentaData?.period || '';
-    const rentaDeclared = rentaData?.isDeclared || false;
-    const rentaPaid = rentaData?.is_paid || false;
+    const isRentaBeforeStart = !!rentaData?.isBeforeStart || (!!rentaPeriod && isPeriodBeforeClientStart(client, rentaPeriod));
+    const rentaDeclared = isRentaBeforeStart || (rentaData?.isDeclared || false);
+    const rentaPaid = isRentaBeforeStart || (rentaData?.is_paid || false);
     const rentaDeclItem = (client.declarations || []).find(d => d.period === rentaPeriod);
 
-    const ivaFee = ivaPeriod ? getClientServiceFee(client, serviceFees, ivaPeriod) : 0;
+    const ivaFee = (ivaPeriod && !isIvaBeforeStart) ? getClientServiceFee(client, serviceFees, ivaPeriod) : 0;
     const rentaFee = client.fee_structure?.annual ?? 10;
 
     const triggerUpload = (type: string, period?: string) => {
@@ -189,11 +194,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                         {isPopular ? 'RIMPE Negocio Popular (Anual)' : (client.taxProfile?.ivaFrequency || 'Mensual')}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                        ((!needsIva || ivaPaid) && (!rentaData?.needed || rentaPaid))
+                        ((!needsIva || ivaPaid || isIvaBeforeStart) && (!rentaData?.needed || rentaPaid || isRentaBeforeStart))
                             ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
                             : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                     }`}>
-                        {((!needsIva || ivaPaid) && (!rentaData?.needed || rentaPaid)) ? '✓ Honorarios al Día' : '⚠ Cobro Pendiente'}
+                        {((!needsIva || ivaPaid || isIvaBeforeStart) && (!rentaData?.needed || rentaPaid || isRentaBeforeStart)) ? '✓ Honorarios al Día' : '⚠ Cobro Pendiente'}
                     </span>
                 </div>
             </div>
@@ -212,7 +217,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-xs font-medium">
                         {/* FILA 1: IVA (Solo para contribuyentes con obligación de IVA mensual o semestral) */}
-                        {needsIva && ivaPeriod && (
+                        {showIvaRow && (
                             <tr className="hover:bg-white/5 transition-all">
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
@@ -231,7 +236,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
 
                                 <td className="py-4 px-4">
-                                    {ivaDeclared ? (
+                                    {isIvaBeforeStart ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-500/15 text-slate-400 border border-slate-500/30 rounded-full text-[10px] font-bold">
+                                            <MinusCircle size={12} /> No Aplica · Inicia {formatPeriodForDisplay(client.clientStartPeriod || '')}
+                                        </span>
+                                    ) : ivaDeclared ? (
                                         <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-full text-[10px] font-bold shadow-[0_0_8px_rgba(0,168,150,0.2)]">
                                             <ShieldCheck size={12} /> Declarado
                                         </span>
@@ -243,7 +252,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
 
                                 <td className="py-4 px-4">
-                                    {ivaDeclItem?.proof_file ? (
+                                    {isIvaBeforeStart ? (
+                                        <span className="text-[11px] text-slate-500 font-mono italic">
+                                            No requerido
+                                        </span>
+                                    ) : ivaDeclItem?.proof_file ? (
                                         <button
                                             onClick={() => setPreviewItem && setPreviewItem(ivaDeclItem)}
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2B6AFF]/15 text-[#2B6AFF] hover:bg-[#2B6AFF]/25 border border-[#2B6AFF]/30 rounded-xl text-[10px] font-bold transition-all"
@@ -261,59 +274,76 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
 
                                 <td className="py-4 px-4 font-mono font-bold">
-                                    <div className="flex items-center gap-2">
-                                        <span className={ivaPaid ? 'text-[#00A896]' : 'text-white'}>
-                                            ${ivaFee.toFixed(2)}
-                                        </span>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase border ${
-                                            isIvaAdvance
-                                                ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
-                                                : ivaPaid
-                                                    ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
-                                                    : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                        }`}>
-                                            {isIvaAdvance ? '★ Prepago' : ivaPaid ? 'Pagado' : 'Pendiente'}
-                                        </span>
-                                    </div>
+                                    {isIvaBeforeStart ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-400">$0.00</span>
+                                            <span className="text-[9px] px-2 py-0.5 rounded-md uppercase border bg-slate-500/15 text-slate-400 border-slate-500/30 font-bold">
+                                                No Aplica
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <span className={ivaPaid ? 'text-[#00A896]' : 'text-white'}>
+                                                ${ivaFee.toFixed(2)}
+                                            </span>
+                                            <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase border ${
+                                                isIvaAdvance
+                                                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
+                                                    : ivaPaid
+                                                        ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                            }`}>
+                                                {isIvaAdvance ? '★ Prepago' : ivaPaid ? 'Pagado' : 'Pendiente'}
+                                            </span>
+                                        </div>
+                                    )}
                                 </td>
 
                                 <td className="py-4 px-6 text-right">
                                     <div className="flex items-center justify-end gap-2 font-mono">
-                                        {!ivaDeclared && (
-                                            <button
-                                                onClick={() => onDeclare(ivaPeriod)}
-                                                className="px-3.5 py-1.5 bg-gradient-to-r from-[#2B6AFF] to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#2B6AFF]/20 transition-all active:scale-95 border border-white/10"
-                                            >
-                                                Declarar
-                                            </button>
-                                        )}
+                                        {isIvaBeforeStart ? (
+                                            <span className="text-[10px] text-slate-400 font-medium italic">
+                                                Primer período: {formatPeriodForDisplay(client.clientStartPeriod || '')}
+                                            </span>
+                                        ) : (
+                                            <>
+                                                {!ivaDeclared && (
+                                                    <button
+                                                        onClick={() => onDeclare(ivaPeriod)}
+                                                        className="px-3.5 py-1.5 bg-gradient-to-r from-[#2B6AFF] to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#2B6AFF]/20 transition-all active:scale-95 border border-white/10"
+                                                    >
+                                                        Declarar
+                                                    </button>
+                                                )}
 
-                                        {!ivaPaid && (
-                                            <button
-                                                onClick={() => onQuickPay(ivaPeriod)}
-                                                className="px-3.5 py-1.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#00A896]/20 transition-all active:scale-95 flex items-center gap-1 border border-white/10"
-                                            >
-                                                <DollarSign size={12} /> Cobrar ${ivaFee.toFixed(2)}
-                                            </button>
-                                        )}
+                                                {!ivaPaid && (
+                                                    <button
+                                                        onClick={() => onQuickPay(ivaPeriod)}
+                                                        className="px-3.5 py-1.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#00A896]/20 transition-all active:scale-95 flex items-center gap-1 border border-white/10"
+                                                    >
+                                                        <DollarSign size={12} /> Cobrar ${ivaFee.toFixed(2)}
+                                                    </button>
+                                                )}
 
-                                        {onWhatsAppPaymentRequest && client.phones?.length && (
-                                            <button
-                                                onClick={() => onWhatsAppPaymentRequest(ivaPeriod, 'IVA')}
-                                                className="p-2 text-[#00A896] hover:bg-[#00A896]/15 rounded-xl border border-[#00A896]/30 transition-all"
-                                                title="Cobrar por WhatsApp"
-                                            >
-                                                <MessageCircle size={15} />
-                                            </button>
+                                                {onWhatsAppPaymentRequest && client.phones?.length && (
+                                                    <button
+                                                        onClick={() => onWhatsAppPaymentRequest(ivaPeriod, 'IVA')}
+                                                        className="p-2 text-[#00A896] hover:bg-[#00A896]/15 rounded-xl border border-[#00A896]/30 transition-all"
+                                                        title="Cobrar por WhatsApp"
+                                                    >
+                                                        <MessageCircle size={15} />
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </td>
                             </tr>
                         )}
-                        {ivaPeriod && ivaDeclItem && <DeclaredCifrasBar decl={ivaDeclItem} />}
+                        {ivaPeriod && !isIvaBeforeStart && ivaDeclItem && <DeclaredCifrasBar decl={ivaDeclItem} />}
 
                         {/* FILA 2: IMPUESTO A LA RENTA (Si aplica) */}
-                        {rentaData?.needed && (
+                        {rentaData?.needed && !isRentaBeforeStart && (
                             <tr className="hover:bg-white/5 transition-all">
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
@@ -399,7 +429,22 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
                             </tr>
                         )}
-                        {rentaData?.needed && rentaDeclItem && <DeclaredCifrasBar decl={rentaDeclItem} />}
+                        {rentaData?.needed && !isRentaBeforeStart && rentaDeclItem && <DeclaredCifrasBar decl={rentaDeclItem} />}
+                        {!showIvaRow && (!rentaData?.needed || isRentaBeforeStart) && (
+                            <tr>
+                                <td colSpan={5} className="py-8 text-center text-slate-400 font-mono text-xs">
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                        <CheckCircle2 size={24} className="text-[#00A896]" />
+                                        <p className="font-bold text-white">Sin obligaciones exigibles en este período</p>
+                                        {client.clientStartPeriod && (
+                                            <p className="text-[11px] text-slate-400">
+                                                Obligaciones inician a partir de: <strong className="text-[#00A896]">{formatPeriodForDisplay(client.clientStartPeriod)}</strong>
+                                            </p>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

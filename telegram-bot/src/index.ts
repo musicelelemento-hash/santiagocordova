@@ -480,6 +480,56 @@ bot.command('resumen', async (ctx) => {
     await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML', reply_markup: kb });
 });
 
+bot.command(['facturar', 'factura', 'emitir'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    const chatId = ctx.chat.id.toString();
+    const text = ctx.message?.text || '';
+    const args = text.split(/\s+/).slice(1);
+
+    if (args.length === 0) {
+        await showOperationalMenu(ctx);
+        return;
+    }
+
+    const query = args[0];
+    const clients = await findClients(query);
+    if (clients.length === 0) {
+        await ctx.reply(`🔍 No encontré ningún cliente que coincida con "${query}". Intenta con su RUC o parte de su nombre.`);
+        return;
+    }
+
+    const client = clients[0];
+    const amount = args[1] ? parseFloat(args[1].replace('$', '')) : 5.00;
+    const concept = args.slice(2).join(' ') || 'Servicios Profesionales de Asesoría Contable';
+
+    pendingDialogs.set(chatId, {
+        type: 'create_invoice',
+        chatId,
+        step: 'ask_invoice_payment_method',
+        client,
+        data: {
+            invoiceConcept: concept,
+            invoiceAmount: isNaN(amount) ? 5.00 : amount
+        }
+    });
+
+    const kb = new InlineKeyboard()
+        .text('💵 Efectivo (01)', 'baku_inv_pay:01').row()
+        .text('🏢 Transferencia / Depósito (20)', 'baku_inv_pay:20').row()
+        .text('💳 Tarjeta de Crédito (19)', 'baku_inv_pay:19').row()
+        .text('❌ Cancelar', 'baku_cancel');
+
+    await ctx.reply(
+        `🧾 <b>EMISIÓN DE FACTURA ELECTRÓNICA SRI (RENDER.COM)</b>\n\n` +
+        `👤 <b>Cliente:</b> ${client.name}\n` +
+        `🆔 <b>RUC:</b> <code>${client.ruc}</code>\n` +
+        `💰 <b>Monto:</b> $${(isNaN(amount) ? 5.00 : amount).toFixed(2)} USD\n` +
+        `📝 <b>Concepto:</b> ${concept}\n\n` +
+        `Selecciona la forma de pago para autorizar ante el SRI:`,
+        { parse_mode: 'HTML', reply_markup: kb }
+    );
+});
+
 bot.command('clear', async (ctx) => {
   if (ctx.chat) {
     await clearChatHistory(ctx.chat.id.toString());
@@ -2018,6 +2068,48 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_ocr_invoice:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const amount = parseFloat(parts[2]) || 5.00;
+
+        const clients = await findClients(ruc);
+        if (clients.length === 0) {
+            await ctx.reply("❌ No se encontró el cliente en la base de datos.");
+            return;
+        }
+        const client = clients[0];
+
+        pendingDialogs.set(chatId, {
+            type: 'create_invoice',
+            chatId,
+            step: 'ask_invoice_payment_method',
+            client,
+            data: {
+                invoiceConcept: 'Servicios Profesionales de Asesoría Contable',
+                invoiceAmount: amount
+            }
+        });
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+
+        const kb = new InlineKeyboard()
+            .text('🏢 Transferencia / Depósito (20)', `baku_inv_pay:20`).row()
+            .text('💵 Efectivo (01)', `baku_inv_pay:01`).row()
+            .text('💳 Tarjeta de Crédito (19)', `baku_inv_pay:19`).row()
+            .text('❌ Cancelar', `baku_cancel`);
+
+        await ctx.reply(
+            `🧾 <b>EMITIR FACTURA SRI — COMPROBANTE SMART VISION</b>\n\n` +
+            `👤 <b>Cliente:</b> ${client.name}\n` +
+            `🆔 <b>RUC:</b> <code>${client.ruc}</code>\n` +
+            `💰 <b>Monto Detectado:</b> $${amount.toFixed(2)} USD\n\n` +
+            `Elige la forma de pago para procesar la factura electrónica en Render.com:`,
+            { parse_mode: 'HTML', reply_markup: kb }
+        );
+        return;
+    }
+
     if (data.startsWith('baku_inv_pay:')) {
         const parts = data.split(':');
         const paymentCode = parts[1];
@@ -3113,6 +3205,7 @@ bot.on('message:photo', async (ctx) => {
             const kb = new InlineKeyboard();
             const amount = ocrResult.extracted?.amount || 0;
             kb.text(`✅ Registrar Pago ($${amount > 0 ? amount.toFixed(2) : 'OK'})`, `baku_ocr_pay:${ocrResult.client.ruc}:${amount}`).row();
+            kb.text(`🧾 Facturar SRI al Instante ($${amount > 0 ? amount.toFixed(2) : 'OK'})`, `baku_ocr_invoice:${ocrResult.client.ruc}:${amount}`).row();
             kb.text(`👤 Ver Expediente 360°`, `baku_hub_profile:${ocrResult.client.ruc}`);
             kb.text(`❌ Descartar`, 'baku_cancel');
 

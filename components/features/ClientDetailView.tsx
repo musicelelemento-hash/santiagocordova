@@ -22,6 +22,7 @@ import { sendToSRIExtension } from '../../services/extensionBridge';
 import { v4 as uuidv4 } from 'uuid';
 
 import { arePeriodsEqual } from './TaxComplianceMatrix';
+import { isPeriodBeforeClientStart } from '../../services/complianceEngine';
 import { ClientHeader } from './ClientDetail/ClientHeader';
 import { CopyButton } from './ClientDetail/CopyButton';
 import { VaultCard } from './ClientDetail/VaultCard';
@@ -255,20 +256,24 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         };
 
         const currentPeriod = getPeriod(editedClient, new Date());
+        const isCurrentPeriodBeforeStart = isPeriodBeforeClientStart(editedClient, currentPeriod);
         const decl = (editedClient.declarations || []).find(d => d.period === currentPeriod);
 
-        const isIvaPaid = !!decl?.is_paid;
+        const isIvaPaid = isCurrentPeriodBeforeStart || !!decl?.is_paid;
         const hasIvaProof = !!decl?.proof_file;
-        const isIvaDeclared = hasIvaProof || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
+        const isIvaDeclared = isCurrentPeriodBeforeStart || hasIvaProof || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
 
         const currentYear = getYear(new Date());
-        const needsRenta = editedClient.taxProfile?.requiresAnnualRenta ?? (editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular);
+        const rawNeedsRenta = editedClient.taxProfile?.requiresAnnualRenta ?? (editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular);
         const rentaPeriod = (currentYear - 1).toString();
+        const isRentaBeforeStart = isPeriodBeforeClientStart(editedClient, rentaPeriod);
+        const needsRenta = rawNeedsRenta && !isRentaBeforeStart;
         const rentaDecl = (editedClient.declarations || []).find(d => d.period === rentaPeriod);
 
-        const isRentaPaid = !!rentaDecl?.is_paid;
+        const isRentaPaid = !needsRenta || !!rentaDecl?.is_paid;
         const hasRentaProof = !!rentaDecl?.proof_file;
         const isRentaDeclared = (
+            !needsRenta ||
             hasRentaProof ||
             rentaDecl?.status === DeclarationStatus.Enviada ||
             rentaDecl?.status === DeclarationStatus.Pagada
@@ -281,12 +286,13 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             true // Handled generally
         );
 
-        const needsIva = requiresIva(editedClient);
-        const fullyPaid = (!needsIva || isIvaPaid) && (!needsRenta || isRentaPaid) && (!editedClient.taxProfile?.requiresIce || true) && (!editedClient.taxProfile?.requiresAnexoPvp || true);
-        const fullyDeclared = (!needsIva || isIvaDeclared) && (!needsRenta || isRentaDeclared) && isIceOk && isPvpOk;
+        const isIvaNeededForPeriod = requiresIva(editedClient) && !isCurrentPeriodBeforeStart;
+        const fullyPaid = (!isIvaNeededForPeriod || isIvaPaid) && (!needsRenta || isRentaPaid) && (!editedClient.taxProfile?.requiresIce || true) && (!editedClient.taxProfile?.requiresAnexoPvp || true);
+        const fullyDeclared = (!isIvaNeededForPeriod || isIvaDeclared) && (!needsRenta || isRentaDeclared) && isIceOk && isPvpOk;
 
         // --- CÁLCULO DE DEUDA Y DESGLOSE ---
-        const pending = (editedClient.declarations || []).filter(d => !d.is_paid);
+        // Excluir cualquier período anterior al inicio de obligaciones del cliente (clientStartPeriod)
+        const pending = (editedClient.declarations || []).filter(d => !d.is_paid && !isPeriodBeforeClientStart(editedClient, d.period));
         const debtBreakdown: { period: string; amount: number; status: string }[] = pending.map(d => ({
             period: d.period,
             amount: d.amount ?? getClientServiceFee(editedClient, serviceFees, d.period),
@@ -294,7 +300,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         }));
         let debt = debtBreakdown.reduce((sum, d) => sum + d.amount, 0);
 
-        // Add Renta debt if not paid and required
+        // Add Renta debt if not paid and required (only if fiscal period applies to this client)
         const rentaFee = editedClient.fee_structure?.annual ?? 10;
         if (needsRenta && !isRentaPaid) {
             debt += rentaFee;
@@ -324,7 +330,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const totalAdvanceBalance = totalPrepaid + clientAdvanceCredits;
         const sortedPrepaid = prepaid.sort((a, b) => a.period.localeCompare(b.period));
 
-        const sortedByPeriod = [...(editedClient.declarations || [])].sort((a, b) => a.period.localeCompare(b.period));
+        const sortedByPeriod = [...(editedClient.declarations || [])]
+            .filter(d => !isPeriodBeforeClientStart(editedClient, d.period))
+            .sort((a, b) => a.period.localeCompare(b.period));
         const activeWorkflowDeclaration = sortedByPeriod.find(d => d.status === DeclarationStatus.Pendiente) ||
             sortedByPeriod.find(d => d.status === DeclarationStatus.Enviada && !d.is_paid) || null;
 
@@ -341,18 +349,20 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             };
         }
 
-        let nextIvaPeriod = getPeriod(editedClient, new Date());
-        if (decl && decl.status === DeclarationStatus.Pagada) {
+        let nextIvaPeriod = currentPeriod;
+        if (isCurrentPeriodBeforeStart && editedClient.clientStartPeriod) {
+            nextIvaPeriod = editedClient.clientStartPeriod;
+        } else if (decl && decl.status === DeclarationStatus.Pagada) {
             nextIvaPeriod = getNextPeriod(nextIvaPeriod);
         }
-        const ivaDeadline = getDueDateForPeriod(editedClient, nextIvaPeriod);
+        const ivaDeadline = (isIvaNeededForPeriod || isCurrentPeriodBeforeStart) ? getDueDateForPeriod(editedClient, nextIvaPeriod) : null;
 
         let rentaTargetPeriod = rentaPeriod;
-        const isCurrentRentaDone = isRentaPaid && (isRentaDeclared || (rentaDecl && rentaDecl.status === DeclarationStatus.Pagada));
+        const isCurrentRentaDone = !needsRenta || (isRentaPaid && (isRentaDeclared || (rentaDecl && rentaDecl.status === DeclarationStatus.Pagada)));
         if (isCurrentRentaDone) {
             rentaTargetPeriod = currentYear.toString();
         }
-        let rentaDeadline = getDueDateForPeriod(editedClient, rentaTargetPeriod);
+        let rentaDeadline = needsRenta ? getDueDateForPeriod(editedClient, rentaTargetPeriod) : null;
 
         let nObligation = null;
         if (needsRenta && rentaDeadline && (!ivaDeadline || rentaDeadline.getTime() < ivaDeadline.getTime())) {
@@ -369,8 +379,23 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             isFullyPaid: fullyPaid,
             isFullyDeclared: fullyDeclared,
             complianceStats: {
-                iva: { period: currentPeriod, isDeclared: isIvaDeclared, is_paid: isIvaPaid, needed: requiresIva(editedClient), hasProofFile: hasIvaProof },
-                renta: { period: rentaPeriod, isDeclared: isRentaDeclared, is_paid: isRentaPaid, needed: needsRenta, hasProofFile: hasRentaProof }
+                iva: {
+                    period: currentPeriod,
+                    isDeclared: isIvaDeclared,
+                    is_paid: isIvaPaid,
+                    needed: isIvaNeededForPeriod,
+                    isBeforeStart: isCurrentPeriodBeforeStart,
+                    startPeriod: editedClient.clientStartPeriod,
+                    hasProofFile: hasIvaProof
+                },
+                renta: {
+                    period: rentaPeriod,
+                    isDeclared: isRentaDeclared,
+                    is_paid: isRentaPaid,
+                    needed: needsRenta,
+                    isBeforeStart: isRentaBeforeStart,
+                    hasProofFile: hasRentaProof
+                }
             },
             isWorkOrder: (!fullyDeclared && fullyPaid),
             isFullyAlDia: (fullyDeclared && fullyPaid),

@@ -45,7 +45,7 @@ async function logAuditAction(action: string, details: string, type: string, sev
     }
 }
 
-export async function findClients(query: string, selectFields: string) {
+export async function findClients(query: string, selectFields: string = '*') {
     let data: any[] | null = null;
     
     // Intento 1: Consulta estándar filtrando clientes no eliminados

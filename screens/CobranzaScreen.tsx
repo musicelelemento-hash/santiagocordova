@@ -24,6 +24,7 @@ import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
 import { getFacturacionApiToken } from '../services/facturacionApi';
 import { downloadStoredFile } from '../services/fileService';
+import { downloadRidePdf, viewRideInNewWindow, buildWhatsAppInvoiceUrl, RideComprobanteData } from '../services/rideService';
 
 interface CobranzaScreenProps {
     reminderConfigProp?: ReminderConfig;
@@ -87,6 +88,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         localStorage.setItem('sc_cobranza_view_mode', viewMode);
     }, [viewMode]);
 
+    useEffect(() => {
+        // Pre-calentar silenciosamente la API de facturación en Render para evitar cold-starts de 45s
+        const apiUrl = localStorage.getItem('sc_facturacion_api_url') || 'https://facturador-sri-api.onrender.com';
+        const apiToken = getFacturacionApiToken();
+        fetch(`${apiUrl}/api/v1/ping`, {
+            headers: { 'Authorization': apiToken }
+        }).catch(() => {});
+    }, []);
+
     const [selectedClientExpediente, setSelectedClientExpediente] = useState<any | null>(null);
 
     const [selectedCellAction, setSelectedCellAction] = useState<{
@@ -120,6 +130,413 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const [fastBillingError, setFastBillingError] = useState<string | null>(null);
     const [fastBillingXml, setFastBillingXml] = useState('');
     const [fastBillingAccessKey, setFastBillingAccessKey] = useState('');
+    const [fastBillingSecuencial, setFastBillingSecuencial] = useState('');
+
+    // Batch Billing States
+    const [isBatchBillingOpen, setIsBatchBillingOpen] = useState(false);
+    const [batchBillingProgress, setBatchBillingProgress] = useState<{ current: number; total: number; clientName: string }>({ current: 0, total: 0, clientName: '' });
+    const [batchBillingLogs, setBatchBillingLogs] = useState<string[]>([]);
+    const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+
+    /**
+     * Motor centralizado de Facturación Electrónica SRI (Render.com + XAdES-BES + SOAP)
+     * Resiliente a almacenamiento local con Auto-Hidratación Cloud desde Supabase (emisor_settings)
+     */
+    const emitSingleInvoiceCore = async (item: FinancialItem, logCb?: (msg: string) => void) => {
+        const log = (msg: string) => {
+            if (logCb) logCb(msg);
+        };
+
+        // 1. Obtener firma electrónica y clave (Local con Fallback Cloud automático)
+        log("Cargando firma electrónica (.p12) desde almacenamiento seguro...");
+        let p12Base64 = await db.getLocal('sc_sri_p12_base64');
+        let p12Password = await db.getLocal('sc_sri_p12_password') || localStorage.getItem('sc_sri_p12_password');
+
+        if (!p12Base64 || !p12Password) {
+            log("Sincronizando firma electrónica desde la nube (Supabase emisor_settings)...");
+            try {
+                const remote = await SupabaseService.getEmisorConfig();
+                if (remote?.p12Base64 && remote?.p12Password) {
+                    p12Base64 = remote.p12Base64;
+                    p12Password = remote.p12Password;
+                    await db.setLocal('sc_sri_p12_base64', p12Base64);
+                    await db.setLocal('sc_sri_p12_password', p12Password);
+                    localStorage.setItem('sc_sri_p12_password', p12Password);
+                    if (remote.emisorRuc) localStorage.setItem('sc_emisor_ruc', remote.emisorRuc);
+                    if (remote.emisorRazonSocial) localStorage.setItem('sc_emisor_razon', remote.emisorRazonSocial);
+                    if (remote.emisorNombreComercial) localStorage.setItem('sc_emisor_comercial', remote.emisorNombreComercial);
+                    if (remote.emisorDirMatriz) localStorage.setItem('sc_emisor_dir', remote.emisorDirMatriz);
+                    if (remote.emisorEstab) localStorage.setItem('sc_emisor_estab', remote.emisorEstab);
+                    if (remote.emisorPtoEmi) localStorage.setItem('sc_emisor_pto', remote.emisorPtoEmi);
+                    if (remote.emisorRegimen) localStorage.setItem('sc_emisor_regimen', remote.emisorRegimen);
+                    if (remote.ambiente) localStorage.setItem('sc_emisor_ambiente', remote.ambiente);
+                    log("Firma electrónica y emisor recuperados y sincronizados desde la nube con éxito.");
+                } else {
+                    throw new Error("No se encontró una firma electrónica (.p12) cargada en el sistema o su clave. Por favor, ve al módulo de Facturación SRI y carga tu firma en Configuración primero.");
+                }
+            } catch (err: any) {
+                throw new Error(err.message || "No se pudo recuperar la firma electrónica desde la nube.");
+            }
+        }
+
+        // 2. Obtener configuraciones del emisor y API
+        const emisorRuc = localStorage.getItem('sc_emisor_ruc') || '0705787745001';
+        const emisorRazonSocial = localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIGO';
+        const emisorNombreComercial = localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES CONTABLES PRO';
+        const emisorDirMatriz = localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro';
+        const emisorEstab = localStorage.getItem('sc_emisor_estab') || '001';
+        const emisorPtoEmi = localStorage.getItem('sc_emisor_pto') || '001';
+        const emisorRegimen = localStorage.getItem('sc_emisor_regimen') || '3'; // 3 = RIMPE Popular
+        const ambiente = localStorage.getItem('sc_emisor_ambiente') || '1'; // 1 = Pruebas
+        const apiUrl = localStorage.getItem('sc_facturacion_api_url') || 'https://facturador-sri-api.onrender.com';
+        const apiPrefix = '/api/v1';
+        const apiToken = getFacturacionApiToken();
+
+        // Validar que la API responda / ping
+        log(`Verificando conectividad con servidor de firmas: ${apiUrl}...`);
+        const pingRes = await fetch(`${apiUrl}${apiPrefix}/ping`, {
+            headers: { 'Authorization': apiToken }
+        }).catch(() => null);
+
+        const isMock = !pingRes || !pingRes.ok;
+        if (isMock) {
+            log("Servidor de firmas no disponible en Render, ejecutando en Modo Simulado (Sandbox)...");
+        } else {
+            log("Conexión con servidor de firmas establecida con éxito.");
+        }
+
+        // 3. Generar secuencial y clave de acceso
+        let nextNum = 0;
+        try {
+            nextNum = await SupabaseService.getNextSriSecuencial('factura');
+        } catch (err: any) {
+            throw new Error("Error obteniendo el siguiente secuencial desde la base de datos.");
+        }
+        const secuencial = String(nextNum).padStart(9, '0');
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const cleanFecha = todayStr.replace(/-/g, '');
+        const dStr = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4);
+        const baseKey = dStr + '01' + emisorRuc + ambiente + emisorEstab + emisorPtoEmi + secuencial.padStart(9, '0') + '123456781';
+        
+        let sum = 0;
+        let factor = 2;
+        for (let i = baseKey.length - 1; i >= 0; i--) {
+            sum += parseInt(baseKey[i], 10) * factor;
+            factor = factor === 7 ? 2 : factor + 1;
+        }
+        const remainder = sum % 11;
+        let checkDigit = 11 - remainder;
+        if (checkDigit === 11) checkDigit = 0;
+        if (checkDigit === 10) checkDigit = 1;
+        const key = baseKey + checkDigit;
+        log(`Clave de Acceso generada: ${key}`);
+
+        // 4. Formular payload para el XML
+        const clientObj = clients.find(c => c.id === item.clientId);
+        const buyerName = clientObj?.name || item.clientName;
+        const buyerRuc = clientObj?.ruc || item.ruc;
+        const buyerEmail = clientObj?.email || 'cliente@santiagocordova.com';
+        const buyerPhone = clientObj?.phones?.[0] || '';
+        const buyerAddress = clientObj?.address || 'Ecuador';
+        const buyerIdType = buyerRuc.length === 13 ? '04' : '05';
+
+        const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
+        const subtotalVal = item.amount;
+        const ivaVal = Number((subtotalVal * currentIvaRate).toFixed(2));
+        const totalVal = Number((subtotalVal + ivaVal).toFixed(2));
+
+        const payload = {
+            tipo: 'factura',
+            data: {
+                infoTributaria: {
+                    ambiente,
+                    tipoEmision: '1',
+                    razonSocial: emisorRazonSocial,
+                    nombreComercial: emisorNombreComercial,
+                    ruc: emisorRuc,
+                    claveAcceso: key,
+                    codDoc: '01',
+                    estab: emisorEstab,
+                    ptoEmi: emisorPtoEmi,
+                    secuencial,
+                    dirMatriz: emisorDirMatriz,
+                    regimen: emisorRegimen
+                },
+                infoFactura: {
+                    fechaEmision: todayStr.split('-').reverse().join('/'),
+                    dirEstablecimiento: emisorDirMatriz,
+                    obligadoContabilidad: 'NO',
+                    tipoIdentificacionComprador: buyerIdType,
+                    razonSocialComprador: buyerName,
+                    identificacionComprador: buyerRuc,
+                    direccionComprador: buyerAddress,
+                    totalSinImpuestos: subtotalVal.toFixed(2),
+                    totalDescuento: '0.00',
+                    totalConImpuestos: [
+                        {
+                            codigo: '2',
+                            codigoPorcentaje: currentIvaRate === 0.00 ? '0' : '4',
+                            baseImponible: subtotalVal.toFixed(2),
+                            valor: ivaVal.toFixed(2)
+                        }
+                    ],
+                    propina: '0.00',
+                    importeTotal: totalVal.toFixed(2),
+                    moneda: 'DOLAR',
+                    pagos: [
+                        {
+                            formaPago: '20',
+                            total: totalVal.toFixed(2),
+                            plazo: '0',
+                            unidadTiempo: 'dias'
+                        }
+                    ]
+                },
+                detalles: [
+                    {
+                        codigoPrincipal: '001',
+                        descripcion: `Servicios Contables y Asesoría Tributaria - Período ${item.period}`,
+                        cantidad: '1.00',
+                        precioUnitario: subtotalVal.toFixed(2),
+                        descuento: '0.00',
+                        precioTotalSinImpuesto: subtotalVal.toFixed(2),
+                        impuestos: [
+                            {
+                                codigo: '2',
+                                codigoPorcentaje: currentIvaRate === 0.00 ? '0' : '4',
+                                tarifa: currentIvaRate === 0.00 ? '0' : '15',
+                                baseImponible: subtotalVal.toFixed(2),
+                                valor: ivaVal.toFixed(2)
+                            }
+                        ]
+                    }
+                ],
+                infoAdicional: {
+                    campoAdicional: [
+                        { name: 'RUC Proveedor', value: localStorage.getItem('sc_software_provider_ruc') || '0705787745001' },
+                        { name: 'Email', value: buyerEmail },
+                        { name: 'Telefono', value: buyerPhone || '0999999999' }
+                    ]
+                }
+            }
+        };
+
+        // 5 & 6. Generar y Firmar XML
+        let currentXml = '';
+        log("Generando y firmando XML digitalmente (XAdES-BES)...");
+
+        if (isMock) {
+            currentXml = `<?xml version="1.0" encoding="UTF-8"?>\n<factura id="comprobante" version="1.0.0">\n  <infoTributaria>\n    <ambiente>${ambiente}</ambiente>\n    <ruc>${emisorRuc}</ruc>\n    <claveAcceso>${key}</claveAcceso>\n    <secuencial>${secuencial}</secuencial>\n    <Signature>\n      <SignatureValue>SIMULADO</SignatureValue>\n    </Signature>\n  </infoTributaria>\n</factura>`;
+            log("XML generado y firmado correctamente (SIMULADO).");
+        } else {
+            const activeBase64 = p12Base64 || (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
+            const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || '';
+
+            // Intentar endpoint agrupado /facturacion/generar-firmar en Render
+            let signedSuccess = false;
+            try {
+                const genSignRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/generar-firmar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
+                    body: JSON.stringify({
+                        tipo: 'factura',
+                        data: payload.data,
+                        certificado_p12_base64: activeBase64,
+                        clave: activePassword
+                    })
+                });
+                if (genSignRes.ok) {
+                    const genSignData = await genSignRes.json();
+                    if (genSignData.status && genSignData.data?.xml) {
+                        currentXml = genSignData.data.xml;
+                        signedSuccess = true;
+                        log("XML generado y firmado en Render con éxito (1 round-trip).");
+                    }
+                }
+            } catch (e) {
+                console.warn('[Cobranza] Fallback a endpoints individuales:', e);
+            }
+
+            // Fallback a endpoints individuales
+            if (!signedSuccess) {
+                log("Generando XML en backend...");
+                const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/xml`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': apiToken 
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const resData = await response.json().catch(() => null);
+                if (!response.ok || (resData && resData.status === false)) {
+                    let errDetail = resData?.message || resData?.error || response.statusText;
+                    throw new Error(`Error en API al generar XML: ${errDetail}`);
+                }
+                currentXml = resData.data?.xml || resData.xml;
+
+                log("Firmando XML digitalmente...");
+                const signRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
+                    body: JSON.stringify({
+                        tipo: 'factura',
+                        xml: currentXml,
+                        clave: activePassword,
+                        certificado_p12_base64: activeBase64
+                    })
+                });
+                if (!signRes.ok) {
+                    const errJson = await signRes.json().catch(() => ({}));
+                    throw new Error(`Error al firmar: ${errJson.message || signRes.statusText}`);
+                }
+                const signData = await signRes.json();
+                currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
+                log("XML firmado con éxito.");
+            }
+        }
+
+        // 7. Enviar al SRI Recepción
+        log("Conectando con el Web Service de Recepción del SRI...");
+        if (isMock) {
+            log("SRI Recepción: RECIBIDO / DEVUELTA (SIMULADO).");
+        } else {
+            let sendSuccess = false;
+            let lastSendError = '';
+
+            for (let sendAttempt = 1; sendAttempt <= 3; sendAttempt++) {
+                if (sendAttempt > 1) {
+                    log(`Reintentando envío a Recepción SRI (Intento ${sendAttempt}/3)...`);
+                    await new Promise(r => setTimeout(r, 2500));
+                }
+
+                try {
+                    const sendRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
+                        body: JSON.stringify({ xml: currentXml, ambiente })
+                    });
+
+                    if (!sendRes.ok) {
+                        const errJson = await sendRes.json().catch(() => ({}));
+                        throw new Error(errJson.message || errJson.error || sendRes.statusText);
+                    }
+
+                    const sendData = await sendRes.json();
+                    sendSuccess = true;
+                    log(`SRI Recepción: Recibido satisfactoriamente.`);
+
+                    const sendResultStr = JSON.stringify(sendData).toUpperCase();
+                    if (sendResultStr.includes('"ESTADO":"DEVUELTA"') || sendResultStr.includes('ESTADO:DEVUELTA')) {
+                        if (sendResultStr.includes('REGISTRADA') || sendResultStr.includes('PROCESO') || sendResultStr.includes('AUTORIZADO')) {
+                            log("ℹ️ Comprobante ya registrado previamente en SRI. Procediendo a autorizar...");
+                        }
+                    }
+                    break;
+                } catch (e: any) {
+                    lastSendError = e.message || 'Error de conexión con Recepción SRI';
+                    log(`⚠️ Recepción SRI intento ${sendAttempt}/3: ${lastSendError}`);
+                }
+            }
+
+            if (!sendSuccess) {
+                throw new Error(`Fallo de conexión al SRI Recepción: ${lastSendError}`);
+            }
+        }
+
+        // 8. Autorizar con sondeo
+        log("Solicitando autorización de comprobante al SRI...");
+        let isAuthorized = false;
+        let errorMsg = '';
+
+        if (isMock) {
+            isAuthorized = true;
+            log("SRI Autorización: AUTORIZADO (SIMULADO).");
+        } else {
+            for (let attempt = 1; attempt <= 5; attempt++) {
+                if (attempt > 1) {
+                    log(`Esperando procesamiento del SRI (Intento ${attempt}/5)...`);
+                    await new Promise(r => setTimeout(r, 2500));
+                }
+
+                try {
+                    const authRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
+                        body: JSON.stringify({ clave_acceso: key, ambiente })
+                    });
+
+                    if (authRes.ok) {
+                        const authData = await authRes.json();
+                        const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
+                        const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
+
+                        if (authData.status && uppercaseData.includes('ESTADO:AUTORIZADO')) {
+                            isAuthorized = true;
+                            log("SRI Autorización: AUTORIZADO.");
+                            break;
+                        } else if (uppercaseData.includes('ESTADO:NOAUTORIZADO') || uppercaseData.includes('ESTADO:DEVUELTA')) {
+                            errorMsg = 'No autorizado por el SRI';
+                            break;
+                        }
+                    }
+                } catch (e: any) {
+                    log(`⚠️ Intento ${attempt}/5 consulta SRI: ${e.message}`);
+                }
+            }
+
+            if (!isAuthorized) {
+                errorMsg = errorMsg || 'No autorizado por el SRI (Tiempo de espera agotado o en proceso)';
+                log("SRI Autorización: PENDIENTE / ERROR.");
+            }
+        }
+
+        // 9. Guardar historial
+        const newRecord = {
+            id: Date.now().toString(),
+            tipo: 'factura',
+            secuencial,
+            claveAcceso: key,
+            rucReceptor: buyerRuc,
+            nombreReceptor: buyerName,
+            fechaEmision: todayStr,
+            total: totalVal,
+            estado: isAuthorized ? 'Autorizado' : 'Error',
+            xml: currentXml,
+            ambiente,
+            mensajeError: isAuthorized ? undefined : errorMsg
+        };
+
+        const currentHistory = await db.getLocal('sc_sri_comprobantes_history') || [];
+        const updatedHistory = [newRecord, ...currentHistory];
+        await db.setLocal('sc_sri_comprobantes_history', updatedHistory);
+        await SupabaseService.upsertSriComprobante(newRecord).catch(() => {});
+
+        if (!isAuthorized) {
+            throw new Error(errorMsg || "Comprobante emitido con errores.");
+        }
+
+        // 10. Marcar como pagada en el cliente
+        const nowIso = new Date().toISOString();
+        setClients(prev => {
+            const newClients = [...prev];
+            const clientIdx = newClients.findIndex(c => c.id === item.clientId);
+            if (clientIdx > -1) {
+                const decls = [...(newClients[clientIdx].declarations ?? [])];
+                const declIdx = decls.findIndex(d => d.period === item.period);
+                const entry = { period: item.period, status: DeclarationStatus.Pagada, is_paid: true, paidAt: nowIso, transactionId: `PAY-${key.slice(-6)}`, amount: item.amount, updatedAt: nowIso };
+                if (declIdx > -1) decls[declIdx] = { ...decls[declIdx], ...entry };
+                else decls.push(entry as any);
+                newClients[clientIdx] = { ...newClients[clientIdx], declarations: decls, updatedAt: nowIso };
+                store.updateClient(item.clientId, { declarations: decls });
+            }
+            return newClients;
+        });
+
+        return { key, secuencial, currentXml, isAuthorized, buyerName, buyerPhone };
+    };
 
     const handleEmitFastInvoice = async (item: FinancialItem) => {
         setFastBillingItem(item);
@@ -136,382 +553,16 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         addLog(`Iniciando emisión rápida de Factura SRI para ${item.clientName}...`);
 
         try {
-            // 1. Obtener firma electrónica y clave desde IndexedDB
-            addLog("Cargando firma electrónica (.p12) desde almacenamiento seguro local...");
-            const p12Base64 = await db.getLocal('sc_sri_p12_base64');
-            const p12Password = await db.getLocal('sc_sri_p12_password');
-
-            if (!p12Base64 || !p12Password) {
-                throw new Error("No se encontró una firma electrónica (.p12) cargada en el sistema o su clave. Por favor, ve al módulo de Facturación SRI y carga tu firma en Configuración primero.");
-            }
-
-            // 2. Obtener configuraciones del emisor y API
-            const emisorRuc = localStorage.getItem('sc_emisor_ruc') || '0705787745001';
-            const emisorRazonSocial = localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIGO';
-            const emisorNombreComercial = localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES CONTABLES PRO';
-            const emisorDirMatriz = localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro';
-            const emisorEstab = localStorage.getItem('sc_emisor_estab') || '001';
-            const emisorPtoEmi = localStorage.getItem('sc_emisor_pto') || '001';
-            const emisorRegimen = localStorage.getItem('sc_emisor_regimen') || '3'; // 3 = RIMPE Popular
-            const ambiente = localStorage.getItem('sc_emisor_ambiente') || '1'; // 1 = Pruebas
-            const apiUrl = localStorage.getItem('sc_facturacion_api_url') || 'https://facturador-sri-api.onrender.com';
-            const apiPrefix = '/api/v1';
-            const apiToken = getFacturacionApiToken();
-
-            // Validar que la API responda / ping
-            addLog(`Verificando conectividad con servidor de firmas: ${apiUrl}...`);
-            const pingRes = await fetch(`${apiUrl}${apiPrefix}/ping`, {
-                headers: { 'Authorization': apiToken }
-            }).catch(() => null);
-
-            const isMock = !pingRes || !pingRes.ok;
-            if (isMock) {
-                addLog("Servidor de firmas no disponible en Render, ejecutando en Modo Simulado (Sandbox)...");
-            } else {
-                addLog("Conexión con servidor de firmas establecida con éxito.");
-            }
-
-            // 3. Generar secuencial y clave de acceso
-            let nextNum = 0;
-            try {
-                nextNum = await SupabaseService.getNextSriSecuencial('factura');
-            } catch (err: any) {
-                addLog("Error obteniendo el siguiente secuencial desde la base de datos.");
-                setFastBillingStep('failed');
-                return;
-            }
-            const secuencial = String(nextNum).padStart(9, '0');
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            const cleanFecha = todayStr.replace(/-/g, '');
-            const dStr = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4);
-            const baseKey = dStr + '01' + emisorRuc + ambiente + emisorEstab + emisorPtoEmi + secuencial.padStart(9, '0') + '123456781';
-            
-            let sum = 0;
-            let factor = 2;
-            for (let i = baseKey.length - 1; i >= 0; i--) {
-                sum += parseInt(baseKey[i], 10) * factor;
-                factor = factor === 7 ? 2 : factor + 1;
-            }
-            const remainder = sum % 11;
-            let checkDigit = 11 - remainder;
-            if (checkDigit === 11) checkDigit = 0;
-            if (checkDigit === 10) checkDigit = 1;
-            const key = baseKey + checkDigit;
-            setFastBillingAccessKey(key);
-            addLog(`Clave de Acceso generada: ${key}`);
-
-            // 4. Formular payload para el XML
-            const clientObj = clients.find(c => c.id === item.clientId);
-            const buyerName = clientObj?.name || item.clientName;
-            const buyerRuc = clientObj?.ruc || item.ruc;
-            const buyerEmail = clientObj?.email || 'cliente@santiagocordova.com';
-            const buyerPhone = clientObj?.phones?.[0] || '';
-            const buyerAddress = clientObj?.address || 'Ecuador';
-            const buyerIdType = buyerRuc.length === 13 ? '04' : '05';
-
-            const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
-            const subtotalVal = item.amount;
-            const ivaVal = Number((subtotalVal * currentIvaRate).toFixed(2));
-            const totalVal = Number((subtotalVal + ivaVal).toFixed(2));
-
-            const payload = {
-                tipo: 'factura',
-                data: {
-                    infoTributaria: {
-                        ambiente,
-                        tipoEmision: '1',
-                        razonSocial: emisorRazonSocial,
-                        nombreComercial: emisorNombreComercial,
-                        ruc: emisorRuc,
-                        claveAcceso: key,
-                        codDoc: '01',
-                        estab: emisorEstab,
-                        ptoEmi: emisorPtoEmi,
-                        secuencial,
-                        dirMatriz: emisorDirMatriz,
-                        regimen: emisorRegimen
-                    },
-                    infoFactura: {
-                        fechaEmision: todayStr.split('-').reverse().join('/'),
-                        dirEstablecimiento: emisorDirMatriz,
-                        obligadoContabilidad: 'NO',
-                        tipoIdentificacionComprador: buyerIdType,
-                        razonSocialComprador: buyerName,
-                        identificacionComprador: buyerRuc,
-                        direccionComprador: buyerAddress,
-                        totalSinImpuestos: subtotalVal.toFixed(2),
-                        totalDescuento: '0.00',
-                        totalConImpuestos: [
-                            {
-                                codigo: '2',
-                                codigoPorcentaje: currentIvaRate === 0.00 ? '0' : '4',
-                                baseImponible: subtotalVal.toFixed(2),
-                                valor: ivaVal.toFixed(2)
-                            }
-                        ],
-                        propina: '0.00',
-                        importeTotal: totalVal.toFixed(2),
-                        moneda: 'DOLAR',
-                        pagos: [
-                            {
-                                formaPago: '20',
-                                total: totalVal.toFixed(2),
-                                plazo: '0',
-                                unidadTiempo: 'dias'
-                            }
-                        ]
-                    },
-                    detalles: [
-                        {
-                            codigoPrincipal: '001',
-                            descripcion: `Servicios Contables y Asesoría Tributaria - Período ${item.period}`,
-                            cantidad: '1.00',
-                            precioUnitario: subtotalVal.toFixed(2),
-                            descuento: '0.00',
-                            precioTotalSinImpuesto: subtotalVal.toFixed(2),
-                            impuestos: [
-                                {
-                                    codigo: '2',
-                                    codigoPorcentaje: currentIvaRate === 0.00 ? '0' : '4',
-                                    tarifa: currentIvaRate === 0.00 ? '0' : '15',
-                                    baseImponible: subtotalVal.toFixed(2),
-                                    valor: ivaVal.toFixed(2)
-                                }
-                            ]
-                        }
-                    ],
-                    infoAdicional: {
-                        campoAdicional: [
-                            { name: 'RUC Proveedor', value: localStorage.getItem('sc_software_provider_ruc') || '0705787745001' },
-                            { name: 'Email', value: buyerEmail },
-                            { name: 'Telefono', value: buyerPhone || '0999999999' }
-                        ]
-                    }
-                }
-            };
-
-            // 5. Paso 1: Generar XML
-            let currentXml = '';
-            addLog("Generando XML del comprobante...");
-            if (isMock) {
-                currentXml = `<?xml version="1.0" encoding="UTF-8"?>\n<factura id="comprobante" version="1.0.0">\n  <infoTributaria>\n    <ambiente>${ambiente}</ambiente>\n    <ruc>${emisorRuc}</ruc>\n    <claveAcceso>${key}</claveAcceso>\n    <secuencial>${secuencial}</secuencial>\n  </infoTributaria>\n</factura>`;
-                setFastBillingXml(currentXml);
-                addLog("XML generado correctamente (SIMULADO).");
-            } else {
-                const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/xml`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': apiToken 
-                    },
-                    body: JSON.stringify(payload)
-                });
-                const resData = await response.json().catch(() => null);
-                if (!response.ok || (resData && resData.status === false)) {
-                    let errDetail = '';
-                    if (resData) {
-                        errDetail = resData.message || resData.error || resData.msg || '';
-                        if (resData.errors && typeof resData.errors === 'object') {
-                            errDetail += ' -> ' + Object.entries(resData.errors)
-                                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-                                .join(' | ');
-                        }
-                    }
-                    if (!errDetail) errDetail = response.statusText || `Código HTTP ${response.status}`;
-                    throw new Error(`Error en API al generar XML: ${errDetail}`);
-                }
-                currentXml = resData.data?.xml || resData.xml;
-                setFastBillingXml(currentXml);
-                addLog("XML generado exitosamente en el backend.");
-            }
-
-            // 6. Paso 2: Firmar XML
             setFastBillingStep('signing');
-            addLog("Firmando XML digitalmente usando certificado .p12 (XAdES-BES)...");
-            if (isMock) {
-                currentXml = currentXml.replace('</infoTributaria>', `</infoTributaria>\n  <Signature>\n    <SignatureValue>SIMULADO</SignatureValue>\n  </Signature>`);
-                setFastBillingXml(currentXml);
-                addLog("Firma digital realizada exitosamente (SIMULADA).");
-            } else {
-                const activeBase64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
-                const activePassword = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
-                
-                if (!activeBase64) {
-                    throw new Error("No se encontró el archivo de Firma Electrónica (.p12). Configúralo en Facturación SRI.");
-                }
-
-                const signRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
-                    body: JSON.stringify({
-                        tipo: 'factura',
-                        xml: currentXml,
-                        clave: activePassword,
-                        clave_certificado: activePassword,
-                        certificado_p12_base64: activeBase64
-                    })
-                });
-
-                if (!signRes.ok) {
-                    let errDetail = signRes.statusText;
-                    try {
-                        const errJson = await signRes.json();
-                        errDetail = errJson.message || errJson.error || errJson.msg || errDetail;
-                    } catch {}
-                    throw new Error(`Error al firmar digitalmente: ${errDetail}`);
-                }
-
-                const signData = await signRes.json();
-                currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
-                setFastBillingXml(currentXml);
-                addLog("XML firmado digitalmente con éxito.");
-            }
-
-            // 7. Paso 3: Enviar al SRI
-            setFastBillingStep('sending');
-            addLog("Conectando con el Web Service de Recepción del SRI...");
-            if (isMock) {
-                addLog("SRI Recepción: RECIBIDO / DEVUELTA (SIMULADO).");
-            } else {
-                let sendSuccess = false;
-                let lastSendError = '';
-
-                for (let sendAttempt = 1; sendAttempt <= 3; sendAttempt++) {
-                    if (sendAttempt > 1) {
-                        addLog(`Reintentando envío a Recepción SRI (Intento ${sendAttempt}/3)...`);
-                        await new Promise(r => setTimeout(r, 2500));
-                    }
-
-                    try {
-                        const sendRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
-                            body: JSON.stringify({ xml: currentXml, ambiente })
-                        });
-
-                        if (!sendRes.ok) {
-                            let errorDetail = '';
-                            try {
-                                const errJson = await sendRes.json();
-                                errorDetail = errJson.message || errJson.error || JSON.stringify(errJson);
-                            } catch {
-                                errorDetail = await sendRes.text();
-                            }
-                            throw new Error(errorDetail || sendRes.statusText || `HTTP ${sendRes.status}`);
-                        }
-
-                        const sendData = await sendRes.json();
-                        sendSuccess = true;
-                        addLog(`SRI Recepción: Recibido satisfactoriamente.`);
-
-                        const sendResultStr = JSON.stringify(sendData).toUpperCase();
-                        if (sendResultStr.includes('"ESTADO":"DEVUELTA"') || sendResultStr.includes('ESTADO:DEVUELTA')) {
-                            if (sendResultStr.includes('REGISTRADA') || sendResultStr.includes('PROCESO') || sendResultStr.includes('AUTORIZADO')) {
-                                addLog("ℹ️ Comprobante ya registrado previamente en SRI. Procediendo a autorizar...");
-                            }
-                        }
-                        break;
-                    } catch (e: any) {
-                        lastSendError = e.message || 'Error de conexión con Recepción SRI';
-                        addLog(`⚠️ Recepción SRI intento ${sendAttempt}/3: ${lastSendError}`);
-                    }
-                }
-
-                if (!sendSuccess) {
-                    throw new Error(`Fallo de conexión al SRI Recepción: ${lastSendError}`);
-                }
-            }
-
-            // 8. Paso 4: Autorizar con sondeo
-            setFastBillingStep('authorizing');
-            addLog("Solicitando autorización de comprobante al SRI...");
-            let isAuthorized = false;
-            let errorMsg = '';
-
-            if (isMock) {
-                isAuthorized = true;
-                addLog("SRI Autorización: AUTORIZADO (SIMULADO).");
-            } else {
-                for (let attempt = 1; attempt <= 5; attempt++) {
-                    if (attempt > 1) {
-                        addLog(`Esperando procesamiento del SRI (Intento ${attempt}/5)...`);
-                        await new Promise(r => setTimeout(r, 2500));
-                    }
-
-                    try {
-                        const authRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': apiToken },
-                            body: JSON.stringify({ clave_acceso: key, ambiente })
-                        });
-
-                        if (authRes.ok) {
-                            const authData = await authRes.json();
-                            const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
-                            const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
-
-                            if (authData.status && uppercaseData.includes('ESTADO:AUTORIZADO')) {
-                                isAuthorized = true;
-                                addLog("SRI Autorización: AUTORIZADO.");
-                                break;
-                            } else if (uppercaseData.includes('ESTADO:NOAUTORIZADO') || uppercaseData.includes('ESTADO:DEVUELTA')) {
-                                errorMsg = 'No autorizado por el SRI';
-                                break;
-                            }
-                        }
-                    } catch (e: any) {
-                        addLog(`⚠️ Intento ${attempt}/5 consulta SRI: ${e.message}`);
-                    }
-                }
-
-                if (!isAuthorized) {
-                    errorMsg = errorMsg || 'No autorizado por el SRI (Tiempo de espera agotado o en proceso)';
-                    addLog("SRI Autorización: PENDIENTE / ERROR.");
-                }
-            }
-
-            // 9. Guardar historial
-            const newRecord = {
-                id: Date.now().toString(),
-                tipo: 'factura',
-                secuencial,
-                claveAcceso: key,
-                rucReceptor: buyerRuc,
-                nombreReceptor: buyerName,
-                fechaEmision: todayStr,
-                total: totalVal,
-                estado: isAuthorized ? 'Autorizado' : 'Error',
-                xml: currentXml,
-                ambiente,
-                mensajeError: isAuthorized ? undefined : errorMsg
-            };
-
-            const currentHistory = await db.getLocal('sc_sri_comprobantes_history') || [];
-            const updatedHistory = [newRecord, ...currentHistory];
-            await db.setLocal('sc_sri_comprobantes_history', updatedHistory);
-            await SupabaseService.upsertSriComprobante(newRecord).catch(() => {});
-
-            if (!isAuthorized) {
-                throw new Error(errorMsg || "Comprobante emitido con errores.");
-            }
-
-            // 10. Marcar como pagada
-            setClients(prev => {
-                const newClients = [...prev];
-                const clientIdx = newClients.findIndex(c => c.id === item.clientId);
-                if (clientIdx > -1) {
-                    const decls = [...(newClients[clientIdx].declarations ?? [])];
-                    const declIdx = decls.findIndex(d => d.period === item.period);
-                    const entry = { period: item.period, status: DeclarationStatus.Pagada, paidAt: new Date().toISOString(), transactionId: `PAY-${key.slice(-6)}`, amount: item.amount, updatedAt: new Date().toISOString() };
-                    if (declIdx > -1) decls[declIdx] = { ...decls[declIdx], ...entry };
-                    else decls.push(entry as any);
-                    newClients[clientIdx] = { ...newClients[clientIdx], declarations: decls };
-                }
-                return newClients;
+            const result = await emitSingleInvoiceCore(item, (msg) => {
+                if (msg.includes('Recepción')) setFastBillingStep('sending');
+                if (msg.includes('autorización')) setFastBillingStep('authorizing');
+                addLog(msg);
             });
 
+            setFastBillingAccessKey(result.key);
+            setFastBillingSecuencial(result.secuencial);
+            setFastBillingXml(result.currentXml);
             setFastBillingStep('success');
             addLog("¡Factura emitida, firmada y autorizada por el SRI exitosamente! (Éxito)");
             toast.success("Factura SRI emitida y autorizada correctamente.");
@@ -521,6 +572,68 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             setFastBillingError(err.message);
             addLog(`Error en el proceso: ${err.message}`);
             toast.error(err.message);
+        }
+    };
+
+    /**
+     * Facturación masiva en Lote para operaciones seleccionadas
+     */
+    const handleEmitBatchInvoices = async () => {
+        if (selectedItems.size === 0) return;
+        setIsBatchBillingOpen(true);
+        setIsBatchProcessing(true);
+        setBatchBillingLogs([]);
+
+        const itemsToProcess: FinancialItem[] = [];
+        selectedItems.forEach(key => {
+            const resolved = getItemFromKey(key);
+            if (resolved) {
+                itemsToProcess.push((resolved.item || {
+                    clientId: resolved.client.id,
+                    clientName: resolved.client.name,
+                    ruc: resolved.client.ruc,
+                    period: resolved.period,
+                    amount: resolved.amount,
+                    status: (resolved.client.declarations?.find(d => d.period === resolved.period)?.status || DeclarationStatus.Pendiente) as DeclarationStatus,
+                    type: 'Mensual',
+                    dateReference: new Date().toISOString(),
+                    phones: resolved.client.phones || []
+                }) as FinancialItem);
+            }
+        });
+
+        const addBatchLog = (msg: string) => {
+            const time = new Date().toLocaleTimeString();
+            setBatchBillingLogs(prev => [...prev, `[${time}] ${msg}`]);
+        };
+
+        addBatchLog(`Iniciando facturación en lote para ${itemsToProcess.length} operaciones...`);
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < itemsToProcess.length; i++) {
+            const item = itemsToProcess[i];
+            setBatchBillingProgress({ current: i + 1, total: itemsToProcess.length, clientName: item.clientName });
+            addBatchLog(`[${i + 1}/${itemsToProcess.length}] Facturando a ${item.clientName} ($${item.amount.toFixed(2)})...`);
+
+            try {
+                await emitSingleInvoiceCore(item, (msg) => addBatchLog(`   → ${msg}`));
+                successCount++;
+                addBatchLog(`✅ [${i + 1}/${itemsToProcess.length}] Autorizada con éxito para ${item.clientName}`);
+            } catch (err: any) {
+                failCount++;
+                addBatchLog(`❌ [${i + 1}/${itemsToProcess.length}] Error con ${item.clientName}: ${err.message}`);
+            }
+
+            // Breve intervalo para secuenciales
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        setIsBatchProcessing(false);
+        addBatchLog(`🎉 Lote finalizado: ${successCount} autorizadas con éxito, ${failCount} errores.`);
+        if (successCount > 0) {
+            toast.success(`Facturación en lote completada: ${successCount} facturas emitidas.`);
+            setSelectedItems(new Set());
         }
     };
     
@@ -4141,49 +4254,191 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
 
                         {/* Acciones del Modal */}
-                        <div className="flex gap-3 pt-2">
+                        <div className="pt-2">
                             {fastBillingStep === 'success' && (
-                                <button
-                                    onClick={() => {
-                                        const blob = new Blob([fastBillingXml], { type: 'text/xml' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `factura-${fastBillingAccessKey.substring(24, 33)}.xml`;
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        document.body.removeChild(a);
-                                        URL.revokeObjectURL(url);
-                                    }}
-                                    className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-white/10 cursor-pointer"
-                                >
-                                    <LucideIcons.Download size={14} />
-                                    <span>XML Firmado</span>
-                                </button>
+                                <div className="flex flex-col gap-2 w-full">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => {
+                                                const compData: RideComprobanteData = {
+                                                    tipo: 'Factura',
+                                                    secuencial: fastBillingSecuencial,
+                                                    claveAcceso: fastBillingAccessKey,
+                                                    rucReceptor: fastBillingItem.ruc,
+                                                    nombreReceptor: fastBillingItem.clientName,
+                                                    fechaEmision: new Date().toISOString().split('T')[0],
+                                                    total: fastBillingItem.amount,
+                                                    xml: fastBillingXml,
+                                                    ambiente: localStorage.getItem('sc_emisor_ambiente') || '1'
+                                                };
+                                                viewRideInNewWindow(compData);
+                                            }}
+                                            className="py-3 px-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                                            title="Ver e Imprimir RIDE en pantalla"
+                                        >
+                                            <LucideIcons.Printer size={14} className="text-teal-400" />
+                                            <span>Ver RIDE</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                const compData: RideComprobanteData = {
+                                                    tipo: 'Factura',
+                                                    secuencial: fastBillingSecuencial,
+                                                    claveAcceso: fastBillingAccessKey,
+                                                    rucReceptor: fastBillingItem.ruc,
+                                                    nombreReceptor: fastBillingItem.clientName,
+                                                    fechaEmision: new Date().toISOString().split('T')[0],
+                                                    total: fastBillingItem.amount,
+                                                    xml: fastBillingXml,
+                                                    ambiente: localStorage.getItem('sc_emisor_ambiente') || '1'
+                                                };
+                                                downloadRidePdf(compData);
+                                            }}
+                                            className="py-3 px-2 bg-[#00A896]/20 hover:bg-[#00A896]/30 text-[#00A896] rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border border-[#00A896]/40 cursor-pointer shadow-sm"
+                                            title="Descargar PDF Oficial"
+                                        >
+                                            <LucideIcons.Download size={14} />
+                                            <span>Bajar PDF</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                const clientObj = clients.find(c => c.id === fastBillingItem.clientId);
+                                                const phone = clientObj?.phones?.[0] || '';
+                                                if (!phone) {
+                                                    toast.error("El cliente no tiene teléfono registrado.");
+                                                    return;
+                                                }
+                                                const url = buildWhatsAppInvoiceUrl(
+                                                    phone,
+                                                    fastBillingItem.clientName,
+                                                    formatPeriodForDisplay(fastBillingItem.period),
+                                                    fastBillingItem.amount,
+                                                    fastBillingAccessKey,
+                                                    localStorage.getItem('sc_emisor_estab') || '001',
+                                                    localStorage.getItem('sc_emisor_pto') || '001',
+                                                    fastBillingSecuencial
+                                                );
+                                                window.open(url, '_blank');
+                                            }}
+                                            className="py-3 px-2 bg-[#25D366]/20 hover:bg-[#25D366]/30 text-[#25D366] rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border border-[#25D366]/40 cursor-pointer shadow-sm"
+                                            title="Enviar Factura por WhatsApp"
+                                        >
+                                            <LucideIcons.MessageSquare size={14} />
+                                            <span>WhatsApp</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                const blob = new Blob([fastBillingXml], { type: 'text/xml' });
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `factura-${fastBillingAccessKey.substring(24, 33)}.xml`;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                document.body.removeChild(a);
+                                                URL.revokeObjectURL(url);
+                                            }}
+                                            className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                                        >
+                                            <LucideIcons.FileCode size={13} />
+                                            <span>Descargar XML</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => setIsFastBillingOpen(false)}
+                                            className="flex-1 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer border bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white border-white/10 shadow-lg shadow-[#00A896]/20"
+                                        >
+                                            Listo / Cerrar
+                                        </button>
+                                    </div>
+                                </div>
                             )}
 
                             {fastBillingStep === 'failed' && (
-                                <button
-                                    onClick={() => handleEmitFastInvoice(fastBillingItem)}
-                                    className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
-                                >
-                                    <LucideIcons.RefreshCw size={14} />
-                                    <span>Reintentar Emisión</span>
-                                </button>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => handleEmitFastInvoice(fastBillingItem)}
+                                        className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+                                    >
+                                        <LucideIcons.RefreshCw size={14} />
+                                        <span>Reintentar Emisión</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setIsFastBillingOpen(false)}
+                                        className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
+                                    >
+                                        Cerrar Ventana
+                                    </button>
+                                </div>
                             )}
 
-                            <button
-                                onClick={() => setIsFastBillingOpen(false)}
-                                className={`flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border
-                                    ${fastBillingStep === 'success' 
-                                        ? 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white border-white/10 shadow-lg shadow-[#00A896]/20' 
-                                        : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10'}`}
-                            >
-                                {fastBillingStep === 'success' ? 'Listo / Cerrar' : 'Cerrar Ventana'}
-                            </button>
+                            {['generating', 'signing', 'sending', 'authorizing'].includes(fastBillingStep) && (
+                                <button
+                                    disabled
+                                    className="w-full py-3.5 bg-white/5 text-slate-400 rounded-xl font-bold text-xs uppercase tracking-wider border border-white/10 cursor-not-allowed opacity-60 flex items-center justify-center gap-2"
+                                >
+                                    <LucideIcons.RefreshCw size={14} className="animate-spin text-amber-400" />
+                                    <span>Transmitiendo al SRI...</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* MODAL 4: FACTURACIÓN EN LOTE SRI */}
+            <Modal isOpen={isBatchBillingOpen} onClose={() => !isBatchProcessing && setIsBatchBillingOpen(false)} title="Facturación Electrónica en Lote (SRI)">
+                <div className="p-4 sm:p-6 space-y-6 font-mono text-white">
+                    <div className="p-5 rounded-2xl bg-[#0b1326]/90 border border-white/10 space-y-3">
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-slate-400 font-bold uppercase tracking-wider">Progreso del Lote</span>
+                            <span className="text-[#00A896] font-black">{batchBillingProgress.current} de {batchBillingProgress.total}</span>
+                        </div>
+                        <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden border border-white/10">
+                            <div 
+                                className="h-full bg-gradient-to-r from-[#00A896] to-teal-400 transition-all duration-300"
+                                style={{ width: `${batchBillingProgress.total > 0 ? (batchBillingProgress.current / batchBillingProgress.total) * 100 : 0}%` }}
+                            ></div>
+                        </div>
+                        {batchBillingProgress.clientName && (
+                            <p className="text-[11px] text-slate-300 truncate">
+                                Procesando: <strong className="text-white uppercase">{batchBillingProgress.clientName}</strong>
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bitácora de Emisión Masiva</p>
+                        <div className="p-4 rounded-xl bg-[#020b14] text-slate-300 font-mono text-[10px] space-y-1.5 max-h-[220px] overflow-y-auto no-scrollbar border border-white/10 shadow-inner">
+                            {batchBillingLogs.map((log, idx) => (
+                                <div key={idx} className={log.includes('✅') || log.includes('éxito') || log.includes('completad') ? 'text-[#00A896] font-bold' : log.includes('❌') || log.includes('Error') ? 'text-rose-400 font-bold' : ''}>
+                                    {log}
+                                </div>
+                            ))}
+                            {isBatchProcessing && (
+                                <div className="flex items-center gap-1.5 text-amber-400 font-bold animate-pulse pt-1">
+                                    <LucideIcons.RefreshCw size={10} className="animate-spin" />
+                                    <span>Transmitiendo y autorizando con el SRI...</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={() => setIsBatchBillingOpen(false)}
+                            disabled={isBatchProcessing}
+                            className="w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 text-white border-white/10 shadow-lg shadow-[#00A896]/20 disabled:opacity-50"
+                        >
+                            {isBatchProcessing ? 'Procesando Lote SRI...' : 'Cerrar / Ver Cartera'}
+                        </button>
+                    </div>
+                </div>
             </Modal>
 
             {/* MODAL: SINCRONIZACIÓN INTELIGENTE CON MATRIZ FISCAL */}
@@ -4513,6 +4768,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 className="flex-1 sm:flex-none px-4 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                             >
                                 Desmarcar
+                            </button>
+
+                            <button
+                                onClick={handleEmitBatchInvoices}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 active:scale-95 border border-white/20 cursor-pointer"
+                                title="Facturar todas las operaciones seleccionadas ante el SRI en lote"
+                            >
+                                <LucideIcons.Zap size={15} />
+                                <span>Facturar Lote ({selectedSummary.count})</span>
                             </button>
 
                             <button

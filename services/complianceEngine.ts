@@ -390,6 +390,9 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
     const floors = getClientFloors(client);
 
     return obligations.filter(ob => {
+        if (isPeriodBeforeClientStart(client, ob.period)) {
+            return false;
+        }
         if (ob.period.length === 4) {
             return ob.period >= floors.annual;
         }
@@ -714,7 +717,9 @@ export const getActivePeriodsForClient = (client: Client, date: Date = new Date(
     if (needsRenta) {
         const currentYear = getYear(date);
         for (let year = currentYear - 1; year >= 2025; year--) {
-            periods.push(year.toString());
+            const yStr = year.toString();
+            if (isPeriodBeforeClientStart(client, yStr)) break;
+            periods.push(yStr);
         }
     }
     

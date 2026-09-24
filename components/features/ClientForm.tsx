@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Client, TaxRegime, DeclarationStatus, StoredFile } from '../../types';
 import { validateIdentifier, validateSriPassword, getPeriod } from '../../services/sri';
+import { isPeriodBeforeClientStart } from '../../services/complianceEngine';
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import {
@@ -362,6 +363,23 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         // la frecuencia de IVA si el cliente tiene casos especiales (ej. Rimpe que declara mensual)
         let finalIvaFrequency = ivaFrequency;
         let finalRequiresAnnualRenta = requiresAnnualRenta;
+        const resolvedStartPeriod = clientStartPeriod || getDefaultStartPeriod();
+        const defaultPeriod = getPeriod({ ...clientData, regime: clientData.regime || TaxRegime.General } as Client, new Date(), finalIvaFrequency);
+        const candidateForPeriodCheck: Client = {
+            ...clientData as Client,
+            clientStartPeriod: resolvedStartPeriod
+        };
+        const isDefaultBeforeStart = isPeriodBeforeClientStart(candidateForPeriodCheck, defaultPeriod);
+
+        const finalDeclarations = clientData.declarations
+            ? clientData.declarations.filter(d => !isPeriodBeforeClientStart(candidateForPeriodCheck, d.period))
+            : (isDefaultBeforeStart ? [] : [
+                {
+                    period: defaultPeriod,
+                    status: DeclarationStatus.Pendiente,
+                    updatedAt: new Date().toISOString()
+                }
+            ]);
 
         const finalClient: Client = {
             ...clientData as Client,
@@ -371,7 +389,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             phones: (clientData.phones || []).filter(p => p.trim() !== ''),
             isActive: isActive,
             notes: notes.trim(),
-            clientStartPeriod: clientStartPeriod || getDefaultStartPeriod(),
+            clientStartPeriod: resolvedStartPeriod,
             signatureExpirationDate: clientData.signatureExpirationDate,
             isCourtesy,
             taxProfile: {
@@ -388,13 +406,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 semestral: finalIvaFrequency === 'Semestral' ? mFee : (clientData.fee_structure?.semestral ?? 10),
                 annual: aFee
             },
-            declarations: clientData.declarations || [
-                {
-                    period: getPeriod({ ...clientData, regime: clientData.regime || TaxRegime.General } as Client, new Date(), finalIvaFrequency),
-                    status: DeclarationStatus.Pendiente,
-                    updatedAt: new Date().toISOString()
-                }
-            ]
+            declarations: finalDeclarations
         };
 
         onSubmit(finalClient);

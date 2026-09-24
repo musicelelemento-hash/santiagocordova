@@ -85,10 +85,21 @@ const sanitizeSingleClient = (c: any): Client => {
     }
   }
 
+  const resolvedStartPeriod = c.clientStartPeriod || rawTaxProfile.clientStartPeriod;
+  const tempClient = { ...c, clientStartPeriod: resolvedStartPeriod };
+
   let initialDecls: Declaration[] = Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
     ...d,
     is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
-  })) : [];
+  })).filter((d: any) => {
+    // Si es un placeholder pendiente sin respaldo y sin pago anterior a clientStartPeriod, descartarlo
+    if (resolvedStartPeriod && isPeriodBeforeClientStart(tempClient as Client, d.period)) {
+      if ((d.status === DeclarationStatus.Pendiente || !d.status) && !d.proof_file && !d.is_paid) {
+        return false;
+      }
+    }
+    return true;
+  }) : [];
 
   // Rellenar comprobantes y pagos de semestres pasados únicamente para clientes contables semestrales
   if (!isSoloPlan && (taxProfile.ivaFrequency === 'Semestral' || normalizedRegime === TaxRegime.RimpeEmprendedor)) {
@@ -98,8 +109,6 @@ const sanitizeSingleClient = (c: any): Client => {
     for (const d of initialDecls) {
       if (d && d.period) declMap.set(d.period, d);
     }
-
-    const tempClient = { ...c, clientStartPeriod: c.clientStartPeriod || rawTaxProfile.clientStartPeriod };
 
     for (const period of pastSemestralPeriods) {
       if (tempClient.clientStartPeriod && isPeriodBeforeClientStart(tempClient as Client, period)) continue;
