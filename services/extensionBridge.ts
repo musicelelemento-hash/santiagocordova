@@ -4,11 +4,31 @@ import { Client } from '../types';
  * Bridge para comunicarse con la extensión de Chrome "SRI Auto-fill".
  * Envía un mensaje que la extensión puede capturar mediante un content script.
  */
-export const sendToSRIExtension = (client: Client) => {
+export const parsePeriodToWorkflowPeriod = (targetPeriod?: { year: number; monthIndex: number } | string): { year: number; monthIndex: number; periodStr: string } | null => {
+  if (!targetPeriod) return null;
+  if (typeof targetPeriod === 'object' && targetPeriod.year && typeof targetPeriod.monthIndex === 'number') {
+    const periodStr = `${targetPeriod.year}-${String(targetPeriod.monthIndex + 1).padStart(2, '0')}`;
+    return { year: targetPeriod.year, monthIndex: targetPeriod.monthIndex, periodStr };
+  }
+  if (typeof targetPeriod === 'string') {
+    const clean = targetPeriod.split(':')[0].trim();
+    const match = clean.match(/^(\d{4})-(\d{2})$/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const monthIndex = parseInt(match[2], 10) - 1;
+      return { year, monthIndex, periodStr: clean };
+    }
+  }
+  return null;
+};
+
+export const sendToSRIExtension = (client: Client, targetPeriod?: { year: number; monthIndex: number } | string) => {
   if (!client.ruc || !client.sriPassword) {
     console.warn("Faltan credenciales para el autocompletado.");
     return;
   }
+
+  const parsedPeriod = parsePeriodToWorkflowPeriod(targetPeriod);
 
   // Estructura de datos para la extensión
   const payload = {
@@ -20,6 +40,8 @@ export const sendToSRIExtension = (client: Client) => {
       password: client.sriPassword,
       pdfStatus: (client as any).pdfDeclarationStatus || (client as any).pdfStatus || ((client as any).hasPdf ? 'CON_PDF' : 'SIN_PDF'),
       declarationsHistory: client.declarations || [],
+      period: parsedPeriod ? parsedPeriod.periodStr : undefined,
+      workflowPeriod: parsedPeriod ? { year: parsedPeriod.year, monthIndex: parsedPeriod.monthIndex } : undefined,
       timestamp: new Date().getTime()
     }
   };
@@ -34,6 +56,7 @@ export const sendToSRIExtension = (client: Client) => {
   // 3. Opcional: Guardamos en una clave temporal de localStorage que la extensión pueda leer
   // (Muchas extensiones usan este método para persistencia entre dominios si tienen permisos)
   localStorage.setItem('_sri_autofill_pending', JSON.stringify(payload.data));
+  localStorage.setItem('sri_active_credentials', JSON.stringify(payload.data));
 };
 
 export const transformPasswordForSri = (oldPass: string): string => {
@@ -83,16 +106,21 @@ export const sendFullClientsMatrixToExtension = (clients: Client[]) => {
 export const sendBatchDeclarationToExtension = (
   clients: Client[], 
   declarationType: 'mensual' | 'semestral' | 'renta' = 'mensual',
-  mode: 'declare' | 'recover_pdf_only' = 'declare'
+  mode: 'declare' | 'recover_pdf_only' = 'declare',
+  targetPeriod?: { year: number; monthIndex: number } | string
 ) => {
   if (!Array.isArray(clients) || clients.length === 0) return;
   
+  const parsedPeriod = parsePeriodToWorkflowPeriod(targetPeriod);
+
   const payload = {
     source: 'SC_PRO_DASHBOARD',
     type: 'SRI_START_BATCH_DECLARATION',
     data: {
       declarationType,
       mode,
+      targetPeriod: parsedPeriod ? parsedPeriod.periodStr : undefined,
+      workflowPeriod: parsedPeriod ? { year: parsedPeriod.year, monthIndex: parsedPeriod.monthIndex } : undefined,
       clients: clients.map(c => ({
         id: c.id,
         ruc: c.ruc,
@@ -108,7 +136,7 @@ export const sendBatchDeclarationToExtension = (
 
   window.postMessage(payload, "*");
   localStorage.setItem('sc_batch_declaration_queue', JSON.stringify(payload.data));
-  console.log(`🚀 Lote (${declarationType}, modo: ${mode}) enviado a la extensión:`, clients.length, "clientes.");
+  console.log(`🚀 Lote (${declarationType}, modo: ${mode}${parsedPeriod ? `, período: ${parsedPeriod.periodStr}` : ''}) enviado a la extensión:`, clients.length, "clientes.");
 };
 
 export const listenForDeclarationCompleted = (onCompleted: (data: { ruc: string; success: boolean; pdfUrl?: string; timestamp: number }) => void) => {

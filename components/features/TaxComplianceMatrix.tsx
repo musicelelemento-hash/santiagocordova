@@ -21,7 +21,7 @@ export function getClientPastYearDebts(client: Client, selectedYear: number): De
     });
 }
 
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
@@ -250,6 +250,13 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         declaration: Declaration;
         obType: TaxObligationType;
         realInvoice: any | null;
+    } | null>(null);
+
+    const [pendingCellModal, setPendingCellModal] = useState<{
+        client: Client;
+        period: string;
+        obType: TaxObligationType;
+        obLabel: string;
     } | null>(null);
 
     // URL firmada de la vista previa (bucket privado → createSignedUrl)
@@ -613,36 +620,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         return '¡Buenas noches!';
     };
 
-    const handleOpenSriPortal = (client: Client, e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
-
-        try {
-            const credentialsPayload = {
-                ruc: client.ruc,
-                password: client.sriPassword || '',
-                name: client.name,
-                timestamp: Date.now()
-            };
-            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
-
-            if (client.sriPassword) {
-                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
-            } else {
-                navigator.clipboard.writeText(client.ruc);
-            }
-        } catch (err) {
-            console.error("Error setting active SRI credentials:", err);
-        }
-
-        sendToSRIExtension(client);
-
-        toast.success(
-            `🔑 Credenciales de ${client.name} enviadas a la extensión SRI. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
-        );
-
-        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
-    };
-
     // Alternar estado de Notificado WhatsApp manualmente
     const handleToggleWhatsAppNotification = (client: Client, period: string, obType: string, decl?: Declaration) => {
         const freshClient = useAppStore.getState().clients.find(c => c.id === client.id) || client;
@@ -934,6 +911,77 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     const isClientUpToDate = (client: Client) => {
         return periods.every(p => isClientCompletedForPeriod(client, p));
+    };
+
+    const getClientOldestPendingPeriod = useCallback((client: Client): string | null => {
+        // Orden cronológico estricto: el más antiguo primero (ej. 2026-05 antes que 2026-08)
+        const sortedPeriods = [...periods].sort((a, b) => a.localeCompare(b));
+        for (const p of sortedPeriods) {
+            if (isPeriodBeforeClientStart(client, p)) continue;
+            const obligations = getObligationsForPeriod(client, p);
+            if (obligations.length === 0) continue;
+            const declarations = client.declarations || [];
+            const isMissing = obligations.some(ob => {
+                const d = findDeclarationForOb(declarations, p, ob.type);
+                const isDone = !!d?.proof_file || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                return !isDone;
+            });
+            if (isMissing) return p;
+        }
+        return null;
+    }, [periods]);
+
+    const getClientPendingPeriods = useCallback((client: Client): string[] => {
+        const sortedPeriods = [...periods].sort((a, b) => a.localeCompare(b));
+        const missing: string[] = [];
+        for (const p of sortedPeriods) {
+            if (isPeriodBeforeClientStart(client, p)) continue;
+            const obligations = getObligationsForPeriod(client, p);
+            if (obligations.length === 0) continue;
+            const declarations = client.declarations || [];
+            const hasMissing = obligations.some(ob => {
+                const d = findDeclarationForOb(declarations, p, ob.type);
+                const isDone = !!d?.proof_file || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                return !isDone;
+            });
+            if (hasMissing) missing.push(p);
+        }
+        return missing;
+    }, [periods]);
+
+    const handleOpenSriPortal = (client: Client, e?: React.MouseEvent, specificPeriod?: string) => {
+        if (e) e.stopPropagation();
+
+        const oldestPending = getClientOldestPendingPeriod(client);
+        const targetP = specificPeriod || oldestPending || periods[0] || '';
+
+        try {
+            const credentialsPayload = {
+                ruc: client.ruc,
+                password: client.sriPassword || '',
+                name: client.name,
+                period: targetP,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
+
+            if (client.sriPassword) {
+                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+            } else {
+                navigator.clipboard.writeText(client.ruc);
+            }
+        } catch (err) {
+            console.error("Error setting active SRI credentials:", err);
+        }
+
+        sendToSRIExtension(client, targetP);
+
+        const periodLabel = targetP ? formatPeriodForDisplay(targetP).replace('IVA ', '') : 'período activo';
+        toast.success(
+            `🔑 Credenciales de ${client.name} enviadas a Nueva Luz 3.0 para ${periodLabel}${oldestPending && !specificPeriod ? ' (Período más antiguo pendiente)' : ''}. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista' : ''}`
+        );
+
+        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
     };
 
     const handleSortByPeriod = (p: string) => {
@@ -1626,7 +1674,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
                                 const targetPeriod = targetPeriodForDeclaration(type);
                                 const bucleClients = filteredClients.filter(c => !isPeriodBeforeClientStart(c, targetPeriod));
-                                sendBatchDeclarationToExtension(bucleClients, type, 'declare');
+                                sendBatchDeclarationToExtension(bucleClients, type, 'declare', targetPeriod);
                                 toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${bucleClients.length} clientes a la extensión para declaración en bucle.`);
                             }}
                             className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#00A896]/20 cursor-pointer border border-white/10 active:scale-95"
@@ -1641,7 +1689,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
                                 const targetPeriod = targetPeriodForDeclaration(type);
                                 const bucleClients = filteredClients.filter(c => !isPeriodBeforeClientStart(c, targetPeriod));
-                                sendBatchDeclarationToExtension(bucleClients, type, 'recover_pdf_only');
+                                sendBatchDeclarationToExtension(bucleClients, type, 'recover_pdf_only', targetPeriod);
                                 toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se han enviado ${bucleClients.length} clientes a la extensión para buscar únicamente PDFs faltantes.`);
                             }}
                             className="px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-95"
@@ -2310,7 +2358,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     realInvoice: findRealInvoice(client.ruc, d, p)
                                                                 });
                                                             } else {
-                                                                onUploadReceipt(client, p, ob.type as any);
+                                                                setPendingCellModal({
+                                                                    client,
+                                                                    period: p,
+                                                                    obType: ob.type as any,
+                                                                    obLabel: ob.label || ob.type
+                                                                });
                                                             }
                                                         }}
                                                         className={`px-2.5 py-1.5 rounded-xl border text-[9px] font-mono shrink-0 transition-all flex flex-col items-center gap-0.5 cursor-pointer active:scale-95 ${
@@ -2438,6 +2491,39 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         ⚡ Liquidar ({pastDebts.length})
                                                     </button>
                                                 </div>
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* Alerta de Períodos Atrasados Acumulados (Prelación Cronológica SRI) */}
+                                    {(() => {
+                                        const pendingPeriods = getClientPendingPeriods(client);
+                                        if (pendingPeriods.length <= 1) return null;
+                                        const oldest = pendingPeriods[0];
+                                        return (
+                                            <div className="mt-3 p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-[10px] font-mono">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <LucideIcons.AlertTriangle size={15} className="text-amber-400 shrink-0 animate-pulse" />
+                                                    <div className="truncate">
+                                                        <div className="text-amber-300 font-bold uppercase tracking-wide">
+                                                            {pendingPeriods.length} meses sin declarar
+                                                        </div>
+                                                        <div className="text-slate-400 text-[9px] truncate">
+                                                            SRI exige orden: 1° <strong className="text-amber-200">{formatPeriodForDisplay(oldest).replace('IVA ', '')}</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenSriPortal(client, e, oldest);
+                                                    }}
+                                                    className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[9px] uppercase tracking-wider shrink-0 shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                                                    title={`Declarar primer período atrasado en orden: ${oldest}`}
+                                                >
+                                                    <LucideIcons.Play size={10} fill="currentColor" />
+                                                    <span>Declarar {formatPeriodForDisplay(oldest).replace('IVA ', '')}</span>
+                                                </button>
                                             </div>
                                         );
                                     })()}
@@ -2802,7 +2888,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                                     realInvoice: findRealInvoice(client.ruc, d, p)
                                                                                 });
                                                                             } else {
-                                                                                onUploadReceipt(client, p, ob.type as any);
+                                                                                setPendingCellModal({
+                                                                                    client,
+                                                                                    period: p,
+                                                                                    obType: ob.type as any,
+                                                                                    obLabel: ob.label || ob.type
+                                                                                });
                                                                             }
                                                                         }}
                                                                     >
@@ -3427,6 +3518,173 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </div>
                 </div>
             )}
+
+            {/* Modal de Gestión de Casilla Pendiente / Prelación Cronológica SRI */}
+            {pendingCellModal && (() => {
+                const { client, period, obType, obLabel } = pendingCellModal;
+                const pendingPeriods = getClientPendingPeriods(client);
+                const oldestPeriod = pendingPeriods.length > 0 ? pendingPeriods[0] : null;
+                const isOldest = !oldestPeriod || oldestPeriod === period;
+                const olderCount = pendingPeriods.indexOf(period);
+                const periodLabel = formatPeriodForDisplay(period).replace('IVA ', '');
+                const oldestPeriodLabel = oldestPeriod ? formatPeriodForDisplay(oldestPeriod).replace('IVA ', '') : '';
+                const dueDate = getDueDateForPeriod(client, period);
+                const dueDateFormatted = dueDate ? format(dueDate, 'dd/MM/yyyy') : 'Según 9no dígito';
+
+                return (
+                    <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+                        <div className="bg-[#051424] border border-white/15 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl relative text-white font-sans animate-in zoom-in-95 duration-200 space-y-5">
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-3 rounded-2xl border ${
+                                        isOldest 
+                                            ? 'bg-gradient-to-br from-[#00A896]/20 to-teal-500/20 text-[#00A896] border-[#00A896]/30'
+                                            : 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30'
+                                    }`}>
+                                        {isOldest ? <LucideIcons.ShieldCheck size={22} /> : <LucideIcons.Clock size={22} />}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-lg font-black uppercase tracking-tight font-display">
+                                                Declaración Pendiente
+                                            </h3>
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30">
+                                                {periodLabel}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-400 font-mono mt-0.5 truncate max-w-xs">
+                                            {client.tradeName || client.name} · RUC: {client.ruc}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setPendingCellModal(null)}
+                                    className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+                                    title="Cerrar modal"
+                                >
+                                    <LucideIcons.X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Alerta de Prelación Cronológica SRI */}
+                            {!isOldest && olderCount > 0 ? (
+                                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-2">
+                                    <div className="flex items-center gap-2 text-amber-300 font-mono text-xs font-bold uppercase tracking-wider">
+                                        <LucideIcons.AlertTriangle size={16} className="text-amber-400 shrink-0 animate-pulse" />
+                                        <span>Orden Cronológico SRI Obligatorio</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                                        Este cliente tiene <strong className="text-amber-200">{olderCount} período(s) previo(s) sin declarar</strong> (desde {oldestPeriodLabel}).
+                                        El SRI exige declarar en orden cronológico estricto para arrastrar el crédito tributario (casillero 601) y no generar inconsistencias o multas sustitutivas.
+                                    </p>
+                                    <div className="pt-1 flex items-center gap-2 font-mono text-[10px] text-amber-300/90">
+                                        <span>Sugerencia:</span>
+                                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 font-bold">
+                                            Declarar primero {oldestPeriodLabel}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start gap-3">
+                                    <LucideIcons.ShieldCheck size={18} className="text-[#00A896] shrink-0 mt-0.5" />
+                                    <div className="text-xs space-y-0.5">
+                                        <p className="font-bold text-[#00A896] uppercase tracking-wide">
+                                            Período Habilitado para Declarar
+                                        </p>
+                                        <p className="text-slate-300 text-[11px] leading-relaxed">
+                                            Este es el período cronológicamente indicado para procesar. Al declararlo, los saldos se arrastrarán a los períodos siguientes.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Ficha Resumen */}
+                            <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-[#020b14]/70 p-3.5 rounded-2xl border border-white/5">
+                                <div>
+                                    <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Obligación</span>
+                                    <span className="font-bold text-slate-200 text-[11px]">{obLabel} ({obType})</span>
+                                </div>
+                                <div>
+                                    <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Vencimiento</span>
+                                    <span className="font-bold text-slate-200 text-[11px]">{dueDateFormatted}</span>
+                                </div>
+                                <div className="pt-2 border-t border-white/5">
+                                    <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Clave SRI</span>
+                                    <span className={`font-bold text-[11px] ${client.sriPassword ? 'text-[#00A896]' : 'text-amber-400'}`}>
+                                        {client.sriPassword ? '●●●●●●●● (Guardada)' : 'Sin Clave Registrada'}
+                                    </span>
+                                </div>
+                                <div className="pt-2 border-t border-white/5">
+                                    <span className="text-[9px] text-slate-500 uppercase tracking-wider block">Total Pendientes</span>
+                                    <span className="font-bold text-amber-300 text-[11px]">
+                                        {pendingPeriods.length} período(s)
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Botones de Acción */}
+                            <div className="space-y-2.5 pt-1 font-mono">
+                                {!isOldest && oldestPeriod ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                const cl = client;
+                                                const op = oldestPeriod;
+                                                setPendingCellModal(null);
+                                                handleOpenSriPortal(cl, undefined, op);
+                                            }}
+                                            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                        >
+                                            <LucideIcons.Play size={14} fill="currentColor" />
+                                            <span>Declarar 1° {oldestPeriodLabel} (Recomendado SRI)</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const cl = client;
+                                                const p = period;
+                                                setPendingCellModal(null);
+                                                handleOpenSriPortal(cl, undefined, p);
+                                            }}
+                                            className="w-full py-2.5 px-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                        >
+                                            <LucideIcons.ExternalLink size={13} />
+                                            <span>Declarar {periodLabel} de todos modos en SRI</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            const cl = client;
+                                            const p = period;
+                                            setPendingCellModal(null);
+                                            handleOpenSriPortal(cl, undefined, p);
+                                        }}
+                                        className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-500 hover:to-emerald-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-[#00A896]/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+                                    >
+                                        <LucideIcons.Play size={14} fill="currentColor" />
+                                        <span>Declarar {periodLabel} en SRI con Nueva Luz 3.0</span>
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => {
+                                        const cl = client;
+                                        const p = period;
+                                        const ob = obType;
+                                        setPendingCellModal(null);
+                                        onUploadReceipt(cl, p, ob);
+                                    }}
+                                    className="w-full py-2.5 px-4 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <LucideIcons.Upload size={13} />
+                                    <span>Ya lo declaré: Subir PDF de Respaldo</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Command Dock Flotante de Matriz via Portal (Opacidad gestionada imperativamente por el listener de scroll) */}
             {createPortal(
