@@ -1040,7 +1040,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 mode: 'declare',
                 targetPeriod: oldest,
                 workflowPeriod: oldestPeriodWorkflow ? { year: oldestPeriodWorkflow.year, monthIndex: oldestPeriodWorkflow.monthIndex } : undefined,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                portalAlreadyOpened: true
             }
         };
 
