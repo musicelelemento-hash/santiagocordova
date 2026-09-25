@@ -43,7 +43,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { getClientServiceFee } from '../../services/clientService';
 import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { SupabaseService } from '../../services/supabaseClientService';
-import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendFullClientsMatrixToExtension } from '../../services/extensionBridge';
+import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendFullClientsMatrixToExtension, parsePeriodToWorkflowPeriod } from '../../services/extensionBridge';
 
 type MatrixMode = 'IVA' | 'RENTA';
 
@@ -183,21 +183,47 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const commandDockRef = useRef<HTMLDivElement>(null);
     const [isDockPastHeader, setIsDockPastHeader] = useState(false);
 
-    // ELITE RPA: Escuchar sincronización de declaraciones en bucle
+    // ELITE RPA: Escuchar sincronización de declaraciones en bucle y actualizar estado en tiempo real
     React.useEffect(() => {
         const cleanup = listenForDeclarationCompleted((data: any) => {
             if (data && data.ruc) {
-                toast.success(`Declaración del RUC ${data.ruc} subida automáticamente y sesión cerrada.`);
-                
-                // Buscar cliente
-                const client = clients.find(c => c.ruc.replace(/\D/g, '') === data.ruc.replace(/\D/g, ''));
-                if (client) {
-                    onUploadReceipt(client, data.period && data.period !== 'AUTO' ? data.period : format(subMonths(new Date(), 1), 'yyyy-MM'), matrixMode);
+                const freshClients = useAppStore.getState().clients;
+                const freshClient = freshClients.find(c => c.ruc.replace(/\D/g, '') === data.ruc.replace(/\D/g, ''));
+                if (freshClient) {
+                    const period = data.period && data.period !== 'AUTO' ? data.period : format(subMonths(new Date(), 1), 'yyyy-MM');
+                    const decType = (data.type || (period.includes('ANEXO') ? 'ANEXO' : (period.length === 4 ? 'RENTA' : 'IVA'))).toUpperCase();
+                    const existingDecls = freshClient.declarations || [];
+
+                    const cloudProof = data.proof_file || (data.pdfUrl ? {
+                        name: `Declaracion_${decType}_${freshClient.ruc}_${period}.pdf`,
+                        type: 'pdf',
+                        size: 0,
+                        lastModified: Date.now(),
+                        url: data.pdfUrl,
+                        content: null,
+                        metadata: { period, uploadedAt: new Date().toISOString() }
+                    } : null);
+
+                    const filtered = existingDecls.filter(d => !arePeriodsEqual(d.period, period));
+                    const updatedDecls = [
+                        ...filtered,
+                        {
+                            period,
+                            type: decType as any,
+                            status: DeclarationStatus.Enviada,
+                            proof_file: cloudProof,
+                            declaredAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }
+                    ];
+
+                    useAppStore.getState().updateClient(freshClient.id, { declarations: updatedDecls });
+                    toast.success(`✅ Declaración ${period} de ${freshClient.name} sincronizada y comprobante guardado.`);
                 }
             }
         });
         return cleanup;
-    }, [clients, matrixMode, onUploadReceipt, toast]);
+    }, [toast]);
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -979,6 +1005,65 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         const periodLabel = targetP ? formatPeriodForDisplay(targetP).replace('IVA ', '') : 'período activo';
         toast.success(
             `🔑 Credenciales de ${client.name} enviadas a Nueva Luz 3.0 para ${periodLabel}${oldestPending && !specificPeriod ? ' (Período más antiguo pendiente)' : ''}. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista' : ''}`
+        );
+
+        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
+    };
+
+    const handleLaunchMultiMonthBacklog = (client: Client, specificList?: string[]) => {
+        const pendings = specificList && specificList.length > 0 ? specificList : getClientPendingPeriods(client);
+        if (pendings.length === 0) {
+            toast.info(`No hay períodos pendientes para ${client.name}.`);
+            return;
+        }
+
+        // Orden cronológico estricto: el más antiguo primero para arrastrar crédito tributario (casillero 601)
+        const sortedPendings = [...pendings].sort((a, b) => a.localeCompare(b));
+        const oldest = sortedPendings[0];
+
+        // Construir la cola en cadena para la extensión
+        const batchQueue = sortedPendings.map(period => ({
+            ruc: client.ruc,
+            password: client.sriPassword || '',
+            name: `${client.name} (${period})`,
+            period: period
+        }));
+
+        const oldestPeriodWorkflow = parsePeriodToWorkflowPeriod(oldest);
+
+        // Enviar a la extensión vía puente
+        const payload = {
+            source: 'SC_PRO_DASHBOARD',
+            type: 'SRI_START_BATCH_DECLARATION',
+            data: {
+                clients: batchQueue,
+                mode: 'declare',
+                targetPeriod: oldest,
+                workflowPeriod: oldestPeriodWorkflow ? { year: oldestPeriodWorkflow.year, monthIndex: oldestPeriodWorkflow.monthIndex } : undefined,
+                timestamp: Date.now()
+            }
+        };
+
+        window.postMessage(payload, "*");
+        localStorage.setItem('sc_batch_declaration_queue', JSON.stringify(payload.data));
+
+        // Preparar credenciales activas del primer periodo
+        try {
+            const credentialsPayload = {
+                ruc: client.ruc,
+                password: client.sriPassword || '',
+                name: client.name,
+                period: oldest,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
+            if (client.sriPassword) {
+                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+            }
+        } catch (e) {}
+
+        toast.success(
+            `🚀 Iniciando resolución en cadena de ${sortedPendings.length} meses (${sortedPendings.join(' ➔ ')}) para ${client.name}. Primero: ${oldest}.`
         );
 
         window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
@@ -2513,17 +2598,30 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpenSriPortal(client, e, oldest);
-                                                    }}
-                                                    className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[9px] uppercase tracking-wider shrink-0 shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
-                                                    title={`Declarar primer período atrasado en orden: ${oldest}`}
-                                                >
-                                                    <LucideIcons.Play size={10} fill="currentColor" />
-                                                    <span>Declarar {formatPeriodForDisplay(oldest).replace('IVA ', '')}</span>
-                                                </button>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleLaunchMultiMonthBacklog(client);
+                                                        }}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 hover:brightness-110 text-white font-black text-[9px] uppercase tracking-wider shrink-0 shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1 cursor-pointer border border-white/20"
+                                                        title={`Liquidar los ${pendingPeriods.length} meses en cadena cronológica con Nueva Luz 3.0`}
+                                                    >
+                                                        <LucideIcons.Zap size={10} fill="currentColor" className="text-yellow-300 animate-bounce" />
+                                                        <span>⚡ Cadena ({pendingPeriods.length})</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenSriPortal(client, e, oldest);
+                                                        }}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-[9px] uppercase tracking-wider shrink-0 shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                                                        title={`Declarar solo el primer período atrasado: ${oldest}`}
+                                                    >
+                                                        <LucideIcons.Play size={10} fill="currentColor" />
+                                                        <span>1° {formatPeriodForDisplay(oldest).replace('IVA ', '')}</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         );
                                     })()}
@@ -2738,6 +2836,40 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     >
                                                                         <LucideIcons.AlertTriangle size={8} />
                                                                         <span>{pastDebts.length} prev.</span>
+                                                                    </span>
+                                                                );
+                                                            })()}
+
+                                                            {/* ⚡ Badge Rezago Acumulado (Atrasos en Cadena) */}
+                                                            {(() => {
+                                                                const pendings = getClientPendingPeriods(client);
+                                                                if (pendings.length === 0) return null;
+                                                                const oldest = pendings[0];
+                                                                const isMultiple = pendings.length > 1;
+                                                                return (
+                                                                    <span 
+                                                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold border cursor-pointer transition-all ${
+                                                                            isMultiple 
+                                                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]' 
+                                                                                : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                                                                        }`}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (isMultiple) {
+                                                                                handleLaunchMultiMonthBacklog(client);
+                                                                            } else {
+                                                                                handleOpenSriPortal(client, e, oldest);
+                                                                            }
+                                                                        }}
+                                                                        title={isMultiple 
+                                                                            ? `⚡ Rezago: ${pendings.length} meses pendientes (${pendings.join(', ')}). Clic para liquidar todo en cadena cronológica con Nueva Luz 3.0.`
+                                                                            : `Mes pendiente: ${oldest}. Clic para autocompletar en SRI.`
+                                                                        }
+                                                                    >
+                                                                        <LucideIcons.Flame size={8} className={isMultiple ? "text-rose-400 animate-pulse" : "text-amber-400"} />
+                                                                        <span>{pendings.length} {pendings.length === 1 ? 'atrasado' : 'rezagados'}</span>
+                                                                        <span className="text-[7px] opacity-75 font-mono">1° {formatPeriodForDisplay(oldest).replace('IVA ', '')}</span>
+                                                                        <LucideIcons.Play size={6} className="ml-0.5 opacity-90" />
                                                                     </span>
                                                                 );
                                                             })()}
@@ -3625,6 +3757,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                             {/* Botones de Acción */}
                             <div className="space-y-2.5 pt-1 font-mono">
+                                {pendingPeriods.length > 1 && (
+                                    <button
+                                        onClick={() => {
+                                            const cl = client;
+                                            setPendingCellModal(null);
+                                            handleLaunchMultiMonthBacklog(cl);
+                                        }}
+                                        className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-rose-600 via-amber-600 to-emerald-600 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/20"
+                                    >
+                                        <LucideIcons.Zap size={14} fill="currentColor" className="text-yellow-300 animate-bounce" />
+                                        <span>⚡ Liquidar Todo el Rezago ({pendingPeriods.length} Meses en Cadena)</span>
+                                    </button>
+                                )}
+
                                 {!isOldest && oldestPeriod ? (
                                     <>
                                         <button

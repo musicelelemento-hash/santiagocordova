@@ -127,6 +127,50 @@ const sanitizeSingleClient = (c: any): Client => {
     initialDecls = Array.from(declMap.values());
   }
 
+  // 🎯 GENERACIÓN INTELIGENTE DE MESES PENDIENTES (MENSUAL CON REZAGO):
+  // Si el cliente es mensual y tiene clientStartPeriod (ej. '2026-05'), aseguramos que
+  // todos los meses adeudados desde su inicio hasta el mes calendario anterior existan en declarations
+  if (!isSoloPlan && (taxProfile.ivaFrequency === 'Mensual' || normalizedRegime === TaxRegime.General)) {
+    const startStr = tempClient.clientStartPeriod;
+    if (startStr && /^\d{4}-\d{2}$/.test(startStr)) {
+      const now = new Date();
+      const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const [startYear, startMonth] = startStr.split('-').map(Number);
+      
+      let curYear = startYear;
+      let curMonth = startMonth;
+      
+      const declMap = new Map<string, Declaration>();
+      for (const d of initialDecls) {
+        if (d && d.period) declMap.set(d.period, d);
+      }
+
+      while (
+        curYear < prevDate.getFullYear() || 
+        (curYear === prevDate.getFullYear() && curMonth <= prevDate.getMonth() + 1)
+      ) {
+        const pKey = `${curYear}-${String(curMonth).padStart(2, '0')}`;
+        const existing = declMap.get(pKey);
+        if (!existing) {
+          declMap.set(pKey, {
+            period: pKey,
+            type: 'IVA' as any,
+            status: DeclarationStatus.Pendiente,
+            is_paid: false,
+            updatedAt: new Date().toISOString()
+          });
+        }
+        curMonth++;
+        if (curMonth > 12) {
+          curMonth = 1;
+          curYear++;
+        }
+      }
+
+      initialDecls = Array.from(declMap.values());
+    }
+  }
+
   const facturadorConfigObj = c.facturadorConfig || c.billingPlan || (c.billing_plans && c.billing_plans.length > 0 ? c.billing_plans[0] : undefined);
 
   const client = {

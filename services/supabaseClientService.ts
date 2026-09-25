@@ -123,7 +123,39 @@ export const SupabaseService = {
   },
 
   async upsertClient(client: Client): Promise<void> {
-    const mappedClient = sanitizeClientPayload(this.mapClientToDb(client), `guardando ${client.ruc || client.id}`);
+    // 🛡️ PRESERVAR COMPROBANTES: Si el cliente en memoria no tiene proof_file en algún período,
+    // pero la base de datos ya lo tiene guardado (ej. subido por la extensión), conservamos el comprobante existente.
+    let existingDeclsInDb: any[] = [];
+    try {
+      const { data: currentDbClient } = await supabase
+        .from('clients')
+        .select('declaration_history')
+        .eq(client.id ? 'id' : 'ruc', client.id || client.ruc)
+        .maybeSingle();
+      if (currentDbClient && Array.isArray(currentDbClient.declaration_history)) {
+        existingDeclsInDb = currentDbClient.declaration_history;
+      }
+    } catch (e) {
+      // Ignorar fallo si la red está lenta o tabla inaccesible
+    }
+
+    const mergedDeclarations = (client.declarations || []).map(d => {
+      if (!d) return d;
+      if (!d.proof_file?.url) {
+        const found = existingDeclsInDb.find(ed => ed && ed.period === d.period && (!ed.type || ed.type === d.type));
+        if (found?.proof_file?.url) {
+          return {
+            ...d,
+            proof_file: found.proof_file,
+            status: (d.status === DeclarationStatus.Pendiente || !d.status) ? DeclarationStatus.Enviada : d.status
+          };
+        }
+      }
+      return d;
+    });
+
+    const clientToMap = { ...client, declarations: mergedDeclarations };
+    const mappedClient = sanitizeClientPayload(this.mapClientToDb(clientToMap), `guardando ${client.ruc || client.id}`);
 
     // Intento 1 (camino normal): upsert por RUC.
     let { error } = await supabase
@@ -164,9 +196,9 @@ export const SupabaseService = {
     }
 
     // Sincronizar array 'declarations' hacia la tabla relacional sri_declaraciones
-    if (client.declarations && client.declarations.length > 0) {
+    if (mergedDeclarations && mergedDeclarations.length > 0) {
         // ELITE FIX: Upsert individual por declaración para evitar fallos silenciosos de bulk
-        for (const dec of client.declarations) {
+        for (const dec of mergedDeclarations) {
             if (!dec || !dec.period) continue;
 
             const decType = dec.type || (dec.period?.includes('ANEXO') ? 'ANEXO' : (dec.period?.length === 7 ? 'IVA' : 'RENTA'));
@@ -196,12 +228,16 @@ export const SupabaseService = {
                 status: dec.status || 'Pendiente',
                 is_paid: !!dec.is_paid,
                 paid_at: dec.paidAt || null,
-                proof_file: sanitizedProofFile,
                 is_notified_whatsapp: !!dec.isNotifiedWhatsApp,
                 notified_whatsapp_at: dec.notifiedWhatsAppAt || null,
                 created_at: dec.declaredAt || new Date().toISOString(),
                 updated_at: dec.updatedAt || new Date().toISOString()
             };
+
+            // 🛡️ NUNCA sobreescribir con null un PDF existente en sri_declaraciones
+            if (sanitizedProofFile) {
+                record.proof_file = sanitizedProofFile;
+            }
 
             // Solo enviar notification_count si tiene valor
             if (dec.notificationCount !== undefined && dec.notificationCount !== null) {

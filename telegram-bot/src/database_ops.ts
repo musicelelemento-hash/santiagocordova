@@ -229,9 +229,57 @@ export async function searchClient(query: string) {
             const ivaFee = feeKey ? (c.fee_structure?.[feeKey] ?? (obligations.ivaFrequency === 'Semestral' ? 10 : 5)) : 0;
             const rentaFee = c.fee_structure?.annual ?? 10;
             
-            const allDeclarations = c.sri_declaraciones || [];
+            const declTable = Array.isArray(c.sri_declaraciones) ? c.sri_declaraciones : [];
+            const declJson = Array.isArray(c.declaration_history) ? c.declaration_history : [];
+            const allDeclarations = [...declTable, ...declJson];
             
-            const pendingDeclarations = allDeclarations.filter((d: any) => d.status === 'Pendiente');
+            const startPeriod = (c.tax_profile?.clientStartPeriod || c.clientStartPeriod || c.client_start_period || '').trim();
+            const now = new Date();
+            const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+            // Determinar períodos obligatorios no declarados desde startPeriod hasta el mes calendario anterior
+            const missingRequiredPeriods: string[] = [];
+            if (obligations.ivaFrequency === 'Mensual') {
+                const startMatch = startPeriod.match(/^(\d{4})-(\d{2})$/);
+                const startYr = startMatch ? parseInt(startMatch[1], 10) : prevMonthDate.getFullYear();
+                const startMo = startMatch ? parseInt(startMatch[2], 10) : 1;
+
+                let curY = startYr;
+                let curM = startMo;
+                const endY = prevMonthDate.getFullYear();
+                const endM = prevMonthDate.getMonth() + 1;
+
+                while (curY < endY || (curY === endY && curM <= endM)) {
+                    const pStr = `${curY}-${String(curM).padStart(2, '0')}`;
+                    const isDec = allDeclarations.some((d: any) => {
+                        const cleanP = String(d.period || '').split(':')[0].trim();
+                        return cleanP === pStr && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
+                    });
+                    if (!isDec) {
+                        missingRequiredPeriods.push(`IVA ${pStr}`);
+                    }
+                    curM++;
+                    if (curM > 12) {
+                        curM = 1;
+                        curY++;
+                    }
+                }
+            } else if (obligations.ivaFrequency === 'Semestral') {
+                const currentMonth = now.getMonth() + 1;
+                const currentYear = now.getFullYear();
+                const s1 = `${currentYear}-S1`;
+                if (currentMonth >= 7) {
+                    const isDec = allDeclarations.some((d: any) => String(d.period || '').includes(s1) && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file));
+                    if (!isDec && !isPeriodBeforeClientStart(startPeriod, s1)) {
+                        missingRequiredPeriods.push(`IVA ${s1}`);
+                    }
+                }
+            }
+
+            const pendingDeclarations = [
+                ...missingRequiredPeriods.map(p => ({ type: p.split(' ')[0], period: p.split(' ')[1] || p })),
+                ...allDeclarations.filter((d: any) => d.status === 'Pendiente' && !missingRequiredPeriods.some(m => m.includes(d.period)))
+            ];
             const declaredDeclarations = allDeclarations.filter((d: any) => d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
             
             const unpaidIva = allDeclarations.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file));
@@ -2921,13 +2969,40 @@ export async function generateDailyOperationalReport(): Promise<string> {
                 if (isPeriodBeforeClientStart(startPeriod, activeIvaPeriod)) {
                     noAplicaMonthlyCount++;
                 } else {
-                    // Mensual: revisar si ya declaró el período activo
-                    const declared = allDecls.some((d: any) => {
-                        const cleanP = String(d.period || '').split(':')[0].trim();
-                        return cleanP === activeIvaPeriod && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
-                    });
+                    // Mensual: revisar todos los meses desde startPeriod hasta activeIvaPeriod
+                    const startMatch = startPeriod.match(/^(\d{4})-(\d{2})$/);
+                    let hasAnyUnfiledMonth = false;
+                    if (startMatch) {
+                        const startYr = parseInt(startMatch[1], 10);
+                        const startMo = parseInt(startMatch[2], 10);
+                        const [actYrStr, actMoStr] = activeIvaPeriod.split('-');
+                        const actYr = parseInt(actYrStr, 10);
+                        const actMo = parseInt(actMoStr, 10);
 
-                    if (declared) {
+                        let cY = startYr;
+                        let cM = startMo;
+                        while (cY < actYr || (cY === actYr && cM <= actMo)) {
+                            const pStr = `${cY}-${String(cM).padStart(2, '0')}`;
+                            const isPDec = allDecls.some((d: any) => {
+                                const cleanP = String(d.period || '').split(':')[0].trim();
+                                return cleanP === pStr && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
+                            });
+                            if (!isPDec) {
+                                hasAnyUnfiledMonth = true;
+                                break;
+                            }
+                            cM++;
+                            if (cM > 12) { cM = 1; cY++; }
+                        }
+                    } else {
+                        const declared = allDecls.some((d: any) => {
+                            const cleanP = String(d.period || '').split(':')[0].trim();
+                            return cleanP === activeIvaPeriod && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
+                        });
+                        hasAnyUnfiledMonth = !declared;
+                    }
+
+                    if (!hasAnyUnfiledMonth) {
                         alDiaMonthlyCount++;
                     } else {
                         pendingMonthlyDecl.push({ name: c.name, ruc: c.ruc, dueDay });
