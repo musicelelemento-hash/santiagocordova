@@ -36,10 +36,10 @@ interface SidebarProps {
 
 // Groupings for nav items following Stitch Nueva Luz 3.0 Architecture
 export const NAV_GROUPS: { label: string; screens: string[] }[] = [
-    { label: 'Principal', screens: ['home', 'declaraciones', 'clients', 'firmas', 'facturadores', 'cobranza', 'reports'] },
-    { label: 'Operaciones & CRM', screens: ['sri_facturacion', 'tasks', 'calendar', 'crm_pipeline', 'cotizaciones', '3d-studio', 'web_orders'] },
-    { label: 'Finanzas & Bóveda', screens: ['caja_chica', 'refinanciacion', 'licencias'] },
-    { label: 'Sistema & Control', screens: ['settings', 'audit_log', 'services'] },
+    { label: 'Operaciones Tributarias', screens: ['home', 'declaraciones', 'clients', 'firmas'] },
+    { label: 'Facturación & Cobranza', screens: ['cobranza', 'sri_facturacion', 'caja_chica', 'facturadores', 'cotizaciones', 'refinanciacion', 'licencias'] },
+    { label: 'Taller & Comercial', screens: ['crm_pipeline', 'web_orders', 'tasks', 'calendar', '3d-studio'] },
+    { label: 'Sistema & Auditoría', screens: ['reports', 'audit_log', 'settings', 'services'] },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({

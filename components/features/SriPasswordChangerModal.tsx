@@ -23,6 +23,15 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const [copiedPass, setCopiedPass] = useState<string | null>(null);
     const [processedMap, setProcessedMap] = useState<Record<string, boolean>>({});
+    const [manualPassMap, setManualPassMap] = useState<Record<string, string>>({});
+
+    React.useEffect(() => {
+        if (isOpen && clientToFocus) {
+            setSearchTerm(clientToFocus.ruc || clientToFocus.name);
+        } else if (isOpen && !clientToFocus) {
+            setSearchTerm('');
+        }
+    }, [isOpen, clientToFocus]);
 
     const csvInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -122,18 +131,35 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
         }, 2000);
     };
 
-    const handleApplyPasswordChange = (client: Client) => {
+    const handleApplyPasswordChange = (client: Client, customPass?: string) => {
         const oldPass = client.sriPassword || '';
-        const newPass = transformPasswordForSri(oldPass);
+        const newPass = (customPass !== undefined ? customPass : (manualPassMap[client.id] !== undefined ? manualPassMap[client.id] : transformPasswordForSri(oldPass))).trim();
 
-        if (!newPass || oldPass === newPass) {
-            toast.info(`La contraseña para ${client.name} ya termina en @ o está formateada.`);
+        if (!newPass) {
+            toast.warning(`Debes ingresar una clave válida para ${client.name}.`);
             return;
         }
 
-        updateClient(client.id, { sriPassword: newPass, sriPasswordUpdatedAt: new Date().toISOString() });
+        if (oldPass === newPass && !customPass && manualPassMap[client.id] === undefined) {
+            toast.info(`La contraseña para ${client.name} ya está configurada.`);
+            return;
+        }
+
+        const nowIso = new Date().toISOString();
+        updateClient(client.id, { 
+            sriPassword: newPass, 
+            sriPasswordUpdatedAt: nowIso,
+            taxProfile: {
+                ...(client.taxProfile as any),
+                sriCredencial: {
+                    estado: 'ok',
+                    motivo: 'Clave actualizada manualmente',
+                    ultimo_ingreso: nowIso
+                }
+            }
+        });
         setProcessedMap(prev => ({ ...prev, [client.id]: true }));
-        toast.success(`🔑 Clave SRI de ${client.name} actualizada en el sistema a: ${newPass}`);
+        toast.success(`🔑 Clave SRI de ${client.name} actualizada y habilitada: ${newPass}`);
 
         // Notificar a la extensión de Chrome
         sendSRIPasswordChangeToExtension(client.ruc, oldPass, newPass);
@@ -141,7 +167,7 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
 
     const handleLaunchSriChange = (client: Client) => {
         const oldPass = client.sriPassword || '';
-        const newPass = transformPasswordForSri(oldPass);
+        const newPass = (manualPassMap[client.id] !== undefined ? manualPassMap[client.id] : transformPasswordForSri(oldPass)).trim();
 
         // Copiar la nueva contraseña al portapapeles
         navigator.clipboard.writeText(newPass);
@@ -340,11 +366,15 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
 
                                                 <td className="py-4 px-5 font-mono">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
-                                                            {suggestedPass}
-                                                        </span>
+                                                        <input
+                                                            type="text"
+                                                            value={manualPassMap[c.id] !== undefined ? manualPassMap[c.id] : suggestedPass}
+                                                            onChange={(e) => setManualPassMap(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                                            placeholder="Nueva clave..."
+                                                            className="px-2.5 py-1 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-300 font-bold text-xs outline-none focus:border-amber-400 w-36"
+                                                        />
                                                         <button
-                                                            onClick={() => handleCopy(suggestedPass, 'pass', c.id)}
+                                                            onClick={() => handleCopy(manualPassMap[c.id] !== undefined ? manualPassMap[c.id] : suggestedPass, 'pass', c.id)}
                                                             className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
                                                             title="Copiar Nueva Clave al Portapapeles (para Ecuafact/SRI)"
                                                         >

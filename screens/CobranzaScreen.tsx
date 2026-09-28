@@ -47,9 +47,11 @@ const defaultBusinessProfile: BusinessProfile = {
 };
 
 // Helper puro: Determinar frecuencia de IVA del Contribuyente (Mensual, Semestral o Rimpe Popular)
-export function getClientIvaFrequency(client: Client): 'Mensual' | 'Semestral' | 'Popular' {
-    if (client.regime === TaxRegime.RimpeNegocioPopular) return 'Popular';
-    if (client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor) return 'Semestral';
+export function getClientIvaFrequency(client: Pick<Client, 'regime' | 'taxProfile'>): 'Mensual' | 'Semestral' | 'Popular' {
+    if (client.regime === TaxRegime.RimpeNegocioPopular || client.taxProfile?.ivaFrequency === 'Ninguno') return 'Popular';
+    if (client.taxProfile?.ivaFrequency === 'Semestral') return 'Semestral';
+    if (client.taxProfile?.ivaFrequency === 'Mensual') return 'Mensual';
+    if (client.regime === TaxRegime.RimpeEmprendedor) return 'Semestral';
     return 'Mensual';
 }
 
@@ -108,7 +110,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     } | null>(null);
 
     const [moraFilter, setMoraFilter] = useState<'all' | 'al_dia' | 'atrasado' | 'mora_critica' | 'anios_anteriores'>('all');
-    const [matrixFrequency, setMatrixFrequency] = useState<'Mensual' | 'Semestral' | 'all'>('all');
+    const [matrixFrequency, setMatrixFrequency] = useState<'all' | 'Mensual' | 'Semestral' | 'Popular'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -702,9 +704,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             const fee = getClientServiceFee(client, serviceFees);
             if (fee <= 0) return; // Courtesy / Zero fee clients do not generate debt
 
+            const clientIvaFreq = getClientIvaFrequency(client);
             let type: FinancialItem['type'] = 'mensual';
-            if (client.taxProfile?.ivaFrequency === 'Semestral') type = 'semestral';
-            else if (client.regime === TaxRegime.RimpeNegocioPopular) type = 'renta';
+            if (clientIvaFreq === 'Semestral') type = 'semestral';
+            else if (clientIvaFreq === 'Popular') type = 'renta';
             else if (client.taxProfile?.hasActiveDevolucionIva) type = 'dev';
 
             const activePeriods = getActivePeriodsForClient(client, now);
@@ -713,9 +716,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // 1. Process explicit declarations in client.declarations
             (client.declarations || []).forEach(decl => {
                 if (isPeriodBeforeClientStart(client, decl.period)) return;
-                const clientIvaFreq = getClientIvaFrequency(client);
                 const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(decl.period?.split(':')[0] || '');
                 if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat && !decl.proof_file) {
+                    return;
+                }
+                if (clientIvaFreq === 'Popular' && decl.period?.includes('-S') && !decl.proof_file) {
                     return;
                 }
                 processedPeriods.add(decl.period);
@@ -747,6 +752,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // 2. Process active periods that were declared in Matriz
             activePeriods.forEach(period => {
                 if (processedPeriods.has(period) || isPeriodBeforeClientStart(client, period)) return;
+                const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(period?.split(':')[0] || '');
+                if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat) return;
+                if (clientIvaFreq === 'Popular' && period.includes('-S')) return;
+
                 const dueDate = getDueDateForPeriod(client, period) || now;
                 const diff = differenceInCalendarDays(now, dueDate);
                 const item: FinancialItem = {
@@ -829,21 +838,31 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
     }, [financialData, activeTab, searchTerm, moraFilter]);
 
-    // Períodos Fiscales para la Matriz de Cobranzas (Mensuales o Semestrales)
+    // Períodos Fiscales para la Matriz de Cobranzas (Mensuales, Semestrales o Anuales)
     const matrixPeriods = useMemo(() => {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
 
+        if (matrixFrequency === 'Popular') {
+            // Generar los 3 últimos ejercicios fiscales de Renta Anual
+            const list: { key: string; label: string; shortLabel: string; year: string; type: 'renta' }[] = [];
+            for (let yr = currentYear - 1; yr >= currentYear - 3; yr--) {
+                const key = yr.toString();
+                list.push({ key, label: `Renta Anual ${yr}`, shortLabel: yr.toString(), year: yr.toString(), type: 'renta' });
+            }
+            return list;
+        }
+
         if (matrixFrequency === 'Semestral') {
-            // Generar los 6 últimos semestres fiscales con formato canónico (ej: 2025-S2, 2025-S1, 2024-S2, 2024-S1, 2023-S2, 2023-S1)
+            // Generar los 6 últimos semestres fiscales con formato canónico (ej: 2026-S1, 2025-S2, 2025-S1, 2024-S2, 2024-S1, 2023-S2)
             const list: { key: string; label: string; shortLabel: string; year: string; type: 'semestral' }[] = [];
             let y = currentYear;
             let s = currentMonth <= 6 ? 1 : 2;
             
             for (let i = 0; i < 6; i++) {
                 const key = `${y}-S${s}`;
-                const label = `${s}Âº Semestre ${y}`;
+                const label = `${s}º Semestre ${y}`;
                 const shortLabel = `${s}S`;
                 list.push({ key, label, shortLabel, year: y.toString(), type: 'semestral' });
                 
@@ -876,15 +895,16 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         return list;
     }, [matrixFrequency]);
 
-    // Matriz de Clientes vs Períodos Fiscales de Cobro (Mensual & Semestral)
+    // Matriz de Clientes vs Períodos Fiscales de Cobro (Mensual, Semestral & Popular)
     const matrixClientsData = useMemo(() => {
         const query = searchTerm.toLowerCase();
         const baseClients = clients.filter(c => {
             if (c.isDeleted || c.isActive === false || isCourtesyClient(c)) return false;
             
             const freq = getClientIvaFrequency(c);
-            if (matrixFrequency === 'Mensual' && freq === 'Semestral') return false;
-            if (matrixFrequency === 'Semestral' && freq === 'Mensual') return false;
+            if (matrixFrequency === 'Mensual' && freq !== 'Mensual') return false;
+            if (matrixFrequency === 'Semestral' && freq !== 'Semestral') return false;
+            if (matrixFrequency === 'Popular' && freq !== 'Popular') return false;
 
             if (query) {
                 const match = c.name.toLowerCase().includes(query) || (c.tradeName && c.tradeName.toLowerCase().includes(query)) || c.ruc.includes(query);
@@ -906,6 +926,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     return { key: p.key, status: 'na', amount: 0, label: 'N/A' };
                 }
 
+                // Si el cliente es RIMPE Negocio Popular y estamos en columnas mensuales o semestrales (no aplica IVA)
+                if (freq === 'Popular' && p.type !== 'renta') {
+                    return { key: p.key, status: 'na', amount: 0, label: 'No Aplica (Popular)' };
+                }
+
                 // Si estamos en vista unificada mensual y el cliente es semestral, pero el mes no es un cierre semestral (-06 o -12)
                 if (matrixFrequency === 'all' && freq === 'Semestral' && !p.key.endsWith('-06') && !p.key.endsWith('-12')) {
                     return { key: p.key, status: 'na', amount: 0, label: 'Semestral' };
@@ -921,6 +946,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     } else if (p.key.includes('-S2') || p.key.endsWith('-12')) {
                         decl = (client.declarations || []).find(d => d.period.includes('S2') || d.period.includes('2S') || d.period.endsWith('-12'));
                     }
+                } else if (!decl && freq === 'Popular' && p.type === 'renta') {
+                    decl = (client.declarations || []).find(d => d.period === p.key || arePeriodsEqual(d.period, p.key));
                 }
 
                 const itemAmount = (decl && decl.amount) ? decl.amount : fee;
@@ -984,6 +1011,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 if (!match) return;
             }
 
+            const clientIvaFreq = getClientIvaFrequency(client);
             const activePeriods = getActivePeriodsForClient(client, now);
             const processedPeriods = new Set<string>();
             const periodsList: any[] = [];
@@ -995,9 +1023,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // 1. Declaraciones existentes
             (client.declarations || []).forEach(decl => {
                 if (isPeriodBeforeClientStart(client, decl.period)) return;
-                const clientIvaFreq = getClientIvaFrequency(client);
                 const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(decl.period?.split(':')[0] || '');
                 if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat && !decl.proof_file) {
+                    return;
+                }
+                if (clientIvaFreq === 'Popular' && decl.period?.includes('-S') && !decl.proof_file) {
                     return;
                 }
                 processedPeriods.add(decl.period);
@@ -1038,6 +1068,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // 2. Períodos activos proyectados o sin declarar
             activePeriods.forEach(period => {
                 if (processedPeriods.has(period) || isPeriodBeforeClientStart(client, period)) return;
+                const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(period?.split(':')[0] || '');
+                if ((clientIvaFreq === 'Semestral' || clientIvaFreq === 'Popular') && isMonthlyIvaFormat) return;
+                if (clientIvaFreq === 'Popular' && period.includes('-S')) return;
+
                 const dueDate = getDueDateForPeriod(client, period) || now;
                 const diff = differenceInCalendarDays(now, dueDate);
                 const sriDoc = findSriInvoice(client.ruc, period);
@@ -2455,6 +2489,18 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <LucideIcons.Clock size={12} />
                                         <span>Semestrales ({clients.filter(c => getClientIvaFrequency(c) === 'Semestral').length})</span>
                                     </button>
+                                    <button
+                                        onClick={() => setMatrixFrequency('Popular')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                                            matrixFrequency === 'Popular'
+                                                ? 'bg-amber-600 text-white shadow-sm font-black'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                                        }`}
+                                        title="Filtrar por contribuyentes RIMPE Negocio Popular (Renta Anual)"
+                                    >
+                                        <LucideIcons.Shield size={12} />
+                                        <span>Popular / Anual ({clients.filter(c => getClientIvaFrequency(c) === 'Popular').length})</span>
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -3136,7 +3182,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                         title={`Liquidar todos los cobros pendientes de ${p.label}`}
                                                     >
                                                         <LucideIcons.Zap size={8} />
-                                                        <span>{matrixFrequency === 'Semestral' ? 'Cobrar Sem.' : 'Cobrar Mes'}</span>
+                                                        <span>{matrixFrequency === 'Semestral' ? 'Cobrar Sem.' : matrixFrequency === 'Popular' ? 'Cobrar Renta' : 'Cobrar Mes'}</span>
                                                     </button>
                                                 </div>
                                             </th>

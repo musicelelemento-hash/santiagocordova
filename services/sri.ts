@@ -177,23 +177,52 @@ export const getNinthDigit = (ruc: string): number => {
 };
 
 /**
- * Lógica Central de Periodos (Actualizada: Prioridad Mensual/Semestral vía TaxProfile)
+ * Determina la frecuencia efectiva de IVA de un cliente:
+ * - 'Popular': RIMPE Negocio Popular o sin IVA (excluido de IVA por Art. 97.6 LRTI, solo Renta Anual en Mayo)
+ * - 'Semestral': RIMPE Emprendedor (por defecto legal) o configurado explícitamente como 'Semestral'
+ * - 'Mensual': Régimen General o cliente que optó explícitamente por IVA Mensual
+ */
+export function getClientIvaFrequency(client: Pick<Client, 'regime' | 'taxProfile'>): 'Mensual' | 'Semestral' | 'Popular' {
+    if (client.regime === TaxRegime.RimpeNegocioPopular || client.taxProfile?.ivaFrequency === 'Ninguno') {
+        return 'Popular';
+    }
+    if (client.taxProfile?.ivaFrequency === 'Semestral') {
+        return 'Semestral';
+    }
+    if (client.taxProfile?.ivaFrequency === 'Mensual') {
+        return 'Mensual';
+    }
+    if (client.regime === TaxRegime.RimpeEmprendedor) {
+        return 'Semestral';
+    }
+    return 'Mensual';
+}
+
+/**
+ * Lógica Central de Periodos (Actualizada: Prioridad Mensual/Semestral vía TaxProfile y Régimen Legal)
  */
 export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declarations'>, date: Date, overrideFrequency?: 'Mensual' | 'Semestral' | 'Ninguno' | 'Anual' | 'all'): string => {
     const currentYear = getYear(date);
     const prevYearStr = (currentYear - 1).toString();
     const month = getMonth(date); // 0-11
 
-    // 1. REGLA: Si es RIMPE Negocio Popular, la obligación principal SIEMPRE es Anual.
-    if (client.regime === TaxRegime.RimpeNegocioPopular || overrideFrequency === 'Anual') {
+    // 1. REGLA: Si es RIMPE Negocio Popular, Ninguno u override Anual, la obligación principal SIEMPRE es Anual.
+    if (client.regime === TaxRegime.RimpeNegocioPopular || client.taxProfile?.ivaFrequency === 'Ninguno' || overrideFrequency === 'Anual' || overrideFrequency === 'Ninguno') {
         return prevYearStr;
     }
 
-    // 2. REGLA: Uso de TaxProfile (ivaFrequency) u override
-    let ivaFreq = overrideFrequency || client.taxProfile?.ivaFrequency || 'Mensual';
-    if (ivaFreq === 'all') ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+    // 2. REGLA: Determinar la frecuencia efectiva de IVA
+    let effectiveFreq: 'Mensual' | 'Semestral';
+    if (overrideFrequency === 'Semestral') {
+        effectiveFreq = 'Semestral';
+    } else if (overrideFrequency === 'Mensual') {
+        effectiveFreq = 'Mensual';
+    } else {
+        const clientFreq = getClientIvaFrequency(client);
+        effectiveFreq = clientFreq === 'Semestral' ? 'Semestral' : 'Mensual';
+    }
 
-    if (ivaFreq === 'Semestral') {
+    if (effectiveFreq === 'Semestral') {
         // Habilitar un mes antes del vencimiento oficial (Junio para S1, Diciembre para S2)
         if (month === 5) {
             return `${currentYear}-S1`;
@@ -208,19 +237,10 @@ export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declar
         }
     }
 
-    if (ivaFreq === 'Mensual') {
+    if (effectiveFreq === 'Mensual') {
         const declarationMonth = subMonths(date, 1);
         return format(declarationMonth, 'yyyy-MM');
     }
-
-    // Default Fallback
-    if (client.regime === TaxRegime.RimpeEmprendedor) {
-        if (month === 5) return `${currentYear}-S1`;
-        if (month === 11) return `${currentYear}-S2`;
-        if (month < 5) return `${currentYear - 1}-S2`;
-        return `${currentYear}-S1`;
-    }
-
 
     // Fallback por defecto a mensual para Devoluciones u otros casos no especificados
     const fallbackDate = subMonths(date, 1);

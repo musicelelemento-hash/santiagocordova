@@ -1,5 +1,5 @@
 import { Client, Declaration, DeclarationStatus, TaxRegime, TaxObligationType, InternalStatus } from '../types';
-import { getPeriod, getDueDateForPeriod, getNinthDigit, getDaysUntilDue, requiresIva } from './sri';
+import { getPeriod, getDueDateForPeriod, getNinthDigit, getDaysUntilDue, requiresIva, getClientIvaFrequency } from './sri';
 import { SRI_DUE_DATES } from '../constants';
 import { subMonths, format, getYear } from 'date-fns';
 import { isCourtesyClient } from './clientService';
@@ -231,13 +231,13 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
     const rentaPeriod = (currentYear - 1).toString();
 
     // 1. IVA (Mensual / Semestral)
-    const clientIvaFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
+    const clientIvaFreq = getClientIvaFrequency(client);
     const shouldIncludeIva = (frequency === 'all') || 
                             (frequency === 'Mensual' && clientIvaFreq === 'Mensual') ||
                             (frequency === 'Semestral' && clientIvaFreq === 'Semestral');
 
-    if (requiresIva(client) && shouldIncludeIva) {
-        const ivaPeriod = getPeriod(client, date);
+    if (requiresIva(client) && shouldIncludeIva && clientIvaFreq !== 'Popular') {
+        const ivaPeriod = getPeriod(client, date, clientIvaFreq);
         const ivaDecl = declarations.find(d => periodsMatch(d.period, ivaPeriod));
         const ivaDue = getDueDateForPeriod(client, ivaPeriod);
         const ivaDays = ivaDue ? getDaysUntilDue(ivaDue) : null;
@@ -447,7 +447,7 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
     
     // IVA
     if (requiresIva(client)) {
-        const clientFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
+        const clientFreq = getClientIvaFrequency(client);
         if (isSemester && clientFreq === 'Semestral') {
             obligations.push({ type: 'IVA', label: 'IVA Semestral' });
         } else if (!isSemester && clientFreq === 'Mensual') {
@@ -686,24 +686,23 @@ export const getActivePeriodsForClient = (client: Client, date: Date = new Date(
         return [];
     }
     const periods: string[] = [];
-    const ivaFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
+    const clientFreq = getClientIvaFrequency(client);
     
-    // We check monthly or semestral periods
     // Determine the floor period for this client
     const floors = getClientFloors(client);
 
-    if (requiresIva(client) && ivaFreq !== 'Ninguno') {
+    if (requiresIva(client) && clientFreq !== 'Popular') {
         let currentDate = date;
         for (let i = 0; i < 24; i++) {
-            const period = getPeriod(client, currentDate);
+            const period = getPeriod(client, currentDate, clientFreq);
             const isBeforeStart = period.includes('-S') ? period < floors.semestral : period < floors.monthly;
             if (isBeforeStart) break;
             if (!periods.includes(period)) {
                 periods.push(period);
             }
-            if (ivaFreq === 'Mensual') {
+            if (clientFreq === 'Mensual') {
                 currentDate = subMonths(currentDate, 1);
-            } else if (ivaFreq === 'Semestral') {
+            } else if (clientFreq === 'Semestral') {
                 currentDate = subMonths(currentDate, 6);
             }
         }
@@ -719,7 +718,9 @@ export const getActivePeriodsForClient = (client: Client, date: Date = new Date(
         for (let year = currentYear - 1; year >= 2025; year--) {
             const yStr = year.toString();
             if (isPeriodBeforeClientStart(client, yStr)) break;
-            periods.push(yStr);
+            if (!periods.includes(yStr)) {
+                periods.push(yStr);
+            }
         }
     }
     
@@ -743,10 +744,16 @@ export interface ClientUndeclaredSummary {
 
 export const getClientDebtSummary = (client: Client, fees: any, date: Date = new Date()): ClientDebtSummary => {
     const activePeriods = getActivePeriodsForClient(client, date);
+    const clientFreq = getClientIvaFrequency(client);
     const unpaidPeriods: string[] = [];
     let totalDebt = 0;
     
     activePeriods.forEach(period => {
+        // Blindaje extra: Popular y Semestral NUNCA computan deuda sobre períodos mensuales de IVA
+        const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(period?.split(':')[0] || '');
+        if ((clientFreq === 'Popular' || clientFreq === 'Semestral') && isMonthlyIvaFormat) return;
+        if (clientFreq === 'Popular' && period.includes('-S')) return;
+
         const decl = (client.declarations || []).find(d => periodsMatch(d.period, period));
         const declared = isDeclared(decl);
         const paid = isPaid(decl);
@@ -778,10 +785,16 @@ export const getClientUndeclaredSummary = (client: Client, date: Date = new Date
         };
     }
     const activePeriods = getActivePeriodsForClient(client, date);
+    const clientFreq = getClientIvaFrequency(client);
     const undeclaredPeriods: string[] = [];
     const overduePeriods: string[] = [];
     
     activePeriods.forEach(period => {
+        // Blindaje extra: Popular y Semestral NUNCA deben reportar faltantes u obligaciones vencidas sobre meses de IVA
+        const isMonthlyIvaFormat = /^\d{4}-(0[1-9]|1[0-2])$/.test(period?.split(':')[0] || '');
+        if ((clientFreq === 'Popular' || clientFreq === 'Semestral') && isMonthlyIvaFormat) return;
+        if (clientFreq === 'Popular' && period.includes('-S')) return;
+
         const decl = (client.declarations || []).find(d => periodsMatch(d.period, period));
         const declared = isDeclared(decl);
         

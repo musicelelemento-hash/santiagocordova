@@ -4,11 +4,13 @@ import {
     AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Command, Copy,
     Database, ExternalLink, Eye, EyeOff, FileText, HandCoins, Loader2,
     MessageCircle, ShieldAlert, Sparkles, TrendingUp, UploadCloud, Users,
-    Vault, Wallet, X, Zap, KeyRound, ShieldOff, ShieldCheck, PhoneCall, Trash2
+    Vault, Wallet, X, Zap, KeyRound, ShieldOff, ShieldCheck, PhoneCall, Trash2,
+    Play, Send, Check, Search, FileUp, Key, CheckSquare, Square, Filter
 } from 'lucide-react';
+import { sendToSRIExtension, sendBatchDeclarationToExtension, openSRIPortal } from '../services/extensionBridge';
 import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
-import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay, getDaysUntilDue } from '../services/sri';
+import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay, getDaysUntilDue, isSriPasswordUpdated, SriPasswordStatusInfo } from '../services/sri';
 import { isPast, isToday, isTomorrow, format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ClientCard } from '../components/features/ClientCard';
@@ -31,7 +33,8 @@ import { CampaignBanner, CampaignProgress } from '../components/ui/CampaignBanne
 import { Modal } from '../components/ui/Modal';
 import { fileToBase64 } from '../services/pdfExtraction';
 import { getClientServiceFee } from '../services/clientService';
-import { generateDeclarationWhatsAppMessage } from '../services/sri';
+import { generateDeclarationWhatsAppMessage, getClientIvaFrequency } from '../services/sri';
+import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
 
 
 interface AdminDashboardScreenProps {
@@ -115,7 +118,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [workspaceClient, navigate]);
 
     // Hub Táctico Ejecutivo (Stitch Nueva Luz 3.0)
-    const [hubTab, setHubTab] = useState<'radar' | 'cargas' | 'alertas' | 'firmas'>('radar');
+    const [hubTab, setHubTab] = useState<'despacho' | 'radar' | 'cargas' | 'alertas' | 'firmas'>(() => {
+        return (sessionStorage.getItem('dashboard_hub_tab') as any) || 'despacho';
+    });
+    const [despachoFilter, setDespachoFilter] = useState<'urgentes' | 'sin-pdf' | 'por-cobrar' | 'todos'>('urgentes');
+    const [despachoCredFilter, setDespachoCredFilter] = useState<'all' | 'habilitados' | 'con-problemas' | 'sin-clave' | 'no-valen'>('all');
+    const [despachoSearch, setDespachoSearch] = useState('');
+    const [isRpaBatchModalOpen, setIsRpaBatchModalOpen] = useState(false);
+    const [rpaSelectedClientIds, setRpaSelectedClientIds] = useState<Record<string, boolean>>({});
+    const [batchModalTab, setBatchModalTab] = useState<'todos' | 'habilitados' | 'problemas'>('todos');
+    const [isClavesModalOpen, setIsClavesModalOpen] = useState(false);
+    const [clientToFocusKey, setClientToFocusKey] = useState<Client | undefined>(undefined);
     const [firmasSubTab, setFirmasSubTab] = useState<'vigentes' | 'sin-firma'>('vigentes');
     const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
     const [mesaUploadingTarget, setMesaUploadingTarget] = useState<{ client: Client; period: string } | null>(null);
@@ -125,6 +138,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [showMarkAllModal, setShowMarkAllModal] = useState(false);
 
     // Persistence Effect
+    React.useEffect(() => {
+        sessionStorage.setItem('dashboard_hub_tab', hubTab);
+    }, [hubTab]);
+
     React.useEffect(() => {
         sessionStorage.setItem('dashboard_filter', filter);
     }, [filter]);
@@ -252,13 +269,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             } else if (filter === 'prepaid') {
                 filterMatch = !!(ivaDecl?.is_paid && ivaDecl?.status === DeclarationStatus.Pendiente);
             } else if (filter === 'no-iva') {
-                filterMatch = c.taxProfile?.ivaFrequency === 'Ninguno';
+                filterMatch = getClientIvaFrequency(c) === 'Popular';
             } else if (filter === 'mensual') {
-                filterMatch = c.taxProfile?.ivaFrequency === 'Mensual';
+                filterMatch = getClientIvaFrequency(c) === 'Mensual';
             } else if (filter === 'semestral') {
-                filterMatch = c.taxProfile?.ivaFrequency === 'Semestral';
+                filterMatch = getClientIvaFrequency(c) === 'Semestral';
             } else if (filter === 'popular') {
-                filterMatch = c.regime === TaxRegime.RimpeNegocioPopular;
+                filterMatch = getClientIvaFrequency(c) === 'Popular';
             } else if (filter === 'no-renta') {
                 filterMatch = c.taxProfile?.requiresAnnualRenta === false;
             } else if (filter === 'boveda') {
@@ -396,7 +413,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
     const matrixClients = useMemo(() => {
         const freq = filter === 'semestral' ? 'Semestral' : 'Mensual';
-        const filtered = clients.filter(c => !c.isDeleted && c.isActive && c.taxProfile?.ivaFrequency === freq);
+        const filtered = clients.filter(c => !c.isDeleted && c.isActive && getClientIvaFrequency(c) === freq);
         
         return filtered.sort((a, b) => {
             const digitA = parseInt(a.ruc[8], 10);
@@ -420,15 +437,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const rentaPeriod = useMemo(() => (new Date().getFullYear() - 1).toString(), []);
 
     const mensualClients = useMemo(() => 
-        filter === 'digital-mando' ? activeList.filter(c => (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual') : []
+        filter === 'digital-mando' ? activeList.filter(c => getClientIvaFrequency(c) === 'Mensual') : []
     , [activeList, filter]);
 
     const semestralClients = useMemo(() => 
-        filter === 'digital-mando' ? activeList.filter(c => c.taxProfile?.ivaFrequency === 'Semestral') : []
+        filter === 'digital-mando' ? activeList.filter(c => getClientIvaFrequency(c) === 'Semestral') : []
     , [activeList, filter]);
 
     const anualClients = useMemo(() => 
-        filter === 'digital-mando' ? activeList.filter(c => c.taxProfile?.ivaFrequency === 'Ninguno' || (!c.taxProfile?.ivaFrequency && c.regime === TaxRegime.RimpeNegocioPopular)) : []
+        filter === 'digital-mando' ? activeList.filter(c => getClientIvaFrequency(c) === 'Popular') : []
     , [activeList, filter]);
 
     const monthlyPeriodStr = useMemo(() => {
@@ -812,6 +829,215 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         return suggestions.slice(0, 3);
     }, [tacticalInfo, urgentPriorities, expiringSignatures, activeRentaRefunds, navigate]);
 
+    // ── MESA DE DESPACHO INMEDIATO (Inbox Táctico Stitch Nueva Luz 3.0) ──
+    const despachoList = useMemo(() => {
+        const today = new Date();
+        const active = clients.filter(c => !c.isDeleted && (c.isActive ?? true));
+        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+
+        const filtered = active.filter(c => {
+            if (isPeriodBeforeClientStart(c, targetPeriod)) return false;
+
+            const dec = (c.declarations || []).find(d => arePeriodsEqual(d.period, targetPeriod) || d.period === targetPeriod);
+            const compliance = getClientCompliance(c, today);
+            const debtSummary = getClientDebtSummary(c, serviceFees, today);
+            const digit = parseInt(c.ruc[8], 10);
+
+            if (despachoFilter === 'urgentes') {
+                const isTodayDigit = tacticalInfo.todayDigit !== null && digit === tacticalInfo.todayDigit;
+                const isOverdue = compliance.overdueCount > 0 || compliance.urgentCount > 0;
+                if (!isTodayDigit && !isOverdue) return false;
+            } else if (despachoFilter === 'sin-pdf') {
+                const hasMissingPdf = (c.declarations || []).some(d =>
+                    (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
+                );
+                if (!hasMissingPdf) return false;
+            } else if (despachoFilter === 'por-cobrar') {
+                const hasPendingFee = debtSummary.hasPendingPayment || (dec && (dec.status === DeclarationStatus.Enviada || !!dec.proof_file) && !dec.is_paid);
+                if (!hasPendingFee) return false;
+            } else if (despachoFilter === 'todos') {
+                const isDone = dec?.status === DeclarationStatus.Enviada || dec?.status === DeclarationStatus.Pagada || !!dec?.proof_file;
+                if (isDone) return false;
+            }
+
+            if (despachoSearch.trim()) {
+                const q = despachoSearch.toLowerCase().trim();
+                const match = c.name.toLowerCase().includes(q) || c.ruc.includes(q) || (c.tradeName && c.tradeName.toLowerCase().includes(q));
+                if (!match) return false;
+            }
+
+            return true;
+        });
+
+        return filtered.sort((a, b) => {
+            const digitA = parseInt(a.ruc[8], 10) === 0 ? 10 : parseInt(a.ruc[8], 10);
+            const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
+            return digitA - digitB || a.name.localeCompare(b.name);
+        });
+    }, [clients, mesaTrabajoTab, monthlyPeriodStr, semestralPeriodStr, despachoFilter, despachoSearch, tacticalInfo.todayDigit, serviceFees]);
+
+    // ── ANÁLISIS DE CREDENCIALES SRI (Habilitados vs Sin Clave vs No Vale / Rechazada / Caducada como LABANDA) ──
+    const despachoKeyAnalysis = useMemo(() => {
+        const analyzed = despachoList.map(client => {
+            const keyInfo = isSriPasswordUpdated(client);
+            let category: 'habilitado' | 'falta' | 'invalida';
+            if (keyInfo.isUpdated) {
+                category = 'habilitado';
+            } else if (keyInfo.label === 'Sin Clave') {
+                category = 'falta';
+            } else {
+                // Rechazada, Caducada, Bloqueada, Clave *
+                category = 'invalida';
+            }
+            return {
+                client,
+                keyInfo,
+                category
+            };
+        });
+
+        const habilitados = analyzed.filter(i => i.category === 'habilitado');
+        const conProblemas = analyzed.filter(i => i.category !== 'habilitado');
+        const faltanClave = analyzed.filter(i => i.category === 'falta');
+        const noValenClave = analyzed.filter(i => i.category === 'invalida');
+
+        return {
+            all: analyzed,
+            habilitados,
+            conProblemas,
+            faltanClave,
+            noValenClave,
+            habilitadosCount: habilitados.length,
+            conProblemasCount: conProblemas.length,
+            faltanCount: faltanClave.length,
+            noValenCount: noValenClave.length
+        };
+    }, [despachoList]);
+
+    // Lista mostrada en la tabla según el filtro de credenciales activo
+    const despachoListDisplay = useMemo(() => {
+        if (despachoCredFilter === 'habilitados') {
+            return despachoKeyAnalysis.habilitados.map(i => i.client);
+        }
+        if (despachoCredFilter === 'con-problemas') {
+            return despachoKeyAnalysis.conProblemas.map(i => i.client);
+        }
+        if (despachoCredFilter === 'sin-clave') {
+            return despachoKeyAnalysis.faltanClave.map(i => i.client);
+        }
+        if (despachoCredFilter === 'no-valen') {
+            return despachoKeyAnalysis.noValenClave.map(i => i.client);
+        }
+        return despachoList;
+    }, [despachoList, despachoCredFilter, despachoKeyAnalysis]);
+
+    const handleOpenKeyModalForClient = (client: Client) => {
+        setClientToFocusKey(client);
+        setIsClavesModalOpen(true);
+    };
+
+    const handleSendToRPA = (client: Client) => {
+        const keyInfo = isSriPasswordUpdated(client);
+        if (!keyInfo.isUpdated) {
+            toast.warning(
+                `⚠️ ${client.name}: ${keyInfo.label === 'Sin Clave' ? 'No tiene clave SRI registrada' : 'Su clave SRI no es válida (' + keyInfo.label + ')'}. Corrígela antes de enviar al robot.`
+            );
+            handleOpenKeyModalForClient(client);
+            return;
+        }
+        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+        sendBatchDeclarationToExtension([client], mesaTrabajoTab, 'declare', targetPeriod);
+        toast.success(`🚀 [Nueva Luz 3.0] ${client.name} enviado al robot RPA para declarar (${targetPeriod})`);
+    };
+
+    const handleOpenBatchRpaModal = () => {
+        if (despachoList.length === 0) {
+            toast.info("No hay clientes en la lista actual para enviar.");
+            return;
+        }
+        // Pre-seleccionar SOLO clientes cuya clave está habilitada
+        const initialSelected: Record<string, boolean> = {};
+        despachoKeyAnalysis.all.forEach(item => {
+            initialSelected[item.client.id] = item.category === 'habilitado';
+        });
+        setRpaSelectedClientIds(initialSelected);
+        setBatchModalTab('todos');
+        setIsRpaBatchModalOpen(true);
+    };
+
+    const selectedBatchCount = useMemo(() => {
+        return despachoList.filter(c => rpaSelectedClientIds[c.id]).length;
+    }, [despachoList, rpaSelectedClientIds]);
+
+    const selectedInvalidCount = useMemo(() => {
+        return despachoList.filter(c => rpaSelectedClientIds[c.id] && !isSriPasswordUpdated(c).isUpdated).length;
+    }, [despachoList, rpaSelectedClientIds]);
+
+    const toggleSelectAllInModal = (onlyHabilitados: boolean = false) => {
+        const next: Record<string, boolean> = {};
+        despachoKeyAnalysis.all.forEach(item => {
+            if (onlyHabilitados) {
+                next[item.client.id] = item.category === 'habilitado';
+            } else {
+                next[item.client.id] = true;
+            }
+        });
+        setRpaSelectedClientIds(next);
+    };
+
+    const deselectAllInModal = () => {
+        setRpaSelectedClientIds({});
+    };
+
+    const toggleClientSelection = (clientId: string) => {
+        setRpaSelectedClientIds(prev => ({
+            ...prev,
+            [clientId]: !prev[clientId]
+        }));
+    };
+
+    const handleConfirmBatchRpa = () => {
+        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+        const selectedClients = despachoList.filter(c => rpaSelectedClientIds[c.id]);
+
+        if (selectedClients.length === 0) {
+            toast.warning("No has seleccionado ningún cliente para el despacho.");
+            return;
+        }
+
+        const invalidSelected = selectedClients.filter(c => !isSriPasswordUpdated(c).isUpdated);
+        if (invalidSelected.length > 0) {
+            const proceed = window.confirm(
+                `⚠️ ATENCIÓN: Has marcado a ${invalidSelected.length} cliente(s) con clave NO VÁLIDA o FALTANTE (ej: ${invalidSelected[0].name}).\n\nEl portal SRI rechazará estas peticiones o bloqueará la sesión por intentos fallidos.\n\n¿Deseas despachar de todas formas?`
+            );
+            if (!proceed) return;
+        }
+
+        sendBatchDeclarationToExtension(selectedClients, mesaTrabajoTab, 'declare', targetPeriod);
+        setIsRpaBatchModalOpen(false);
+        toast.success(`🚀 [Nueva Luz 3.0] Lote de ${selectedClients.length} clientes enviado a la extensión (${targetPeriod})`);
+    };
+
+    const handleOpenWhatsAppForClient = (client: Client) => {
+        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+        const dec = (client.declarations || []).find(d => arePeriodsEqual(d.period, targetPeriod) || d.period === targetPeriod);
+        const isDeclared = dec?.status === DeclarationStatus.Enviada || dec?.status === DeclarationStatus.Pagada || !!dec?.proof_file;
+        const fee = getClientServiceFee(client, serviceFees, targetPeriod);
+        const msg = generateDeclarationWhatsAppMessage(
+            client.name,
+            mesaTrabajoTab === 'mensual' ? 'IVA' : 'Impuesto a la Renta',
+            targetPeriod,
+            fee,
+            isDeclared
+        );
+        const phone = client.phones?.[0]?.replace(/\D/g, '') || '';
+        setWhatsAppPrompt({
+            clientName: client.name,
+            phone,
+            message: msg
+        });
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-300 pb-20 relative min-h-screen font-sans">
             <div className="relative z-20 px-4 sm:px-0">
@@ -836,9 +1062,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         </div>
                                         <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">SISTEMA ACTIVO · SRI 2026</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-foreground/5 border border-foreground/10 backdrop-blur-md">
-                                        <Database size={11} className="text-tertiary" />
-                                        <span className="text-[10px] font-bold text-on-surface-variant font-mono">Motor Nueva Luz 3.0</span>
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_10px_rgba(16,185,129,0.2)]" title="Puente RPA con Nueva Luz 3.0 sincronizado">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                        <span className="text-[10px] font-bold text-emerald-300 font-mono">RPA Nueva Luz 3.0 · En Línea</span>
                                     </div>
                                 </div>
                                 <div>
@@ -935,6 +1161,23 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     >
                                         {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} className="group-hover:-translate-y-0.5 transition-transform" />}
                                         <span className="hidden sm:inline">SUBIR PDFs</span>
+                                    </button>
+                                    <button
+                                        onClick={handleOpenBatchRpaModal}
+                                        disabled={despachoList.length === 0}
+                                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-tertiary to-emerald-500 hover:from-tertiary hover:to-emerald-400 text-white font-mono text-xs font-black uppercase tracking-wider shadow-lg shadow-tertiary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50 border border-tertiary/40 shrink-0"
+                                        title="Enviar lote al robot RPA con filtro y auditoría de credenciales válidas"
+                                    >
+                                        <Zap size={14} className="animate-pulse text-amber-300" />
+                                        <span className="hidden sm:inline">Lote RPA</span>
+                                        <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-emerald-300 border border-emerald-400/30 text-[10px] font-mono">
+                                            {despachoKeyAnalysis.habilitadosCount}
+                                        </span>
+                                        {despachoKeyAnalysis.conProblemasCount > 0 && (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-rose-600/90 text-white border border-rose-400/40 text-[10px] font-mono animate-pulse" title={`${despachoKeyAnalysis.conProblemasCount} con clave no válida o faltante`}>
+                                                {despachoKeyAnalysis.conProblemasCount}
+                                            </span>
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -1222,6 +1465,25 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         {/* TAB PILLS */}
                         <div className="flex items-center gap-1.5 bg-surface-lowest p-1.5 rounded-2xl border border-foreground/10 overflow-x-auto hide-scrollbar font-mono">
                             <button
+                                onClick={() => setHubTab('despacho')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                                    hubTab === 'despacho'
+                                        ? 'bg-tertiary/20 text-tertiary shadow-md border border-tertiary/40 ring-1 ring-tertiary/30'
+                                        : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
+                            >
+                                <Zap size={14} className={hubTab === 'despacho' ? 'text-tertiary' : ''} />
+                                <span>⚡ Despacho Inmediato</span>
+                                {despachoList.length > 0 && (
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                        hubTab === 'despacho' ? 'bg-tertiary text-white' : 'bg-tertiary/15 text-tertiary'
+                                    }`}>
+                                        {despachoList.length}
+                                    </span>
+                                )}
+                            </button>
+
+                            <button
                                 onClick={() => setHubTab('radar')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                     hubTab === 'radar'
@@ -1291,6 +1553,395 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             </button>
                         </div>
                     </div>
+
+                    {/* ── TAB CONTENT 0: MESA DE DESPACHO INMEDIATO (STITCH OBSIDIAN LUXURY) ── */}
+                    {hubTab === 'despacho' && (
+                        <div className="space-y-6 animate-in fade-in duration-300 font-mono">
+                            {/* CONTROLS HEADER */}
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-3xl bg-surface-lowest border border-foreground/10 shadow-xl">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {/* FREQUENCY SWITCH */}
+                                    <div className="flex bg-surface-low p-1 rounded-xl border border-foreground/10">
+                                        <button
+                                            onClick={() => setMesaTrabajoTab('mensual')}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                                mesaTrabajoTab === 'mensual'
+                                                    ? 'bg-tertiary text-white shadow-md'
+                                                    : 'text-on-surface-variant hover:text-on-surface'
+                                            }`}
+                                        >
+                                            IVA Mensual ({monthlyPeriodStr})
+                                        </button>
+                                        <button
+                                            onClick={() => setMesaTrabajoTab('semestral')}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                                mesaTrabajoTab === 'semestral'
+                                                    ? 'bg-tertiary text-white shadow-md'
+                                                    : 'text-on-surface-variant hover:text-on-surface'
+                                            }`}
+                                        >
+                                            IVA Semestral ({semestralPeriodStr})
+                                        </button>
+                                    </div>
+
+                                    {/* FILTER CHIPS */}
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <button
+                                            onClick={() => setDespachoFilter('urgentes')}
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                                                despachoFilter === 'urgentes'
+                                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/10 hover:text-on-surface'
+                                            }`}
+                                        >
+                                            🚨 Vence Hoy / Urgentes
+                                        </button>
+                                        <button
+                                            onClick={() => setDespachoFilter('sin-pdf')}
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                                                despachoFilter === 'sin-pdf'
+                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/10 hover:text-on-surface'
+                                            }`}
+                                        >
+                                            📄 Sin Comprobante PDF
+                                        </button>
+                                        <button
+                                            onClick={() => setDespachoFilter('por-cobrar')}
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                                                despachoFilter === 'por-cobrar'
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/10 hover:text-on-surface'
+                                            }`}
+                                        >
+                                            💰 Por Cobrar
+                                        </button>
+                                        <button
+                                            onClick={() => setDespachoFilter('todos')}
+                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border cursor-pointer ${
+                                                despachoFilter === 'todos'
+                                                    ? 'bg-primary/20 text-primary border-primary/40 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/10 hover:text-on-surface'
+                                            }`}
+                                        >
+                                            📋 Todos los Pendientes
+                                        </button>
+                                    </div>
+
+                                    {/* CREDENTIAL HEALTH SUB-FILTER BAR */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-foreground/10 w-full text-[10px] font-mono">
+                                        <span className="text-on-surface-variant font-bold text-[9px] uppercase tracking-wider mr-1 flex items-center gap-1">
+                                            <Filter size={10} />
+                                            <span>Claves SRI:</span>
+                                        </span>
+                                        <button
+                                            onClick={() => setDespachoCredFilter('all')}
+                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+                                                despachoCredFilter === 'all'
+                                                    ? 'bg-foreground/15 text-on-surface border-foreground/30 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/5 hover:text-on-surface'
+                                            }`}
+                                        >
+                                            Todas ({despachoList.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setDespachoCredFilter('habilitados')}
+                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1 ${
+                                                despachoCredFilter === 'habilitados'
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/5 hover:text-emerald-400'
+                                            }`}
+                                        >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>🟢 Habilitados ({despachoKeyAnalysis.habilitadosCount})</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setDespachoCredFilter('con-problemas')}
+                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1 ${
+                                                despachoCredFilter === 'con-problemas'
+                                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
+                                                    : 'bg-surface-low text-on-surface-variant border-foreground/5 hover:text-rose-400'
+                                            }`}
+                                        >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                            <span>🔴 Con Problema ({despachoKeyAnalysis.conProblemasCount})</span>
+                                        </button>
+                                        {despachoKeyAnalysis.noValenCount > 0 && (
+                                            <button
+                                                onClick={() => setDespachoCredFilter('no-valen')}
+                                                className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1 ${
+                                                    despachoCredFilter === 'no-valen'
+                                                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                                                        : 'bg-surface-low text-on-surface-variant border-foreground/5 hover:text-amber-400'
+                                                }`}
+                                                title="Clientes con clave rechazada, caducada o pendiente de cambio (ej: LABANDA)"
+                                            >
+                                                <span>⚠️ No Vale Clave ({despachoKeyAnalysis.noValenCount})</span>
+                                            </button>
+                                        )}
+                                        {despachoKeyAnalysis.faltanCount > 0 && (
+                                            <button
+                                                onClick={() => setDespachoCredFilter('sin-clave')}
+                                                className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1 ${
+                                                    despachoCredFilter === 'sin-clave'
+                                                        ? 'bg-zinc-500/20 text-zinc-200 border-zinc-500/40 shadow-sm'
+                                                        : 'bg-surface-low text-on-surface-variant border-foreground/5 hover:text-zinc-200'
+                                                }`}
+                                            >
+                                                <span>⚪ Faltan ({despachoKeyAnalysis.faltanCount})</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2.5">
+                                    {/* SEARCH BOX */}
+                                    <div className="relative">
+                                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                                        <input
+                                            type="text"
+                                            value={despachoSearch}
+                                            onChange={(e) => setDespachoSearch(e.target.value)}
+                                            placeholder="Buscar cliente o RUC..."
+                                            className="pl-8 pr-7 py-1.5 rounded-xl bg-surface-low border border-foreground/10 text-on-surface text-xs outline-none focus:border-tertiary/50 w-44 sm:w-56"
+                                        />
+                                        {despachoSearch && (
+                                            <button
+                                                onClick={() => setDespachoSearch('')}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* BATCH RPA SEND BUTTON WITH CREDENTIAL TELEMETRY */}
+                                    <button
+                                        onClick={handleOpenBatchRpaModal}
+                                        disabled={despachoList.length === 0}
+                                        className="group relative flex items-center gap-2.5 px-4 py-2 rounded-xl bg-gradient-to-r from-tertiary to-emerald-500 hover:from-tertiary hover:to-emerald-400 text-white text-[10px] font-black uppercase tracking-wider shadow-lg shadow-tertiary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 border border-tertiary/40"
+                                        title="Despachar lote al robot RPA con auditoría y filtro de claves válidas"
+                                    >
+                                        <Zap size={14} className="animate-pulse text-amber-300" />
+                                        <span className="font-display">⚡ Lote RPA</span>
+                                        <span className="px-2 py-0.5 rounded-lg bg-black/40 text-emerald-300 border border-emerald-400/30 text-[9px] font-mono font-bold">
+                                            {despachoKeyAnalysis.habilitadosCount} listos
+                                        </span>
+                                        {despachoKeyAnalysis.conProblemasCount > 0 && (
+                                            <span className="px-2 py-0.5 rounded-lg bg-rose-600/90 text-white border border-rose-400/40 text-[9px] font-mono font-bold animate-pulse">
+                                                {despachoKeyAnalysis.conProblemasCount} no válidos
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {/* OPEN SRI PORTAL BUTTON */}
+                                    <button
+                                        onClick={() => openSRIPortal()}
+                                        className="p-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 transition-all cursor-pointer shrink-0"
+                                        title="Abrir portal SRI en línea"
+                                    >
+                                        <ExternalLink size={15} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* LIST / ROWS */}
+                            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+                                {despachoListDisplay.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-16 gap-3 text-center rounded-3xl border border-foreground/10 bg-surface-lowest">
+                                        <div className="p-4 rounded-2xl bg-tertiary/15 text-tertiary">
+                                            <CheckCircle2 size={32} />
+                                        </div>
+                                        <p className="text-sm font-bold text-on-surface uppercase tracking-wider">¡Todo al día en este filtro!</p>
+                                        <p className="text-xs text-on-surface-variant font-sans">No hay obligaciones pendientes según los criterios seleccionados.</p>
+                                    </div>
+                                ) : (
+                                    despachoListDisplay.map((client) => {
+                                        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+                                        const dec = (client.declarations || []).find(d => arePeriodsEqual(d.period, targetPeriod) || d.period === targetPeriod);
+                                        const digit = parseInt(client.ruc[8], 10);
+                                        const isDueToday = tacticalInfo.todayDigit !== null && digit === tacticalInfo.todayDigit;
+                                        const hasPdf = !!dec?.proof_file;
+                                        const isPaid = !!dec?.is_paid;
+                                        const fee = getClientServiceFee(client, serviceFees, targetPeriod);
+                                        const keyInfo = isSriPasswordUpdated(client);
+
+                                        return (
+                                            <div
+                                                key={client.id}
+                                                className={`group relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl border transition-all duration-300 bg-surface-lowest ${
+                                                    isDueToday
+                                                        ? 'border-rose-500/40 bg-rose-500/5 hover:border-rose-500/60 shadow-sm'
+                                                        : 'border-foreground/10 hover:border-tertiary/40'
+                                                }`}
+                                            >
+                                                {/* CLIENT DETAILS */}
+                                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                                    {/* 9th DIGIT BADGE */}
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 border ${
+                                                        isDueToday
+                                                            ? 'bg-rose-500 text-white border-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.4)] animate-pulse'
+                                                            : 'bg-surface-low text-tertiary border-foreground/10'
+                                                    }`} title={`9no dígito: ${digit}`}>
+                                                        {digit}
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h5 className="text-xs font-bold text-on-surface uppercase truncate font-display">
+                                                                {client.name}
+                                                            </h5>
+                                                            <span className="text-[9px] font-bold text-on-surface-variant bg-foreground/5 px-2 py-0.5 rounded-md uppercase border border-foreground/5">
+                                                                {client.regime === TaxRegime.General ? 'General' : client.regime === TaxRegime.RimpeEmprendedor ? 'Emprendedor' : 'Popular'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[10px] text-on-surface-variant font-mono">{client.ruc}</span>
+                                                            <button
+                                                                onClick={() => handleCopyRuc(client.ruc, client.name)}
+                                                                className="text-on-surface-variant hover:text-tertiary transition-colors"
+                                                                title="Copiar RUC"
+                                                            >
+                                                                <Copy size={11} />
+                                                            </button>
+                                                            {client.tradeName && (
+                                                                <span className="text-[10px] text-on-surface-variant truncate font-sans hidden sm:inline">
+                                                                    · {client.tradeName}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* PERIOD & STATUS CHIPS */}
+                                                <div className="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
+                                                    <div className="flex flex-col text-right">
+                                                        <span className="text-[10px] font-bold text-tertiary font-mono">{targetPeriod}</span>
+                                                        <span className="text-[9px] text-on-surface-variant">
+                                                            Tarifa: <strong className="text-on-surface font-mono">${fee}.00</strong>
+                                                        </span>
+                                                    </div>
+
+                                                    {/* SRI CREDENTIAL BADGE */}
+                                                    {keyInfo.isUpdated ? (
+                                                        <span
+                                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase flex items-center gap-1 font-mono"
+                                                            title={keyInfo.tooltip}
+                                                        >
+                                                            <KeyRound size={11} className="text-emerald-400" />
+                                                            <span>{keyInfo.label}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleOpenKeyModalForClient(client)}
+                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase flex items-center gap-1 border cursor-pointer transition-all hover:scale-105 active:scale-95 font-mono ${
+                                                                keyInfo.label === 'Sin Clave'
+                                                                    ? 'bg-zinc-500/15 border-zinc-500/30 text-zinc-300 hover:bg-zinc-500/25'
+                                                                    : keyInfo.label === 'Caducada'
+                                                                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30 animate-pulse'
+                                                                    : 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30 animate-pulse'
+                                                            }`}
+                                                            title={`${keyInfo.tooltip} · Haz clic para corregir clave`}
+                                                        >
+                                                            <ShieldAlert size={11} />
+                                                            <span>{keyInfo.label === 'Sin Clave' ? 'Falta Clave' : `No Vale (${keyInfo.label})`}</span>
+                                                        </button>
+                                                    )}
+
+                                                    {/* DECLARATION BADGE */}
+                                                    <div className="flex items-center gap-1.5">
+                                                        {hasPdf ? (
+                                                            <button
+                                                                onClick={() => openPreview(client, dec)}
+                                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[9px] font-bold uppercase flex items-center gap-1 cursor-pointer hover:bg-emerald-500/25 transition-all"
+                                                                title="Ver comprobante PDF"
+                                                            >
+                                                                <FileText size={11} />
+                                                                <span>PDF Listo</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleMesaUploadClick(client, targetPeriod)}
+                                                                className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[9px] font-bold uppercase flex items-center gap-1 cursor-pointer hover:bg-amber-500/25 transition-all"
+                                                                title="Subir comprobante PDF"
+                                                            >
+                                                                <FileUp size={11} />
+                                                                <span>Sin PDF</span>
+                                                            </button>
+                                                        )}
+
+                                                        {/* PAYMENT BADGE */}
+                                                        {isPaid ? (
+                                                            <span className="px-2 py-1 rounded-lg bg-tertiary/15 border border-tertiary/30 text-tertiary text-[9px] font-bold uppercase">
+                                                                Cobrado
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleAction(client, 'pay', targetPeriod)}
+                                                                className="px-2 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[9px] font-bold uppercase hover:bg-rose-500/25 cursor-pointer transition-all"
+                                                                title="Marcar como cobrado"
+                                                            >
+                                                                Por Cobrar
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* ROW ACTION DOCK */}
+                                                    <div className="flex items-center gap-1.5 pl-2 border-l border-foreground/10">
+                                                        {/* 1. RPA DECLARE */}
+                                                        <button
+                                                            onClick={() => handleSendToRPA(client)}
+                                                            className={`p-2 rounded-xl transition-all active:scale-95 cursor-pointer border ${
+                                                                keyInfo.isUpdated
+                                                                    ? 'bg-tertiary/15 text-tertiary hover:bg-tertiary hover:text-white border-tertiary/30'
+                                                                    : 'bg-rose-500/15 text-rose-300 hover:bg-rose-500 hover:text-white border-rose-500/30 animate-pulse'
+                                                            }`}
+                                                            title={
+                                                                keyInfo.isUpdated
+                                                                    ? 'Declarar con Nueva Luz 3.0 (RPA)'
+                                                                    : `⚠️ Clave ${keyInfo.label}: Haz clic para corregir antes de declarar`
+                                                            }
+                                                        >
+                                                            <Zap size={13} />
+                                                        </button>
+
+                                                        {/* 2. UPLOAD PDF */}
+                                                        <button
+                                                            onClick={() => handleMesaUploadClick(client, targetPeriod)}
+                                                            className="p-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 transition-all active:scale-95 cursor-pointer"
+                                                            title="Subir comprobante de declaración"
+                                                        >
+                                                            <UploadCloud size={13} />
+                                                        </button>
+
+                                                        {/* 3. WHATSAPP */}
+                                                        {client.phones?.length ? (
+                                                            <button
+                                                                onClick={() => handleOpenWhatsAppForClient(client)}
+                                                                className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 transition-all active:scale-95 cursor-pointer"
+                                                                title="Notificar por WhatsApp"
+                                                            >
+                                                                <MessageCircle size={13} />
+                                                            </button>
+                                                        ) : null}
+
+                                                        {/* 4. EXPEDIENTE */}
+                                                        <button
+                                                            onClick={() => navigate('clients', { clientIdToView: client.id })}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-foreground/5 hover:bg-tertiary/20 hover:text-tertiary text-on-surface text-[9px] font-bold uppercase border border-foreground/10 transition-all cursor-pointer"
+                                                            title="Ver expediente completo"
+                                                        >
+                                                            Ver
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── TAB CONTENT 1: RADAR EJECUTIVO & CALENDARIO SRI (STITCH OBSIDIAN LUXURY) ── */}
                     {hubTab === 'radar' && (
@@ -1985,6 +2636,252 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                 )}
             </Modal>
+
+            {/* ── MODAL: PRE-DESPACHO LOTE RPA CON AUDITORÍA DE CLAVES ── */}
+            <Modal
+                isOpen={isRpaBatchModalOpen}
+                onClose={() => setIsRpaBatchModalOpen(false)}
+                title="⚡ Despacho Táctico Lote RPA · Nueva Luz 3.0"
+                size="4xl"
+            >
+                <div className="space-y-6 font-mono text-left">
+                    {/* TOP STATS CARDS */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">Habilitados / Clave OK</p>
+                                <h3 className="text-2xl font-black text-emerald-400 mt-1">{despachoKeyAnalysis.habilitadosCount}</h3>
+                                <p className="text-[9px] text-emerald-200/80 font-sans mt-0.5">Clave operativa verificada</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400">
+                                <ShieldCheck size={24} />
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-bold text-rose-300 uppercase tracking-widest">No Válidas / Caducadas</p>
+                                <h3 className="text-2xl font-black text-rose-400 mt-1">{despachoKeyAnalysis.noValenCount}</h3>
+                                <p className="text-[9px] text-rose-200/80 font-sans mt-0.5">Rechazadas o caducadas (ej: LABANDA)</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-rose-500/20 text-rose-400">
+                                <ShieldAlert size={24} />
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-zinc-500/10 border border-zinc-500/30 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Faltan Clave</p>
+                                <h3 className="text-2xl font-black text-zinc-400 mt-1">{despachoKeyAnalysis.faltanCount}</h3>
+                                <p className="text-[9px] text-zinc-300/80 font-sans mt-0.5">Sin contraseña en el sistema</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-zinc-500/20 text-zinc-400">
+                                <KeyRound size={24} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ANTI-LOCKOUT WARNING BANNER */}
+                    {despachoKeyAnalysis.conProblemasCount > 0 && (
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                            <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                            <div className="text-xs text-amber-200/90 font-sans space-y-1">
+                                <p className="font-bold text-amber-300">
+                                    Seguridad Anti-Bloqueo SRI: {despachoKeyAnalysis.conProblemasCount} cliente(s) tienen credenciales no válidas.
+                                </p>
+                                <p className="text-[11px] leading-relaxed">
+                                    Clientes como <strong>LABANDA</strong> tienen la contraseña rechazada o caducada. El sistema los ha desmarcado por defecto para no bloquear la cuenta en el SRI. Puedes hacer clic en <span className="font-bold text-amber-300">"Corregir Clave"</span> para actualizarlas sin salir de este panel.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SELECTION ACTIONS & FILTER TABS */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-foreground/10">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                onClick={() => toggleSelectAllInModal(true)}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                            >
+                                <CheckSquare size={13} />
+                                <span>Solo Habilitados ({despachoKeyAnalysis.habilitadosCount})</span>
+                            </button>
+                            <button
+                                onClick={() => toggleSelectAllInModal(false)}
+                                className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                            >
+                                Seleccionar Todos ({despachoList.length})
+                            </button>
+                            <button
+                                onClick={deselectAllInModal}
+                                className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                            >
+                                Deseleccionar
+                            </button>
+                        </div>
+
+                        {/* SUB-TABS IN MODAL */}
+                        <div className="flex items-center gap-1 bg-surface-low p-1 rounded-xl border border-foreground/10 text-[10px]">
+                            <button
+                                onClick={() => setBatchModalTab('todos')}
+                                className={`px-2.5 py-1 rounded-lg font-bold uppercase transition-all cursor-pointer ${
+                                    batchModalTab === 'todos' ? 'bg-foreground/20 text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+                                }`}
+                            >
+                                Todos ({despachoList.length})
+                            </button>
+                            <button
+                                onClick={() => setBatchModalTab('habilitados')}
+                                className={`px-2.5 py-1 rounded-lg font-bold uppercase transition-all cursor-pointer ${
+                                    batchModalTab === 'habilitados' ? 'bg-emerald-500/20 text-emerald-300 shadow-sm' : 'text-on-surface-variant hover:text-emerald-400'
+                                }`}
+                            >
+                                🟢 Listos ({despachoKeyAnalysis.habilitadosCount})
+                            </button>
+                            <button
+                                onClick={() => setBatchModalTab('problemas')}
+                                className={`px-2.5 py-1 rounded-lg font-bold uppercase transition-all cursor-pointer ${
+                                    batchModalTab === 'problemas' ? 'bg-rose-500/20 text-rose-300 shadow-sm' : 'text-on-surface-variant hover:text-rose-400'
+                                }`}
+                            >
+                                🔴 Revisar ({despachoKeyAnalysis.conProblemasCount})
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* MODAL CLIENT LIST */}
+                    <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                        {despachoKeyAnalysis.all
+                            .filter(item => {
+                                if (batchModalTab === 'habilitados') return item.category === 'habilitado';
+                                if (batchModalTab === 'problemas') return item.category !== 'habilitado';
+                                return true;
+                            })
+                            .map(item => {
+                                const isChecked = !!rpaSelectedClientIds[item.client.id];
+                                const isProblem = item.category !== 'habilitado';
+                                const digit = parseInt(item.client.ruc[8], 10);
+
+                                return (
+                                    <div
+                                        key={item.client.id}
+                                        onClick={() => toggleClientSelection(item.client.id)}
+                                        className={`flex items-center justify-between gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                                            isChecked
+                                                ? isProblem
+                                                    ? 'bg-rose-500/10 border-rose-500/40'
+                                                    : 'bg-emerald-500/10 border-emerald-500/30'
+                                                : 'bg-surface-lowest border-foreground/10 hover:border-foreground/20 opacity-75'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => toggleClientSelection(item.client.id)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-4 h-4 rounded text-tertiary accent-tertiary cursor-pointer shrink-0"
+                                            />
+
+                                            <div className="w-7 h-7 rounded-lg bg-surface-low border border-foreground/10 flex items-center justify-center font-bold text-xs text-tertiary shrink-0">
+                                                {digit}
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-bold text-on-surface uppercase truncate">
+                                                        {item.client.name}
+                                                    </span>
+                                                    <span className="text-[9px] text-on-surface-variant font-mono">
+                                                        {item.client.ruc}
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px] text-on-surface-variant truncate font-sans">
+                                                    {item.client.tradeName || item.client.regime}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {/* STATUS BADGE */}
+                                            {item.category === 'habilitado' ? (
+                                                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold uppercase flex items-center gap-1">
+                                                    <ShieldCheck size={11} />
+                                                    <span>{item.keyInfo.label}</span>
+                                                </span>
+                                            ) : (
+                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase flex items-center gap-1 border ${
+                                                    item.category === 'falta'
+                                                        ? 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30'
+                                                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                }`}>
+                                                    <ShieldAlert size={11} />
+                                                    <span>{item.keyInfo.label === 'Sin Clave' ? 'Falta Clave' : `No Vale (${item.keyInfo.label})`}</span>
+                                                </span>
+                                            )}
+
+                                            {/* FIX KEY BUTTON */}
+                                            {isProblem && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenKeyModalForClient(item.client);
+                                                    }}
+                                                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[9px] font-bold uppercase flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-sm"
+                                                    title="Abrir actualizador de clave SRI"
+                                                >
+                                                    <Key size={10} />
+                                                    <span>Corregir Clave</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                    </div>
+
+                    {/* MODAL FOOTER */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-foreground/10">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-on-surface">
+                                <strong>{selectedBatchCount}</strong> de {despachoList.length} seleccionados para despacho
+                            </span>
+                            {selectedInvalidCount > 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold animate-pulse">
+                                    ⚠️ {selectedInvalidCount} con clave no válida
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsRpaBatchModalOpen(false)}
+                                className="px-4 py-2.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-foreground/10"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmBatchRpa}
+                                disabled={selectedBatchCount === 0}
+                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-tertiary to-emerald-500 hover:from-tertiary hover:to-emerald-400 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-tertiary/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-tertiary/40 flex items-center gap-2"
+                            >
+                                <Zap size={15} />
+                                <span>🚀 Iniciar Despacho Lote RPA ({selectedBatchCount})</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* SRI PASSWORD CHANGER MODAL */}
+            <SriPasswordChangerModal
+                isOpen={isClavesModalOpen}
+                onClose={() => {
+                    setIsClavesModalOpen(false);
+                    setClientToFocusKey(undefined);
+                }}
+                clientToFocus={clientToFocusKey}
+            />
             <input type="file" ref={mesaFileInputRef} onChange={handleMesaFileChange} className="hidden" accept=".pdf,image/*" />
 
             {/* Renta Refund Floating Orb */}

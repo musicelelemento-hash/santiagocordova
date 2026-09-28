@@ -1,4 +1,5 @@
 import { Client } from '../types';
+import { getClientIvaFrequency } from './sri';
 
 /**
  * Bridge para comunicarse con la extensión de Chrome "SRI Auto-fill".
@@ -127,7 +128,7 @@ export const sendBatchDeclarationToExtension = (
         name: c.name,
         sriPassword: c.sriPassword,
         regime: c.regime,
-        ivaFrequency: c.taxProfile?.ivaFrequency || c.category || 'Mensual',
+        ivaFrequency: getClientIvaFrequency(c),
         clientStartPeriod: (c as any).clientStartPeriod || (c as any).taxProfile?.clientStartPeriod || ''
       })),
       timestamp: new Date().getTime()
