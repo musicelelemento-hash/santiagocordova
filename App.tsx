@@ -4,7 +4,7 @@ import {
   FileSpreadsheet, Key, Coins, Wallet, BarChart, FileText, CheckCircle,
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
   Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check,
-  UserPlus, Pin
+  UserPlus, Pin, Bot
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -26,7 +26,7 @@ import { recordScreenVisit, getMostUsedScreens, getDefaultStartScreen, setDefaul
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
-const VALID_SCREENS: Screen[] = ['home', 'clients', 'declaraciones', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
+const VALID_SCREENS: Screen[] = ['home', 'telegram_bot', 'clients', 'declaraciones', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
 
 // Lazy-loaded heavy modules & admin screens
 const AdminDashboardScreen = React.lazy(() => import('./screens/AdminDashboardScreen').then(m => ({ default: m.AdminDashboardScreen })));
@@ -60,6 +60,7 @@ const RefinanciacionScreen = React.lazy(() => import('./screens/RefinanciacionSc
 const CajaChicaScreen = React.lazy(() => import('./screens/CajaChicaScreen').then(m => ({ default: m.CajaChicaScreen })));
 const CrmPipelineScreen = React.lazy(() => import('./screens/CrmPipelineScreen').then(m => ({ default: m.CrmPipelineScreen })));
 const ThreeDStudioScreen = React.lazy(() => import('./screens/ThreeDStudioScreen').then(m => ({ default: m.ThreeDStudioScreen })));
+const TelegramBotScreen = React.lazy(() => import('./screens/TelegramBotScreen').then(m => ({ default: m.TelegramBotScreen })));
 const AdaptadorConvert = React.lazy(() => import('./components/features/AdaptadorConvert').then(m => ({ default: m.AdaptadorConvert })));
 const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalUploadModal').then(m => ({ default: m.GlobalUploadModal })));
 const SalesComboModal = React.lazy(() => import('./components/features/SalesComboModal').then(m => ({ default: m.SalesComboModal })));
@@ -631,6 +632,7 @@ const App: React.FC = () => {
   const renderScreen = () => {
     switch (activeScreen) {
       case 'home': return <AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
+      case 'telegram_bot': return <TelegramBotScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'clients': return (
         <ClientsScreen 
           initialFilter={clientFilter || { activeGroupTab: 'all' }} 
@@ -714,6 +716,7 @@ const App: React.FC = () => {
 
   const navItems = ([
     { screen: 'home', icon: Home, label: 'Dashboard' },
+    { screen: 'telegram_bot', icon: Bot, label: 'Bot Telegram & Gestión' },
     { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: pendingDeclarationsCount },
     { screen: 'clients', icon: Users, label: 'Directorio Clientes' },
     { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
