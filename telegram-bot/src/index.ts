@@ -7,11 +7,11 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport, getMissingOrInvalidKeyClients, getIncompleteClients, getInternalManagementSummary } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
-import { startCronJobs, triggerProactiveReport } from './cron';
+import { startCronJobs, triggerProactiveReport, buildOperationalReportKeyboard } from './cron';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
 import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
@@ -71,6 +71,7 @@ export function buildMainMenuKeyboard(): InlineKeyboard {
         .text('💰 Finanzas & Caja', 'baku_hub:finances').row()
         .text('🔐 Bóveda & Facturación', 'baku_hub:vault_invoice')
         .text('📲 Clientes & CRM 360°', 'baku_hub:clients_crm').row()
+        .text('🧰 Gestión Interna & Alertas', 'baku_hub:internal_mgmt').row()
         .text('📊 Resumen Ejecutivo', 'baku_cmd:quick_report')
         .text('⚡ Estado Baku', 'baku_nav:status');
 }
@@ -168,6 +169,170 @@ export async function showClientsCrmHub(ctx: any, isEdit: boolean = false) {
         } catch (e) {}
     }
     await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+}
+
+export async function showInternalManagementHub(ctx: any, isEdit: boolean = false) {
+    try {
+        const summary = await getInternalManagementSummary();
+        const text = `🧰 <b>CENTRO DE GESTIÓN INTERNA & RESOLUCIÓN TÁCTICA</b>\n\n` +
+                     `Depuración y resolución proactiva de inconsistencias operativas en la cartera:\n\n` +
+                     `• 🔑 <b>Claves SRI con Observación:</b> <b>${summary.missingKeysCount}</b> clientes\n` +
+                     `• 🟡 <b>Firmas .p12 por Vencer/Caducadas:</b> <b>${summary.expiringSignaturesCount}</b> archivadas\n` +
+                     `• 👥 <b>Clientes con Datos Incompletos:</b> <b>${summary.incompleteClientsCount}</b> clientes\n` +
+                     `• 📑 <b>Declaraciones IVA Pendientes:</b> <b>${summary.pendingIvaCount}</b> este mes\n\n` +
+                     `<i>Selecciona una acción directa para resolverla de inmediato:</i>`;
+
+        const kb = new InlineKeyboard()
+            .text(`🔑 Resolver Claves SRI (${summary.missingKeysCount})`, 'baku_mgmt:missing_keys').row()
+            .text(`🟡 Firmas por Caducar (${summary.expiringSignaturesCount})`, 'baku_mgmt:expiring_sigs')
+            .text(`👥 Fichas Incompletas (${summary.incompleteClientsCount})`, 'baku_mgmt:incomplete').row()
+            .text(`⚡ Reporte Operativo Completo`, 'baku_cmd:daily_report')
+            .text(`🔙 Menú Principal`, 'baku_nav:home');
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e) {}
+        }
+        await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (err: any) {
+        console.error("Error en showInternalManagementHub:", err);
+        await ctx.reply(`❌ Error consultando gestión interna: ${err.message}`);
+    }
+}
+
+export async function showMissingKeysWizard(ctx: any, page: number = 1, isEdit: boolean = false) {
+    try {
+        const list = await getMissingOrInvalidKeyClients();
+        if (list.length === 0) {
+            const text = `🎉 <b>¡TODAS LAS CLAVES SRI ESTÁN OPERATIVAS!</b>\n\nNo hay clientes con claves vacías, cortas o rechazadas en la base de datos. Baku.`;
+            const kb = new InlineKeyboard()
+                .text('🧰 Gestión Interna', 'baku_hub:internal_mgmt')
+                .text('🔙 Menú Principal', 'baku_nav:home');
+            if (isEdit) {
+                try { await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb }); return; } catch(e) {}
+            }
+            await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        }
+
+        const pageSize = 4;
+        const totalCount = list.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const safePage = Math.max(1, Math.min(page, totalPages));
+        const startIdx = (safePage - 1) * pageSize;
+        const currentItems = list.slice(startIdx, startIdx + pageSize);
+
+        let msg = `🔑 <b>RESOLUTOR DE CLAVES SRI FALTANTES / OBSERVADAS</b>\n`;
+        msg += `Total de clientes con observación: <b>${totalCount}</b>\n`;
+        msg += `<i>Página ${safePage} de ${totalPages}</i>\n\n`;
+        msg += `Toca en <b>[➕ Asignar Clave]</b> del cliente para escribir la clave directamente en el chat:\n\n`;
+
+        const kb = new InlineKeyboard();
+
+        currentItems.forEach((c: any, idx: number) => {
+            const num = startIdx + idx + 1;
+            const shortName = c.name.length > 20 ? c.name.substring(0, 18) + '…' : c.name;
+            msg += `<b>${num}. ${c.name}</b>\n`;
+            msg += `   🆔 <code>${c.ruc}</code> | ⚠️ <i>${c.reason}</i>\n`;
+
+            kb.text(`➕ Asignar Clave: ${shortName}`, `baku_set_key:${c.ruc}`).row();
+        });
+
+        const navRow = [];
+        if (safePage > 1) {
+            navRow.push(InlineKeyboard.text('◀ Anterior', `baku_page_miss_key:${safePage - 1}`));
+        }
+        if (safePage < totalPages) {
+            navRow.push(InlineKeyboard.text('Siguiente ▶', `baku_page_miss_key:${safePage + 1}`));
+        }
+        if (navRow.length > 0) {
+            kb.row(...navRow);
+        }
+
+        kb.row(
+            InlineKeyboard.text('🧰 Gestión Interna', 'baku_hub:internal_mgmt'),
+            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+        );
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e) {}
+        }
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (err: any) {
+        console.error("Error en showMissingKeysWizard:", err);
+        await ctx.reply(`❌ Error consultando claves faltantes: ${err.message}`);
+    }
+}
+
+export async function showIncompleteClientsWizard(ctx: any, page: number = 1, isEdit: boolean = false) {
+    try {
+        const list = await getIncompleteClients();
+        if (list.length === 0) {
+            const text = `🎉 <b>¡TODOS LOS CLIENTES TIENEN DATOS COMPLETOS!</b>\n\nNo hay clientes sin teléfono, sin correo o sin régimen asignado. Baku.`;
+            const kb = new InlineKeyboard()
+                .text('🧰 Gestión Interna', 'baku_hub:internal_mgmt')
+                .text('🔙 Menú Principal', 'baku_nav:home');
+            if (isEdit) {
+                try { await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb }); return; } catch(e) {}
+            }
+            await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+            return;
+        }
+
+        const pageSize = 4;
+        const totalCount = list.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const safePage = Math.max(1, Math.min(page, totalPages));
+        const startIdx = (safePage - 1) * pageSize;
+        const currentItems = list.slice(startIdx, startIdx + pageSize);
+
+        let msg = `👥 <b>CLIENTES CON DATOS PENDIENTES</b>\n`;
+        msg += `Total con inconsistencias: <b>${totalCount}</b>\n`;
+        msg += `<i>Página ${safePage} de ${totalPages}</i>\n\n`;
+
+        const kb = new InlineKeyboard();
+
+        currentItems.forEach((c: any, idx: number) => {
+            const num = startIdx + idx + 1;
+            const shortName = c.name.length > 20 ? c.name.substring(0, 18) + '…' : c.name;
+            msg += `<b>${num}. ${c.name}</b>\n`;
+            msg += `   🆔 <code>${c.ruc}</code> | ⚠️ <i>${c.issues.join(', ')}</i>\n\n`;
+
+            kb.text(`✏️ Completar: ${shortName}`, `baku_hub_edit:${c.ruc}`).row();
+        });
+
+        const navRow = [];
+        if (safePage > 1) {
+            navRow.push(InlineKeyboard.text('◀ Anterior', `baku_page_incomp:${safePage - 1}`));
+        }
+        if (safePage < totalPages) {
+            navRow.push(InlineKeyboard.text('Siguiente ▶', `baku_page_incomp:${safePage + 1}`));
+        }
+        if (navRow.length > 0) {
+            kb.row(...navRow);
+        }
+
+        kb.row(
+            InlineKeyboard.text('🧰 Gestión Interna', 'baku_hub:internal_mgmt'),
+            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+        );
+
+        if (isEdit) {
+            try {
+                await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
+                return;
+            } catch (e) {}
+        }
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+    } catch (err: any) {
+        console.error("Error en showIncompleteClientsWizard:", err);
+        await ctx.reply(`❌ Error consultando clientes incompletos: ${err.message}`);
+    }
 }
 
 export async function showInteractivePenalties(ctx: any, isEdit: boolean = false) {
@@ -455,6 +620,16 @@ bot.command(['start', 'menu', 'panel', 'ayuda', 'help'], async (ctx) => {
     await showMainMenu(ctx, false);
 });
 
+bot.command(['gestion', 'gestioninterna', 'alertas', 'inconsistencias'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    await showInternalManagementHub(ctx, false);
+});
+
+bot.command(['claves', 'srikeys', 'claves_sri'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    await showMissingKeysWizard(ctx, 1, false);
+});
+
 bot.command(['firmas', 'boveda'], async (ctx) => {
     await ctx.replyWithChatAction('typing');
     await showInteractiveSignaturesVault(ctx, 1, false);
@@ -709,14 +884,15 @@ async function showClientSelection(
 
 async function showOperationalMenu(ctx: any) {
     const kb = new InlineKeyboard()
-        .text('👤 Expediente de Cliente', 'baku_cmd:view_profile').row()
+        .text('🧰 Gestión Interna & Alertas', 'baku_hub:internal_mgmt').row()
+        .text('👤 Expediente de Cliente', 'baku_cmd:view_profile')
         .text('💳 Registrar Pago', 'baku_cmd:reg_payment').row()
         .text('📄 Comprobantes SRI (Declaraciones)', 'baku_cmd:browse_proofs').row()
-        .text('🔐 Firma .p12 / Bóveda', 'baku_cmd:upload_p12').row()
+        .text('🔐 Firma .p12 / Bóveda', 'baku_cmd:upload_p12')
         .text('🧾 Facturas Emitidas (Historial)', 'baku_cmd:browse_invoices').row()
-        .text('💸 Emitir Nueva Factura', 'baku_cmd:create_invoice').row()
-        .text('🔑 Ver Claves SRI', 'baku_cmd:see_sri_key').row()
-        .text('📊 Reporte Rápido General', 'baku_cmd:quick_report');
+        .text('💸 Emitir Nueva Factura', 'baku_cmd:create_invoice')
+        .text('🔑 Resolver Claves SRI', 'baku_mgmt:missing_keys').row()
+        .text('📊 Reporte Operativo Consolidado', 'baku_cmd:quick_report');
 
     await ctx.reply(
         `🎯 <b>CENTRO DE OPERACIONES TÁCTICAS — SANTIAGO</b>\n\n` +
@@ -784,6 +960,12 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         return true;
     }
 
+    // Trigger internal management hub
+    if (['gestion', 'gestión', 'gestion interna', 'gestión interna', 'alertas', 'inconsistencias', 'resolucion', 'resolución', 'claves'].includes(t)) {
+        await showInternalManagementHub(ctx, false);
+        return true;
+    }
+
     // Trigger proactive report
     if (['reporte', 'reporte matutino', 'forzar reporte', 'reporte proactivo', 'enviar reporte', 'reporte diario', '/reporte', '/reporte_diario', 'resumen diario', 'reporte operativo'].includes(t)) {
         await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
@@ -793,7 +975,11 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 
     // Stop identifier capture at " y " to avoid compound query false positives
     // e.g. "RUC de aleida y su clave" ➔ identifier = "aleida"
-    const extractId = (raw: string): string => raw.split(/\s+y\s+/)[0].trim();
+    const extractId = (raw: string): string => {
+        let cleaned = raw.split(/\s+y\s+/)[0].trim();
+        cleaned = cleaned.replace(/^(?:el\s+cliente|al\s+cliente|del\s+cliente|cliente|al|del|el|a)\s+/i, '').trim();
+        return cleaned;
+    };
 
     /** Handles a field read with inline disambiguation if needed */
     async function doFieldQuery(rawId: string, field: string): Promise<boolean> {
@@ -866,7 +1052,18 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         }
         if (clients.length === 1) {
             const result = await quickUpdateClient(clients[0].ruc, field, value);
-            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            let actionKb: InlineKeyboard | undefined = undefined;
+            if (field === 'sri_password') {
+                actionKb = new InlineKeyboard()
+                    .text(`👤 Ver Expediente`, `baku_hub_profile:${clients[0].ruc}`)
+                    .text(`🔑 Resolver Otra Clave`, 'baku_mgmt:missing_keys').row()
+                    .text(`🧰 Gestión Interna`, 'baku_hub:internal_mgmt')
+                    .text(`🏠 Menú Principal`, 'baku_nav:home');
+            }
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { 
+                parse_mode: 'HTML',
+                reply_markup: actionKb
+            });
             
             await saveMessage(chatId, 'user', text);
             await saveMessage(chatId, 'assistant', result);
@@ -879,9 +1076,36 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         return true;
     }
 
+    // --- FIELD WRITE shortcuts para CLAVE SRI (Evaluados antes para capturar asignaciones directas) ---
+    // 1. "pon/edita/cambia/actualiza clave [sri] [de/a/al cliente] <cliente> a/:/= <clave>"
+    const editClaveMatch = t.match(/(?:edita|editar|cambia|cambiar|actualiza|actualizar|pon|poner|asigna|asignar)\s+(?:la\s+)?clave\s*(?:sri)?\s*(?:de|a|al\s+cliente|del\s+cliente)?\s+(.+?)\s+(?:a|por|=|:)\s+(.+)/);
+    if (editClaveMatch) return doFieldUpdate(editClaveMatch[1], 'sri_password', editClaveMatch[2].trim());
+
+    // 2. Formato directo "clave [sri] [de/a/al cliente] <cliente> : / = <clave>"
+    const directClaveAssign = t.match(/^(?:clave|clave\s+sri)\s+(?:de|a|del\s+cliente|al\s+cliente)?\s*(.+?)\s*[:=]\s*(.+)/);
+    if (directClaveAssign) return doFieldUpdate(directClaveAssign[1], 'sri_password', directClaveAssign[2].trim());
+
+    // 3. Formato natural "pon/poner clave [a/al cliente/de] <cliente> <clave>" (sin conector)
+    const directPonClave = t.match(/^(?:pon|poner|asigna|asignar)\s+(?:la\s+)?clave\s*(?:sri)?\s*(?:a|al\s+cliente|de|del\s+cliente)?\s+(.+?)\s+([A-Za-z0-9_@#$%*!.-]{4,})$/);
+    if (directPonClave) return doFieldUpdate(directPonClave[1], 'sri_password', directPonClave[2].trim());
+
     // --- FIELD READ shortcuts ---
     const claveMatch = t.match(/(?:clave\s*(?:sri)?|sri)\s+de\s+(.+)/);
-    if (claveMatch) return doFieldQuery(claveMatch[1], 'sri_password');
+    if (claveMatch) {
+        const inner = claveMatch[1].trim();
+        const spaceIdx = inner.lastIndexOf(' ');
+        if (spaceIdx > 1) {
+            const potentialId = inner.substring(0, spaceIdx).trim();
+            const potentialKey = inner.substring(spaceIdx + 1).trim();
+            if (potentialKey.length >= 4 && !['del', 'sri', 'favor', 'baku'].includes(potentialKey.toLowerCase())) {
+                const candClients = await findClients(extractId(potentialId), 'id, name, ruc');
+                if (candClients.length > 0) {
+                    return doFieldUpdate(potentialId, 'sri_password', potentialKey);
+                }
+            }
+        }
+        return doFieldQuery(claveMatch[1], 'sri_password');
+    }
 
     const iessMatch = t.match(/clave\s+iess\s+de\s+(.+)/);
     if (iessMatch) return doFieldQuery(iessMatch[1], 'iessPassword');
@@ -916,9 +1140,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     const vigenciaFactMatch = t.match(/(?:vigencia|caducidad|vencimiento)\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+)/);
     if (vigenciaFactMatch) return doFieldQuery(vigenciaFactMatch[1], 'billing_expiration');
 
-    // --- FIELD WRITE shortcuts ---
-    const editClaveMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:la\s+)?clave\s+(?:sri\s+)?de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
-    if (editClaveMatch) return doFieldUpdate(editClaveMatch[1], 'sri_password', editClaveMatch[2].trim());
+    // --- OTHER FIELD WRITES ---
 
     const editEmailMatch = t.match(/(?:edita|cambia|actualiza)\s+(?:el\s+)?(?:email|correo)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
     if (editEmailMatch) return doFieldUpdate(editEmailMatch[1], 'email', editEmailMatch[2].trim());
@@ -1871,12 +2093,27 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                 // Perform the update
                 const result = await quickUpdateClient(client.ruc, field, text);
                 pendingDialogs.delete(chatId);
-                await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+                
+                let actionKb: InlineKeyboard | undefined = undefined;
+                if (field === 'sri_password') {
+                    actionKb = new InlineKeyboard()
+                        .text(`👤 Ver Expediente`, `baku_hub_profile:${client.ruc}`)
+                        .text(`🔑 Siguiente Clave Faltante`, 'baku_mgmt:missing_keys').row()
+                        .text(`🧰 Gestión Interna`, 'baku_hub:internal_mgmt')
+                        .text(`🏠 Menú Principal`, 'baku_nav:home');
+                }
 
-                // Show the updated profile card again!
-                const updatedClients = await findClients(client.ruc, '*');
-                if (updatedClients && updatedClients.length > 0) {
-                    await showClientProfileCard(chatId, updatedClients[0], ctx);
+                await ctx.reply(convertMarkdownToTelegramHtml(result), { 
+                    parse_mode: 'HTML',
+                    reply_markup: actionKb
+                });
+
+                // Show the updated profile card again if not password (to avoid message clutter)
+                if (field !== 'sri_password') {
+                    const updatedClients = await findClients(client.ruc, '*');
+                    if (updatedClients && updatedClients.length > 0) {
+                        await showClientProfileCard(chatId, updatedClients[0], ctx);
+                    }
                 }
             } catch (err: any) {
                 await ctx.reply(`❌ Error al actualizar el perfil: ${err.message}. Baku.`);
@@ -2564,6 +2801,65 @@ bot.on('callback_query:data', async (ctx) => {
             await showClientsCrmHub(ctx, true);
             return;
         }
+        if (hub === 'internal_mgmt') {
+            await showInternalManagementHub(ctx, true);
+            return;
+        }
+    }
+
+    // 🧰 Centro de Gestión Interna & Alertas
+    if (data === 'baku_mgmt:missing_keys') {
+        await showMissingKeysWizard(ctx, 1, true);
+        return;
+    }
+
+    if (data === 'baku_mgmt:expiring_sigs') {
+        await showInteractiveSignaturesVault(ctx, 1, true);
+        return;
+    }
+
+    if (data === 'baku_mgmt:incomplete') {
+        await showIncompleteClientsWizard(ctx, 1, true);
+        return;
+    }
+
+    if (data.startsWith('baku_page_miss_key:')) {
+        const page = parseInt(data.replace('baku_page_miss_key:', ''), 10) || 1;
+        await showMissingKeysWizard(ctx, page, true);
+        return;
+    }
+
+    if (data.startsWith('baku_page_incomp:')) {
+        const page = parseInt(data.replace('baku_page_incomp:', ''), 10) || 1;
+        await showIncompleteClientsWizard(ctx, page, true);
+        return;
+    }
+
+    if (data.startsWith('baku_set_key:')) {
+        const ruc = data.replace('baku_set_key:', '');
+        const clients = await findClients(ruc, '*');
+        if (!clients || clients.length === 0) {
+            await ctx.reply("❌ Error: No se encontró al cliente. Baku.");
+            return;
+        }
+        const client = clients[0];
+        pendingDialogs.set(chatId, {
+            type: 'edit_profile_field',
+            chatId,
+            step: 'ask_field_value',
+            client,
+            data: { field: 'sri_password' }
+        });
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+
+        const cancelKb = new InlineKeyboard().text('❌ Cancelar', 'baku_cancel');
+        await ctx.reply(
+            `✍️ Escribe a continuación la nueva <b>Clave SRI</b> para <b>${client.name}</b> (RUC <code>${client.ruc}</code>):\n\n` +
+            `<i>(Simplemente escribe la contraseña y envíala en este chat)</i>`,
+            { parse_mode: 'HTML', reply_markup: cancelKb }
+        );
+        return;
     }
 
     // 🧮 Hub Tributario: Calculadora y Sanciones
@@ -2917,7 +3213,7 @@ bot.on('callback_query:data', async (ctx) => {
         } else if (cmd === 'quick_report') {
             await ctx.replyWithChatAction('typing');
             const report = await generateDailyOperationalReport();
-            await ctx.reply(report, { parse_mode: 'HTML' });
+            await ctx.reply(report, { parse_mode: 'HTML', reply_markup: buildOperationalReportKeyboard() });
         }
         return;
     }

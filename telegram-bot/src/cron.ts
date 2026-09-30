@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { Bot } from 'grammy';
+import { Bot, InlineKeyboard } from 'grammy';
 import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getDebtorClientsRaw, getCredentialStatus, convertMarkdownToTelegramHtml, generateDailyOperationalReport } from './database_ops';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
@@ -7,6 +7,15 @@ import { searchEmails, sendEmail } from './gmail';
 import { generateAiText } from './ai';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
+
+export function buildOperationalReportKeyboard(): InlineKeyboard {
+    return new InlineKeyboard()
+        .text('🔑 Resolver Claves SRI', 'baku_mgmt:missing_keys')
+        .text('💰 Deudores & Mora', 'baku_page_debt:1').row()
+        .text('⏰ Ver Vencimientos', 'baku_nav:deadlines')
+        .text('🧰 Gestión Interna', 'baku_hub:internal_mgmt').row()
+        .text('🏠 Menú Principal', 'baku_nav:home');
+}
 
 export async function triggerProactiveReport(bot: Bot, chatId?: string) {
     const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
@@ -39,11 +48,13 @@ export async function triggerProactiveReport(bot: Bot, chatId?: string) {
             // Sin problemas: finalMessage ya tiene el reporte estructurado
         }
 
+        const reportKb = buildOperationalReportKeyboard();
+
         try {
-            await bot.api.sendMessage(targetChatId, finalMessage, { parse_mode: 'HTML' });
+            await bot.api.sendMessage(targetChatId, finalMessage, { parse_mode: 'HTML', reply_markup: reportKb });
         } catch (htmlError) {
             console.warn("⚠️ Error enviando HTML en reporte proactivo, enviando sin tags:", htmlError);
-            await bot.api.sendMessage(targetChatId, finalMessage.replace(/<[^>]+>/g, ''));
+            await bot.api.sendMessage(targetChatId, finalMessage.replace(/<[^>]+>/g, ''), { reply_markup: reportKb });
         }
         console.log(`✅ Reporte proactivo enviado a chat ${targetChatId}.`);
     } catch (error: any) {

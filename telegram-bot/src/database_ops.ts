@@ -77,7 +77,7 @@ export async function findClients(query: string, selectFields: string = '*') {
     if (!query) return clients;
     
     const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const parts = queryLower.split(' ').filter(p => p.length > 0);
+    const parts = queryLower.split(/\s+/).filter(p => p.length > 0 && !/^[.,:;!?]+$/.test(p));
     
     return clients.filter((c: any) => {
         const nameMatch = c.name ? c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
@@ -3016,7 +3016,7 @@ export async function generateDailyOperationalReport(): Promise<string> {
                                 name: c.name,
                                 ruc: c.ruc,
                                 dueDay,
-                                status: declared ? '✅ Al Día' : '🚨 Pendiente'
+                                status: !hasAnyUnfiledMonth ? '✅ Al Día' : '🚨 Pendiente'
                             });
                         }
                     }
@@ -3121,6 +3121,123 @@ export async function generateDailyOperationalReport(): Promise<string> {
         return `❌ Error generando reporte operativo: ${e.message}`;
     }
 }
+
+/**
+ * Obtiene la lista completa de clientes cuya clave SRI está vacía, es muy corta o fue rechazada/bloqueada.
+ */
+export async function getMissingOrInvalidKeyClients(): Promise<Array<{ id: string; name: string; ruc: string; reason: string; phone?: string }>> {
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('id, name, ruc, phones, sri_password, tax_profile')
+            .eq('is_deleted', false);
+        if (error || !clients) return [];
+
+        const results: Array<{ id: string; name: string; ruc: string; reason: string; phone?: string }> = [];
+        for (const c of clients) {
+            const pass = (c.sri_password || (c as any).sriPassword || '').trim();
+            const sriCred = c.tax_profile?.sriCredencial;
+            let reason = '';
+            if (!pass) {
+                reason = 'Sin clave guardada';
+            } else if (sriCred?.estado === 'incorrecta') {
+                reason = 'Clave rechazada por SRI';
+            } else if (sriCred?.estado === 'bloqueada') {
+                reason = 'Cuenta bloqueada SRI';
+            } else if (sriCred?.estado === 'caducada') {
+                reason = 'Clave caducada';
+            } else if (pass.length < 6) {
+                reason = 'Clave corta (< 6 caracteres)';
+            }
+            if (reason) {
+                const firstPhone = Array.isArray(c.phones) ? c.phones[0] : (c as any).phone || '';
+                results.push({ id: c.id, name: c.name, ruc: c.ruc, reason, phone: firstPhone });
+            }
+        }
+        return results;
+    } catch (e) {
+        console.error("Error en getMissingOrInvalidKeyClients:", e);
+        return [];
+    }
+}
+
+/**
+ * Obtiene clientes con información incompleta (falta teléfono, email, régimen o inicio de obligaciones).
+ */
+export async function getIncompleteClients(): Promise<Array<{ id: string; name: string; ruc: string; issues: string[] }>> {
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('id, name, ruc, phones, email, regime, tax_profile')
+            .eq('is_deleted', false);
+        if (error || !clients) return [];
+
+        const list: Array<{ id: string; name: string; ruc: string; issues: string[] }> = [];
+        for (const c of clients) {
+            const issues: string[] = [];
+            const hasPhone = (Array.isArray(c.phones) && c.phones.length > 0 && c.phones[0]) || (c as any).phone;
+            if (!hasPhone) issues.push('Sin teléfono');
+            if (!c.email || !c.email.trim()) issues.push('Sin correo');
+            if (!c.regime || c.regime === 'Sin Asignar') issues.push('Régimen sin asignar');
+            if (!c.tax_profile?.clientStartPeriod) issues.push('Sin período inicio');
+            if (issues.length > 0) {
+                list.push({ id: c.id, name: c.name, ruc: c.ruc, issues });
+            }
+        }
+        return list;
+    } catch (e) {
+        console.error("Error en getIncompleteClients:", e);
+        return [];
+    }
+}
+
+/**
+ * Resumen cuantitativo para el Centro de Gestión Interna.
+ */
+export async function getInternalManagementSummary(): Promise<{
+    missingKeysCount: number;
+    expiringSignaturesCount: number;
+    incompleteClientsCount: number;
+    pendingIvaCount: number;
+}> {
+    try {
+        const missingKeys = await getMissingOrInvalidKeyClients();
+        const incomplete = await getIncompleteClients();
+        const vault = await getSignaturesVaultList();
+        const expiringSignatures = vault.filter(s => s.status === 'por_vencer' || s.status === 'caducada').length;
+
+        // Declaraciones IVA activas pendientes
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const prevMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+        const prevMonthNum = currentMonth === 1 ? 12 : currentMonth - 1;
+        const activeIvaPeriod = `${prevMonthYear}-${String(prevMonthNum).padStart(2, '0')}`;
+
+        const { data: decls } = await supabase
+            .from('sri_declaraciones')
+            .select('id, status')
+            .eq('type', 'IVA')
+            .ilike('period', `${activeIvaPeriod}%`)
+            .eq('status', 'Pendiente');
+
+        return {
+            missingKeysCount: missingKeys.length,
+            expiringSignaturesCount: expiringSignatures,
+            incompleteClientsCount: incomplete.length,
+            pendingIvaCount: decls?.length || 0
+        };
+    } catch (e) {
+        console.error("Error en getInternalManagementSummary:", e);
+        return {
+            missingKeysCount: 0,
+            expiringSignaturesCount: 0,
+            incompleteClientsCount: 0,
+            pendingIvaCount: 0
+        };
+    }
+}
+
 
 
 
