@@ -1277,5 +1277,263 @@ h1, h2, h3, h4 {
     height: 1px;
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   FACTURADORES & LLENADO — SISTEMA VISUAL ELITE v2.0
+   Obsidian & Liquid Gold · Apple-Tier Micro-Interactions
+══════════════════════════════════════════════════════════════════ */
+
+/* ── Stagger Reveal Animation (Cards on mount) ── */
+@keyframes fact-card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.98);
+        filter: blur(3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.fact-card-stagger {
+    animation: fact-card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fact-card-stagger:nth-child(1)  { animation-delay: 0ms; }
+.fact-card-stagger:nth-child(2)  { animation-delay: 55ms; }
+.fact-card-stagger:nth-child(3)  { animation-delay: 110ms; }
+.fact-card-stagger:nth-child(4)  { animation-delay: 160ms; }
+.fact-card-stagger:nth-child(5)  { animation-delay: 210ms; }
+.fact-card-stagger:nth-child(6)  { animation-delay: 255ms; }
+.fact-card-stagger:nth-child(7)  { animation-delay: 295ms; }
+.fact-card-stagger:nth-child(8)  { animation-delay: 330ms; }
+.fact-card-stagger:nth-child(9)  { animation-delay: 360ms; }
+.fact-card-stagger:nth-child(n+10) { animation-delay: 380ms; }
+
+/* ── View Transition ── */
+@keyframes view-fade-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.view-transition-enter {
+    animation: view-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Provider Identity Pills ── */
+.provider-talonario {
+    background: rgba(201, 169, 110, 0.14);
+    border: 1px solid rgba(201, 169, 110, 0.38);
+    color: #C9A96E;
+}
+.provider-talonario-glow {
+    box-shadow: 0 0 16px -4px rgba(201, 169, 110, 0.35);
+}
+
+.provider-ecuafact {
+    background: rgba(43, 106, 255, 0.14);
+    border: 1px solid rgba(43, 106, 255, 0.38);
+    color: #5b8fff;
+}
+.provider-ecuafact-glow {
+    box-shadow: 0 0 16px -4px rgba(43, 106, 255, 0.35);
+}
+
+.provider-zifact {
+    background: rgba(245, 158, 11, 0.14);
+    border: 1px solid rgba(245, 158, 11, 0.38);
+    color: #F59E0B;
+}
+.provider-zifact-glow {
+    box-shadow: 0 0 16px -4px rgba(245, 158, 11, 0.35);
+}
+
+.provider-sri {
+    background: rgba(4, 177, 123, 0.14);
+    border: 1px solid rgba(4, 177, 123, 0.38);
+    color: #04B17B;
+}
+.provider-sri-glow {
+    box-shadow: 0 0 16px -4px rgba(4, 177, 123, 0.35);
+}
+
+.provider-default {
+    background: rgba(100, 116, 139, 0.12);
+    border: 1px solid rgba(100, 116, 139, 0.30);
+    color: #94A3B8;
+}
+
+/* ── Doc Progress Bar ── */
+.doc-progress-track {
+    height: 5px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.doc-progress-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.doc-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+    animation: progress-sheen 2.5s ease-in-out infinite;
+}
+
+@keyframes progress-sheen {
+    0%   { transform: translateX(-100%); }
+    60%  { transform: translateX(100%); }
+    100% { transform: translateX(100%); }
+}
+
+.doc-progress-ok      { background: linear-gradient(90deg, #04B17B, #10d9a0); }
+.doc-progress-warning { background: linear-gradient(90deg, #F59E0B, #fbbf24); }
+.doc-progress-danger  { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* ── KYC Completion Ring ── */
+.kyc-ring-svg circle {
+    transition: stroke-dashoffset 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Contextual FAB ── */
+@keyframes fab-pop-in {
+    from { transform: scale(0) rotate(-15deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+
+.contextual-fab {
+    position: fixed;
+    bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+    right: 1.5rem;
+    z-index: 60;
+    width: 58px;
+    height: 58px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: fab-pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    box-shadow: 0 8px 32px -8px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    border: none;
+    outline: none;
+}
+
+.contextual-fab:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 16px 40px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.12);
+}
+
+.contextual-fab:active {
+    transform: scale(0.95);
+}
+
+.contextual-fab-label {
+    position: absolute;
+    right: calc(100% + 12px);
+    background: rgba(5, 20, 36, 0.9);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.contextual-fab:hover .contextual-fab-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ── Urgency Countdown Badge ── */
+@keyframes urgent-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.badge-urgent {
+    animation: urgent-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
+
+.badge-warning {
+    animation: warning-pulse 2s ease-in-out infinite;
+}
+
+/* ── Hover Card Lift (3D feel) ── */
+.factcard-lift {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s ease;
+    will-change: transform;
+}
+
+.factcard-lift:hover {
+    transform: translateY(-5px) scale(1.005);
+    box-shadow: 0 24px 48px -12px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+/* ── Tab Active Indicator (Underline slide) ── */
+.view-tab-active-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    border-radius: 9999px;
+    transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1), width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Animated Counter (KPI numbers) ── */
+@keyframes kpi-count-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.85); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.kpi-animate {
+    animation: kpi-count-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Collapsible Alert Panel ── */
+@keyframes alert-panel-open {
+    from { opacity: 0; max-height: 0; }
+    to   { opacity: 1; max-height: 800px; }
+}
+
+.alert-panel-enter {
+    animation: alert-panel-open 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    overflow: hidden;
+}
+
+/* ── Signature Status Glow ── */
+.sig-ok-glow {
+    box-shadow: 0 0 10px -2px rgba(4, 177, 123, 0.5);
+}
+
+.sig-missing-glow {
+    box-shadow: 0 0 10px -2px rgba(245, 158, 11, 0.4);
+}
+
+
 
 
