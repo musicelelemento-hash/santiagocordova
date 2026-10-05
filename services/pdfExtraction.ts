@@ -98,7 +98,7 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
     return {
       apellidos_nombres: nombres || 'CONTRIBUYENTE',
       ruc: ruc,
-      direccion: direccionFinal || 'Dirección no detectada',
+      direccion: direccionFinal || 'No registrada',
       contacto: {
         email: validEmail || '',
         celular: validPhone || ''

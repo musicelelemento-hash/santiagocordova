@@ -84,13 +84,17 @@ export function generateAccessKeyEcuador(
     estab: string,
     pto: string,
     sec: string,
-    codNumerico = '12345678',
+    codNumerico?: string,
     tipoEmi = '1'
 ) {
     const cleanFecha = fecha.replace(/-/g, ''); // "20260716" -> YYYYMMDD
     const d = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4); // DD+MM+YYYY
     
-    const baseKey = d + tipoComp + ruc + amb + estab + pto + sec.padStart(9, '0') + codNumerico.padStart(8, '0') + tipoEmi;
+    const numericCode = (codNumerico && /^\d{8}$/.test(codNumerico) && codNumerico !== '12345678')
+        ? codNumerico
+        : Math.floor(10000000 + Math.random() * 90000000).toString();
+
+    const baseKey = d + tipoComp + ruc + amb + estab + pto + sec.padStart(9, '0') + numericCode + tipoEmi;
     
     let sum = 0;
     let factor = 2;

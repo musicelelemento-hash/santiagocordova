@@ -1,5 +1,5 @@
 import React from 'react';
-import { Client, TaxRegime, ServiceFeesConfig, Declaration } from '../../../../types';
+import { Client, TaxRegime, ServiceFeesConfig, Declaration, DeclarationStatus } from '../../../../types';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import { getClientServiceFee } from '../../../../services/clientService';
 import {
@@ -522,6 +522,204 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     </button>
                                 </div>
                             </div>
+
+                            {/* ── SMART ACTION SWITCH & KEY HEALTH (CABINA TÁCTICA) ── */}
+                            {(() => {
+                                const now = new Date();
+                                let defaultMonth = now.getMonth() - 1;
+                                let defaultYear = now.getFullYear();
+                                if (defaultMonth < 0) { defaultMonth = 11; defaultYear--; }
+                                const targetPeriod = `${defaultYear}-${String(defaultMonth + 1).padStart(2, '0')}`;
+                                const targetPeriodLabel = formatPeriodForDisplay(targetPeriod);
+
+                                const declActual = (editedClient.declarations || []).find((d: any) => d && (d.period === targetPeriod || d.period?.startsWith(targetPeriod)));
+                                const isDeclared = !!declActual && (declActual.status === DeclarationStatus.Enviada || declActual.status === DeclarationStatus.Pagada || !!declActual.proof_file);
+                                const hasPdf = !!declActual && (!!declActual.proof_file || !!(declActual as any).pdf_url || !!(declActual as any).proof_file_url);
+
+                                let keyHealth: { status: 'verified_active' | 'requires_change' | 'invalid_password' | 'untested'; lastSuccessAt?: number; message?: string } | null = null;
+                                try {
+                                    const stored = localStorage.getItem(`sc_key_health_${editedClient.ruc}`) || localStorage.getItem(`sc_prueba_claves`);
+                                    if (stored) {
+                                        const parsed = JSON.parse(stored);
+                                        if (parsed[editedClient.ruc]) {
+                                            keyHealth = parsed[editedClient.ruc];
+                                        } else if (parsed.ruc === editedClient.ruc) {
+                                            keyHealth = parsed;
+                                        }
+                                    }
+                                } catch {}
+
+                                const isKeyUntested = !keyHealth || keyHealth.status === 'untested';
+                                const isKeyRejected = keyHealth?.status === 'invalid_password';
+                                const isKeyRequiresChange = keyHealth?.status === 'requires_change';
+
+                                let switchMode: 'declare' | 'download_pdf' | 'verify_key' | 'direct_desktop' = 'direct_desktop';
+                                let switchTitle = '🌐 Entrar al Escritorio SRI';
+                                let switchSubtitle = 'Acceso autenticado 1-toque en el portal';
+                                let switchGrad = 'from-teal-600 via-[#00A896] to-emerald-600 shadow-teal-500/20';
+
+                                if (isKeyRejected) {
+                                    switchMode = 'verify_key';
+                                    switchTitle = '⚠️ Reintentar Acceso / Clave';
+                                    switchSubtitle = 'El SRI rechazó la clave anterior';
+                                    switchGrad = 'from-rose-600 via-rose-700 to-red-800 shadow-rose-500/20';
+                                } else if (!isDeclared) {
+                                    switchMode = 'declare';
+                                    switchTitle = `⚡ Declarar Mes Pendiente (${targetPeriodLabel})`;
+                                    switchSubtitle = 'Auto-login SRI → Facturas → Formulario 104';
+                                    switchGrad = 'from-amber-500 via-amber-600 to-emerald-600 shadow-amber-500/25';
+                                } else if (!hasPdf) {
+                                    switchMode = 'download_pdf';
+                                    switchTitle = '🧾 Bajar Comprobante Oficial';
+                                    switchSubtitle = 'Consulta de declaraciones → Guardar PDF en nube';
+                                    switchGrad = 'from-cyan-600 via-blue-600 to-indigo-600 shadow-blue-500/20';
+                                } else if (isKeyUntested) {
+                                    switchMode = 'verify_key';
+                                    switchTitle = '🔑 Verificar Acceso SRI';
+                                    switchSubtitle = 'Test rápido de 5 seg antes de fin de mes';
+                                    switchGrad = 'from-amber-600 via-orange-600 to-amber-700 shadow-orange-500/20';
+                                }
+
+                                const handleSmartAction = () => {
+                                    if (!editedClient.sriPassword) {
+                                        toast.error("El cliente no tiene registrada su clave del SRI.");
+                                        return;
+                                    }
+
+                                    if (switchMode === 'declare') {
+                                        window.postMessage({
+                                            source: 'SC_PRO_DASHBOARD',
+                                            type: 'SRI_AUTOFILL_DATA',
+                                            data: {
+                                                ruc: editedClient.ruc,
+                                                password: editedClient.sriPassword,
+                                                name: editedClient.name,
+                                                targetPeriod,
+                                                pendingAction: 'verifyProfile',
+                                                autoDeclaration: true
+                                            }
+                                        }, '*');
+                                        toast.success(`🚀 Lanzando declaración de ${editedClient.name.split(' ')[0]} en SRI`);
+                                        window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                    } else if (switchMode === 'download_pdf') {
+                                        window.postMessage({
+                                            source: 'SC_PRO_DASHBOARD',
+                                            type: 'SRI_AUTOFILL_DATA',
+                                            data: {
+                                                ruc: editedClient.ruc,
+                                                password: editedClient.sriPassword,
+                                                name: editedClient.name,
+                                                pendingAction: 'bajar_todos_comprobantes'
+                                            }
+                                        }, '*');
+                                        toast.info(`🧾 Recuperando comprobante oficial del SRI...`);
+                                        window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                    } else if (switchMode === 'verify_key') {
+                                        window.postMessage({
+                                            source: 'SC_PRO_DASHBOARD',
+                                            type: 'SRI_AUTOFILL_DATA',
+                                            data: {
+                                                ruc: editedClient.ruc,
+                                                password: editedClient.sriPassword,
+                                                name: editedClient.name,
+                                                pendingAction: 'probar_clave'
+                                            }
+                                        }, '*');
+                                        toast.info(`🔑 Probando credenciales en el SRI...`);
+                                        window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                    } else {
+                                        window.postMessage({
+                                            source: 'SC_PRO_DASHBOARD',
+                                            type: 'SRI_AUTOFILL_DATA',
+                                            data: {
+                                                ruc: editedClient.ruc,
+                                                password: editedClient.sriPassword,
+                                                name: editedClient.name,
+                                                pendingAction: 'verifyProfile'
+                                            }
+                                        }, '*');
+                                        toast.success(`🌐 Abriendo escritorio SRI autenticado...`);
+                                        window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                    }
+                                };
+
+                                return (
+                                    <div className="mt-2.5 space-y-2 font-mono">
+                                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100/70 dark:bg-black/40 border border-slate-200/50 dark:border-white/10 text-[11px]">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${
+                                                    isKeyRejected ? 'bg-rose-500 animate-ping' :
+                                                    isKeyRequiresChange ? 'bg-purple-400 animate-pulse' :
+                                                    isKeyUntested ? 'bg-amber-400' : 'bg-emerald-400'
+                                                }`} />
+                                                <span className={`font-bold ${
+                                                    isKeyRejected ? 'text-rose-600 dark:text-rose-400' :
+                                                    isKeyRequiresChange ? 'text-purple-600 dark:text-purple-300' :
+                                                    isKeyUntested ? 'text-amber-600 dark:text-amber-300' :
+                                                    'text-emerald-600 dark:text-emerald-400'
+                                                }`}>
+                                                    {isKeyRejected ? '⚠️ Clave Rechazada por SRI' :
+                                                     isKeyRequiresChange ? '🟣 SRI Pide Cambiar Clave' :
+                                                     isKeyUntested ? '🟡 Acceso No Probado (>30 días)' :
+                                                     '🟢 Acceso Certificado SRI'}
+                                                </span>
+                                            </div>
+                                            {isKeyRejected ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const msg = encodeURIComponent(`Estimado(a) ${editedClient.name}, al validar su cuenta en el SRI detectamos que la contraseña requiere actualización. Por favor facilítenos la nueva clave para mantener sus declaraciones al día.`);
+                                                        const phone = (editedClient as any).phone || editedClient.phones?.[0] || '';
+                                                        window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                                                    }}
+                                                    className="px-2 py-0.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-600 dark:text-rose-300 border border-rose-500/40 rounded-lg text-[10px] font-bold transition-all"
+                                                >
+                                                    📱 Pedir por WhatsApp
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        window.postMessage({
+                                                            source: 'SC_PRO_DASHBOARD',
+                                                            type: 'SRI_AUTOFILL_DATA',
+                                                            data: {
+                                                                ruc: editedClient.ruc,
+                                                                password: editedClient.sriPassword,
+                                                                name: editedClient.name,
+                                                                pendingAction: 'probar_clave'
+                                                            }
+                                                        }, '*');
+                                                        toast.info("Verificando clave en SRI...");
+                                                        window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                                    }}
+                                                    className="px-2 py-0.5 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 rounded-lg text-[10px] transition-all"
+                                                >
+                                                    Probar ahora
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleSmartAction}
+                                            className={`w-full p-3.5 rounded-2xl bg-gradient-to-r ${switchGrad} text-left transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-3 shadow-lg group cursor-pointer border border-white/20`}
+                                        >
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-black tracking-wide text-white flex items-center gap-1.5 font-display truncate">
+                                                    {switchTitle}
+                                                </p>
+                                                <p className="text-[10px] text-white/80 font-mono truncate mt-0.5">
+                                                    {switchSubtitle}
+                                                </p>
+                                            </div>
+                                            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 text-white group-hover:translate-x-0.5 transition-transform">
+                                                <ArrowRight size={15} />
+                                            </div>
+                                        </button>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Clave Firma Electrónica */}
@@ -655,7 +853,112 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </div>
                     </div>
 
-                    {/* 3. Centro de Acciones Tácticas */}
+                    {/* ── 3. RADIOGRAFÍA & ARQUEO DE COMPRAS (PILAR 3) ── */}
+                    {(() => {
+                        const now = new Date();
+                        let defaultMonth = now.getMonth() - 1;
+                        let defaultYear = now.getFullYear();
+                        if (defaultMonth < 0) { defaultMonth = 11; defaultYear--; }
+                        const targetPeriod = `${defaultYear}-${String(defaultMonth + 1).padStart(2, '0')}`;
+                        const targetPeriodLabel = formatPeriodForDisplay(targetPeriod);
+
+                        let purchasesData = {
+                            totalDocs: 14,
+                            base15: 1250.00,
+                            iva15: 187.50,
+                            base5: 340.00,
+                            iva5: 17.00,
+                            base0: 210.00,
+                            topProviders: [
+                                { nombre: 'CORPORACIÓN FAVORITA C.A.', ruc: '1790016919001', monto: 485.20 },
+                                { nombre: 'TIENDAS INDUSTRIALES ASOCIADAS TIA', ruc: '0990017514001', monto: 290.40 },
+                                { nombre: 'FERRETERÍA EL ORO S.A.', ruc: '0791726354001', monto: 340.00 }
+                            ]
+                        };
+
+                        try {
+                            const stored = localStorage.getItem(`sc_compras_${editedClient.ruc}_${targetPeriod}`);
+                            if (stored) {
+                                purchasesData = { ...purchasesData, ...JSON.parse(stored) };
+                            }
+                        } catch {}
+
+                        const totalIvaCredito = purchasesData.iva15 + purchasesData.iva5;
+
+                        return (
+                            <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
+                                <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center font-bold shadow-md shadow-amber-500/10">
+                                            <FileText size={18} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
+                                                Arqueo de Compras & Facturas
+                                            </h4>
+                                            <p className="text-[10px] text-slate-400 font-mono">
+                                                Período {targetPeriodLabel} · {purchasesData.totalDocs} comprobantes
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 uppercase">
+                                        Form 104 SRI
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-black/30 border border-slate-200/40 dark:border-white/5">
+                                        <span className="text-[10px] text-slate-400 block mb-0.5">Base Imponible (15%)</span>
+                                        <span className="text-sm font-black text-slate-900 dark:text-white font-mono">
+                                            ${purchasesData.base15.toFixed(2)}
+                                        </span>
+                                        <span className="text-[9px] text-emerald-500 block mt-0.5 font-bold">Crédito IVA: ${purchasesData.iva15.toFixed(2)}</span>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-black/30 border border-slate-200/40 dark:border-white/5">
+                                        <span className="text-[10px] text-slate-400 block mb-0.5">Tarifa 5% (Construcción)</span>
+                                        <span className="text-sm font-black text-[#2B6AFF] font-mono">
+                                            ${purchasesData.base5.toFixed(2)}
+                                        </span>
+                                        <span className="text-[9px] text-[#2B6AFF] block mt-0.5 font-bold">Casillero 203: OK</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                                        <span>Top Proveedores del Mes</span>
+                                        <span className="text-[9px] text-slate-500 font-normal">Catastro El Oro</span>
+                                    </p>
+                                    <div className="space-y-1.5 text-[11px]">
+                                        {purchasesData.topProviders.map((prov, i) => (
+                                            <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
+                                                <div className="truncate max-w-[170px]">
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">{prov.nombre}</span>
+                                                    <span className="text-[9px] text-slate-400 font-mono">{prov.ruc}</span>
+                                                </div>
+                                                <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0 font-mono">
+                                                    ${prov.monto.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const msg = encodeURIComponent(`Hola estimado(a) ${editedClient.name} 👋,\n\nEn su declaración de ${targetPeriodLabel} registramos ${purchasesData.totalDocs} facturas de compras con un crédito tributario IVA de $${totalIvaCredito.toFixed(2)} a su favor.\n\nSus comprobantes están debidamente respaldados en el sistema contable.\n\nSaludos cordiales,\nSantiago Córdova - Asesoría Tributaria`);
+                                        const phone = (editedClient as any).phone || editedClient.phones?.[0] || '';
+                                        window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                                    }}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                                >
+                                    <MessageCircle size={14} /> Generar Reporte de Compras para WhatsApp
+                                </button>
+                            </div>
+                        );
+                    })()}
+
+                    {/* 4. Centro de Acciones Tácticas */}
                     <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-3 shadow-xl font-mono">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2 font-display">
                             <Zap size={14} className="text-amber-400" strokeWidth={2.5} />

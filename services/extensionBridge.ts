@@ -154,6 +154,41 @@ export const listenForDeclarationCompleted = (onCompleted: (data: { ruc: string;
   return () => window.removeEventListener('message', handler);
 };
 
+export const sendBatchKeyVerificationToExtension = (clients: Client[]) => {
+  if (!Array.isArray(clients) || clients.length === 0) return;
+
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_START_BATCH_DECLARATION',
+    data: {
+      declarationType: 'mensual',
+      mode: 'probar_clave',
+      testKeysOnly: true,
+      clients: clients.map(c => ({
+        id: c.id,
+        ruc: c.ruc,
+        name: c.name,
+        sriPassword: c.sriPassword,
+        soloProbarClave: true
+      })),
+      timestamp: Date.now()
+    }
+  };
+
+  window.postMessage(payload, "*");
+  try {
+    localStorage.setItem('sc_batch_key_test_queue', JSON.stringify(payload.data));
+  } catch (e) {}
+  console.log(`🔑 [Pre-Vuelo Claves] Lote de prueba de claves enviado a la extensión: ${clients.length} clientes.`);
+};
+
+export const requestPruebaClavesFromExtension = () => {
+  window.postMessage({
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_REQUEST_PRUEBA_CLAVES'
+  }, "*");
+};
+
 export const openSRIPortal = (url?: string) => {
   window.open(url || 'https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
 };

@@ -38,7 +38,7 @@ interface CobranzaScreenProps {
 
 const defaultBusinessProfile: BusinessProfile = {
     ruc: '0705787745001',
-    businessName: 'CORDOVA RAMIREZ ROBERTO SANTIGO',
+    businessName: 'CORDOVA RAMIREZ ROBERTO SANTIAGO',
     tradeName: 'Soluciones Tributarias',
     address: 'Colon y Sucre / Pasaje - El Oro',
     phone: '+593 978 980 722',
@@ -183,7 +183,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
         // 2. Obtener configuraciones del emisor y API
         const emisorRuc = localStorage.getItem('sc_emisor_ruc') || '0705787745001';
-        const emisorRazonSocial = localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIGO';
+        const emisorRazonSocial = localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIAGO';
         const emisorNombreComercial = localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES CONTABLES PRO';
         const emisorDirMatriz = localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro';
         const emisorEstab = localStorage.getItem('sc_emisor_estab') || '001';
@@ -219,7 +219,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
         const cleanFecha = todayStr.replace(/-/g, '');
         const dStr = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4);
-        const baseKey = dStr + '01' + emisorRuc + ambiente + emisorEstab + emisorPtoEmi + secuencial.padStart(9, '0') + '123456781';
+        const randomCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const baseKey = dStr + '01' + emisorRuc + ambiente + emisorEstab + emisorPtoEmi + secuencial.padStart(9, '0') + randomCode + '1';
         
         let sum = 0;
         let factor = 2;

@@ -24,6 +24,14 @@ import { DevolucionIvaModal } from '../components/features/DevolucionIvaModal';
 import { Store, HeartHandshake, ShieldCheck, FileMinus, FilePlus, Truck, FileSpreadsheet, Clock, Calendar } from 'lucide-react';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
+import { 
+  generateRideParts as generateAureaRideParts, 
+  downloadRidePdf as downloadAureaRidePdf, 
+  viewRideInNewWindow,
+  RideComprobanteData, 
+  RideEmisorData, 
+  RideBuyerData 
+} from '../services/rideService';
 interface InvoiceItem {
   id: string;
   codigoPrincipal: string;
@@ -169,7 +177,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   
   // Emisor Defaults (Ecuador Company Details)
   const [emisorRuc, setEmisorRuc] = useState(() => localStorage.getItem('sc_emisor_ruc') || '0705787745001');
-  const [emisorRazonSocial, setEmisorRazonSocial] = useState(() => localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIGO');
+  const [emisorRazonSocial, setEmisorRazonSocial] = useState(() => localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIAGO');
   const [emisorNombreComercial, setEmisorNombreComercial] = useState(() => localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES TRIBUTARIAS');
   const [emisorDirMatriz, setEmisorDirMatriz] = useState(() => localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro');
   const [emisorEstab, setEmisorEstab] = useState(() => localStorage.getItem('sc_emisor_estab') || '001');
@@ -1293,15 +1301,20 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     estab: string,
     pto: string,
     sec: string,
-    codNumerico = '12345678',
+    codNumerico?: string,
     tipoEmi = '1'
   ) => {
     const cleanFecha = fecha.replace(/-/g, ''); // "20260716" → YYYYMMDD
     const d = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4); // DD+MM+YYYY = "16072026"
     
+    // Generar código numérico de 8 dígitos aleatorios reales si no se proporciona uno válido
+    const safeCodNumerico = (codNumerico && /^\d{8}$/.test(codNumerico) && codNumerico !== '12345678')
+      ? codNumerico
+      : Math.floor(10000000 + Math.random() * 90000000).toString();
+
     // access key construction:
     // Fecha (8) + TipoComp (2) + RUC (13) + Ambiente (1) + Serie (6) + Secuencial (9) + Código Numérico (8) + Tipo Emision (1) = 48 digits
-    const baseKey = d + tipoComp + ruc + amb + estab + pto + sec.padStart(9, '0') + codNumerico.padStart(8, '0') + tipoEmi;
+    const baseKey = d + tipoComp + ruc + amb + estab + pto + sec.padStart(9, '0') + safeCodNumerico + tipoEmi;
     
     // Modulo 11 check digit
     let sum = 0;
@@ -2052,816 +2065,68 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
       'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
     ];
+
+    // Detectar meses explícitos en el texto de los ítems o período declarado
+    const foundMonths: string[] = [];
+    monthNames.forEach(m => {
+      const regex = new RegExp(`\\b${m}\\b|\\b${m.substring(0, 4)}\\b`, 'i');
+      if (regex.test(text)) {
+        foundMonths.push(m);
+      }
+    });
+
+    const matchedYear = text.match(/\b(20\d\d)\b/)?.[1] || year.toString();
+
+    if (foundMonths.length > 0) {
+      return foundMonths.length === 1
+        ? `${foundMonths[0]} ${matchedYear}`
+        : `${foundMonths.join(' / ')} ${matchedYear}`;
+    }
+
     const mName = monthNames[month - 1] || 'ENERO';
     return `${mName} ${year}`;
   };
 
-  const generateBarcodeBars = (clave: string) => {
-    if (!clave) return '';
-    let x = 10;
-    const height = 30;
-    const rects: string[] = [];
-    
-    // Guard bars
-    rects.push(`<rect x="${x}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 3.5;
-    rects.push(`<rect x="${x}" y="0" width="1.2" height="${height}" fill="#000000"/>`); x += 2.5;
-    rects.push(`<rect x="${x}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 3.5;
-
-    for (let i = 0; i < clave.length; i++) {
-      const digit = parseInt(clave[i], 10) || 0;
-      const w = ((digit * 7 + i) % 3) * 0.8 + 1.2;
-      const space = ((digit * 3 + i) % 2) * 0.8 + 1.5;
-      rects.push(`<rect x="${x.toFixed(1)}" y="0" width="${w.toFixed(1)}" height="${height}" fill="#000000"/>`);
-      x += w + space;
-    }
-
-    // End guard bars
-    rects.push(`<rect x="${x.toFixed(1)}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 3.5;
-    rects.push(`<rect x="${x.toFixed(1)}" y="0" width="1.2" height="${height}" fill="#000000"/>`); x += 2.5;
-    rects.push(`<rect x="${x.toFixed(1)}" y="0" width="2.2" height="${height}" fill="#000000"/>`); x += 10;
-
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${Math.ceil(x)} ${height}" width="100%" height="28" style="display:block;max-width:320px;margin:0 auto;" preserveAspectRatio="none">${rects.join('')}</svg>`;
-  };
-
   const generateRideParts = (comprobante: HistoricComprobante) => {
-    let emisor = {
+    const emisorOverride: RideEmisorData = {
+      ruc: emisorRuc,
       razonSocial: emisorRazonSocial,
       nombreComercial: emisorNombreComercial,
-      ruc: emisorRuc,
       dirMatriz: emisorDirMatriz,
       estab: emisorEstab,
       ptoEmi: emisorPtoEmi,
-      secuencial: comprobante.secuencial,
-      claveAcceso: comprobante.claveAcceso,
-      ambiente: comprobante.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS',
-      regimen: emisorRegimen
+      regimen: emisorRegimen,
+      ambiente: comprobante.ambiente,
+      logoUrl: emisorLogo
     };
 
-    let receptor = {
+    const buyerOverride: RideBuyerData = {
       razonSocial: comprobante.nombreReceptor,
       identificacion: comprobante.rucReceptor,
-      direccion: comprobante.rucReceptor === buyerRuc ? buyerAddress || 'Pasaje, El Oro' : 'Ecuador',
-      fechaEmision: comprobante.fechaEmision
+      direccion: comprobante.rucReceptor === buyerRuc ? buyerAddress : undefined,
+      fechaEmision: comprobante.fechaEmision,
+      phone: buyerPhone,
+      email: buyerEmail
     };
 
-    let itemsHtml = '';
-    let rawItemsText = '';
-    let subtotal15 = 0;
-    let subtotal0 = comprobante.total;
-    let iva15 = 0;
-    let total = comprobante.total;
-    let formaPagoDesc = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
-    let formaPagoTotal = comprobante.total;
+    const periodStr = (comprobante as any).period || (selectedPeriods.length > 0 ? selectedPeriods.map(p => formatPeriodForDisplay(p)).join(', ') : undefined);
 
-    // Campos adicionales extraídos del XML o del contexto
-    const xmlCamposAdicionales: { nombre: string; valor: string }[] = [];
-
-    try {
-      if (comprobante.xml) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(comprobante.xml, "text/xml");
-        const razonSocial = xmlDoc.getElementsByTagName("razonSocial")[0]?.textContent;
-        if (razonSocial) emisor.razonSocial = razonSocial;
-        const nombreComercial = xmlDoc.getElementsByTagName("nombreComercial")[0]?.textContent;
-        if (nombreComercial) emisor.nombreComercial = nombreComercial;
-        const ruc = xmlDoc.getElementsByTagName("ruc")[0]?.textContent;
-        if (ruc) emisor.ruc = ruc;
-        const dirMatriz = xmlDoc.getElementsByTagName("dirMatriz")[0]?.textContent;
-        if (dirMatriz) emisor.dirMatriz = dirMatriz;
-        const estab = xmlDoc.getElementsByTagName("estab")[0]?.textContent;
-        if (estab) emisor.estab = estab;
-        const ptoEmi = xmlDoc.getElementsByTagName("ptoEmi")[0]?.textContent;
-        if (ptoEmi) emisor.ptoEmi = ptoEmi;
-
-        // Comprador (Factura) o Sujeto Retenido (Retención) o Proveedor (Liquidación)
-        const razonSocialReceptor = xmlDoc.getElementsByTagName("razonSocialComprador")[0]?.textContent
-          || xmlDoc.getElementsByTagName("razonSocialSujetoRetenido")[0]?.textContent
-          || xmlDoc.getElementsByTagName("razonSocialProveedor")[0]?.textContent;
-        if (razonSocialReceptor) receptor.razonSocial = razonSocialReceptor;
-
-        const identificacionReceptor = xmlDoc.getElementsByTagName("identificacionComprador")[0]?.textContent
-          || xmlDoc.getElementsByTagName("identificacionSujetoRetenido")[0]?.textContent
-          || xmlDoc.getElementsByTagName("identificacionProveedor")[0]?.textContent;
-        if (identificacionReceptor) receptor.identificacion = identificacionReceptor;
-
-        const direccionReceptor = xmlDoc.getElementsByTagName("direccionComprador")[0]?.textContent
-          || xmlDoc.getElementsByTagName("direccionProveedor")[0]?.textContent;
-        if (direccionReceptor) receptor.direccion = direccionReceptor;
-
-        // Extracción de infoAdicional oficial
-        const infoAdicionalNode = xmlDoc.getElementsByTagName("infoAdicional")[0];
-        if (infoAdicionalNode) {
-          const campos = infoAdicionalNode.getElementsByTagName("campoAdicional");
-          for (let k = 0; k < campos.length; k++) {
-            const c = campos[k];
-            const nombre = c.getAttribute("nombre") || `Dato ${k + 1}`;
-            const valor = c.textContent?.trim() || '';
-            if (valor) {
-              xmlCamposAdicionales.push({ nombre, valor });
-            }
-          }
-        }
-
-        const detalles = xmlDoc.getElementsByTagName("detalle");
-        if (detalles.length > 0) {
-          itemsHtml = '';
-          subtotal15 = 0;
-          subtotal0 = 0;
-          for (let i = 0; i < detalles.length; i++) {
-            const d = detalles[i];
-            const codigo = d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001';
-            const descripcion = d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables';
-            rawItemsText += ' ' + descripcion;
-            const cantidad = parseFloat(d.getElementsByTagName("cantidad")[0]?.textContent || '1');
-            const precioUnitario = parseFloat(d.getElementsByTagName("precioUnitario")[0]?.textContent || '0');
-            const precioTotalSinImpuesto = parseFloat(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || (cantidad * precioUnitario).toString());
-
-            let ivaRate = 0;
-            const impuestos = d.getElementsByTagName("impuesto");
-            for (let j = 0; j < impuestos.length; j++) {
-              const imp = impuestos[j];
-              const tarifa = parseFloat(imp.getElementsByTagName("tarifa")[0]?.textContent || '0');
-              if (tarifa > 0) ivaRate = tarifa / 100;
-            }
-
-            if (ivaRate > 0) {
-              subtotal15 += precioTotalSinImpuesto;
-            } else {
-              subtotal0 += precioTotalSinImpuesto;
-            }
-
-            itemsHtml += `<tr>
-              <td style="font-family: monospace;">${codigo}</td>
-              <td style="text-align: center;">${cantidad.toFixed(2)}</td>
-              <td style="text-transform: uppercase;">${descripcion}</td>
-              <td style="text-align: right; font-family: monospace;">$${precioUnitario.toFixed(2)}</td>
-              <td style="text-align: right; font-family: monospace; font-weight: bold;">$${precioTotalSinImpuesto.toFixed(2)}</td>
-            </tr>`;
-          }
-          iva15 = subtotal15 * 0.15;
-          total = subtotal15 + subtotal0 + iva15;
-        }
-
-        const pago = xmlDoc.getElementsByTagName("pago")[0];
-        if (pago) {
-          const code = pago.getElementsByTagName("formaPago")[0]?.textContent;
-          const descMap: Record<string, string> = {
-            '01': 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)',
-            '19': 'TARJETA DE CREDITO',
-            '20': 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (TRANSFERENCIA)',
-            '17': 'DINERO ELECTRONICO / DIGITAL'
-          };
-          formaPagoDesc = descMap[code || '01'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
-          formaPagoTotal = Number(pago.getElementsByTagName("total")[0]?.textContent || total);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    if (!itemsHtml) {
-      itemsHtml = `<tr><td style="font-family: monospace;">001</td><td style="text-align: center;">1.00</td><td style="text-transform: uppercase;">Servicios Contables Profesionales</td><td style="text-align: right; font-family: monospace;">$${comprobante.total.toFixed(2)}</td><td style="text-align: right; font-family: monospace; font-weight: bold;">$${comprobante.total.toFixed(2)}</td></tr>`;
-    }
-
-    let numAutorizacion = comprobante.numeroAutorizacion || comprobante.claveAcceso || '';
-    let authDateStr = '';
-    try {
-      if (comprobante.xml) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
-        const numAutXml = xmlDoc.getElementsByTagName("numeroAutorizacion")[0]?.textContent;
-        if (numAutXml && numAutXml.trim()) {
-          numAutorizacion = numAutXml.trim();
-        }
-        const fechaAutorizacion = xmlDoc.getElementsByTagName("fechaAutorizacion")[0]?.textContent;
-        if (fechaAutorizacion) {
-          if (fechaAutorizacion.includes('T')) {
-            const parts = fechaAutorizacion.split('T');
-            const dateParts = parts[0].split('-');
-            const timeParts = parts[1].split('-')[0].split('+')[0];
-            authDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]} ${timeParts}`;
-          } else {
-            authDateStr = fechaAutorizacion;
-          }
-        }
-      }
-    } catch (e) {}
-
-    if (!authDateStr) {
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      authDateStr = `${day}/${month}/${year} ${hours}:${minutes}`;
-    }
-
-    const smartPeriodoFiscal = getSmartPeriodoFiscal(
-      comprobante.fechaEmision,
-      rawItemsText,
-      receptor.identificacion,
-      (comprobante as any).period
-    );
-
-    const regimeLabels: Record<string, string> = {
-      '0': 'CONTRIBUYENTE RÉGIMEN GENERAL',
-      '2': 'CONTRIBUYENTE RÉGIMEN RIMPE - EMPRENDEDOR',
-      '3': 'CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE',
+    const comprobanteData: RideComprobanteData = {
+      id: comprobante.id,
+      tipo: comprobante.tipo,
+      secuencial: comprobante.secuencial,
+      claveAcceso: comprobante.claveAcceso,
+      numeroAutorizacion: comprobante.claveAcceso,
+      rucReceptor: comprobante.rucReceptor,
+      nombreReceptor: comprobante.nombreReceptor,
+      fechaEmision: comprobante.fechaEmision,
+      total: comprobante.total,
+      xml: comprobante.xml,
+      ambiente: comprobante.ambiente,
+      period: periodStr
     };
-    const regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background-color: #f1f5f9 !important; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">' + (regimeLabels[emisorRegimen] || 'CONTRIBUYENTE RÉGIMEN GENERAL') + '</div>';
 
-    // RUC Proveedor Software (Obligatorio Res. SRI NAC-DGERCGC26-00000027)
-    let softwareProviderRucVal = softwareProviderRuc || localStorage.getItem('sc_software_provider_ruc') || '0705787745001';
-    const rucProvXml = xmlCamposAdicionales.find(c =>
-      c.nombre.toLowerCase().replace(/[\s_]+/g, '').includes('rucproveedor') ||
-      (c.nombre.toLowerCase().includes('proveedor') && c.valor.length === 13)
-    );
-    if (rucProvXml && rucProvXml.valor) {
-      softwareProviderRucVal = rucProvXml.valor;
-    }
-
-    // Prevención de redundancia en nombres de emisor
-    const isCommercialSameAsRazon = !emisor.nombreComercial || 
-      emisor.nombreComercial.trim().toUpperCase() === emisor.razonSocial.trim().toUpperCase() ||
-      emisor.nombreComercial.trim().toUpperCase() === 'SOLUCIONES TRIBUTARIAS';
-
-    const logoHtml = emisorLogo 
-      ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
-      : (!isCommercialSameAsRazon ? "<div class='emisor-title'>" + emisor.nombreComercial + "</div>" : "");
-
-    // Construcción limpia de Información Adicional (sin repetir Dirección ya mostrada en el bloque receptor)
-    const infoAdicionalRows: { label: string; value: string; isMono?: boolean }[] = [];
-    infoAdicionalRows.push({ label: 'RUC Proveedor:', value: softwareProviderRucVal, isMono: true });
-
-    // Email
-    const xmlEmail = xmlCamposAdicionales.find(c => c.nombre.toLowerCase().includes('email') || c.nombre.toLowerCase().includes('correo'))?.valor;
-    const emailVal = xmlEmail || (receptor.identificacion === buyerRuc ? buyerEmail : '') || '';
-    if (emailVal) {
-      infoAdicionalRows.push({ label: 'Email:', value: emailVal });
-    }
-
-    // Teléfono
-    const xmlPhone = xmlCamposAdicionales.find(c => c.nombre.toLowerCase().includes('tel') || c.nombre.toLowerCase().includes('celular') || c.nombre.toLowerCase().includes('movil'))?.valor;
-    const phoneVal = xmlPhone || (receptor.identificacion === buyerRuc ? buyerPhone : '') || '';
-    if (phoneVal) {
-      infoAdicionalRows.push({ label: 'Teléfono:', value: phoneVal });
-    }
-
-    // Periodo Fiscal
-    if (smartPeriodoFiscal) {
-      infoAdicionalRows.push({ label: 'Periodo Fiscal:', value: smartPeriodoFiscal });
-    }
-
-    // Otros campos adicionales no redundantes del XML
-    for (const c of xmlCamposAdicionales) {
-      const lowerName = c.nombre.toLowerCase();
-      const isRucProv = lowerName.replace(/[\s_]+/g, '').includes('rucproveedor');
-      const isEmail = lowerName.includes('email') || lowerName.includes('correo');
-      const isTel = lowerName.includes('tel') || lowerName.includes('celular');
-      const isDir = lowerName.includes('dir') || lowerName.includes('direccion');
-      const isPeriodo = lowerName.includes('periodo');
-
-      if (!isRucProv && !isEmail && !isTel && !isDir && !isPeriodo) {
-        infoAdicionalRows.push({ label: `${c.nombre}:`, value: c.valor });
-      }
-    }
-
-    const infoAdicionalHtml = infoAdicionalRows.map(row => `
-      <tr>
-        <td style="width: 110px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">${row.label}</td>
-        <td style="color: #0f172a; font-weight: 700; font-size: 9px; ${row.isMono ? "font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #2b6aff;" : ''}">${row.value}</td>
-      </tr>
-    `).join('');
-
-    const isRetencion = comprobante.tipo === 'retencion';
-    const docTitleLabel = comprobante.tipo === 'factura' 
-      ? 'FACTURA' 
-      : (isRetencion ? 'COMPROBANTE DE RETENCIÓN' : 'LIQUIDACIÓN DE COMPRA');
-
-    const cssStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&family=Manrope:wght@700;800;900&display=swap');
-    
-    @page { 
-      size: A4 portrait; 
-      margin: 8mm 10mm; 
-    }
-    
-    *, *::before, *::after { 
-      box-sizing: border-box; 
-      -webkit-print-color-adjust: exact !important; 
-      print-color-adjust: exact !important; 
-      color-adjust: exact !important; 
-    }
-    
-    body { 
-      margin: 0; 
-      padding: 12px; 
-      background: #f1f5f9; 
-      color: #0f172a; 
-      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; 
-      font-size: 9.5px; 
-      line-height: 1.3; 
-    }
-
-    .no-print {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0f172a;
-      color: #ffffff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      margin: 0 auto 14px auto;
-      max-width: 720px;
-      font-family: system-ui, sans-serif;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-    }
-    .no-print button {
-      background: #2b6aff;
-      color: #ffffff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 11px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-    .no-print button:hover {
-      background: #1d4ed8;
-    }
-
-    .invoice-card { 
-      border: 1.5px solid #0f172a; 
-      border-radius: 12px; 
-      padding: 14px 16px; 
-      background-color: #ffffff !important; 
-      width: 100%; 
-      max-width: 720px; 
-      margin: 0 auto; 
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-    }
-    
-    .header-grid { 
-      display: grid; 
-      grid-template-columns: 1.15fr 1fr; 
-      gap: 14px; 
-      margin-bottom: 14px; 
-    }
-    .emisor-box { 
-      padding-right: 6px; 
-    }
-    .logo-img { 
-      max-height: 55px; 
-      max-width: 220px; 
-      object-fit: contain; 
-      margin-bottom: 8px; 
-    }
-    .emisor-title { 
-      font-family: 'Manrope', sans-serif; 
-      font-size: 14px; 
-      font-weight: 900; 
-      color: #0f172a; 
-      text-transform: uppercase; 
-      margin-bottom: 4px; 
-    }
-    .emisor-name { 
-      font-family: 'Manrope', sans-serif; 
-      font-size: 11px; 
-      font-weight: 800; 
-      text-transform: uppercase; 
-      color: #0f172a; 
-      margin-bottom: 4px; 
-    }
-    .auth-box { 
-      border: 1.5px solid #0f172a; 
-      border-radius: 12px; 
-      padding: 10px 12px; 
-      background-color: #f8fafc !important; 
-    }
-    .auth-title { 
-      font-family: 'Manrope', sans-serif; 
-      font-size: 11px; 
-      font-weight: 800; 
-      color: #0f172a; 
-      margin-bottom: 2px; 
-    }
-    .auth-doc-type { 
-      font-family: 'Manrope', sans-serif; 
-      font-size: 13px; 
-      font-weight: 900; 
-      color: #0f172a; 
-      margin: 2px 0; 
-    }
-    .auth-secuencial { 
-      font-family: 'JetBrains Mono', monospace; 
-      font-size: 12px; 
-      font-weight: 700; 
-      color: #2b6aff; 
-      margin-bottom: 6px; 
-    }
-    .barcode-container { 
-      border-top: 1px solid #cbd5e1; 
-      padding-top: 6px; 
-      margin-top: 6px; 
-      text-align: center; 
-    }
-    .receptor-box { 
-      border: 1px solid #cbd5e1; 
-      border-radius: 10px; 
-      padding: 10px 12px; 
-      margin-bottom: 14px; 
-      display: grid; 
-      grid-template-columns: 1.3fr 1fr; 
-      gap: 6px; 
-      background-color: #fafafa !important; 
-    }
-    .receptor-val { 
-      font-size: 9.5px; 
-      font-weight: 700; 
-      color: #0f172a; 
-      text-transform: uppercase; 
-    }
-    
-    .items-table { 
-      width: 100%; 
-      border-collapse: separate; 
-      border-spacing: 0; 
-      margin-bottom: 14px; 
-      border: 1.5px solid #0f172a; 
-      border-radius: 8px; 
-      overflow: hidden; 
-    }
-    .items-table th { 
-      background-color: #0f172a !important; 
-      color: #ffffff !important; 
-      font-family: 'Manrope', sans-serif; 
-      text-transform: uppercase; 
-      font-size: 8px; 
-      font-weight: 800; 
-      padding: 7px 10px; 
-      text-align: left; 
-      border-right: 1px solid #334155;
-      border-bottom: 2px solid #0f172a;
-    }
-    .items-table th:last-child {
-      border-right: none;
-    }
-    .items-table td { 
-      padding: 7px 10px; 
-      border-bottom: 1px solid #e2e8f0; 
-      border-right: 1px solid #f1f5f9;
-      font-size: 9px; 
-      color: #0f172a; 
-    }
-    .items-table td:last-child {
-      border-right: none;
-    }
-    .items-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .bottom-grid { 
-      display: grid; 
-      grid-template-columns: 1.15fr 1fr; 
-      gap: 14px; 
-    }
-    .info-box, .pago-box { 
-      border: 1px solid #cbd5e1; 
-      border-radius: 10px; 
-      padding: 10px 12px; 
-      margin-bottom: 10px; 
-      background-color: #ffffff !important; 
-    }
-    .box-title { 
-      font-family: 'Manrope', sans-serif; 
-      font-weight: 800; 
-      text-transform: uppercase; 
-      border-bottom: 1px solid #f1f5f9; 
-      padding-bottom: 4px; 
-      margin-bottom: 6px; 
-      font-size: 8.5px; 
-      color: #0f172a; 
-    }
-    
-    .totals-box { 
-      border: 1.5px solid #0f172a; 
-      border-radius: 12px; 
-      padding: 10px 12px; 
-      background-color: #f8fafc !important; 
-    }
-    .totals-table { 
-      width: 100%; 
-      border-collapse: collapse; 
-    }
-    .totals-table td { 
-      padding: 3.5px 2px; 
-      border-bottom: 1px dashed #cbd5e1; 
-      font-size: 9px; 
-      color: #475569; 
-      font-weight: 600; 
-    }
-    .totals-table tr.total-row td { 
-      background-color: #0f172a !important; 
-      color: #ffffff !important; 
-      font-weight: 800; 
-      font-size: 11px; 
-      padding: 7px 6px; 
-      border: 1.5px solid #0f172a !important;
-    }
-
-    /* Encabezado Editorial Tecnológico */
-    .ride-editorial-header {
-      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #f0fdf9 100%) !important;
-      border: 1px solid #cbd5e1;
-      border-top: 3.5px solid #2b6aff;
-      border-radius: 8px;
-      padding: 6px 12px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    .ride-brand-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .ride-brand-badge {
-      width: 24px;
-      height: 24px;
-      border-radius: 5px;
-      background-color: #0b2149 !important;
-      color: #ffffff !important;
-      font-family: 'Manrope', sans-serif;
-      font-weight: 900;
-      font-size: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      letter-spacing: 0.5px;
-      flex-shrink: 0;
-    }
-    .ride-brand-title {
-      font-family: 'Manrope', sans-serif;
-      font-size: 12px;
-      font-weight: 900;
-      color: #0b2149;
-      letter-spacing: 0.4px;
-      line-height: 1.15;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .ride-pro-pill {
-      background-color: #2b6aff !important;
-      color: #ffffff !important;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 8px;
-      font-weight: 800;
-      padding: 1px 5px;
-      border-radius: 3px;
-      letter-spacing: 0.5px;
-    }
-    .ride-brand-sub {
-      font-family: 'Inter', sans-serif;
-      font-size: 6.8px;
-      font-weight: 600;
-      color: #64748b;
-      letter-spacing: 0.25px;
-      margin-top: 1px;
-    }
-    .ride-tech-meta-box {
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
-    }
-    .ride-tech-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background-color: #f1f5f9 !important;
-      border: 1px solid #cbd5e1;
-      border-left: 2.5px solid #00a896;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 7.2px;
-      font-weight: 700;
-      color: #1e293b;
-      letter-spacing: 0.3px;
-    }
-    .ride-tech-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background-color: #00a896 !important;
-      display: inline-block;
-    }
-    .ride-tech-norma {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 6.8px;
-      color: #0f172a;
-      font-weight: 700;
-    }
-
-    @media print {
-      body {
-        padding: 0 !important;
-        margin: 0 !important;
-        background: #ffffff !important;
-      }
-      .no-print {
-        display: none !important;
-      }
-      .invoice-card {
-        border: 1.5px solid #0f172a !important;
-        box-shadow: none !important;
-        margin: 0 auto !important;
-        padding: 12px 14px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-    }
-    `;
-
-    const cardContentHtml = `
-  <div class="invoice-card">
-    <div class="ride-editorial-header">
-      <div class="ride-brand-group">
-        <div class="ride-brand-badge">ST<span style="color: #00a896;">+</span></div>
-        <div>
-          <div class="ride-brand-title">SOLUCIONES TRIBUTARIAS <span class="ride-pro-pill">PRO</span></div>
-          <div class="ride-brand-sub">SISTEMA INTEGRAL DE GESTIÓN TRIBUTARIA & FACTURACIÓN ELECTRÓNICA · SRI ECUADOR</div>
-        </div>
-      </div>
-      <div class="ride-tech-meta-box">
-        <div class="ride-tech-chip">
-          <span class="ride-tech-dot"></span>
-          <span>COMPROBANTE ELECTRÓNICO OFICIAL · RIDE</span>
-        </div>
-        <div class="ride-tech-norma">RUC PROVEEDOR: ${softwareProviderRucVal} · RES. SRI NAC-027</div>
-      </div>
-    </div>
-    <div class="header-grid">
-      <div class="emisor-box">
-        ${logoHtml}
-        <div class="emisor-name">${emisor.razonSocial}</div>
-        ${(!isCommercialSameAsRazon && emisorLogo) ? `<div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-bottom: 3px;">${emisor.nombreComercial}</div>` : ''}
-        <div style="margin-top: 4px; font-size: 9px; color: #475569;"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
-        <div style="font-size: 9px; color: #475569;"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
-        ${regimeLabel}
-      </div>
-      <div class="auth-box">
-        <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
-        <div class="auth-doc-type">${docTitleLabel}</div>
-        <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
-        <div style="font-size: 8px; margin-bottom: 1px; color: #475569;"><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 7.8px; font-weight: 800; color: #0f172a; word-break: break-all; margin-bottom: 4px; line-height: 1.15;">${numAutorizacion}</div>
-        <div style="font-size: 8px; margin-bottom: 2px;"><strong>FECHA/HORA AUTORIZACIÓN:</strong> ${authDateStr}</div>
-        <div style="font-size: 8px; margin-bottom: 2px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente}</span></div>
-        <div style="font-size: 8px; margin-bottom: 4px;"><strong>EMISIÓN:</strong> NORMAL</div>
-        <div class="barcode-container">
-          <div style="margin-bottom: 4px;">
-            ${generateBarcodeBars(comprobante.claveAcceso)}
-          </div>
-          <div style="font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px;">CLAVE DE ACCESO</div>
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 7.8px; font-weight: 800; letter-spacing: 0.4px; color: #0f172a; word-break: break-all; line-height: 1.15;">${comprobante.claveAcceso}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="receptor-box">
-      <div>
-        <strong style="color: #64748b; font-size: 8px;">${isRetencion ? 'RAZÓN SOCIAL / SUJETO RETENIDO (PROVEEDOR):' : 'RAZÓN SOCIAL / CLIENTE:'}</strong>
-        <div class="receptor-val">${receptor.razonSocial}</div>
-      </div>
-      <div>
-        <strong style="color: #64748b; font-size: 8px;">${isRetencion ? 'RUC / CÉDULA PROVEEDOR:' : 'RUC / CÉDULA:'}</strong>
-        <div class="receptor-val" style="font-family: 'JetBrains Mono', monospace;">${receptor.identificacion}</div>
-      </div>
-      <div style="margin-top: 4px;">
-        <strong style="color: #64748b; font-size: 8px;">FECHA EMISIÓN:</strong>
-        <div style="font-weight: 700; color: #0f172a;">${receptor.fechaEmision}</div>
-      </div>
-      <div style="margin-top: 4px;">
-        <strong style="color: #64748b; font-size: 8px;">GUÍA DE REMISIÓN:</strong>
-        <div style="font-weight: 700; color: #0f172a;">S/N</div>
-      </div>
-      <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
-        <strong style="color: #64748b; font-size: 8px;">${isRetencion ? 'DIRECCIÓN DEL PROVEEDOR:' : 'DIRECCIÓN DEL COMPRADOR:'}</strong>
-        <div style="font-weight: 700; color: #0f172a; text-transform: uppercase;">${receptor.direccion}</div>
-      </div>
-    </div>
-
-    <table class="items-table">
-      <thead>
-        <tr>
-          <th style="width: 90px;">Cod. Principal</th>
-          <th style="width: 55px; text-align: center;">Cant.</th>
-          <th>Descripción / Detalle del Servicio</th>
-          <th style="width: 110px; text-align: right;">P. Unitario</th>
-          <th style="width: 110px; text-align: right;">Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemsHtml}
-      </tbody>
-    </table>
-
-    <div class="bottom-grid">
-      <div>
-        <div class="info-box">
-          <div class="box-title">Información Adicional</div>
-          <table style="width: 100%; border-collapse: collapse;">
-            ${infoAdicionalHtml}
-          </table>
-        </div>
-
-        <div class="pago-box">
-          <div class="box-title">Forma de Pago SRI</div>
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr>
-                <th style="color: #64748b; border-bottom: 1px solid #e2e8f0; padding: 3px; font-size: 8px; text-align: left;">Forma de Pago</th>
-                <th style="text-align: right; width: 85px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding: 3px; font-size: 8px;">Valor Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="font-weight: 700; font-size: 8.5px; text-transform: uppercase;">${formaPagoDesc}</td>
-                <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0f172a;">$${formaPagoTotal.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div>
-        <div class="totals-box">
-          <table class="totals-table">
-            <tr>
-              <td>SUBTOTAL 15%</td>
-              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal15.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>SUBTOTAL 0%</td>
-              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal0.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>SUBTOTAL SIN IMPUESTOS</td>
-              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${(subtotal15 + subtotal0).toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td>IVA 15%</td>
-              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #2b6aff;">$${iva15.toFixed(2)}</td>
-            </tr>
-            <tr class="total-row">
-              <td>VALOR TOTAL</td>
-              <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${total.toFixed(2)}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>`;
-
-    const fullDocHtml = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <title>RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>${cssStyles}</style>
-</head>
-<body>
-  <div class="no-print">
-    <div>
-      <div style="font-weight: 800; font-size: 12.5px; letter-spacing: 0.3px;">Vista Previa Oficial del RIDE · SRI Ecuador</div>
-      <div style="font-size: 10px; opacity: 0.85; margin-top: 2px;">Listo para imprimir o guardar en PDF con fondos, gráficos y código de barras intactos.</div>
-    </div>
-    <button onclick="window.print()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
-      Guardar como PDF / Imprimir
-    </button>
-  </div>
-  ${cardContentHtml}
-</body>
-</html>`;
-
-    return {
-      cssStyles,
-      cardContentHtml,
-      fullDocHtml,
-      filename: `RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
-    };
+    return generateAureaRideParts(comprobanteData, emisorOverride, buyerOverride);
   };
 
   const viewRideDocument = (comprobante: HistoricComprobante) => {

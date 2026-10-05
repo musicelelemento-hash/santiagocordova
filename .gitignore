@@ -51,6 +51,7 @@ test-pdf.js
 # Legacy / Archived Code
 santiagocordova-main/
 *.zip
+!public/extensions/*.zip
 
 SRI_RUC_El_Oro.csv
 *.png

@@ -5,9 +5,16 @@ import {
     Database, ExternalLink, Eye, EyeOff, FileText, HandCoins, Loader2,
     MessageCircle, ShieldAlert, Sparkles, TrendingUp, UploadCloud, Users,
     Vault, Wallet, X, Zap, KeyRound, ShieldOff, ShieldCheck, PhoneCall, Trash2,
-    Play, Send, Check, Search, FileUp, Key, CheckSquare, Square, Filter
+    Play, Send, Check, Search, FileUp, Key, CheckSquare, Square, Filter,
+    RotateCcw, PlaneTakeoff
 } from 'lucide-react';
-import { sendToSRIExtension, sendBatchDeclarationToExtension, openSRIPortal } from '../services/extensionBridge';
+import { 
+    sendToSRIExtension, 
+    sendBatchDeclarationToExtension, 
+    openSRIPortal, 
+    sendBatchKeyVerificationToExtension, 
+    requestPruebaClavesFromExtension 
+} from '../services/extensionBridge';
 import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay, getDaysUntilDue, isSriPasswordUpdated, SriPasswordStatusInfo } from '../services/sri';
@@ -171,6 +178,35 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         };
         window.addEventListener('message', handlePulse);
         return () => window.removeEventListener('message', handlePulse);
+    }, []);
+
+    // ── AUDITORÍA PRE-VUELO DE CLAVES (PILAR 1) ──
+    const [showPreFlightModal, setShowPreFlightModal] = useState(false);
+    const [preFlightTab, setPreFlightTab] = useState<'all' | 'issues' | 'untested' | 'verified'>('all');
+    const [preFlightSearch, setPreFlightSearch] = useState('');
+    const [pruebaClavesData, setPruebaClavesData] = useState<Record<string, { ruc: string; nombre: string; resultado: 'ok' | 'rechazada' | 'pide_cambio'; detalle?: string; cuando: number }>>(() => {
+        try {
+            const guardado = localStorage.getItem('sc_prueba_claves');
+            return guardado ? JSON.parse(guardado) : {};
+        } catch (e) {
+            return {};
+        }
+    });
+
+    React.useEffect(() => {
+        const handleKeySync = (event: MessageEvent) => {
+            if (event.data && event.data.source === 'SC_PRO_EXTENSION' && event.data.type === 'SRI_PRUEBA_CLAVES_SYNC') {
+                const data = event.data.data;
+                if (data) {
+                    setPruebaClavesData(data);
+                    try {
+                        localStorage.setItem('sc_prueba_claves', JSON.stringify(data));
+                    } catch (e) {}
+                }
+            }
+        };
+        window.addEventListener('message', handleKeySync);
+        return () => window.removeEventListener('message', handleKeySync);
     }, []);
 
     // Persistence Effect
@@ -1074,6 +1110,149 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         });
     };
 
+    // ── AUDITORÍA PRE-VUELO DE SALUD DE CREDENCIALES (PILAR 1) ──
+    const preFlightAnalysis = useMemo(() => {
+        const active = clients.filter(c => !c.isDeleted && (c.isActive ?? true));
+        const now = Date.now();
+
+        const items = active.map(client => {
+            const ruc = client.ruc?.trim() || '';
+            const testRecord = pruebaClavesData[ruc];
+            const keyInfo = isSriPasswordUpdated(client);
+            const hasPassword = !!(client.sriPassword && client.sriPassword.trim());
+
+            let status: 'verified' | 'untested' | 'untested_stale' | 'rejected' | 'requires_change' | 'no_key' = 'untested';
+            let label = 'No Probado';
+            let daysAgo: number | null = null;
+
+            if (!hasPassword || keyInfo.label === 'Sin Clave') {
+                status = 'no_key';
+                label = 'Sin Clave SRI';
+            } else if (testRecord) {
+                daysAgo = Math.floor((now - testRecord.cuando) / (1000 * 60 * 60 * 24));
+                if (testRecord.resultado === 'ok') {
+                    if (daysAgo <= 30) {
+                        status = 'verified';
+                        label = `Acceso Certificado (${daysAgo === 0 ? 'hoy' : `hace ${daysAgo}d`})`;
+                    } else {
+                        status = 'untested_stale';
+                        label = `No Probado (>30 días, hace ${daysAgo}d)`;
+                    }
+                } else if (testRecord.resultado === 'rechazada') {
+                    status = 'rejected';
+                    label = 'Clave Rechazada por SRI';
+                } else if (testRecord.resultado === 'pide_cambio') {
+                    status = 'requires_change';
+                    label = 'SRI Pide Cambiar Clave';
+                }
+            } else {
+                if (!keyInfo.isUpdated) {
+                    status = 'rejected';
+                    label = keyInfo.label || 'Clave no válida';
+                } else {
+                    status = 'untested';
+                    label = 'Sin prueba registrada este ciclo';
+                }
+            }
+
+            return {
+                client,
+                ruc,
+                status,
+                label,
+                daysAgo,
+                detalle: testRecord?.detalle,
+                testedAt: testRecord?.cuando
+            };
+        });
+
+        const verified = items.filter(i => i.status === 'verified');
+        const issues = items.filter(i => i.status === 'rejected' || i.status === 'requires_change' || i.status === 'no_key');
+        const untested = items.filter(i => i.status === 'untested' || i.status === 'untested_stale');
+        const requiresChange = items.filter(i => i.status === 'requires_change');
+        const eligibleForBatch = items.filter(i => i.client.sriPassword && i.status !== 'rejected');
+
+        return {
+            items,
+            verified,
+            issues,
+            untested,
+            requiresChange,
+            eligibleForBatch,
+            verifiedCount: verified.length,
+            issuesCount: issues.length,
+            untestedCount: untested.length,
+            requiresChangeCount: requiresChange.length,
+            total: items.length
+        };
+    }, [clients, pruebaClavesData]);
+
+    const preFlightDisplayItems = useMemo(() => {
+        let baseList = preFlightAnalysis.items;
+        if (preFlightTab === 'issues') baseList = preFlightAnalysis.issues;
+        else if (preFlightTab === 'untested') baseList = preFlightAnalysis.untested;
+        else if (preFlightTab === 'verified') baseList = preFlightAnalysis.verified;
+
+        if (!preFlightSearch.trim()) return baseList;
+        const q = preFlightSearch.toLowerCase().trim();
+        return baseList.filter(item => 
+            item.client.name.toLowerCase().includes(q) ||
+            item.ruc.includes(q) ||
+            (item.client.tradeName && item.client.tradeName.toLowerCase().includes(q))
+        );
+    }, [preFlightTab, preFlightAnalysis, preFlightSearch]);
+
+    const handleLaunchPreFlightBatch = () => {
+        const toTest = preFlightAnalysis.eligibleForBatch.map(i => i.client);
+        if (toTest.length === 0) {
+            toast.warning("No hay clientes con clave lista para probar.");
+            return;
+        }
+        sendBatchKeyVerificationToExtension(toTest);
+        toast.success(`🚀 [Pre-Vuelo Claves] Lanzando prueba de acceso para ${toTest.length} clientes en el SRI`);
+        openSRIPortal();
+    };
+
+    const handleClearPruebaClaves = () => {
+        if (window.confirm("¿Deseas reiniciar el historial local de auditoría de claves?")) {
+            setPruebaClavesData({});
+            try {
+                localStorage.removeItem('sc_prueba_claves');
+            } catch (e) {}
+            toast.info("Historial de prueba de claves reiniciado.");
+        }
+    };
+
+    const handleRequestKeyViaWhatsApp = (client: Client) => {
+        const phone = ((client as any).phone || client.phones?.[0] || '').replace(/\D/g, '');
+        const firstName = client.name.split(' ')[0] || client.name;
+        const msg = encodeURIComponent(
+            `Estimado(a) ${firstName}, le saluda Santiago Córdova.\n\nAl realizar la verificación preventiva de su perfil en el portal del SRI para la preparación de su declaración tributaria, el sistema reportó que su contraseña ha cambiado o requiere actualización.\n\nPor favor facilítenos su nueva clave del SRI para mantener sus declaraciones puntuales y evitar cualquier tipo de multa o bloqueo ante el SRI.\n\n¡Muchas gracias por su confianza!`
+        );
+        window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+    };
+
+    const handleTestSingleKey = (client: Client) => {
+        if (!client.sriPassword) {
+            toast.error("El cliente no tiene clave del SRI registrada.");
+            return;
+        }
+        sendToSRIExtension(client);
+        window.postMessage({
+            source: 'SC_PRO_DASHBOARD',
+            type: 'SRI_AUTOFILL_DATA',
+            data: {
+                ruc: client.ruc,
+                password: client.sriPassword,
+                name: client.name,
+                pendingAction: 'probar_clave',
+                autoDeclaration: false
+            }
+        }, '*');
+        toast.info(`🔑 Probando clave de ${client.name.split(' ')[0]} en el SRI...`);
+        openSRIPortal();
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-300 pb-20 relative min-h-screen font-sans">
             <div className="relative z-20 px-4 sm:px-0">
@@ -1241,6 +1420,25 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         {despachoKeyAnalysis.conProblemasCount > 0 && (
                                             <span className="px-1.5 py-0.5 rounded-md bg-rose-600/90 text-white border border-rose-400/40 text-[10px] font-mono animate-pulse" title={`${despachoKeyAnalysis.conProblemasCount} con clave no válida o faltante`}>
                                                 {despachoKeyAnalysis.conProblemasCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowPreFlightModal(true);
+                                            requestPruebaClavesFromExtension();
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500/20 to-amber-600/30 hover:from-amber-500/30 hover:to-amber-600/40 text-amber-300 font-mono text-xs font-black uppercase tracking-wider shadow-lg shadow-amber-500/10 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer border border-amber-400/30 shrink-0"
+                                        title="Auditoría Pre-Vuelo: Diagnóstico preventivo de claves antes de la campaña fiscal"
+                                    >
+                                        <PlaneTakeoff size={14} className="text-amber-400" />
+                                        <span className="hidden sm:inline">Pre-Vuelo Claves</span>
+                                        <span className="px-1.5 py-0.5 rounded-md bg-black/40 text-amber-300 border border-amber-400/30 text-[10px] font-mono">
+                                            {preFlightAnalysis.total}
+                                        </span>
+                                        {preFlightAnalysis.issuesCount > 0 && (
+                                            <span className="px-1.5 py-0.5 rounded-md bg-rose-600/90 text-white border border-rose-400/40 text-[10px] font-mono animate-pulse" title={`${preFlightAnalysis.issuesCount} clientes con clave rechazada, vencida o ausente`}>
+                                                {preFlightAnalysis.issuesCount}
                                             </span>
                                         )}
                                     </button>
@@ -2932,6 +3130,267 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             >
                                 <Zap size={15} />
                                 <span>🚀 Iniciar Despacho Lote RPA ({selectedBatchCount})</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ── MODAL: PRE-VUELO INTELIGENTE & SALUD DE CLAVES (PILAR 1) ── */}
+            <Modal
+                isOpen={showPreFlightModal}
+                onClose={() => setShowPreFlightModal(false)}
+                title="✈️ Auditoría Pre-Vuelo de Cartera · Salud de Credenciales SRI"
+                size="4xl"
+            >
+                <div className="space-y-6 font-mono text-left">
+                    {/* SUBTITLE & PHILOSOPHY */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                            <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                <Sparkles size={14} className="text-amber-400" />
+                                <span>Diagnóstico Preventivo Pre-Campaña (Cero Fallas en Lote)</span>
+                            </p>
+                            <p className="text-[11px] text-on-surface-variant font-sans leading-relaxed">
+                                Prueba de claves rápida en el SRI (1–2 seg por cliente, sin tocar formularios). Detecta contraseñas cambiadas, caducadas o bloqueadas antes de que empiece la semana de declaraciones.
+                            </p>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-2">
+                            <button
+                                onClick={handleClearPruebaClaves}
+                                className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface text-[10px] font-bold uppercase tracking-wider transition-all border border-foreground/10 flex items-center gap-1"
+                                title="Reiniciar memoria local de auditoría de claves"
+                            >
+                                <RotateCcw size={12} />
+                                <span>Limpiar Registros</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* TOP STATS CARDS (4 PILARES DE SALUD) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {/* 1. Verificados */}
+                        <div 
+                            onClick={() => setPreFlightTab('verified')}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                preFlightTab === 'verified' 
+                                    ? 'bg-emerald-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10' 
+                                    : 'bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40'
+                            }`}
+                        >
+                            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                                <ShieldCheck size={12} /> Verificadas
+                            </p>
+                            <h3 className="text-2xl font-black text-emerald-300 mt-1">{preFlightAnalysis.verifiedCount}</h3>
+                            <p className="text-[9px] text-emerald-300/80 font-sans mt-0.5">Acceso activo validado</p>
+                        </div>
+
+                        {/* 2. Sin Probar */}
+                        <div 
+                            onClick={() => setPreFlightTab('untested')}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                preFlightTab === 'untested' 
+                                    ? 'bg-amber-500/20 border-amber-500/50 shadow-lg shadow-amber-500/10' 
+                                    : 'bg-amber-500/10 border-amber-500/20 hover:border-amber-500/40'
+                            }`}
+                        >
+                            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                                <Clock size={12} /> Sin Probar
+                            </p>
+                            <h3 className="text-2xl font-black text-amber-300 mt-1">{preFlightAnalysis.untestedCount}</h3>
+                            <p className="text-[9px] text-amber-300/80 font-sans mt-0.5">&gt;30 días o pendientes</p>
+                        </div>
+
+                        {/* 3. Con Problemas / Rechazadas */}
+                        <div 
+                            onClick={() => setPreFlightTab('issues')}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                preFlightTab === 'issues' 
+                                    ? 'bg-rose-500/20 border-rose-500/50 shadow-lg shadow-rose-500/10' 
+                                    : 'bg-rose-500/10 border-rose-500/20 hover:border-rose-500/40'
+                            }`}
+                        >
+                            <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest flex items-center gap-1">
+                                <ShieldAlert size={12} /> Con Problemas
+                            </p>
+                            <h3 className="text-2xl font-black text-rose-300 mt-1">{preFlightAnalysis.issuesCount}</h3>
+                            <p className="text-[9px] text-rose-300/80 font-sans mt-0.5">Rechazadas o sin clave</p>
+                        </div>
+
+                        {/* 4. Piden Cambio */}
+                        <div 
+                            onClick={() => setPreFlightTab('issues')}
+                            className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 transition-all cursor-pointer"
+                        >
+                            <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest flex items-center gap-1">
+                                <KeyRound size={12} /> Piden Cambio
+                            </p>
+                            <h3 className="text-2xl font-black text-purple-300 mt-1">{preFlightAnalysis.requiresChangeCount}</h3>
+                            <p className="text-[9px] text-purple-300/80 font-sans mt-0.5">Aviso preventivo SRI</p>
+                        </div>
+                    </div>
+
+                    {/* ACTION & SEARCH TOOLBAR */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                        {/* Search Input */}
+                        <div className="relative flex-1">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                            <input
+                                type="text"
+                                value={preFlightSearch}
+                                onChange={e => setPreFlightSearch(e.target.value)}
+                                placeholder="Buscar por cliente o RUC..."
+                                className="w-full pl-9 pr-4 py-2 bg-foreground/5 border border-foreground/10 rounded-xl text-xs font-mono text-on-surface outline-none focus:border-amber-400/50"
+                            />
+                        </div>
+
+                        {/* Filter Tabs */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
+                            <button
+                                onClick={() => setPreFlightTab('all')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                    preFlightTab === 'all'
+                                        ? 'bg-amber-400/20 border border-amber-400/40 text-amber-300'
+                                        : 'bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant'
+                                }`}
+                            >
+                                Todos ({preFlightAnalysis.total})
+                            </button>
+                            <button
+                                onClick={() => setPreFlightTab('issues')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                    preFlightTab === 'issues'
+                                        ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                                        : 'bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant'
+                                }`}
+                            >
+                                Problemas ({preFlightAnalysis.issuesCount})
+                            </button>
+                            <button
+                                onClick={() => setPreFlightTab('untested')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                    preFlightTab === 'untested'
+                                        ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                                        : 'bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant'
+                                }`}
+                            >
+                                Sin Probar ({preFlightAnalysis.untestedCount})
+                            </button>
+                            <button
+                                onClick={() => setPreFlightTab('verified')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                    preFlightTab === 'verified'
+                                        ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                                        : 'bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant'
+                                }`}
+                            >
+                                Verificados ({preFlightAnalysis.verifiedCount})
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* CLIENTS LIST */}
+                    <div className="max-h-[360px] overflow-y-auto space-y-2 pr-1 hide-scrollbar">
+                        {preFlightDisplayItems.length === 0 ? (
+                            <div className="p-8 text-center rounded-2xl bg-foreground/5 border border-foreground/10 text-on-surface-variant text-xs font-mono">
+                                No se encontraron clientes en esta categoría.
+                            </div>
+                        ) : (
+                            preFlightDisplayItems.map(item => {
+                                const c = item.client;
+                                const isOk = item.status === 'verified';
+                                const isBad = item.status === 'rejected' || item.status === 'no_key';
+                                const isChange = item.status === 'requires_change';
+
+                                return (
+                                    <div 
+                                        key={c.id} 
+                                        className="p-3.5 rounded-2xl bg-foreground/5 border border-foreground/10 hover:border-foreground/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                                    isOk ? 'bg-emerald-400' :
+                                                    isBad ? 'bg-rose-500 animate-pulse' :
+                                                    isChange ? 'bg-purple-400' : 'bg-amber-400'
+                                                }`} />
+                                                <p className="text-xs font-bold text-on-surface truncate font-sans">
+                                                    {c.name}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1 text-[10px] text-on-surface-variant flex-wrap">
+                                                <span className="font-mono text-amber-300/90">{item.ruc}</span>
+                                                <span>·</span>
+                                                <span className="text-[9px] uppercase tracking-wider">{c.regime || 'General'}</span>
+                                                <span>·</span>
+                                                <span className={`font-bold ${
+                                                    isOk ? 'text-emerald-400' :
+                                                    isBad ? 'text-rose-400' :
+                                                    isChange ? 'text-purple-300' : 'text-amber-400'
+                                                }`}>
+                                                    {item.label}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {isBad ? (
+                                                <button
+                                                    onClick={() => handleRequestKeyViaWhatsApp(c)}
+                                                    className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                                                    title="Enviar mensaje cordial solicitando clave actualizada por WhatsApp"
+                                                >
+                                                    <MessageCircle size={13} />
+                                                    <span>Pedir por WhatsApp</span>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleTestSingleKey(c)}
+                                                    className="px-3 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+                                                    title="Probar acceso de este cliente en el SRI en 1 toque"
+                                                >
+                                                    <Key size={13} />
+                                                    <span>Probar 1-Toque</span>
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    setClientToFocusKey(c);
+                                                    setIsClavesModalOpen(true);
+                                                }}
+                                                className="px-2.5 py-1.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                                title="Editar contraseña SRI guardada"
+                                            >
+                                                Editar
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    {/* MODAL FOOTER & BATCH LAUNCHER */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-foreground/10">
+                        <div className="text-xs text-on-surface-variant">
+                            <strong>{preFlightAnalysis.eligibleForBatch.length}</strong> de {preFlightAnalysis.total} clientes listos para probar
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowPreFlightModal(false)}
+                                className="px-4 py-2.5 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-foreground/10"
+                            >
+                                Cerrar
+                            </button>
+                            <button
+                                onClick={handleLaunchPreFlightBatch}
+                                disabled={preFlightAnalysis.eligibleForBatch.length === 0}
+                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50 border border-amber-400/40 flex items-center gap-2"
+                                title="Inicia la prueba de claves por lote en la extensión sin tocar formularios"
+                            >
+                                <PlaneTakeoff size={15} />
+                                <span>🚀 Iniciar Barrido Pre-Vuelo SRI ({preFlightAnalysis.eligibleForBatch.length})</span>
                             </button>
                         </div>
                     </div>
