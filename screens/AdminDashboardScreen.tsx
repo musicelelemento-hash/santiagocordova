@@ -137,6 +137,42 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [markAllMode, setMarkAllMode] = useState<'declared' | 'paid' | 'both'>('declared');
     const [showMarkAllModal, setShowMarkAllModal] = useState(false);
 
+    const [liveRpaPulse, setLiveRpaPulse] = useState<{
+        t: number;
+        evento: string;
+        detalle: string;
+        cliente: string;
+        ruc: string;
+        paso: string;
+        estado: string;
+        indice?: number;
+        total?: number;
+        periodo?: string;
+    } | null>(() => {
+        try {
+            const guardado = localStorage.getItem('sc_ultimo_pulso_rpa');
+            return guardado ? JSON.parse(guardado) : null;
+        } catch (e) {
+            return null;
+        }
+    });
+
+    React.useEffect(() => {
+        const handlePulse = (event: MessageEvent) => {
+            if (event.data && event.data.source === 'SC_PRO_EXTENSION' && event.data.type === 'SRI_TELEMETRY_PULSE') {
+                const pulso = event.data.data;
+                if (pulso) {
+                    setLiveRpaPulse(pulso);
+                    try {
+                        localStorage.setItem('sc_ultimo_pulso_rpa', JSON.stringify(pulso));
+                    } catch (e) {}
+                }
+            }
+        };
+        window.addEventListener('message', handlePulse);
+        return () => window.removeEventListener('message', handlePulse);
+    }, []);
+
     // Persistence Effect
     React.useEffect(() => {
         sessionStorage.setItem('dashboard_hub_tab', hubTab);
@@ -1062,10 +1098,39 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         </div>
                                         <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">SISTEMA ACTIVO · SRI 2026</span>
                                     </div>
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_10px_rgba(16,185,129,0.2)]" title="Puente RPA con Nueva Luz 3.0 sincronizado">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                        <span className="text-[10px] font-bold text-emerald-300 font-mono">RPA Nueva Luz 3.0 · En Línea</span>
-                                    </div>
+                                    {(() => {
+                                        const esReciente = liveRpaPulse && (Date.now() - liveRpaPulse.t < 45000);
+                                        const esIncompleto = liveRpaPulse && liveRpaPulse.total && (liveRpaPulse.indice !== undefined) && (liveRpaPulse.indice < liveRpaPulse.total);
+                                        const fueInterrumpido = !esReciente && esIncompleto && liveRpaPulse?.estado !== 'DETENIDO';
+
+                                        if (fueInterrumpido) {
+                                            return (
+                                                <button
+                                                    onClick={() => {
+                                                        window.postMessage({ source: 'SC_PRO_DASHBOARD', type: 'SRI_RESUME_BATCH' }, '*');
+                                                    }}
+                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer backdrop-blur-md shadow-[0_0_12px_rgba(245,158,11,0.25)] group"
+                                                    title={`Interrumpido en ${liveRpaPulse.cliente || 'cliente'} (${liveRpaPulse.paso || ''}). Haz clic para reanudar el lote exactamente aquí.`}
+                                                >
+                                                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                                                    <span className="text-[10px] font-bold font-mono">
+                                                        ⚠️ Interrumpido: {liveRpaPulse.cliente ? liveRpaPulse.cliente.split(' ')[0] : 'Cliente'} ({liveRpaPulse.paso || ''}) · <span className="underline group-hover:text-white">▶ Reanudar</span>
+                                                    </span>
+                                                </button>
+                                            );
+                                        }
+
+                                        return (
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_10px_rgba(16,185,129,0.2)]" title={esReciente ? `RPA en curso: ${liveRpaPulse.detalle}` : "Puente RPA con SC TaxPilot PRO sincronizado"}>
+                                                <div className={`w-2 h-2 rounded-full ${esReciente ? 'bg-emerald-300 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+                                                <span className="text-[10px] font-bold text-emerald-300 font-mono">
+                                                    {esReciente
+                                                        ? `⚡ ${liveRpaPulse.cliente ? liveRpaPulse.cliente.split(' ')[0] : 'RPA'} · ${liveRpaPulse.evento} ${liveRpaPulse.paso ? `(${liveRpaPulse.paso})` : ''}`
+                                                        : 'SC TaxPilot PRO · En Línea'}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <div>
                                     <h1 className="text-3xl sm:text-5xl font-black text-on-surface tracking-tight leading-none font-display">
@@ -2641,7 +2706,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <Modal
                 isOpen={isRpaBatchModalOpen}
                 onClose={() => setIsRpaBatchModalOpen(false)}
-                title="⚡ Despacho Táctico Lote RPA · Nueva Luz 3.0"
+                title="⚡ Despacho Táctico Lote RPA · SC TaxPilot PRO"
                 size="4xl"
             >
                 <div className="space-y-6 font-mono text-left">

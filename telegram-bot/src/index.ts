@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport, getMissingOrInvalidKeyClients, getIncompleteClients, getInternalManagementSummary } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport, getMissingOrInvalidKeyClients, getIncompleteClients, getInternalManagementSummary, getFacturadoresSummary, getLlenadoSummary, getClientFacturadorCredentials, getRenovacionesSummary } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -133,9 +133,13 @@ export async function showFinancesHub(ctx: any, isEdit: boolean = false) {
 }
 
 export async function showVaultInvoiceHub(ctx: any, isEdit: boolean = false) {
-    const text = `🔐 <b>BÓVEDA DIGITAL & FACTURACIÓN SRI</b>\n\n` +
-                 `Custodia segura de firmas .p12, emisión electrónica y archivo de declaraciones:`;
+    const text = `🔐 <b>BÓVEDA DIGITAL, FACTURADORES & LLENADO</b>\n\n` +
+                 `Control de software (Talonario, SRI, Ecuafact, Zifact), llenado de facturas, firmas .p12 y archivo de declaraciones:`;
     const kb = new InlineKeyboard()
+        .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary')
+        .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
+        .text('🔑 Credenciales Facturar', 'baku_cmd:get_credenciales')
+        .text('🔄 Renovaciones & KYC', 'baku_cmd:renovaciones_summary').row()
         .text('🧾 Emitir Factura SRI', 'baku_cmd:create_invoice')
         .text('📁 Bóveda Firmas .p12', 'baku_cmd:browse_vault').row()
         .text('📄 Comprobantes PDF (Declaraciones)', 'baku_cmd:browse_proofs').row()
@@ -655,6 +659,112 @@ bot.command('resumen', async (ctx) => {
     await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML', reply_markup: kb });
 });
 
+bot.command(['facturadores', 'software'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    const f = await getFacturadoresSummary();
+    const text = 
+        `💼 <b>CONTROL DE FACTURADORES & SOFTWARE ELECTRÓNICO</b>\n\n` +
+        `👥 <b>Total Clientes en Sistema:</b> ${f.totalClients}\n` +
+        `🔐 <b>Con Firma Guardada (.p12):</b> ${f.withSignatureCount}\n` +
+        `⚠️ <b>Sin Firma Guardada:</b> ${f.sinFirmaCount} <i>(Controlables para planes/SRI)</i>\n` +
+        `👔 <b>Particulares / Otro Contador:</b> ${f.externalAccountantCount}\n\n` +
+        `📊 <b>Distribución por Facturador:</b>\n` +
+        `• 🌟 <b>Talonario Amigo:</b> ${f.softwareBreakdown.talonario}\n` +
+        `• 🏛️ <b>Facturador SRI Gratuito:</b> ${f.softwareBreakdown.sriGratuito} <i>(Ilimitado)</i>\n` +
+        `• ⚡ <b>Ecuafact:</b> ${f.softwareBreakdown.ecuafact}\n` +
+        `• 🛡️ <b>Zifact:</b> ${f.softwareBreakdown.zifact}\n` +
+        `• 📦 <b>Otros / Locales:</b> ${f.softwareBreakdown.otros}\n\n` +
+        (f.expiringPlans.length > 0 ? `⏰ <b>Planes por Vencer (<=30d):</b>\n` + f.expiringPlans.slice(0, 5).map((p: any) => `• ${p.name} (${p.software}): <b>${p.status}</b>`).join('\n') + '\n\n' : '✅ <i>No hay planes de software por vencer en los próximos 30 días.</i>\n\n') +
+        (f.lowDocsPlans.length > 0 ? `📉 <b>Bajos en Comprobantes (<=15):</b>\n` + f.lowDocsPlans.slice(0, 5).map((p: any) => `• ${p.name}: Quedan <b>${p.remaining}</b> docs`).join('\n') + '\n\n' : '') +
+        `💡 <i>Para consultar o copiar credenciales escribe:</i> <code>/credenciales [nombre o RUC]</code>`;
+
+    const kb = new InlineKeyboard()
+        .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
+        .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
+        .text('🔄 Renovaciones Críticas', 'baku_cmd:renovaciones_summary')
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+});
+
+bot.command(['llenado', 'facturas_llenado'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    const l = await getLlenadoSummary();
+    const text = 
+        `✍️ <b>CENTRO DE LLENADO DE FACTURAS</b>\n\n` +
+        `Control operativo y contable de emisión por cuenta del cliente:\n\n` +
+        `📦 <b>Modalidades de Cobro:</b>\n` +
+        `• 🌟 <b>Combo $10/mes:</b> ${l.comboCount} clientes <i>($5 decl + $5 fac, ej. Camba Paola)</i>\n` +
+        `• 📦 <b>Pack $5/mes (hasta 5):</b> ${l.pack5Count} clientes\n` +
+        `• 🎯 <b>Por Unidad ($2/fac):</b> ${l.unitCount} clientes <i>(ej. Pinea)</i>\n` +
+        `• 🗓️ <b>Lote Semestral:</b> ${l.semestralCount} clientes <i>(ej. Wilmer - acumulado)</i>\n` +
+        `• 🏛️ <b>SRI Gratuito / Directo:</b> ${l.freeCount} clientes\n\n` +
+        `💰 <b>Ingreso Mensual Estimado Llenado:</b> <b>$${l.estimatedMonthlyRevenue.toFixed(2)} USD</b>\n\n` +
+        (l.specialClients.length > 0 ? `👥 <b>Clientes Destacados en Servicio:</b>\n` + l.specialClients.map((c: any) => `• ${c.name}: <code>${c.mode}</code>`).join('\n') + '\n\n' : '') +
+        `💡 <i>Para ver credenciales de acceso al software de un cliente:</i> <code>/credenciales [RUC]</code>`;
+
+    const kb = new InlineKeyboard()
+        .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
+        .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+});
+
+bot.command(['credenciales', 'clave_facturador', 'claves_facturacion'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    const chatId = ctx.chat.id.toString();
+    const text = ctx.message?.text || '';
+    const args = text.split(/\s+/).slice(1);
+
+    if (args.length === 0) {
+        pendingDialogs.set(chatId, {
+            type: 'get_credenciales',
+            chatId,
+            step: 'ask_client_name',
+            data: {}
+        });
+        await ctx.reply('🔍 <b>CONSULTA DE CREDENCIALES NIVEL CONTADOR</b>\n\nEscribe el nombre o RUC del cliente para obtener sus accesos al software, portal y SRI:', { parse_mode: 'HTML' });
+        return;
+    }
+
+    const query = args.join(' ');
+    const res = await getClientFacturadorCredentials(query);
+    if (!res.ok) {
+        await ctx.reply(res.message);
+        return;
+    }
+
+    const kb = new InlineKeyboard()
+        .text('🔍 Buscar Otro Cliente', 'baku_cmd:get_credenciales')
+        .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
+});
+
+bot.command(['renovaciones', 'vencimientos_planes', 'kyc'], async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    const r = await getRenovacionesSummary();
+    const text = 
+        `🔄 <b>PANEL DE RENOVACIONES CRÍTICAS & KYC</b>\n\n` +
+        `Alertas oportunas para contactar al cliente antes de que interrumpa su facturación o declaraciones:\n\n` +
+        `💻 <b>Planes de Facturador por Vencer (<=30d):</b>\n` +
+        (r.expiringPlans.length > 0 ? r.expiringPlans.slice(0, 7).map((p: any) => `• <b>${p.name}</b> (${p.software}): ${p.diffDays <= 0 ? '⚠️ VENCIDO' : `⏳ ${p.diffDays} días`}`).join('\n') : '• ✅ Ninguno en riesgo.') + '\n\n' +
+        `🔐 <b>Firmas Electrónicas por Vencer (<=30d):</b>\n` +
+        (r.expiringSignatures.length > 0 ? r.expiringSignatures.slice(0, 7).map((s: any) => `• <b>${s.name}</b>: ${s.diffDays <= 0 ? '⚠️ CADUCADA' : `⏳ ${s.diffDays} días`}`).join('\n') : '• ✅ Todas al día.') + '\n\n' +
+        `📜 <b>Certificados RUC Caducados / Por Renovar (>75d):</b>\n` +
+        (r.expiringRucCerts.length > 0 ? r.expiringRucCerts.slice(0, 7).map((c: any) => `• <b>${c.name}</b>: <code>${c.status}</code> (${c.ageDays}d desde emisión)`).join('\n') : '• ✅ Todos vigentes.') + '\n\n' +
+        `💡 <i>El Certificado de RUC del SRI tiene validez oficial de 3 meses (90 días).</i>`;
+
+    const kb = new InlineKeyboard()
+        .text('💼 Ver Facturadores', 'baku_cmd:facturadores_summary')
+        .text('🔑 Credenciales', 'baku_cmd:get_credenciales').row()
+        .text('🔙 Menú Principal', 'baku_nav:home');
+
+    await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+});
+
 bot.command(['facturar', 'factura', 'emitir'], async (ctx) => {
     await ctx.replyWithChatAction('typing');
     const chatId = ctx.chat.id.toString();
@@ -966,6 +1076,80 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         return true;
     }
 
+    // Trigger Facturadores & Software
+    if (['facturadores', 'facturador', 'software', 'software facturación', 'software facturacion'].includes(t)) {
+        await ctx.replyWithChatAction('typing');
+        const f = await getFacturadoresSummary();
+        const msg = 
+            `💼 <b>CONTROL DE FACTURADORES & SOFTWARE ELECTRÓNICO</b>\n\n` +
+            `👥 <b>Total Clientes en Sistema:</b> ${f.totalClients}\n` +
+            `🔐 <b>Con Firma Guardada (.p12):</b> ${f.withSignatureCount}\n` +
+            `⚠️ <b>Sin Firma Guardada:</b> ${f.sinFirmaCount} <i>(Controlables para planes/SRI)</i>\n` +
+            `👔 <b>Particulares / Otro Contador:</b> ${f.externalAccountantCount}\n\n` +
+            `📊 <b>Distribución por Facturador:</b>\n` +
+            `• 🌟 <b>Talonario Amigo:</b> ${f.softwareBreakdown.talonario}\n` +
+            `• 🏛️ <b>Facturador SRI Gratuito:</b> ${f.softwareBreakdown.sriGratuito} <i>(Ilimitado)</i>\n` +
+            `• ⚡ <b>Ecuafact:</b> ${f.softwareBreakdown.ecuafact}\n` +
+            `• 🛡️ <b>Zifact:</b> ${f.softwareBreakdown.zifact}\n` +
+            `• 📦 <b>Otros / Locales:</b> ${f.softwareBreakdown.otros}\n\n` +
+            (f.expiringPlans.length > 0 ? `⏰ <b>Planes por Vencer (<=30d):</b>\n` + f.expiringPlans.slice(0, 5).map((p: any) => `• ${p.name} (${p.software}): <b>${p.status}</b>`).join('\n') + '\n\n' : '✅ <i>No hay planes de software por vencer en los próximos 30 días.</i>\n\n') +
+            (f.lowDocsPlans.length > 0 ? `📉 <b>Bajos en Comprobantes (<=15):</b>\n` + f.lowDocsPlans.slice(0, 5).map((p: any) => `• ${p.name}: Quedan <b>${p.remaining}</b> docs`).join('\n') + '\n\n' : '') +
+            `💡 <i>Para consultar o copiar credenciales escribe:</i> <code>/credenciales [nombre o RUC]</code>`;
+        const kb = new InlineKeyboard()
+            .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
+            .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
+            .text('🔄 Renovaciones Críticas', 'baku_cmd:renovaciones_summary')
+            .text('🔙 Menú Principal', 'baku_nav:home');
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+        return true;
+    }
+
+    // Trigger Centro de Llenado
+    if (['llenado', 'centro de llenado', 'llenado de facturas', 'facturas llenado'].includes(t)) {
+        await ctx.replyWithChatAction('typing');
+        const l = await getLlenadoSummary();
+        const msg = 
+            `✍️ <b>CENTRO DE LLENADO DE FACTURAS</b>\n\n` +
+            `Control operativo y contable de emisión por cuenta del cliente:\n\n` +
+            `📦 <b>Modalidades de Cobro:</b>\n` +
+            `• 🌟 <b>Combo $10/mes:</b> ${l.comboCount} clientes <i>($5 decl + $5 fac, ej. Camba Paola)</i>\n` +
+            `• 📦 <b>Pack $5/mes (hasta 5):</b> ${l.pack5Count} clientes\n` +
+            `• 🎯 <b>Por Unidad ($2/fac):</b> ${l.unitCount} clientes <i>(ej. Pinea)</i>\n` +
+            `• 🗓️ <b>Lote Semestral:</b> ${l.semestralCount} clientes <i>(ej. Wilmer - acumulado)</i>\n` +
+            `• 🏛️ <b>SRI Gratuito / Directo:</b> ${l.freeCount} clientes\n\n` +
+            `💰 <b>Ingreso Mensual Estimado Llenado:</b> <b>$${l.estimatedMonthlyRevenue.toFixed(2)} USD</b>\n\n` +
+            (l.specialClients.length > 0 ? `👥 <b>Clientes Destacados en Servicio:</b>\n` + l.specialClients.map((c: any) => `• ${c.name}: <code>${c.mode}</code>`).join('\n') + '\n\n' : '') +
+            `💡 <i>Para ver credenciales de acceso al software de un cliente:</i> <code>/credenciales [RUC]</code>`;
+        const kb = new InlineKeyboard()
+            .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
+            .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary').row()
+            .text('🔙 Menú Principal', 'baku_nav:home');
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+        return true;
+    }
+
+    // Trigger Renovaciones & KYC
+    if (['renovaciones', 'renovacion', 'renovación', 'vencimientos de planes', 'vencimientos planes', 'kyc'].includes(t)) {
+        await ctx.replyWithChatAction('typing');
+        const r = await getRenovacionesSummary();
+        const msg = 
+            `🔄 <b>PANEL DE RENOVACIONES CRÍTICAS & KYC</b>\n\n` +
+            `Alertas oportunas para contactar al cliente antes de que interrumpa su facturación o declaraciones:\n\n` +
+            `💻 <b>Planes de Facturador por Vencer (<=30d):</b>\n` +
+            (r.expiringPlans.length > 0 ? r.expiringPlans.slice(0, 7).map((p: any) => `• <b>${p.name}</b> (${p.software}): ${p.diffDays <= 0 ? '⚠️ VENCIDO' : `⏳ ${p.diffDays} días`}`).join('\n') : '• ✅ Ninguno en riesgo.') + '\n\n' +
+            `🔐 <b>Firmas Electrónicas por Vencer (<=30d):</b>\n` +
+            (r.expiringSignatures.length > 0 ? r.expiringSignatures.slice(0, 7).map((s: any) => `• <b>${s.name}</b>: ${s.diffDays <= 0 ? '⚠️ CADUCADA' : `⏳ ${s.diffDays} días`}`).join('\n') : '• ✅ Todas al día.') + '\n\n' +
+            `📜 <b>Certificados RUC Caducados / Por Renovar (>75d):</b>\n` +
+            (r.expiringRucCerts.length > 0 ? r.expiringRucCerts.slice(0, 7).map((c: any) => `• <b>${c.name}</b>: <code>${c.status}</code> (${c.ageDays}d desde emisión)`).join('\n') : '• ✅ Todos vigentes.') + '\n\n' +
+            `💡 <i>El Certificado de RUC del SRI tiene validez oficial de 3 meses (90 días).</i>`;
+        const kb = new InlineKeyboard()
+            .text('💼 Ver Facturadores', 'baku_cmd:facturadores_summary')
+            .text('🔑 Credenciales', 'baku_cmd:get_credenciales').row()
+            .text('🔙 Menú Principal', 'baku_nav:home');
+        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+        return true;
+    }
+
     // Trigger proactive report
     if (['reporte', 'reporte matutino', 'forzar reporte', 'reporte proactivo', 'enviar reporte', 'reporte diario', '/reporte', '/reporte_diario', 'resumen diario', 'reporte operativo'].includes(t)) {
         await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
@@ -1084,6 +1268,24 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     // 2. Formato directo "clave [sri] [de/a/al cliente] <cliente> : / = <clave>"
     const directClaveAssign = t.match(/^(?:clave|clave\s+sri)\s+(?:de|a|del\s+cliente|al\s+cliente)?\s*(.+?)\s*[:=]\s*(.+)/);
     if (directClaveAssign) return doFieldUpdate(directClaveAssign[1], 'sri_password', directClaveAssign[2].trim());
+
+    // 2b. Formato directo "credenciales [de] <cliente>" para Facturadores & Llenado
+    const credsMatch = t.match(/^(?:credenciales|credencial|claves?\s+de\s+facturaci[oó]n|claves?\s+para\s+facturar|acceso\s+facturador)\s+(?:de|del\s+cliente|al\s+cliente)?\s*(.+)/);
+    if (credsMatch) {
+        await ctx.replyWithChatAction('typing');
+        const id = extractId(credsMatch[1]);
+        const res = await getClientFacturadorCredentials(id);
+        if (!res.ok) {
+            await ctx.reply(res.message);
+        } else {
+            const kb = new InlineKeyboard()
+                .text('🔍 Buscar Otro', 'baku_cmd:get_credenciales')
+                .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
+                .text('🔙 Menú Principal', 'baku_nav:home');
+            await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
+        }
+        return true;
+    }
 
     // 3. Formato natural "pon/poner clave [a/al cliente/de] <cliente> <clave>" (sin conector)
     const directPonClave = t.match(/^(?:pon|poner|asigna|asignar)\s+(?:la\s+)?clave\s*(?:sri)?\s*(?:a|al\s+cliente|de|del\s+cliente)?\s+(.+?)\s+([A-Za-z0-9_@#$%*!.-]{4,})$/);
@@ -1256,7 +1458,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 }
 
 export interface DialogState {
-  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice' | 'browse_proofs' | 'upload_p12' | 'browse_invoices' | 'caja_movement' | 'sri_calc_custom' | 'share_portal';
+  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice' | 'browse_proofs' | 'upload_p12' | 'browse_invoices' | 'caja_movement' | 'sri_calc_custom' | 'share_portal' | 'get_credenciales';
   chatId: string;
   step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method' | 'ask_p12_password' | 'choose_p12_mode' | 'ask_vault_info' | 'ask_caja_monto' | 'ask_caja_concepto' | 'ask_caja_forma' | 'ask_calc_meses' | 'ask_calc_ventas' | 'ask_portal_client';
   client?: any;
@@ -1706,6 +1908,22 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                     const client = matches[0];
                     pendingDialogs.delete(chatId);
                     await showInvoicesListForClient(chatId, client.ruc, ctx);
+                }
+            } else if (dialog.type === 'get_credenciales') {
+                if (matches.length > 1) {
+                    await showClientSelection(
+                        chatId, matches, 'get_credenciales', dialog.data, ctx,
+                        `🔑 Encontré <b>${matches.length}</b> clientes. Selecciona el correcto para consultar credenciales:`
+                    );
+                } else {
+                    const client = matches[0];
+                    pendingDialogs.delete(chatId);
+                    const res = await getClientFacturadorCredentials(client.ruc);
+                    const kb = new InlineKeyboard()
+                        .text('🔍 Buscar Otro', 'baku_cmd:get_credenciales')
+                        .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
+                        .text('🔙 Menú Principal', 'baku_nav:home');
+                    await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
                 }
             }
         } catch (err: any) {
@@ -3214,6 +3432,83 @@ bot.on('callback_query:data', async (ctx) => {
             await ctx.replyWithChatAction('typing');
             const report = await generateDailyOperationalReport();
             await ctx.reply(report, { parse_mode: 'HTML', reply_markup: buildOperationalReportKeyboard() });
+        } else if (cmd === 'facturadores_summary') {
+            await ctx.replyWithChatAction('typing');
+            const f = await getFacturadoresSummary();
+            const text = 
+                `💼 <b>CONTROL DE FACTURADORES & SOFTWARE ELECTRÓNICO</b>\n\n` +
+                `👥 <b>Total Clientes en Sistema:</b> ${f.totalClients}\n` +
+                `🔐 <b>Con Firma Guardada (.p12):</b> ${f.withSignatureCount}\n` +
+                `⚠️ <b>Sin Firma Guardada:</b> ${f.sinFirmaCount} <i>(Controlables para planes/SRI)</i>\n` +
+                `👔 <b>Particulares / Otro Contador:</b> ${f.externalAccountantCount}\n\n` +
+                `📊 <b>Distribución por Facturador:</b>\n` +
+                `• 🌟 <b>Talonario Amigo:</b> ${f.softwareBreakdown.talonario}\n` +
+                `• 🏛️ <b>Facturador SRI Gratuito:</b> ${f.softwareBreakdown.sriGratuito} <i>(Ilimitado)</i>\n` +
+                `• ⚡ <b>Ecuafact:</b> ${f.softwareBreakdown.ecuafact}\n` +
+                `• 🛡️ <b>Zifact:</b> ${f.softwareBreakdown.zifact}\n` +
+                `• 📦 <b>Otros / Locales:</b> ${f.softwareBreakdown.otros}\n\n` +
+                (f.expiringPlans.length > 0 ? `⏰ <b>Planes por Vencer (<=30d):</b>\n` + f.expiringPlans.slice(0, 5).map((p: any) => `• ${p.name} (${p.software}): <b>${p.status}</b>`).join('\n') + '\n\n' : '✅ <i>No hay planes de software por vencer en los próximos 30 días.</i>\n\n') +
+                (f.lowDocsPlans.length > 0 ? `📉 <b>Bajos en Comprobantes (<=15):</b>\n` + f.lowDocsPlans.slice(0, 5).map((p: any) => `• ${p.name}: Quedan <b>${p.remaining}</b> docs`).join('\n') + '\n\n' : '') +
+                `💡 <i>Para consultar o copiar credenciales escribe:</i> <code>/credenciales [nombre o RUC]</code>`;
+
+            const kb = new InlineKeyboard()
+                .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
+                .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
+                .text('🔄 Renovaciones Críticas', 'baku_cmd:renovaciones_summary')
+                .text('🔙 Menú Principal', 'baku_nav:home');
+
+            await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+        } else if (cmd === 'llenado_summary') {
+            await ctx.replyWithChatAction('typing');
+            const l = await getLlenadoSummary();
+            const text = 
+                `✍️ <b>CENTRO DE LLENADO DE FACTURAS</b>\n\n` +
+                `Control operativo y contable de emisión por cuenta del cliente:\n\n` +
+                `📦 <b>Modalidades de Cobro:</b>\n` +
+                `• 🌟 <b>Combo $10/mes:</b> ${l.comboCount} clientes <i>($5 decl + $5 fac, ej. Camba Paola)</i>\n` +
+                `• 📦 <b>Pack $5/mes (hasta 5):</b> ${l.pack5Count} clientes\n` +
+                `• 🎯 <b>Por Unidad ($2/fac):</b> ${l.unitCount} clientes <i>(ej. Pinea)</i>\n` +
+                `• 🗓️ <b>Lote Semestral:</b> ${l.semestralCount} clientes <i>(ej. Wilmer - acumulado)</i>\n` +
+                `• 🏛️ <b>SRI Gratuito / Directo:</b> ${l.freeCount} clientes\n\n` +
+                `💰 <b>Ingreso Mensual Estimado Llenado:</b> <b>$${l.estimatedMonthlyRevenue.toFixed(2)} USD</b>\n\n` +
+                (l.specialClients.length > 0 ? `👥 <b>Clientes Destacados en Servicio:</b>\n` + l.specialClients.map((c: any) => `• ${c.name}: <code>${c.mode}</code>`).join('\n') + '\n\n' : '') +
+                `💡 <i>Para ver credenciales de acceso al software de un cliente:</i> <code>/credenciales [RUC]</code>`;
+
+            const kb = new InlineKeyboard()
+                .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
+                .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary').row()
+                .text('🔙 Menú Principal', 'baku_nav:home');
+
+            await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+        } else if (cmd === 'renovaciones_summary') {
+            await ctx.replyWithChatAction('typing');
+            const r = await getRenovacionesSummary();
+            const text = 
+                `🔄 <b>PANEL DE RENOVACIONES CRÍTICAS & KYC</b>\n\n` +
+                `Alertas oportunas para contactar al cliente antes de que interrumpa su facturación o declaraciones:\n\n` +
+                `💻 <b>Planes de Facturador por Vencer (<=30d):</b>\n` +
+                (r.expiringPlans.length > 0 ? r.expiringPlans.slice(0, 7).map((p: any) => `• <b>${p.name}</b> (${p.software}): ${p.diffDays <= 0 ? '⚠️ VENCIDO' : `⏳ ${p.diffDays} días`}`).join('\n') : '• ✅ Ninguno en riesgo.') + '\n\n' +
+                `🔐 <b>Firmas Electrónicas por Vencer (<=30d):</b>\n` +
+                (r.expiringSignatures.length > 0 ? r.expiringSignatures.slice(0, 7).map((s: any) => `• <b>${s.name}</b>: ${s.diffDays <= 0 ? '⚠️ CADUCADA' : `⏳ ${s.diffDays} días`}`).join('\n') : '• ✅ Todas al día.') + '\n\n' +
+                `📜 <b>Certificados RUC Caducados / Por Renovar (>75d):</b>\n` +
+                (r.expiringRucCerts.length > 0 ? r.expiringRucCerts.slice(0, 7).map((c: any) => `• <b>${c.name}</b>: <code>${c.status}</code> (${c.ageDays}d desde emisión)`).join('\n') : '• ✅ Todos vigentes.') + '\n\n' +
+                `💡 <i>El Certificado de RUC del SRI tiene validez oficial de 3 meses (90 días).</i>`;
+
+            const kb = new InlineKeyboard()
+                .text('💼 Ver Facturadores', 'baku_cmd:facturadores_summary')
+                .text('🔑 Credenciales', 'baku_cmd:get_credenciales').row()
+                .text('🔙 Menú Principal', 'baku_nav:home');
+
+            await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
+        } else if (cmd === 'get_credenciales') {
+            pendingDialogs.set(chatId, {
+                type: 'get_credenciales',
+                chatId,
+                step: 'ask_client_name',
+                data: {}
+            });
+            const kb = new InlineKeyboard().text('🔙 Cancelar', 'baku_cancel');
+            await ctx.reply('🔑 <b>CONSULTA DE CREDENCIALES NIVEL CONTADOR</b>\n\nEscribe el nombre o RUC del cliente para obtener sus claves de acceso al software, portal y SRI:', { parse_mode: 'HTML', reply_markup: kb });
         }
         return;
     }
@@ -3275,6 +3570,14 @@ bot.on('callback_query:data', async (ctx) => {
             .text('📲 Hub Clientes', 'baku_hub:clients_crm')
             .text('🔙 Menú Principal', 'baku_nav:home');
         await ctx.reply(shareText, { parse_mode: 'HTML', reply_markup: kb });
+    } else if (dialog.type === 'get_credenciales') {
+        pendingDialogs.delete(chatId);
+        const res = await getClientFacturadorCredentials(client.ruc);
+        const kb = new InlineKeyboard()
+            .text('🔍 Buscar Otro Cliente', 'baku_cmd:get_credenciales')
+            .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
+            .text('🔙 Menú Principal', 'baku_nav:home');
+        await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
     }
 });
 

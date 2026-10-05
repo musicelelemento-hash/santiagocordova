@@ -3238,6 +3238,353 @@ export async function getInternalManagementSummary(): Promise<{
     }
 }
 
+/**
+ * Resumen cuantitativo y categorización de Facturadores & Software Electrónico.
+ */
+export async function getFacturadoresSummary(): Promise<{
+    totalClients: number;
+    withSignatureCount: number;
+    sinFirmaCount: number;
+    externalAccountantCount: number;
+    softwareBreakdown: {
+        talonario: number;
+        sriGratuito: number;
+        ecuafact: number;
+        zifact: number;
+        otros: number;
+    };
+    expiringPlans: any[];
+    lowDocsPlans: any[];
+}> {
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('id, name, ruc, phones, signature_file, signature_expiration, tax_profile, billing_plans')
+            .eq('is_deleted', false)
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+        const list = clients || [];
+
+        let talonarioCount = 0;
+        let sriGratuitoCount = 0;
+        let ecuafactCount = 0;
+        let zifactCount = 0;
+        let otrosCount = 0;
+
+        let withSignatureCount = 0;
+        let sinFirmaCount = 0;
+        let externalAccountantCount = 0;
+
+        const expiringPlans: any[] = [];
+        const lowDocsPlans: any[] = [];
+
+        const now = new Date();
+
+        for (const c of list) {
+            const hasSig = !!c.signature_file && (typeof c.signature_file === 'object' ? Object.keys(c.signature_file).length > 0 : true);
+            if (hasSig) withSignatureCount++;
+            else sinFirmaCount++;
+
+            const tp = c.tax_profile || {};
+            const isExternal = tp.hasExternalAccountant === true || tp.isExternalAccountant === true;
+            if (isExternal) externalAccountantCount++;
+
+            const bp = (Array.isArray(c.billing_plans) && c.billing_plans[0]) || tp.billingPlan || tp.billing_plan || null;
+            const software = (bp?.software || tp.invoicingSoftware || (hasSig ? 'Talonario Amigo' : 'Facturador SRI')).trim();
+            const sLower = software.toLowerCase();
+
+            if (sLower.includes('talonario')) talonarioCount++;
+            else if (sLower.includes('sri') || sLower.includes('gratuito')) sriGratuitoCount++;
+            else if (sLower.includes('ecuafact')) ecuafactCount++;
+            else if (sLower.includes('zifact')) zifactCount++;
+            else otrosCount++;
+
+            // Expiración de plan
+            if (bp?.expirationDate) {
+                const exp = new Date(bp.expirationDate);
+                const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 30) {
+                    expiringPlans.push({
+                        name: c.name,
+                        ruc: c.ruc,
+                        software,
+                        daysRemaining: diffDays,
+                        status: diffDays <= 0 ? 'VENCIDO' : `${diffDays}d`
+                    });
+                }
+            }
+
+            // Límite de comprobantes / timbres
+            if (bp && bp.documentLimit && bp.documentLimit > 0) {
+                const used = bp.documentsUsed || tp.documentsUsed || 0;
+                const rem = bp.documentLimit - used;
+                if (rem <= 15) {
+                    lowDocsPlans.push({
+                        name: c.name,
+                        ruc: c.ruc,
+                        software,
+                        remaining: rem,
+                        limit: bp.documentLimit
+                    });
+                }
+            }
+        }
+
+        return {
+            totalClients: list.length,
+            withSignatureCount,
+            sinFirmaCount,
+            externalAccountantCount,
+            softwareBreakdown: {
+                talonario: talonarioCount,
+                sriGratuito: sriGratuitoCount,
+                ecuafact: ecuafactCount,
+                zifact: zifactCount,
+                otros: otrosCount
+            },
+            expiringPlans,
+            lowDocsPlans
+        };
+    } catch (e: any) {
+        console.error("Error en getFacturadoresSummary:", e);
+        return {
+            totalClients: 0,
+            withSignatureCount: 0,
+            sinFirmaCount: 0,
+            externalAccountantCount: 0,
+            softwareBreakdown: { talonario: 0, sriGratuito: 0, ecuafact: 0, zifact: 0, otros: 0 },
+            expiringPlans: [],
+            lowDocsPlans: []
+        };
+    }
+}
+
+/**
+ * Resumen del Centro de Llenado de Facturas (Cobro por unidad $2, pack 5 $5, combo $10, lotes semestrales).
+ */
+export async function getLlenadoSummary(): Promise<{
+    totalClients: number;
+    comboCount: number;
+    pack5Count: number;
+    unitCount: number;
+    semestralCount: number;
+    freeCount: number;
+    estimatedMonthlyRevenue: number;
+    specialClients: any[];
+}> {
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('id, name, ruc, phones, tax_profile, billing_plans')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        const list = clients || [];
+
+        let comboCount = 0; // $10 (declaracion + facturas)
+        let unitCount = 0;  // $2/unidad
+        let pack5Count = 0; // $5/mes (hasta 5)
+        let semestralCount = 0; // Wilmer y similares
+        let freeCount = 0;
+
+        let estimatedMonthlyRevenue = 0;
+        const specialClients: any[] = [];
+
+        for (const c of list) {
+            const tp = c.tax_profile || {};
+            const bp = (Array.isArray(c.billing_plans) && c.billing_plans[0]) || tp.billingPlan || {};
+            const mode = bp.defaultBillingMode || tp.invoicingBillingMode || 'gratuito_sri';
+
+            if (mode === 'combo_10') {
+                comboCount++;
+                estimatedMonthlyRevenue += 10;
+                specialClients.push({ name: c.name, ruc: c.ruc, mode: 'Combo $10/mes ($5 decl + $5 fac)' });
+            } else if (mode === 'pack_5') {
+                pack5Count++;
+                estimatedMonthlyRevenue += 5;
+                specialClients.push({ name: c.name, ruc: c.ruc, mode: 'Pack $5/mes (hasta 5 fac)' });
+            } else if (mode === 'unidad_2') {
+                unitCount++;
+                specialClients.push({ name: c.name, ruc: c.ruc, mode: 'Tarifa $2 por factura' });
+            } else if (mode === 'lote_semestral') {
+                semestralCount++;
+                specialClients.push({ name: c.name, ruc: c.ruc, mode: 'Lote Semestral Acumulado' });
+            } else {
+                freeCount++;
+            }
+        }
+
+        return {
+            totalClients: list.length,
+            comboCount,
+            pack5Count,
+            unitCount,
+            semestralCount,
+            freeCount,
+            estimatedMonthlyRevenue,
+            specialClients: specialClients.slice(0, 15)
+        };
+    } catch (e: any) {
+        console.error("Error en getLlenadoSummary:", e);
+        return {
+            totalClients: 0,
+            comboCount: 0,
+            pack5Count: 0,
+            unitCount: 0,
+            semestralCount: 0,
+            freeCount: 0,
+            estimatedMonthlyRevenue: 0,
+            specialClients: []
+        };
+    }
+}
+
+/**
+ * Consulta y formato Nivel Contador de credenciales para facturar rápidamente.
+ */
+export async function getClientFacturadorCredentials(query: string): Promise<{ ok: boolean; message: string; client?: any }> {
+    try {
+        const clients = await findClients(query);
+        if (!clients || clients.length === 0) {
+            return { ok: false, message: `🔍 No se encontró ningún cliente que coincida con "${query}".` };
+        }
+
+        const c = clients[0];
+        const tp = c.tax_profile || {};
+        const bp = (Array.isArray(c.billing_plans) && c.billing_plans[0]) || tp.billingPlan || {};
+        
+        const software = bp.software || tp.invoicingSoftware || (c.signature_file ? 'Talonario Amigo' : 'Facturador SRI Gratuito');
+        const username = bp.username || c.ruc;
+        const password = bp.password || tp.sri_password || tp.sriCredencial?.password || 'No registrada';
+        const sriPass = c.sri_password || tp.sri_password || tp.sriCredencial?.password || 'No registrada';
+        const sigPass = c.signature_password || tp.electronicSignaturePassword || 'No registrada';
+        
+        // Portal URL
+        let portalUrl = 'https://srienlinea.sri.gob.ec';
+        const sLower = software.toLowerCase();
+        if (sLower.includes('talonario')) portalUrl = 'https://talonarioamigo.com/login';
+        else if (sLower.includes('ecuafact')) portalUrl = 'https://www.ecuafact.com/iniciar-sesion';
+        else if (sLower.includes('zifact')) portalUrl = 'https://app.zifact.com';
+
+        // Certificado RUC
+        const certDate = tp.rucCertificateIssueDate || null;
+        let certStatus = 'Sin certificado registrado';
+        if (certDate) {
+            const days = Math.floor((Date.now() - new Date(certDate).getTime()) / (1000 * 60 * 60 * 24));
+            if (days > 90) certStatus = `⚠️ Caducado (${days} días - vence c/ 3 meses)`;
+            else certStatus = `✅ Vigente (${90 - days} días restantes)`;
+        }
+
+        const isExternal = tp.hasExternalAccountant === true || tp.isExternalAccountant === true;
+        const clientTypeLabel = isExternal ? '⚠️ Particular (Tiene otro contador)' : '💼 Cliente de Planta';
+
+        const text = 
+            `💼 <b>CREDENCIALES PARA FACTURAR (NIVEL CONTADOR)</b>\n\n` +
+            `👤 <b>Cliente:</b> ${c.name}\n` +
+            `🆔 <b>RUC:</b> <code>${c.ruc}</code>\n` +
+            `🏷️ <b>Clasificación:</b> ${clientTypeLabel}\n\n` +
+            `💻 <b>Software:</b> <b>${software}</b>\n` +
+            `🌐 <b>Link de Acceso:</b> <a href="${portalUrl}">${portalUrl}</a>\n` +
+            `👤 <b>Usuario Facturador:</b> <code>${username}</code>\n` +
+            `🔑 <b>Clave Facturador:</b> <code>${password}</code>\n\n` +
+            `🏛️ <b>Clave SRI en Línea:</b> <code>${sriPass}</code>\n` +
+            `🔐 <b>Clave Firma .p12:</b> <code>${sigPass}</code>\n` +
+            `📜 <b>Certificado RUC:</b> ${certStatus}\n` +
+            (bp.documentLimit ? `📊 <b>Timbres:</b> ${bp.documentsUsed || 0} / ${bp.documentLimit} usados\n` : '') +
+            (bp.expirationDate ? `📅 <b>Vence Plan:</b> ${bp.expirationDate}\n` : '') +
+            `\n💡 <i>Toca sobre las credenciales para copiarlas al instante.</i>`;
+
+        return { ok: true, message: text, client: c };
+    } catch (e: any) {
+        console.error("Error en getClientFacturadorCredentials:", e);
+        return { ok: false, message: `❌ Error al consultar credenciales: ${e.message}` };
+    }
+}
+
+/**
+ * Resumen consolidado de renovaciones críticas (Planes de software, firmas y certificados RUC).
+ */
+export async function getRenovacionesSummary(): Promise<{
+    expiringPlans: any[];
+    expiringSignatures: any[];
+    expiringRucCerts: any[];
+}> {
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('id, name, ruc, phones, signature_file, signature_expiration, tax_profile, billing_plans')
+            .eq('is_deleted', false)
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+        const list = clients || [];
+        const now = new Date();
+
+        const expiringPlans: any[] = [];
+        const expiringSignatures: any[] = [];
+        const expiringRucCerts: any[] = [];
+
+        for (const c of list) {
+            const tp = c.tax_profile || {};
+            const bp = (Array.isArray(c.billing_plans) && c.billing_plans[0]) || tp.billingPlan;
+
+            // Plan facturador
+            if (bp?.expirationDate) {
+                const exp = new Date(bp.expirationDate);
+                const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 30) {
+                    expiringPlans.push({
+                        name: c.name,
+                        ruc: c.ruc,
+                        software: bp.software || 'Facturador',
+                        diffDays
+                    });
+                }
+            }
+
+            // Firma electronica
+            if (c.signature_expiration) {
+                const exp = new Date(c.signature_expiration);
+                const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 30) {
+                    expiringSignatures.push({
+                        name: c.name,
+                        ruc: c.ruc,
+                        diffDays
+                    });
+                }
+            }
+
+            // Certificado RUC (caduca cada 90 dias / 3 meses)
+            if (tp.rucCertificateIssueDate) {
+                const ageDays = Math.floor((now.getTime() - new Date(tp.rucCertificateIssueDate).getTime()) / (1000 * 60 * 60 * 24));
+                if (ageDays >= 75) {
+                    expiringRucCerts.push({
+                        name: c.name,
+                        ruc: c.ruc,
+                        ageDays,
+                        status: ageDays >= 90 ? 'CADUCADO' : `${90 - ageDays}d vigentes`
+                    });
+                }
+            }
+        }
+
+        return {
+            expiringPlans,
+            expiringSignatures,
+            expiringRucCerts
+        };
+    } catch (e: any) {
+        console.error("Error en getRenovacionesSummary:", e);
+        return {
+            expiringPlans: [],
+            expiringSignatures: [],
+            expiringRucCerts: []
+        };
+    }
+}
+
 
 
 

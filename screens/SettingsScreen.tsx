@@ -78,6 +78,7 @@ const importBrowserPasswordsToClients = (
 import { useAppStore } from '../store/useAppStore';
 import { TaxCertificateGeneratorModal } from '../components/features/TaxCertificateGeneratorModal';
 import { DigitalBusinessCardModal } from '../components/features/DigitalBusinessCardModal';
+import { FacturadoresSettingsSection } from '../components/features/FacturadoresSettingsSection';
 
 interface SettingsScreenProps {
     navigate: (screen: Screen, options?: { clientIdToView?: string }) => void;
@@ -1195,76 +1196,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                 {/* --- MÓDULO: COMBOS & SISTEMAS DE FACTURACIÓN --- */}
                 {(settingsTab === 'all' || settingsTab === 'combos') && (
-                    <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden font-mono">
-                        <div className="p-6 sm:p-8 bg-[#0b1326]/50 border-b border-white/10 flex items-center justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3.5 bg-[#C9A96E]/15 border border-[#C9A96E]/30 rounded-2xl text-[#C9A96E]">
-                                    <ShoppingBag size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold font-display text-white uppercase tracking-tight flex items-center gap-3">
-                                        Combos & Planes Comerciales
-                                        {systemSaved && (
-                                            <span className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
-                                                <CheckCircle size={13} /> Guardado
-                                            </span>
-                                        )}
-                                    </h3>
-                                    <p className="text-slate-400 text-xs font-sans mt-0.5">Configura planes, precios y accesos para facturadores.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {isEditingCombos ? (
-                                    <>
-                                        <button onClick={() => { setIsEditingCombos(false); setLocalSystemSettings(systemSettings); }}
-                                            className="px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white border border-white/10 rounded-xl transition-all cursor-pointer">
-                                            Cancelar
-                                        </button>
-                                        <button onClick={handleSaveSystemSettings} disabled={isSavingSystem}
-                                            className="flex items-center gap-2 px-5 py-2.5 bg-[#00A896] hover:bg-[#00A896]/80 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg cursor-pointer">
-                                            {isSavingSystem ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-                                            Guardar Todo
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button onClick={() => setIsEditingCombos(true)}
-                                        className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold uppercase border border-white/10 transition-all cursor-pointer">
-                                        <SettingsIcon size={13} /> Configurar
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="p-6 sm:p-8 space-y-6">
-                            <div className="space-y-3">
-                                {localSystemSettings.combos.map(combo => (
-                                    <div key={combo.id}
-                                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${combo.isActive ? 'bg-[#020b14] border-white/10' : 'bg-black/20 border-white/5 opacity-50'}`}>
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-base shrink-0">
-                                            {combo.category === 'firma' ? '🔑' : combo.category === 'ecuafact' ? '📄' : combo.category === 'zifact' ? '⚡' : '📦'}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-xs font-bold text-white truncate">{combo.name}</span>
-                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30">
-                                                    {combo.category}
-                                                </span>
-                                            </div>
-                                            {combo.accessUrl && (
-                                                <a href={combo.accessUrl} target="_blank" rel="noopener noreferrer"
-                                                    className="text-[10px] text-sky-400 hover:underline flex items-center gap-1 mt-0.5 truncate">
-                                                    <ExternalLink size={10} /> {combo.accessUrl}
-                                                </a>
-                                            )}
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <span className="text-lg font-bold text-[#C9A96E] font-mono">${combo.price.toFixed(2)}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    <FacturadoresSettingsSection
+                        settings={localSystemSettings}
+                        onUpdateSettings={(newSettings) => setLocalSystemSettings(newSettings)}
+                        onSaveAll={handleSaveSystemSettings}
+                        isSaving={isSavingSystem}
+                        saved={systemSaved}
+                    />
                 )}
 
                 {/* --- MÓDULO: GESTIÓN DE BÓVEDA & BACKUPS --- */}

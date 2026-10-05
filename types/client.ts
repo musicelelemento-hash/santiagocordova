@@ -154,7 +154,7 @@ export interface TaxProfile {
     quickNote?: string;
 }
 
-export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito';
+export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito' | 'combo_declaracion_facturas' | 'lote_semestral';
 
 export interface MonthlyInvoicingRecord {
     period: string; // e.g. "2026-08"
@@ -165,6 +165,10 @@ export interface MonthlyInvoicingRecord {
     isPaid?: boolean;
     paidAt?: string;
     notes?: string;
+    billingMode?: 'unit' | 'pack_5' | 'monthly_combo_10' | 'semestral_batch' | 'paquete_docs' | 'custom';
+    declarationFeeLinked?: number; // e.g. 5.00 para Camba Paola
+    isBilledToSri?: boolean;
+    sriInvoiceSecuencial?: string;
     invoices?: Array<{
         id: string;
         date: string;
@@ -189,12 +193,16 @@ export interface BillingPlan {
     startDate?: string;
     expirationDate?: string;
     documentStatus?: string;
-    documentCount?: number;
-    price?: number;
+    documentCount?: number; // Cupo total de comprobantes
+    documentsUsed?: number; // Comprobantes consumidos
+    costPrice?: number;     // Costo de compra para el despacho (Santiago)
+    price?: number;         // Precio de venta al cliente
     soldByMe?: boolean;
     providerName?: string;
     freeSupportAndCancellation?: boolean;
     monthlyRecords?: Record<string, MonthlyInvoicingRecord>;
+    defaultBillingMode?: 'unit' | 'pack_5' | 'monthly_combo_10' | 'semestral_batch' | 'paquete_docs' | 'custom';
+    isExternalAccountant?: boolean; // Cliente tiene otro contador (ej. Armijos K, Naula)
     createdAt?: string;
     updatedAt?: string;
 }
@@ -234,6 +242,8 @@ export interface Client {
     idCardSelfie?: StoredFile;
     rucPdf?: StoredFile;
     rucCertificate?: StoredFile;
+    rucCertificateIssueDate?: string; // Fecha de emisión para alerta si > 3 meses (90 días)
+    hasExternalAccountant?: boolean;  // Cliente tiene otro contador
     sharedAccessKey?: string;
     iessPassword?: string;
     vault?: StoredFile[];

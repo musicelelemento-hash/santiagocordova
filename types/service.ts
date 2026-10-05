@@ -73,10 +73,13 @@ export interface BusinessProfile {
 export interface SystemComboConfig {
     id: string;
     name: string;           // ej. "Combo ECUAFACT 60 docs"
-    price: number;          // precio en USD
+    price: number;          // precio de venta al cliente en USD
+    costPrice?: number;     // costo de adquisición para el despacho (Santiago)
     accessUrl?: string;     // URL directa para ingresar al sistema
     notes?: string;         // descripción corta
-    category: 'ecuafact' | 'zifact' | 'firma' | 'otro';
+    category: 'ecuafact' | 'zifact' | 'talonario' | 'sri_gratuito' | 'firma' | 'otro';
+    documentCount?: number; // cantidad de comprobantes (o 999999 si es ilimitado)
+    validityPeriod?: 'anual' | 'mensual' | 'permanente';
     isActive: boolean;
 }
 
@@ -86,7 +89,14 @@ export interface SystemSettings {
     fingerprintDeviceId?: string;     // ID / número de serie del lector biométrico
     ecuafactUrl?: string;             // URL de acceso rápido Ecuafact
     zifactUrl?: string;               // URL de acceso rápido Zifact
+    talonarioUrl?: string;            // URL de acceso rápido Talonario Amigo
     sriUrl?: string;                  // URL de acceso rápido SRI
+    resendApiKey?: string;            // API Key de Resend para notificaciones
+    resendSenderEmail?: string;       // Email remitente de Resend (ej: facturacion@santiagocordova.com)
+    resendSenderName?: string;        // Nombre del remitente
+    defaultFillingUnitFee?: number;   // Tarifa por factura unitaria ($2.00)
+    defaultFillingPack5Fee?: number;  // Tarifa por pack 5 facturas ($5.00)
+    defaultMonthlyComboFee?: number;  // Tarifa combo mensual declaración + facturas ($10.00)
     lastUpdated?: string;
 }
 

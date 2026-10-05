@@ -15,12 +15,13 @@ interface FacturadorEditModalProps {
 }
 
 const PRESET_PLATFORMS = [
+    { name: 'Talonario Amigo', url: 'https://talonarioamigo.santiagocordova.com', type: 'paquete_docs' as BillingPlanType, icon: '💎' },
     { name: 'SRI en Línea (Gratuito)', url: 'https://srienlinea.sri.gob.ec', type: 'sri_gratuito' as BillingPlanType, icon: '🏛️' },
     { name: 'Ecuafact', url: 'https://app.ecuafact.com', type: 'por_factura' as BillingPlanType, icon: '⚡' },
+    { name: 'Zifact', url: 'https://sistema.zifac.com', type: 'paquete_docs' as BillingPlanType, icon: '📦' },
     { name: 'Siigo Contífico', url: 'https://login.contifico.com', type: 'plan_mensual' as BillingPlanType, icon: '💼' },
     { name: 'Dátil', url: 'https://app.datil.co', type: 'por_factura' as BillingPlanType, icon: '📊' },
     { name: 'Facturito', url: 'https://facturito.ec', type: 'por_factura' as BillingPlanType, icon: '🛒' },
-    { name: 'Zifact', url: 'https://sistema.zifac.com', type: 'paquete_docs' as BillingPlanType, icon: '📦' },
 ];
 
 export const FacturadorEditModal: React.FC<FacturadorEditModalProps> = ({
@@ -32,17 +33,21 @@ export const FacturadorEditModal: React.FC<FacturadorEditModalProps> = ({
     const { toast } = useToast();
     const currentPlan = client.billingPlan || client.facturadorConfig || {};
 
-    const [programName, setProgramName] = useState(currentPlan.programName || 'SRI en Línea (Gratuito)');
-    const [url, setUrl] = useState(currentPlan.url || 'https://srienlinea.sri.gob.ec');
+    const [programName, setProgramName] = useState(currentPlan.programName || 'Talonario Amigo');
+    const [url, setUrl] = useState(currentPlan.url || 'https://talonarioamigo.santiagocordova.com');
     const [username, setUsername] = useState(currentPlan.username || client.ruc || '');
     const [password, setPassword] = useState(currentPlan.password || client.sriPassword || '');
-    const [planType, setPlanType] = useState<BillingPlanType>(currentPlan.planType || 'por_factura');
-    const [feePerInvoice, setFeePerInvoice] = useState<number>(currentPlan.feePerInvoice ?? 1.00);
+    const [planType, setPlanType] = useState<BillingPlanType>(currentPlan.planType || 'paquete_docs');
+    const [defaultBillingMode, setDefaultBillingMode] = useState(currentPlan.defaultBillingMode || 'unit');
+    const [feePerInvoice, setFeePerInvoice] = useState<number>(currentPlan.feePerInvoice ?? 2.00);
     const [monthlyFee, setMonthlyFee] = useState<number>(currentPlan.monthlyFee ?? 20.00);
     const [includedInvoices, setIncludedInvoices] = useState<number>(currentPlan.includedInvoices ?? 30);
     const [documentCount, setDocumentCount] = useState<number>(currentPlan.documentCount ?? 100);
+    const [documentsUsed, setDocumentsUsed] = useState<number>(currentPlan.documentsUsed ?? 0);
     const [expirationDate, setExpirationDate] = useState(currentPlan.expirationDate || '');
-    const [price, setPrice] = useState<number>(currentPlan.price ?? 0);
+    const [price, setPrice] = useState<number>(currentPlan.price ?? 40);
+    const [costPrice, setCostPrice] = useState<number>(currentPlan.costPrice ?? 12);
+    const [isExternalAccountant, setIsExternalAccountant] = useState<boolean>(client.hasExternalAccountant ?? currentPlan.isExternalAccountant ?? false);
     
     // Credenciales sincronizadas
     const [sriPassword, setSriPassword] = useState(client.sriPassword || '');
@@ -82,18 +87,25 @@ export const FacturadorEditModal: React.FC<FacturadorEditModalProps> = ({
                 username: username.trim(),
                 password: password.trim(),
                 planType,
+                defaultBillingMode: defaultBillingMode as any,
                 feePerInvoice: Number(feePerInvoice) || 0,
                 monthlyFee: Number(monthlyFee) || 0,
                 includedInvoices: Number(includedInvoices) || 0,
                 documentCount: Number(documentCount) || 0,
+                documentsUsed: Number(documentsUsed) || 0,
+                costPrice: Number(costPrice) || 0,
                 expirationDate: expirationDate || undefined,
                 price: Number(price) || 0,
+                isExternalAccountant,
                 updatedAt: new Date().toISOString()
             };
 
             const clientUpdates: Partial<Client> = {
                 sriPassword: sriPassword.trim(),
-                electronicSignaturePassword: signaturePassword.trim()
+                electronicSignaturePassword: signaturePassword.trim(),
+                hasExternalAccountant: isExternalAccountant,
+                clientType: isExternalAccountant ? 'solo_plan' : 'completo',
+                requiresDeclarations: !isExternalAccountant
             };
 
             await onSave(client.id, updatedPlan, clientUpdates);
@@ -437,9 +449,63 @@ export const FacturadorEditModal: React.FC<FacturadorEditModalProps> = ({
 
                             {planType === 'sri_gratuito' && (
                                 <div className="text-[11px] text-slate-400 bg-white/5 p-3 rounded-xl font-sans">
-                                    🏛️ Emisión directa desde el portal SRI en Línea con firma electrónica .p12 sin costo de software externo.
+                                    🏛️ Emisión directa desde el portal SRI en Línea con firma electrónica .p12 sin costo de software externo (Ilimitado por ley).
                                 </div>
                             )}
+                        </div>
+
+                        {/* Parámetros Adicionales: Costo y Relación Contable */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-white/5">
+                            <div>
+                                <label className="block text-[10px] font-bold text-amber-400 uppercase mb-1">
+                                    Costo de Compra / Despacho ($ USD)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.50"
+                                    value={costPrice}
+                                    onChange={e => setCostPrice(parseFloat(e.target.value) || 0)}
+                                    placeholder="Costo para Santiago..."
+                                    className="w-full px-3.5 py-2.5 bg-[#051424] border border-white/10 rounded-xl text-amber-400 font-mono text-xs"
+                                />
+                                <span className="text-[9px] text-slate-500 font-sans mt-0.5 block">
+                                    Para cálculo del margen de ganancia neta.
+                                </span>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                                    Modalidad de Llenado Predeterminada
+                                </label>
+                                <select
+                                    value={defaultBillingMode}
+                                    onChange={e => setDefaultBillingMode(e.target.value as any)}
+                                    className="w-full px-3.5 py-2.5 bg-[#051424] border border-white/10 rounded-xl text-white font-mono text-xs outline-none focus:border-[#00A896]"
+                                >
+                                    <option value="unit">Tarifa Unitaria ($2.00)</option>
+                                    <option value="pack_5">Paquete hasta 5 facturas ($5.00)</option>
+                                    <option value="monthly_combo_10">Combo Mensual $10 (Declaración $5 + Facturas $5)</option>
+                                    <option value="semestral_batch">Lote Semestral Acumulado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="pt-2">
+                            <label className="flex items-center gap-2 p-3 bg-white/5 border border-white/10 rounded-xl cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isExternalAccountant}
+                                    onChange={e => setIsExternalAccountant(e.target.checked)}
+                                    className="rounded"
+                                />
+                                <div className="text-xs text-white">
+                                    <strong className="text-sky-400">Cliente Externo (Tiene otro contador)</strong>
+                                    <div className="text-[10px] text-slate-400 font-sans">
+                                        No se incluye en la matriz de declaraciones de IVA de planta, pero se controla su facturación y expediente KYC.
+                                    </div>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
