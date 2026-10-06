@@ -2033,14 +2033,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onViewClient={handleOpenClientDetails}
                             initialMode={activeGroupTab === 'renta' ? 'RENTA' : 'IVA'}
                             onUploadReceipt={handleUploadReceipt}
-                            onPreviewReceipt={async (client, declaration) => {
+                            onPreviewReceipt={(client, declaration) => {
                                 if (declaration.proof_file) {
-                                    const ok = await downloadStoredFile(declaration.proof_file);
-                                    if (ok) {
-                                        toast.success("Comprobante descargado correctamente");
-                                    } else {
-                                        toast.error("El archivo del comprobante no se pudo procesar");
-                                    }
+                                    setPreviewItem({ client, declaration });
                                 } else {
                                     toast.info("Este comprobante fue registrado sin un archivo PDF adjunto");
                                 }

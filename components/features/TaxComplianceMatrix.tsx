@@ -26,7 +26,7 @@ import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredFile, isSriPasswordUpdated } from '../../services/sri';
-import { signPublicStorageUrl } from '../../services/fileService';
+import { signPublicStorageUrl, openStoredFileInNewTab } from '../../services/fileService';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
@@ -285,18 +285,47 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         obLabel: string;
     } | null>(null);
 
-    // URL firmada de la vista previa (bucket privado → createSignedUrl)
+    // URL de la vista previa (Cloudflare/Supabase Storage firmado o Blob URL de base64)
     const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
     useEffect(() => {
         let active = true;
+        let createdBlob: string | null = null;
         const file = activeCellModal?.declaration?.proof_file;
+
         if (file?.url) {
             setPreviewPdfUrl(null);
-            signPublicStorageUrl(file.url).then((u) => { if (active) setPreviewPdfUrl(u); });
+            signPublicStorageUrl(file.url).then((u) => {
+                if (active) setPreviewPdfUrl(u || file.url || null);
+            }).catch(() => {
+                if (active) setPreviewPdfUrl(file.url || null);
+            });
+        } else if (file?.content) {
+            try {
+                let cleanB64 = file.content;
+                if (cleanB64.includes(',')) cleanB64 = cleanB64.split(',')[1];
+                cleanB64 = cleanB64.replace(/\s/g, '');
+                const byteChars = atob(cleanB64);
+                const byteNumbers = new Uint8Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) {
+                    byteNumbers[i] = byteChars.charCodeAt(i);
+                }
+                const blob = new Blob([byteNumbers], { type: 'application/pdf' });
+                createdBlob = URL.createObjectURL(blob);
+                if (active) setPreviewPdfUrl(createdBlob);
+            } catch (err) {
+                console.warn('Error al decodificar PDF base64:', err);
+                if (active) setPreviewPdfUrl(null);
+            }
         } else {
             setPreviewPdfUrl(null);
         }
-        return () => { active = false; };
+
+        return () => {
+            active = false;
+            if (createdBlob) {
+                URL.revokeObjectURL(createdBlob);
+            }
+        };
     }, [activeCellModal]);
 
     const handleUploadProofPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3096,18 +3125,32 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         {isDone ? (
                                                                             <>
                                                                             {hasProof && (
-                                                                                <button
-                                                                                    onClick={async (e) => {
-                                                                                        e.stopPropagation();
-                                                                                        if (d?.proof_file) {
-                                                                                            await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
-                                                                                        }
-                                                                                    }}
-                                                                                    className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
-                                                                                    title="Descargar PDF"
-                                                                                >
-                                                                                    <LucideIcons.Download size={10} strokeWidth={3} />
-                                                                                </button>
+                                                                                <>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            if (d?.proof_file) {
+                                                                                                onPreviewReceipt(client, d);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="absolute -bottom-1.5 -right-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#00A896] text-slate-300 hover:text-white border border-white/20 hover:border-[#00A896] opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)] cursor-pointer"
+                                                                                        title="Ver Comprobante Oficial (Visor)"
+                                                                                    >
+                                                                                        <LucideIcons.Eye size={10} strokeWidth={2.5} />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={async (e) => {
+                                                                                            e.stopPropagation();
+                                                                                            if (d?.proof_file) {
+                                                                                                await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
+                                                                                        title="Descargar PDF"
+                                                                                    >
+                                                                                        <LucideIcons.Download size={10} strokeWidth={3} />
+                                                                                    </button>
+                                                                                </>
                                                                             )}
                                                                             </>
                                                                         ) : (
@@ -3262,11 +3305,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             `}} />
 
             {/* Modal de Detalle de Celda: Comprobante PDF + Factura SRI */}
-            {activeCellModal && (
-                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-[#020b14]/85 backdrop-blur-xl animate-in fade-in duration-300 font-sans">
-                    <div className="relative w-full max-w-xl bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] shadow-2xl p-6 overflow-hidden flex flex-col gap-6 text-white backdrop-blur-2xl">
+            {activeCellModal && createPortal(
+                <div className="fixed inset-0 z-[100000] flex items-center justify-center p-3 sm:p-6 bg-[#020b14]/85 backdrop-blur-xl animate-in fade-in duration-300 font-sans">
+                    <div className="relative w-full max-w-2xl max-h-[92vh] bg-[#051424]/95 border border-white/15 border-t-white/30 rounded-[2.5rem] shadow-2xl p-5 sm:p-6 flex flex-col text-white backdrop-blur-2xl overflow-hidden">
                         {/* Header */}
-                        <div className="flex items-start justify-between border-b border-white/10 pb-4">
+                        <div className="flex items-start justify-between border-b border-white/10 pb-4 shrink-0">
                             <div className="flex items-center gap-3.5">
                                 <div className="p-3 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-2xl shadow-sm">
                                     <LucideIcons.ShieldCheck size={24} />
@@ -3289,7 +3332,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </div>
 
                         {/* 📑 PESTAÑAS DE CLASIFICACIÓN DE COMPROBANTES */}
-                        <div className="flex items-center gap-1.5 p-1 bg-[#020b14]/60 rounded-2xl border border-white/10 font-mono">
+                        <div className="flex items-center gap-1.5 p-1 bg-[#020b14]/60 rounded-2xl border border-white/10 font-mono my-3 shrink-0">
                             <button
                                 onClick={() => setModalTab('declaracion')}
                                 className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
@@ -3326,7 +3369,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </div>
 
                         {/* Content Body segun Pestaña Seleccionada */}
-                        <div className="space-y-4 min-h-[220px]">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-4">
                             {/* PESTAÑA 1: DECLARACIÓN SRI */}
                             {modalTab === 'declaracion' && (
                                 <div className="space-y-4 animate-in fade-in duration-200">
@@ -3373,22 +3416,47 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             )}
                                         </div>
 
-                                        {activeCellModal.declaration.proof_file?.url ? (
-                                            <div className="rounded-xl overflow-hidden border border-white/10 bg-[#020b14] max-h-48 relative group">
-                                                <iframe src={previewPdfUrl || undefined} className="w-full h-44 border-none" title="Vista Previa SRI" />
-                                                <a 
-                                                    href={previewPdfUrl || undefined} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="absolute top-2 right-2 p-1.5 bg-[#051424]/90 hover:bg-[#051424] border border-white/20 rounded-lg text-slate-300 hover:text-white transition-all shadow-md"
-                                                    title="Abrir en pestaña nueva"
-                                                >
-                                                    <LucideIcons.ExternalLink size={12} />
-                                                </a>
+                                        {previewPdfUrl ? (
+                                            <div className="rounded-2xl overflow-hidden border border-white/15 bg-[#020b14] h-60 sm:h-72 relative group shadow-inner">
+                                                <iframe src={`${previewPdfUrl}#toolbar=0&navpanes=0`} className="w-full h-full border-none" title="Vista Previa SRI" />
+                                                <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+                                                    <button
+                                                        onClick={() => {
+                                                            const decl = activeCellModal.declaration;
+                                                            const clientObj = activeCellModal.client;
+                                                            setActiveCellModal(null);
+                                                            onPreviewReceipt(clientObj, decl);
+                                                        }}
+                                                        className="py-1 px-2.5 bg-[#051424]/90 hover:bg-[#00A896] border border-white/20 hover:border-[#00A896] rounded-xl text-slate-200 hover:text-white transition-all shadow-lg flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                                                        title="Abrir Visor Táctico Completo"
+                                                    >
+                                                        <LucideIcons.Maximize2 size={12} />
+                                                        <span>Expandir</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            await openStoredFileInNewTab(activeCellModal.declaration.proof_file);
+                                                        }}
+                                                        className="p-1.5 bg-[#051424]/90 hover:bg-[#051424] border border-white/20 rounded-xl text-slate-300 hover:text-white transition-all shadow-lg cursor-pointer"
+                                                        title="Abrir en pestaña nueva del navegador"
+                                                    >
+                                                        <LucideIcons.ExternalLink size={12} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                        ) : activeCellModal.declaration.proof_file?.content ? (
-                                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center justify-between font-mono">
-                                                <span className="text-[11px]">Este PDF está guardado en base64 local. Puedes migrarlo a la nube para reducir el gasto de Supabase.</span>
+                                        ) : activeCellModal.declaration.proof_file ? (
+                                            <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5 text-center text-xs text-slate-400 font-mono">
+                                                Cargando comprobante PDF...
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5 text-center text-xs text-slate-400 font-mono">
+                                                Sin archivo PDF registrado
+                                            </div>
+                                        )}
+
+                                        {activeCellModal.declaration.proof_file?.content && !activeCellModal.declaration.proof_file?.url && (
+                                            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center justify-between font-mono">
+                                                <span className="text-[10px]">PDF en almacenamiento local. Puedes migrarlo a la nube para optimizar tu base de datos.</span>
                                                 <button
                                                     onClick={async () => {
                                                         const fakeEvent = {
@@ -3405,13 +3473,13 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         await handleUploadProofPdf(fakeEvent);
                                                     }}
                                                     disabled={isUploadingProof}
-                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[9px] rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer shrink-0 ml-2"
                                                 >
-                                                    <LucideIcons.UploadCloud size={12} />
+                                                    <LucideIcons.UploadCloud size={11} />
                                                     Migrar
                                                 </button>
                                             </div>
-                                        ) : null}
+                                        )}
 
                                         {/* Acciones del Comprobante */}
                                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 font-mono">
@@ -3468,10 +3536,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     setActiveCellModal(null);
                                                     onPreviewReceipt(clientObj, decl);
                                                 }}
-                                                className="py-2.5 px-4 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-white/10"
+                                                className="py-2.5 px-4 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-white/10 shadow-lg shadow-sky-600/20"
                                             >
-                                                <LucideIcons.Eye size={14} />
-                                                Ver Detalle
+                                                <LucideIcons.Maximize2 size={14} />
+                                                Visor Completo
                                             </button>
                                         </div>
                                     </div>
@@ -3692,7 +3760,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal de Gestión de Casilla Pendiente / Prelación Cronológica SRI */}
@@ -3707,8 +3776,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 const dueDate = getDueDateForPeriod(client, period);
                 const dueDateFormatted = dueDate ? format(dueDate, 'dd/MM/yyyy') : 'Según 9no dígito';
 
-                return (
-                    <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+                return createPortal(
+                    <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
                         <div className="bg-[#051424] border border-white/15 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl relative text-white font-sans animate-in zoom-in-95 duration-200 space-y-5">
                             {/* Header */}
                             <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
@@ -3872,7 +3941,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 );
             })()}
 
@@ -3976,8 +4046,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             )}
 
             {/* Modal Emergente Post-Subida de Comprobante (3 Acciones Rápidas) */}
-            {postUploadModal && (
-                <div className="fixed inset-0 bg-[#020b14]/85 backdrop-blur-xl z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300 font-sans">
+            {postUploadModal && createPortal(
+                <div className="fixed inset-0 bg-[#020b14]/85 backdrop-blur-xl z-[100000] flex items-center justify-center p-4 animate-in fade-in duration-300 font-sans">
                     <div className="bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-300 backdrop-blur-2xl">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">
                             <div className="flex items-center gap-3">
@@ -4059,7 +4129,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
