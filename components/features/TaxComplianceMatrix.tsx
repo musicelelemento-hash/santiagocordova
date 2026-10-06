@@ -1222,6 +1222,36 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         });
     }, [clients, frequency, matrixMode, isWorkspaceMode, filterPastYearDebts, selectedYear, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption, searchTerm]);
 
+    const batchType = matrixMode === 'RENTA' ? 'renta' : (frequency === 'Mensual' ? 'mensual' : 'semestral');
+    const batchTargetPeriod = targetPeriodForDeclaration(batchType);
+
+    // 🛡️ Contribuyentes verdaderamente PENDIENTES de declarar para este período
+    // Excluye automáticamente a los que ya tienen comprobante guardado (evita repetir desde #1 Chávez)
+    const pendingBucleClients = useMemo(() => {
+        return filteredClients.filter(c => {
+            if (isPeriodBeforeClientStart(c, batchTargetPeriod)) return false;
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan') return false;
+            if (c.isActive === false || c.isDeleted) return false;
+            return !isClientCompletedForPeriod(c, batchTargetPeriod);
+        });
+    }, [filteredClients, batchTargetPeriod, periods]);
+
+    // Contribuyentes a los que les falta recuperar su comprobante PDF oficial
+    const missingPdfBucleClients = useMemo(() => {
+        return filteredClients.filter(c => {
+            if (isPeriodBeforeClientStart(c, batchTargetPeriod)) return false;
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan') return false;
+            if (c.isActive === false || c.isDeleted) return false;
+            const obligations = getObligationsForPeriod(c, batchTargetPeriod);
+            if (obligations.length === 0) return false;
+            const declarations = c.declarations || [];
+            return obligations.some(ob => {
+                const d = findDeclarationForOb(declarations, batchTargetPeriod, ob.type);
+                return !d?.proof_file?.url && !d?.proof_file;
+            });
+        });
+    }, [filteredClients, batchTargetPeriod, periods]);
+
     const clientsWithPastDebtsCount = useMemo(() => {
         return clients.filter(c => {
             if (c.requiresDeclarations === false || c.clientType === 'solo_plan') return false;
@@ -1757,32 +1787,45 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => {
-                                const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
-                                const targetPeriod = targetPeriodForDeclaration(type);
-                                const bucleClients = filteredClients.filter(c => !isPeriodBeforeClientStart(c, targetPeriod));
-                                sendBatchDeclarationToExtension(bucleClients, type, 'declare', targetPeriod);
-                                toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${bucleClients.length} clientes a la extensión para declaración en bucle.`);
+                                if (pendingBucleClients.length === 0) {
+                                    toast.success(`🎉 ¡Todos los contribuyentes están al día con su comprobante para ${batchTargetPeriod}! No hay declaraciones pendientes.`);
+                                    return;
+                                }
+                                sendBatchDeclarationToExtension(pendingBucleClients, batchType, 'declare', batchTargetPeriod);
+                                toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${pendingBucleClients.length} clientes pendientes a la extensión (se omitieron ${filteredClients.length - pendingBucleClients.length} ya al día).`);
                             }}
-                            className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#00A896]/20 cursor-pointer border border-white/10 active:scale-95"
-                            title="Iniciar automatización completa (Auditar, Llenar formulario y Declarar)"
+                            className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg border border-white/10 active:scale-95 cursor-pointer ${
+                                pendingBucleClients.length > 0
+                                    ? 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white shadow-[#00A896]/20'
+                                    : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/30'
+                            }`}
+                            title={pendingBucleClients.length > 0
+                                ? `Declarar solo los ${pendingBucleClients.length} clientes pendientes para ${batchTargetPeriod} (los ya declarados se omiten automáticamente)`
+                                : `Todos los clientes tienen su comprobante guardado para ${batchTargetPeriod}`
+                            }
                         >
                             <LucideIcons.Play size={13} fill="currentColor" />
-                            <span>Declarar & Llenar</span>
+                            <span>
+                                {pendingBucleClients.length > 0
+                                    ? `Declarar Pendientes (${pendingBucleClients.length})`
+                                    : `✅ Al Día (${batchTargetPeriod})`}
+                            </span>
                         </button>
 
                         <button
                             onClick={() => {
-                                const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
-                                const targetPeriod = targetPeriodForDeclaration(type);
-                                const bucleClients = filteredClients.filter(c => !isPeriodBeforeClientStart(c, targetPeriod));
-                                sendBatchDeclarationToExtension(bucleClients, type, 'recover_pdf_only', targetPeriod);
-                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se han enviado ${bucleClients.length} clientes a la extensión para buscar únicamente PDFs faltantes.`);
+                                const targetClients = missingPdfBucleClients.length > 0 ? missingPdfBucleClients : filteredClients;
+                                if (missingPdfBucleClients.length === 0) {
+                                    toast.info(`Todos los clientes ya tienen comprobante PDF registrado para ${batchTargetPeriod}.`);
+                                }
+                                sendBatchDeclarationToExtension(targetClients, batchType, 'recover_pdf_only', batchTargetPeriod);
+                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se enviaron ${targetClients.length} clientes a la extensión.`);
                             }}
                             className="px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-95"
-                            title="Desacoplado: Ir directo a buscar y descargar PDFs de comprobantes emitidos sin llenar formularios"
+                            title="Buscar y descargar únicamente PDFs de comprobantes faltantes sin llenar formularios"
                         >
                             <LucideIcons.Search size={13} />
-                            <span>🔍 Solo PDFs</span>
+                            <span>🔍 Solo PDFs {missingPdfBucleClients.length > 0 ? `(${missingPdfBucleClients.length})` : ''}</span>
                         </button>
                     </div>
 
