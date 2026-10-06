@@ -13,7 +13,7 @@ import {
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, HandCoins,
     MoreHorizontal, Printer, Clipboard, CheckCircle, CheckCircle2, Send, Loader, ArrowDownToLine,
     Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, ChevronDown, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown, TrendingUp, BarChart3,
-    Search, Filter, Trash, LogOut, Menu, ArrowLeft, RefreshCcw, Smartphone, Hash, Landmark, AlertCircle
+    Search, Filter, Trash, LogOut, Menu, ArrowLeft, RefreshCcw, Smartphone, Hash, Landmark, AlertCircle, ShoppingCart
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useAppStore } from '../../store/useAppStore';
@@ -42,6 +42,7 @@ import { DynamicStatusIndicator } from './ClientDetail/DynamicStatusIndicator';
 
 // Tab Components
 import { ProfileTab } from './ClientDetail/tabs/ProfileTab';
+import { PurchasesTab } from './ClientDetail/tabs/PurchasesTab';
 import { HistoryTab } from './ClientDetail/tabs/HistoryTab';
 import { VaultTab } from './ClientDetail/tabs/VaultTab';
 import { SettingsTab } from './ClientDetail/tabs/SettingsTab';
@@ -101,7 +102,7 @@ interface ClientDetailViewProps {
     onBack: () => void;
     serviceFees: ServiceFeesConfig;
     sriCredentials?: Record<string, string>;
-    initialTab?: 'profile' | 'metrics' | 'history' | 'vault' | 'settings';
+    initialTab?: 'profile' | 'purchases' | 'metrics' | 'history' | 'vault' | 'settings';
 }
 
 export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client, onSave, onBack, serviceFees, sriCredentials, initialTab }) => {
@@ -118,7 +119,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
     const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'metrics' | 'history' | 'vault' | 'settings'>(initialTab || 'profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'purchases' | 'metrics' | 'history' | 'vault' | 'settings'>(initialTab || 'profile');
     const [vaultViewMode, setVaultViewMode] = useState<'gallery' | 'list' | 'table'>('gallery');
 
     const leftColRef = React.useRef<HTMLDivElement>(null);
@@ -1085,7 +1086,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4 font-mono">
                 <div className="flex items-center gap-1.5 p-1.5 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 dark:border-t-white/20 rounded-[2.5rem] shadow-2xl shadow-black/40 pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
-                    {(['profile', 'metrics', 'history', 'vault', 'settings'] as const).map((tab) => (
+                    {(['profile', 'purchases', 'metrics', 'history', 'vault', 'settings'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -1100,6 +1101,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         >
                             <div className="relative z-10 flex items-center gap-2">
                                 {tab === 'profile' && <LayoutDashboard size={15} className={`transition-all duration-500 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
+                                {tab === 'purchases' && <ShoppingCart size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
                                 {tab === 'metrics' && <BarChart3 size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
                                 {tab === 'history' && <Activity size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
                                 {tab === 'vault' && <Lock size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
@@ -1107,7 +1109,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                                 <span className={`text-[10px] font-bold uppercase tracking-wider transition-all duration-500 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
                                     }`}>
-                                    {tab === 'profile' ? 'Resumen' : tab === 'metrics' ? 'Métricas' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
+                                    {tab === 'profile' ? 'Resumen' : tab === 'purchases' ? 'Compras' : tab === 'metrics' ? 'Métricas' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
                                 </span>
                             </div>
                             {activeTab === tab && (
@@ -1165,6 +1167,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-[#020b14]">
                     <div className="w-full max-w-none animate-in fade-in slide-in-from-bottom-6 duration-700">
                         {activeTab === 'profile' && renderProfileTab()}
+                        {activeTab === 'purchases' && (
+                            <PurchasesTab
+                                client={editedClient}
+                                onUpdateClientDirect={handleUpdateClientDirect}
+                            />
+                        )}
                         {activeTab === 'metrics' && <MetricsTab client={editedClient} />}
                         {activeTab === 'history' && renderHistoryTab()}
                         {activeTab === 'vault' && renderVaultTab()}

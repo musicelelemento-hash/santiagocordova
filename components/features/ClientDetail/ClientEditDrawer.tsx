@@ -6,6 +6,7 @@ import {
 import { Client, TaxRegime, IvaFrequency } from '../../../types';
 import { validateIdentifier } from '../../../services/sri';
 import { useToast } from '../../../context/ToastContext';
+import { ECONOMIC_ACTIVITIES } from '../../../services/supplierCatalogService';
 
 interface ClientEditDrawerProps {
     isOpen: boolean;
@@ -365,6 +366,46 @@ export const ClientEditDrawer: React.FC<ClientEditDrawerProps> = ({
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* Actividad Económica para Clasificación de Compras y Crédito Tributario */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                    <span>Actividad Económica / Giro de Negocio</span>
+                                    <span className="text-[10px] text-[#00A896] font-normal">Clasifica Crédito IVA (500 vs 502)</span>
+                                </label>
+                                <select
+                                    value={formData.economicActivity || formData.taxProfile?.economicActivity || 'servicios_profesionales'}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            economicActivity: val,
+                                            taxProfile: {
+                                                ...(prev.taxProfile || {
+                                                    ivaFrequency: 'Mensual',
+                                                    requiresAnnualRenta: true,
+                                                    requiresAnexosGastos: false,
+                                                    hasActiveDevolucionIva: false,
+                                                    hasActiveElderlyDevolucionIva: false,
+                                                    requiresIce: false,
+                                                    requiresAnexoPvp: false
+                                                }),
+                                                economicActivity: val
+                                            }
+                                        }));
+                                    }}
+                                    className="w-full px-4 py-3 bg-[#0b1326]/80 border border-white/10 rounded-2xl text-sm font-bold text-white focus:border-[#00A896] outline-none"
+                                >
+                                    {ECONOMIC_ACTIVITIES.map(act => (
+                                        <option key={act.id} value={act.id} className="bg-slate-900 text-white">
+                                            {act.label} — {act.description.slice(0, 45)}...
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                    Determina qué proveedores (Banco Pichincha, Supermaxi, Combustible, etc.) son deducibles con crédito tributario o gastos personales para este cliente.
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

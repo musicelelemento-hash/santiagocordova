@@ -6,7 +6,7 @@ import {
     ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe, Copy,
     Share2, MessageCircle, Settings, Activity, FileText, CalendarDays,
     BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info, RefreshCcw,
-    FileKey, Download, Trash2, UploadCloud, Mail
+    FileKey, Download, Trash2, UploadCloud, Mail, ShoppingCart
 } from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
 import { ExecutiveObligationsTable } from '../ExecutiveObligationsTable';
@@ -30,7 +30,7 @@ interface ProfileTabProps {
     handleQuickPay: (period: string) => void;
     setUploadingTarget: (target: { type: string; period?: string } | null) => void;
     proofInputRef: React.RefObject<HTMLInputElement>;
-    setActiveTab: (tab: 'profile' | 'history' | 'vault' | 'settings') => void;
+    setActiveTab: (tab: 'profile' | 'purchases' | 'metrics' | 'history' | 'vault' | 'settings') => void;
     handleWhatsApp: () => void;
     handleOpenSRI: () => void;
     handleShareViaWhatsApp: () => void;
@@ -943,17 +943,26 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const msg = encodeURIComponent(`Hola estimado(a) ${editedClient.name} 👋,\n\nEn su declaración de ${targetPeriodLabel} registramos ${purchasesData.totalDocs} facturas de compras con un crédito tributario IVA de $${totalIvaCredito.toFixed(2)} a su favor.\n\nSus comprobantes están debidamente respaldados en el sistema contable.\n\nSaludos cordiales,\nSantiago Córdova - Asesoría Tributaria`);
-                                        const phone = (editedClient as any).phone || editedClient.phones?.[0] || '';
-                                        window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
-                                    }}
-                                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-                                >
-                                    <MessageCircle size={14} /> Generar Reporte de Compras para WhatsApp
-                                </button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('purchases')}
+                                        className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                                    >
+                                        <ShoppingCart size={14} /> Clasificar Compras (500 vs 502)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const msg = encodeURIComponent(`Hola estimado(a) ${editedClient.name} 👋,\n\nEn su declaración de ${targetPeriodLabel} registramos ${purchasesData.totalDocs} facturas de compras con un crédito tributario IVA de $${totalIvaCredito.toFixed(2)} a su favor.\n\nSus comprobantes están debidamente respaldados en el sistema contable.\n\nSaludos cordiales,\nSantiago Córdova - Asesoría Tributaria`);
+                                            const phone = (editedClient as any).phone || editedClient.phones?.[0] || '';
+                                            window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                                        }}
+                                        className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                                    >
+                                        <MessageCircle size={14} /> Reporte WhatsApp
+                                    </button>
+                                </div>
                             </div>
                         );
                     })()}

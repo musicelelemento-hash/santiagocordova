@@ -152,6 +152,7 @@ export interface TaxProfile {
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;
+    economicActivity?: string;
 }
 
 export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito' | 'combo_declaracion_facturas' | 'lote_semestral';
