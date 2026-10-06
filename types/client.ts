@@ -88,6 +88,8 @@ export interface Declaration {
     validationAlerts?: string[];
     updatedAt: string;
     declaredAt?: string;
+    declaredTime?: string;
+    entryDate?: string;
     is_paid?: boolean;
     paidAt?: string;
     transactionId?: string;
@@ -135,9 +137,10 @@ export interface FinancialItem {
  * declarar hasta arreglar la credencial. Nunca contiene la clave en sí.
  */
 export interface SriCredencialEstado {
-    estado: 'incorrecta' | 'caducada' | 'bloqueada';
+    estado: 'ok' | 'incorrecta' | 'caducada' | 'bloqueada';
     motivo?: string;
     cuando?: string;      // ISO
+    ultimo_ingreso?: string; // ISO
     marcado_por?: string;
 }
 
@@ -217,6 +220,7 @@ export interface Client {
     tradeName?: string;
     sriPassword: string;
     sriPasswordUpdatedAt?: string;
+    lastLoginAt?: string;
     phones?: string[];
     email?: string;
     address?: string;

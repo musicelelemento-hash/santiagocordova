@@ -1,26 +1,4 @@
 
-export function getP12RemainingDays(client: Client): number | null {
-    if (!client.signatureExpirationDate) return null;
-    const expDate = new Date(client.signatureExpirationDate);
-    if (isNaN(expDate.getTime())) return null;
-    const now = new Date();
-    const diffTime = expDate.getTime() - now.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
-
-export function getClientPastYearDebts(client: Client, selectedYear: number): Declaration[] {
-    const decls = client.declarations || [];
-    return decls.filter(d => {
-        const p = d.period || '';
-        const match = p.match(/\b(20\d{2})\b/);
-        if (!match) return false;
-        const yr = parseInt(match[1], 10);
-        if (yr >= selectedYear) return false;
-        const isPaid = d.is_paid || d.status === DeclarationStatus.Pagada;
-        return !isPaid;
-    });
-}
-
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
@@ -40,10 +18,33 @@ import { getNinthDigit } from '../../services/sri';
 
 import { db } from '../../services/db';
 import { useAppStore } from '../../store/useAppStore';
-import { getClientServiceFee } from '../../services/clientService';
+import { getClientServiceFee, isCourtesyClient, getClientAdvanceInfo } from '../../services/clientService';
 import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { SupabaseService } from '../../services/supabaseClientService';
-import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendFullClientsMatrixToExtension, parsePeriodToWorkflowPeriod } from '../../services/extensionBridge';
+import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendDirectLoginToExtension, sendFullClientsMatrixToExtension, parsePeriodToWorkflowPeriod } from '../../services/extensionBridge';
+
+export function getP12RemainingDays(client: Client): number | null {
+    if (!client.signatureExpirationDate) return null;
+    const expDate = new Date(client.signatureExpirationDate);
+    if (isNaN(expDate.getTime())) return null;
+    const now = new Date();
+    const diffTime = expDate.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+export function getClientPastYearDebts(client: Client, selectedYear: number): Declaration[] {
+    if (isCourtesyClient(client)) return [];
+    const decls = client.declarations || [];
+    return decls.filter(d => {
+        const p = d.period || '';
+        const match = p.match(/\b(20\d{2})\b/);
+        if (!match) return false;
+        const yr = parseInt(match[1], 10);
+        if (yr >= selectedYear) return false;
+        const isPaid = d.is_paid || d.status === DeclarationStatus.Pagada || !!d.is_advance;
+        return !isPaid;
+    });
+}
 
 type MatrixMode = 'IVA' | 'RENTA';
 
@@ -752,15 +753,22 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         const clientName = client.tradeName || client.name;
         const displayPeriod = formatPeriodForDisplay(period);
         const currentCount = decl?.notificationCount || 0;
-        const isPaid = decl?.status === DeclarationStatus.Pagada || !!decl?.is_paid || client.isCourtesy;
+        const isCourtesy = isCourtesyClient(client, period);
+        const advanceInfo = getClientAdvanceInfo(client, serviceFees);
+        const isAdvance = advanceInfo.isPeriodAdvance(period) || (!!decl?.is_advance && !!decl?.is_paid);
+        const isPaid = decl?.status === DeclarationStatus.Pagada || !!decl?.is_paid || isCourtesy || isAdvance;
 
         const fee = client.fee_structure?.monthly || client.customServiceFee || 15;
 
         let messageText = '';
         if (currentCount === 0 || !decl?.isNotifiedWhatsApp) {
             // ETAPA 1: Notificación Inicial (Envío de Comprobante)
-            messageText = `${greeting} Estimado/a ${clientName}, le confirmo que su declaración de ${obType} correspondiente al período ${displayPeriod} ha sido realizada y procesada exitosamente en el SRI. Le adjunto el comprobante oficial. Saludos cordiales, Soluciones Contables Pro.`;
-        } else if (!isPaid && currentCount === 1) {
+            const extraNote = isCourtesy ? ' (Modalidad Cortesía)' : isAdvance ? ' (Cubierto con su Pago Adelantado)' : '';
+            messageText = `${greeting} Estimado/a ${clientName}, le confirmo que su declaración de ${obType} correspondiente al período ${displayPeriod} ha sido realizada y procesada exitosamente en el SRI${extraNote}. Le adjunto el comprobante oficial. Saludos cordiales, Soluciones Contables Pro.`;
+        } else if (isCourtesy || isAdvance || isPaid) {
+            // Reenvío de Comprobante (Sin mensajes de cobro indebidos)
+            messageText = `${greeting} Estimado/a ${clientName}, le comparto nuevamente el comprobante oficial de su declaración de ${obType} correspondiente al período ${displayPeriod}. Saludos cordiales, Soluciones Contables Pro.`;
+        } else if (currentCount === 1) {
             // ETAPA 2: Primer Recordatorio de Pago / Cobro
             messageText = `${greeting} Estimado/a ${clientName}, le recordamos amablemente que mantenemos pendiente el pago de honorarios por su declaración de ${obType} (${displayPeriod}) por un valor de $${fee}. Quedamos atentos a su comprobante de transferencia. Saludos, Soluciones Contables Pro.`;
         } else {
@@ -1037,6 +1045,16 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         );
 
         window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
+    };
+
+    const handleDirectSriSession = (client: Client, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!client.sriPassword) {
+            toast.warning(`El cliente ${client.name} no posee clave SRI registrada para iniciar sesión.`);
+            return;
+        }
+        sendDirectLoginToExtension(client);
+        toast.success(`🌐 Abriendo perfil del SRI de ${client.name} (${client.ruc}) en modo sesión directa.`);
     };
 
     const handleLaunchMultiMonthBacklog = (client: Client, specificList?: string[]) => {
@@ -1843,18 +1861,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                         <button
                             onClick={() => {
-                                const targetClients = missingPdfBucleClients.length > 0 ? missingPdfBucleClients : filteredClients;
                                 if (missingPdfBucleClients.length === 0) {
-                                    toast.info(`Todos los clientes ya tienen comprobante PDF registrado para ${batchTargetPeriod}.`);
+                                    toast.success(`🎉 ¡Todos los clientes ya tienen comprobante PDF registrado para ${batchTargetPeriod}! No hay comprobantes pendientes por recuperar.`);
+                                    return;
                                 }
-                                sendBatchDeclarationToExtension(targetClients, batchType, 'recover_pdf_only', batchTargetPeriod);
-                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se enviaron ${targetClients.length} clientes a la extensión.`);
+                                sendBatchDeclarationToExtension(missingPdfBucleClients, batchType, 'recover_pdf_only', batchTargetPeriod);
+                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se enviaron ${missingPdfBucleClients.length} clientes pendientes a la extensión.`);
                             }}
                             className="px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-95"
                             title="Buscar y descargar únicamente PDFs de comprobantes faltantes sin llenar formularios"
                         >
                             <LucideIcons.Search size={13} />
-                            <span>🔍 Solo PDFs {missingPdfBucleClients.length > 0 ? `(${missingPdfBucleClients.length})` : ''}</span>
+                            <span>🔍 Solo PDFs {missingPdfBucleClients.length > 0 ? `(${missingPdfBucleClients.length})` : '(0)'}</span>
                         </button>
                     </div>
 
@@ -2276,7 +2294,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         const mainDecl = findDeclarationForOb(declarations, activePeriod, mainObType);
                         const isNotified = !!mainDecl?.isNotifiedWhatsApp;
                         const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
-                        const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
+                        const isCourtesy = isCourtesyClient(client, activePeriod);
+                        const advanceInfo = getClientAdvanceInfo(client, serviceFees);
+                        const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || isCourtesy || advanceInfo.isPeriodAdvance(activePeriod);
 
                         return (
                             <div
@@ -2310,8 +2330,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            openClientInNewWindow(client.id);
+                                                             e.stopPropagation();
+                                                             openClientInNewWindow(client.id);
                                                         }}
                                                         className="p-1 rounded-lg text-slate-400 hover:text-[#00A896] hover:bg-[#00A896]/15 transition-all cursor-pointer shrink-0"
                                                         title="Abrir expediente en ventana aparte"
@@ -2324,6 +2344,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold font-display bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 shadow-sm truncate max-w-full" title={`Alias: ${client.taxProfile?.alias || client.tradeName}`}>
                                                             <LucideIcons.Tag size={9} />
                                                             <span className="truncate">"{client.taxProfile?.alias || client.tradeName}"</span>
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {/* Etiquetas Cortesía y Adelanto */}
+                                                {isCourtesy && (
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold font-mono bg-sky-500/15 text-sky-400 border border-sky-500/30 shadow-sm" title="Cliente en modalidad Cortesía (Honorarios $0)">
+                                                            <LucideIcons.Gift size={10} className="text-sky-400" />
+                                                            <span>Cortesía ($0)</span>
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {!isCourtesy && advanceInfo.hasAdvance && (
+                                                    <div className="flex items-center gap-1 mt-1">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm" title={advanceInfo.tooltip}>
+                                                            <LucideIcons.Zap size={10} className="text-amber-400" />
+                                                            <span>Adelanto {advanceInfo.badgeText}</span>
                                                         </span>
                                                     </div>
                                                 )}
@@ -2438,10 +2475,19 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         <button
                                             onClick={(e) => handleOpenSriPortal(client, e)}
                                             className="py-1.5 px-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-1"
-                                            title="Abrir SRI en Línea"
+                                            title="Abrir SRI en Línea para Declarar"
                                         >
                                             <LucideIcons.ExternalLink size={10} />
                                             <span>SRI</span>
+                                        </button>
+
+                                        <button
+                                            onClick={(e) => handleDirectSriSession(client, e)}
+                                            className="py-1.5 px-2.5 rounded-xl bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 text-sky-400 hover:text-white hover:bg-[#2B6AFF]/30 transition-all flex items-center justify-center gap-1"
+                                            title="Entrar al Perfil del SRI (Solo Sesión - Quedarse en el escritorio)"
+                                        >
+                                            <LucideIcons.Globe size={10} />
+                                            <span>Perfil SRI</span>
                                         </button>
 
                                         {hasProof && !isPaid && (
@@ -2500,7 +2546,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 const hasCellProof = !!d?.proof_file;
                                                 const isDone = hasCellProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
                                                 const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
-                                                const isCellPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                const isCellCourtesy = isCourtesyClient(client, p);
+                                                const advanceFraction = advanceInfo.getPeriodAdvanceFraction(p);
+                                                const isCellAdvance = !!advanceFraction || (!!d?.is_advance && !!d?.is_paid);
+                                                const isCellPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || isCellCourtesy || isCellAdvance;
 
                                                 return (
                                                     <button
@@ -2526,25 +2575,49 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         }}
                                                         className={`px-2.5 py-1.5 rounded-xl border text-[9px] font-mono shrink-0 transition-all flex flex-col items-center gap-0.5 cursor-pointer active:scale-95 ${
                                                             isDone && isCellPaid
-                                                                ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896] hover:bg-[#00A896]/30'
+                                                                ? isCellCourtesy
+                                                                    ? 'bg-sky-500/15 border-sky-500/35 text-sky-300 hover:bg-sky-500/25'
+                                                                    : isCellAdvance
+                                                                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-200 hover:bg-amber-500/30'
+                                                                    : 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896] hover:bg-[#00A896]/30'
                                                                 : isDone && !isCellPaid
                                                                 ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 hover:bg-orange-500/30 animate-pulse'
                                                                 : isOverdue
                                                                 ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
                                                                 : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
                                                         }`}
-                                                        title={`${formatPeriodForDisplay(p)}: ${isDone ? (isCellPaid ? 'Declarado y Pagado' : 'Declarado, Falta Cobrar') : (isOverdue ? 'Vencido' : 'Pendiente')}`}
+                                                        title={`${formatPeriodForDisplay(p)}: ${
+                                                            isCellCourtesy
+                                                                ? 'Cortesía ($0)'
+                                                                : isCellAdvance
+                                                                ? `Adelanto (${advanceFraction || 'Prepagado'})`
+                                                                : isDone
+                                                                ? (isCellPaid ? 'Declarado y Pagado' : 'Declarado, Falta Cobrar')
+                                                                : (isOverdue ? 'Vencido' : 'Pendiente')
+                                                        }`}
                                                     >
                                                         <span className="font-bold text-[9px] uppercase">{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
                                                         <div className="flex items-center gap-1">
                                                             {isDone ? (
-                                                                <LucideIcons.ShieldCheck size={11} strokeWidth={3} className={isCellPaid ? 'text-[#00A896]' : 'text-orange-400'} />
+                                                                isCellCourtesy ? (
+                                                                    <LucideIcons.Gift size={11} strokeWidth={2.5} className="text-sky-400" />
+                                                                ) : isCellAdvance ? (
+                                                                    <LucideIcons.Zap size={11} strokeWidth={2.5} className="text-amber-400" />
+                                                                ) : (
+                                                                    <LucideIcons.ShieldCheck size={11} strokeWidth={3} className={isCellPaid ? 'text-[#00A896]' : 'text-orange-400'} />
+                                                                )
                                                             ) : isOverdue ? (
                                                                 <LucideIcons.AlertCircle size={11} strokeWidth={3} className="text-rose-400" />
                                                             ) : (
                                                                 <LucideIcons.Upload size={10} className="text-slate-400" />
                                                             )}
-                                                            <span className="text-[7px] opacity-80 uppercase">{ob.type}</span>
+                                                            <span className="text-[7px] opacity-80 uppercase">
+                                                                {isCellCourtesy 
+                                                                    ? 'CORTESÍA' 
+                                                                    : isCellAdvance 
+                                                                    ? (advanceFraction ? advanceFraction.replace(' de $', '/$') : 'ADELANTO') 
+                                                                    : ob.type}
+                                                            </span>
                                                         </div>
                                                     </button>
                                                 );
@@ -2770,6 +2843,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 const prevClient = idx > 0 ? filteredClients[idx - 1] : null;
                                 const prevDigit = prevClient ? parseInt(prevClient.ruc[8], 10) : null;
                                 const isNewDigitGroup = sortOption === '9th_digit' && (idx === 0 || currentDigit !== prevDigit);
+                                const isCourtesy = isCourtesyClient(client);
+                                const advanceInfo = getClientAdvanceInfo(client, serviceFees);
 
                                 return (
                                     <React.Fragment key={client.id}>
@@ -2843,6 +2918,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold font-display text-[#00A896] bg-[#00A896]/10 border border-[#00A896]/20 rounded truncate max-w-[160px]" title={`Alias / Reconocimiento: ${client.taxProfile?.alias || client.tradeName}`}>
                                                                     <LucideIcons.Tag size={8} />
                                                                     <span className="truncate">"{client.taxProfile?.alias || client.tradeName}"</span>
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {/* Etiquetas Cortesía y Adelanto */}
+                                                        {isCourtesy && (
+                                                            <div className="flex items-center gap-1 mt-0.5">
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[8.5px] font-bold font-mono text-sky-400 bg-sky-500/10 border border-sky-500/25 rounded-full" title="Cliente en modalidad Cortesía (Honorarios $0)">
+                                                                    <LucideIcons.Gift size={8} className="text-sky-400" />
+                                                                    <span>Cortesía ($0)</span>
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {!isCourtesy && advanceInfo.hasAdvance && (
+                                                            <div className="flex items-center gap-1 mt-0.5">
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[8.5px] font-bold font-mono text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-full" title={advanceInfo.tooltip}>
+                                                                    <LucideIcons.Zap size={8} className="text-amber-400" />
+                                                                    <span>Adelanto {advanceInfo.badgeText}</span>
                                                                 </span>
                                                             </div>
                                                         )}
@@ -2992,6 +3084,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                 <LucideIcons.ExternalLink size={8} />
                                                             </button>
 
+                                                            <button
+                                                                onClick={(e) => handleDirectSriSession(client, e)}
+                                                                className="p-1 rounded-lg border bg-[#2B6AFF]/15 border-[#2B6AFF]/30 text-sky-400 hover:text-white hover:bg-[#2B6AFF]/30 transition-all flex items-center justify-center"
+                                                                title="Entrar al Perfil del SRI (Solo Sesión - Quedarse en escritorio SRI)"
+                                                            >
+                                                                <LucideIcons.Globe size={8} />
+                                                            </button>
+
                                                             {(() => {
                                                                 const activePeriod = periods[0];
                                                                 const clientDecls = client.declarations || [];
@@ -2999,7 +3099,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                 const mainDecl = findDeclarationForOb(clientDecls, activePeriod, mainObType);
                                                                 
                                                                 const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
-                                                                const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
+                                                                const isCourtesy = isCourtesyClient(client, activePeriod);
+                                                                const advanceInfo = getClientAdvanceInfo(client, serviceFees);
+                                                                const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || isCourtesy || advanceInfo.isPeriodAdvance(activePeriod);
                                                                 
                                                                 if (!hasProof || isPaid) return null;
 
@@ -3178,9 +3280,16 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white/10 my-6 mx-auto" />}
                                                         </div>
                                                         {obligations.length > 0 && (() => {
+                                                            const isCourtesyCell = isCourtesyClient(client, p);
+                                                            const advanceFraction = advanceInfo.getPeriodAdvanceFraction(p);
+                                                            const isAdvanceCell = !!advanceFraction || obligations.some(ob => {
+                                                                const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                return !!d?.is_advance && !!d?.is_paid;
+                                                            });
+
                                                             const allPaid = obligations.every(ob => {
                                                                 const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || isCourtesyCell || isAdvanceCell;
                                                             });
                                                             const isCellTrulyInvoiced = obligations.some(ob => {
                                                                 const d = findDeclarationForOb(declarations, p, ob.type);
@@ -3197,13 +3306,35 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             }
                                                                         }}
                                                                         className={`w-full py-0.5 px-1.5 rounded-lg text-[7px] font-black uppercase tracking-wider font-mono transition-all flex items-center justify-center gap-1 border ${
-                                                                            allPaid
+                                                                            isCourtesyCell
+                                                                                ? 'bg-sky-500/15 border-sky-500/35 text-sky-300 hover:bg-sky-500/25'
+                                                                                : isAdvanceCell
+                                                                                ? 'bg-amber-500/20 border-amber-500/40 text-amber-200 hover:bg-amber-500/30 shadow-sm'
+                                                                                : allPaid
                                                                                 ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white border-[#00A896]/40 shadow-sm'
                                                                                 : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
                                                                         }`}
-                                                                        title={allPaid ? "Marcar como Pendiente de Cobro" : "Marcar como Pagado (Honorario)"}
+                                                                        title={
+                                                                            isCourtesyCell
+                                                                                ? "Cliente en modalidad de Cortesía (Tarifa $0)"
+                                                                                : isAdvanceCell
+                                                                                ? `Pago Adelantado (${advanceFraction || 'Adelanto'}) - Cubierto por anticipado`
+                                                                                : allPaid
+                                                                                ? "Marcar como Pendiente de Cobro"
+                                                                                : "Marcar como Pagado (Honorario)"
+                                                                        }
                                                                     >
-                                                                        {allPaid && isCellTrulyInvoiced ? (
+                                                                        {isCourtesyCell ? (
+                                                                            <>
+                                                                                <LucideIcons.Gift size={10} strokeWidth={2.5} className="text-sky-400" />
+                                                                                <span>CORTESÍA ($0)</span>
+                                                                            </>
+                                                                        ) : isAdvanceCell ? (
+                                                                            <>
+                                                                                <LucideIcons.Zap size={10} strokeWidth={2.5} className="text-amber-400" />
+                                                                                <span>ADELANTO {advanceFraction ? advanceFraction.replace(' de $', '/$') : ''}</span>
+                                                                            </>
+                                                                        ) : allPaid && isCellTrulyInvoiced ? (
                                                                             <>
                                                                                 <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
                                                                                 <span className="flex items-center gap-1">
@@ -3275,6 +3406,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </div>
                         <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Honorario Pagado</span>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-lg bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center justify-center text-[9px]">
+                            <LucideIcons.Gift size={10} strokeWidth={2.5} />
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Cortesía ($0)</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center text-[9px]">
+                            <LucideIcons.Zap size={10} strokeWidth={2.5} />
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Pago Adelantado</span>
+                    </div>
                 </div>
             </div>
 
@@ -3318,9 +3463,34 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     <h3 className="text-base font-black tracking-tight text-white font-display">
                                         Comprobante & Facturación SRI
                                     </h3>
-                                    <p className="text-xs font-semibold text-slate-400 font-mono">
-                                        {activeCellModal.client.name} {activeCellModal.client.taxProfile?.alias ? `("${activeCellModal.client.taxProfile.alias}")` : ''} — <span className="font-mono text-[#00A896]">{activeCellModal.period}</span> ({activeCellModal.obType})
-                                    </p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="text-xs font-semibold text-slate-400 font-mono">
+                                            {activeCellModal.client.name} {activeCellModal.client.taxProfile?.alias ? `("${activeCellModal.client.taxProfile.alias}")` : ''} — <span className="font-mono text-[#00A896]">{activeCellModal.period}</span> ({activeCellModal.obType})
+                                        </p>
+                                        {(() => {
+                                            const isCourtesy = isCourtesyClient(activeCellModal.client, activeCellModal.period);
+                                            const modalAdvanceInfo = getClientAdvanceInfo(activeCellModal.client, serviceFees);
+                                            const advanceFrac = modalAdvanceInfo.getPeriodAdvanceFraction(activeCellModal.period);
+
+                                            if (isCourtesy) {
+                                                return (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold font-mono text-sky-400 bg-sky-500/10 border border-sky-500/25 rounded-full">
+                                                        <LucideIcons.Gift size={9} className="text-sky-400" />
+                                                        <span>Cortesía ($0)</span>
+                                                    </span>
+                                                );
+                                            }
+                                            if (modalAdvanceInfo.isPeriodAdvance(activeCellModal.period)) {
+                                                return (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold font-mono text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-full" title={modalAdvanceInfo.tooltip}>
+                                                        <LucideIcons.Zap size={9} className="text-amber-400" />
+                                                        <span>Adelanto {advanceFrac || modalAdvanceInfo.badgeText}</span>
+                                                    </span>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
                                 </div>
                             </div>
                             <button
@@ -3414,6 +3584,55 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     {(activeCellModal.declaration.proof_file.size / 1024).toFixed(1)} KB
                                                 </span>
                                             )}
+                                        </div>
+
+                                        {/* Auditoría de Registro Temporal & Acceso SRI */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-[#020b14]/80 border border-white/5 rounded-xl font-mono text-[11px]">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 rounded-lg bg-[#00A896]/15 text-[#00A896] shrink-0">
+                                                    <LucideIcons.Clock size={14} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span className="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">🕒 Hora de Declaración</span>
+                                                    <span className="text-white font-semibold truncate block">
+                                                        {activeCellModal.declaration.declaredTime 
+                                                            ? activeCellModal.declaration.declaredTime 
+                                                            : activeCellModal.declaration.declaredAt 
+                                                            ? new Date(activeCellModal.declaration.declaredAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                                            : activeCellModal.declaration.updatedAt
+                                                            ? new Date(activeCellModal.declaration.updatedAt).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                                            : 'Sin registro exacto'}
+                                                        {activeCellModal.declaration.declaredAt && (
+                                                            <span className="text-[9px] text-slate-400 ml-1.5">
+                                                                ({new Date(activeCellModal.declaration.declaredAt).toLocaleDateString('es-EC')})
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 rounded-lg bg-[#2B6AFF]/15 text-sky-400 shrink-0">
+                                                    <LucideIcons.LogIn size={14} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <span className="text-[9px] uppercase tracking-wider text-slate-400 block font-bold">🔑 Último Ingreso al SRI</span>
+                                                    <span className="text-white font-semibold truncate block">
+                                                        {(() => {
+                                                            const lastLogin = activeCellModal.client.taxProfile?.sriCredencial?.ultimo_ingreso 
+                                                                || activeCellModal.client.lastLoginAt 
+                                                                || activeCellModal.declaration.entryDate;
+                                                            if (!lastLogin) return 'Sin registro de ingreso';
+                                                            try {
+                                                                const d = new Date(lastLogin);
+                                                                return `${d.toLocaleDateString('es-EC')} · ${d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}`;
+                                                            } catch {
+                                                                return lastLogin;
+                                                            }
+                                                        })()}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {previewPdfUrl ? (
@@ -3548,7 +3767,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     <div className="p-4 bg-[#0b1326]/80 border border-white/10 rounded-2xl flex flex-col gap-3 font-mono">
                                         {(() => {
                                             const currentCount = activeCellModal.declaration.notificationCount || 0;
-                                            const isPaid = activeCellModal.declaration.status === DeclarationStatus.Pagada || !!activeCellModal.declaration.is_paid || activeCellModal.client.isCourtesy;
+                                            const isCourtesy = isCourtesyClient(activeCellModal.client, activeCellModal.period);
+                                            const modalAdvanceInfo = getClientAdvanceInfo(activeCellModal.client, serviceFees);
+                                            const isPaid = activeCellModal.declaration.status === DeclarationStatus.Pagada || !!activeCellModal.declaration.is_paid || isCourtesy || modalAdvanceInfo.isPeriodAdvance(activeCellModal.period);
                                             const isNotified = !!activeCellModal.declaration.isNotifiedWhatsApp;
 
                                             let stageLabel = "Etapa 1: Notificación Inicial";
@@ -3745,13 +3966,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                         {/* Footer */}
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4 font-mono">
-                            <button
-                                onClick={() => handleOpenSriPortal(activeCellModal.client)}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
-                            >
-                                <LucideIcons.Key size={14} />
-                                <span>🔑 Abrir SRI & Cargar Credenciales</span>
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                <button
+                                    onClick={() => handleOpenSriPortal(activeCellModal.client)}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
+                                >
+                                    <LucideIcons.Key size={14} />
+                                    <span>🔑 Abrir SRI & Cargar</span>
+                                </button>
+                                <button
+                                    onClick={() => handleDirectSriSession(activeCellModal.client)}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-sky-600/20 active:scale-95 border border-white/10 cursor-pointer"
+                                    title="Entrar al portal del SRI y permanecer en el escritorio (modo sesión sin automatizaciones)"
+                                >
+                                    <LucideIcons.Globe size={14} />
+                                    <span>🌐 Entrar al SRI (Solo Sesión)</span>
+                                </button>
+                            </div>
                             <button
                                 onClick={() => setActiveCellModal(null)}
                                 className="w-full sm:w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all border border-white/10 cursor-pointer"
@@ -3925,6 +4156,19 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         <span>Declarar {periodLabel} en SRI con Nueva Luz 3.0</span>
                                     </button>
                                 )}
+
+                                <button
+                                    onClick={() => {
+                                        const cl = client;
+                                        setPendingCellModal(null);
+                                        handleDirectSriSession(cl);
+                                    }}
+                                    className="w-full py-2.5 px-4 rounded-2xl bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 hover:text-white border border-sky-500/30 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                    title="Iniciar sesión en el SRI y permanecer en el escritorio sin ejecutar declaraciones"
+                                >
+                                    <LucideIcons.Globe size={13} />
+                                    <span>🌐 Entrar al SRI (Solo Sesión en Escritorio)</span>
+                                </button>
 
                                 <button
                                     onClick={() => {

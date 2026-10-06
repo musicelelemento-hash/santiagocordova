@@ -1279,7 +1279,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const declarations = client.declarations || [];
 
         if (freq === 'Mensual') {
-            for (let i = 1; i <= 12; i++) {
+            for (let i = 0; i < 12; i++) {
                 let m = currentMonth + i;
                 let y = currentYear;
                 while (m > 12) {

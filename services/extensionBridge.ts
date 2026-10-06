@@ -113,6 +113,36 @@ export const sendBatchDeclarationToExtension = (
   if (!Array.isArray(clients) || clients.length === 0) return;
   
   const parsedPeriod = parsePeriodToWorkflowPeriod(targetPeriod);
+  const pStr = parsedPeriod?.periodStr || '';
+
+  // 🛡️ Filtro estricto preventivo en la Web:
+  // Si el cliente ya tiene comprobante guardado para este período, NUNCA debe entrar al lote.
+  // Evita entrar a su perfil, descargar y gastar tokens innecesariamente (ej. Camba Paola).
+  const validBatchClients = clients.filter(c => {
+    if (!c || !c.ruc) return false;
+    const decls: any[] = c.declarations || (c as any).declaration_history || [];
+    const hasProof = decls.some((d: any) => 
+      d && (d.proof_file?.url || d.proof_file?.name || d.pdfUrl) && String(d.period || '').includes(pStr)
+    );
+    const isDeclared = decls.some((d: any) => 
+      d && String(d.period || '').includes(pStr) && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)
+    );
+
+    if (mode === 'declare' && hasProof) {
+      console.log(`🛡️ [BRIDGE BUCLE] ${c.name || c.ruc} ya tiene comprobante para ${pStr}. Omitido preventivamente.`);
+      return false;
+    }
+    if (mode === 'recover_pdf_only' && hasProof) {
+      console.log(`🛡️ [BRIDGE BUCLE] ${c.name || c.ruc} ya posee PDF oficial en la nube para ${pStr}. Omitido.`);
+      return false;
+    }
+    return true;
+  });
+
+  if (validBatchClients.length === 0) {
+    console.log(`🎉 [BRIDGE BUCLE] Todos los ${clients.length} clientes evaluados ya tienen su comprobante para ${pStr || 'el período actual'}. No hay nada pendiente que enviar.`);
+    return;
+  }
 
   const payload = {
     source: 'SC_PRO_DASHBOARD',
@@ -122,22 +152,71 @@ export const sendBatchDeclarationToExtension = (
       mode,
       targetPeriod: parsedPeriod ? parsedPeriod.periodStr : undefined,
       workflowPeriod: parsedPeriod ? { year: parsedPeriod.year, monthIndex: parsedPeriod.monthIndex } : undefined,
-      clients: clients.map(c => ({
-        id: c.id,
-        ruc: c.ruc,
-        name: c.name,
-        sriPassword: c.sriPassword,
-        regime: c.regime,
-        ivaFrequency: getClientIvaFrequency(c),
-        clientStartPeriod: (c as any).clientStartPeriod || (c as any).taxProfile?.clientStartPeriod || ''
-      })),
+      clients: validBatchClients.map(c => {
+        const decls: any[] = c.declarations || (c as any).declaration_history || [];
+        const hasProof = pStr ? decls.some((d: any) => d && (d.proof_file?.url || d.proof_file?.name || d.pdfUrl) && String(d.period || '').includes(pStr)) : false;
+        return {
+          id: c.id,
+          ruc: c.ruc,
+          name: c.name,
+          sriPassword: c.sriPassword,
+          regime: c.regime,
+          ivaFrequency: getClientIvaFrequency(c),
+          clientStartPeriod: (c as any).clientStartPeriod || (c as any).taxProfile?.clientStartPeriod || '',
+          declarations: decls,
+          hasPdf: hasProof,
+          isDeclared: decls.some((d: any) => d && String(d.period || '').includes(pStr) && (d.status === 'Enviada' || d.status === 'Pagada'))
+        };
+      }),
       timestamp: new Date().getTime()
     }
   };
 
   window.postMessage(payload, "*");
   localStorage.setItem('sc_batch_declaration_queue', JSON.stringify(payload.data));
-  console.log(`🚀 Lote (${declarationType}, modo: ${mode}${parsedPeriod ? `, período: ${parsedPeriod.periodStr}` : ''}) enviado a la extensión:`, clients.length, "clientes.");
+  console.log(`🚀 Lote (${declarationType}, modo: ${mode}${parsedPeriod ? `, período: ${parsedPeriod.periodStr}` : ''}) enviado a la extensión:`, validBatchClients.length, "clientes (se excluyeron", clients.length - validBatchClients.length, "ya completados).");
+};
+
+/**
+ * 🌐 Enviar credenciales a la extensión para entrar y QUEDARSE adentro del perfil del SRI
+ * sin ejecutar ninguna automatización de declaraciones ni descargas en bucle.
+ */
+export const sendDirectLoginToExtension = (client: Client) => {
+  if (!client.ruc || !client.sriPassword) {
+    console.warn("Faltan credenciales para ingresar al portal SRI.");
+    return;
+  }
+
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_ENTER_PORTAL_SESSION',
+    data: {
+      ruc: client.ruc,
+      name: client.name || (client as any).razonSocial || 'Cliente SRI',
+      password: client.sriPassword,
+      soloEstarAdentro: true,
+      mode: 'session_only',
+      pendingAction: 'solo_perfil',
+      timestamp: Date.now()
+    }
+  };
+
+  // 1. PostMessage hacia content scripts de la extensión
+  window.postMessage(payload, "*");
+
+  // 2. Evento personalizado
+  window.dispatchEvent(new CustomEvent('sriEnterPortalSession', { detail: payload.data }));
+
+  // 3. LocalStorage de respaldo
+  try {
+    localStorage.setItem('_sri_autofill_pending', JSON.stringify(payload.data));
+    localStorage.setItem('sri_active_credentials', JSON.stringify(payload.data));
+    // Guardar para portapapeles rápido
+    navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`).catch(() => {});
+  } catch (e) {}
+
+  console.log(`🌐 [Sesión Directa SRI] Solicitud de ingreso enviada a Nueva Luz 3.0 para ${client.name} (${client.ruc}).`);
+  window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
 };
 
 export const listenForDeclarationCompleted = (onCompleted: (data: { ruc: string; success: boolean; pdfUrl?: string; timestamp: number }) => void) => {
