@@ -945,73 +945,86 @@ export async function downloadRidePdf(
 ): Promise<void> {
     const { cardContentHtml, cssStyles, filename } = generateRideParts(comprobante, emisorOverride, buyerOverride);
 
+    // Overlay temporal en el viewport para que html2canvas capture todo correctamente sin salir en blanco
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.zIndex = '999999';
+    overlay.style.backgroundColor = 'rgba(2, 11, 20, 0.85)';
+    overlay.style.backdropFilter = 'blur(6px)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '16px';
+    overlay.style.overflow = 'auto';
+
+    const loadingText = document.createElement('div');
+    loadingText.style.color = '#ffffff';
+    loadingText.style.fontFamily = 'system-ui, sans-serif';
+    loadingText.style.fontSize = '13px';
+    loadingText.style.fontWeight = '800';
+    loadingText.style.marginBottom = '12px';
+    loadingText.style.textTransform = 'uppercase';
+    loadingText.style.letterSpacing = '1px';
+    loadingText.innerText = 'Generando PDF de la Factura...';
+    overlay.appendChild(loadingText);
+
     const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '794px'; // Ancho A4 exacto a 96 DPI
-    container.innerHTML = `<style>${cssStyles}</style><div style="padding: 20px;">${cardContentHtml}</div>`;
-    document.body.appendChild(container);
+    container.style.backgroundColor = '#ffffff';
+    container.style.padding = '16px';
+    container.style.borderRadius = '14px';
+    container.style.width = '794px';
+    container.style.maxWidth = '95vw';
+    container.style.maxHeight = '75vh';
+    container.style.overflowY = 'auto';
+    container.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+    container.innerHTML = `<style>${cssStyles}</style>${cardContentHtml}`;
+
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
 
     const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
+        margin: 5,
         filename: filename,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            backgroundColor: '#ffffff'
+        },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
     };
 
-    try {
-        await (html2pdf as any)().set(opt).from(container).save();
-    } finally {
-        if (container.parentNode) {
-            document.body.removeChild(container);
-        }
-    }
+    return new Promise<void>((resolve, reject) => {
+        setTimeout(async () => {
+            try {
+                if (typeof html2pdf !== 'undefined') {
+                    await (html2pdf as any)().set(opt).from(container).save();
+                }
+                resolve();
+            } catch (err) {
+                console.error('[rideService] Error generando PDF:', err);
+                reject(err);
+            } finally {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+            }
+        }, 350);
+    });
 }
 
 /**
- * Abre el PDF del RIDE directamente en el visor nativo de PDF del navegador (o lo descarga si los popups están bloqueados)
+ * Abre el RIDE en una ventana emergente listo para visualizar o imprimir de forma directa
  */
 export async function openRidePdfDirect(
     comprobante: RideComprobanteData,
     emisorOverride?: RideEmisorData,
     buyerOverride?: RideBuyerData
 ): Promise<void> {
-    const { cardContentHtml, cssStyles, filename } = generateRideParts(comprobante, emisorOverride, buyerOverride);
-
-    const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '794px'; // Ancho A4 exacto a 96 DPI
-    container.innerHTML = `<style>${cssStyles}</style><div style="padding: 20px;">${cardContentHtml}</div>`;
-    document.body.appendChild(container);
-
-    const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: filename,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-    };
-
-    try {
-        const worker = (html2pdf as any)().set(opt).from(container);
-        const pdfBlobUrl = await worker.outputPdf('bloburl');
-        const win = window.open(pdfBlobUrl, '_blank');
-        if (!win) {
-            // Si el navegador bloqueó la pestaña emergente, descargar directamente el archivo
-            await worker.save();
-        }
-    } catch (err) {
-        console.warn('[rideService] Error generando bloburl de PDF directo, abriendo vista HTML:', err);
-        viewRideInNewWindow(comprobante, emisorOverride, buyerOverride);
-    } finally {
-        if (container.parentNode) {
-            document.body.removeChild(container);
-        }
-    }
+    viewRideInNewWindow(comprobante, emisorOverride, buyerOverride);
 }
 
 /**
