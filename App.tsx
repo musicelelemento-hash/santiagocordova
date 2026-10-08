@@ -326,6 +326,7 @@ const App: React.FC = () => {
   const [sriInvoiceClientId, setSriInvoiceClientId] = useState<string | null>(null);
   const [sriInvoiceAmount, setSriInvoiceAmount] = useState<number | null>(null);
   const [sriInvoiceDescription, setSriInvoiceDescription] = useState<string | null>(null);
+  const [sriInvoicePeriod, setSriInvoicePeriod] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isGlobalNewClientOpen, setIsGlobalNewClientOpen] = useState(false);
@@ -600,6 +601,7 @@ const App: React.FC = () => {
       setSriInvoiceClientId(options.clientId || null);
       setSriInvoiceAmount(options.amount || null);
       setSriInvoiceDescription(options.description || null);
+      setSriInvoicePeriod(options.initialPeriod || null);
     }
     
     if (options.clientIdToView) {
@@ -683,10 +685,12 @@ const App: React.FC = () => {
           initialClientId={sriInvoiceClientId}
           initialAmount={sriInvoiceAmount}
           initialDescription={sriInvoiceDescription}
+          initialPeriod={sriInvoicePeriod}
           onClearInitialData={() => {
             setSriInvoiceClientId(null);
             setSriInvoiceAmount(null);
             setSriInvoiceDescription(null);
+            setSriInvoicePeriod(null);
           }}
         />
       );

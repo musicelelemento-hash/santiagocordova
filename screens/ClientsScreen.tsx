@@ -216,7 +216,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false);
-    const [billingPromptData, setBillingPromptData] = useState<{ client: Client; amount: number; description: string; } | null>(null);
+    const [billingPromptData, setBillingPromptData] = useState<{ client: Client; amount: number; description: string; period?: string; } | null>(null);
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -857,7 +857,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 setBillingPromptData({
                     client,
                     amount: feeAmount,
-                    description: `Honorarios de Declaración - Período ${period}`
+                    description: `Honorarios de Declaración - Período ${period}`,
+                    period: period
                 });
             }, 100);
         }
@@ -1001,11 +1002,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
         if (action === 'pay') {
             setTimeout(() => {
-                const feeAmount = getClientServiceFee(client, serviceFees);
+                const feeAmount = getClientServiceFee(client, serviceFees, period);
                 setBillingPromptData({
                     client,
                     amount: feeAmount,
-                    description: `Declaración de IVA/Renta - Período ${period}`
+                    description: `Declaración de IVA/Renta - Período ${period}`,
+                    period: period
                 });
             }, 100);
         }
@@ -2714,6 +2716,19 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Detalle:</strong> {billingPromptData.description}</div>
                         </div>
 
+                        {/* Alerta inteligente: otros períodos pendientes del cliente */}
+                        {(() => {
+                            const declarations = billingPromptData.client.declarations || [];
+                            const otherPending = declarations.filter(d => !d.is_paid && d.period !== billingPromptData.period);
+                            if (otherPending.length === 0) return null;
+                            return (
+                                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                    <span>⚠️ {billingPromptData.client.name.split(' ')[0]} tiene {otherPending.length} {otherPending.length === 1 ? 'período más pendiente' : 'períodos más pendientes'}.</span>
+                                    <span className="text-[9px] uppercase tracking-wider text-amber-500 font-black">Puedes facturarlos juntos</span>
+                                </div>
+                            );
+                        })()}
+
                         <div className="flex flex-col gap-2 pt-2">
                             {/* Option 1: Solo este pago */}
                             <button
@@ -2740,9 +2755,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 type="button"
                                 onClick={() => {
                                     const client = billingPromptData.client;
+                                    const period = billingPromptData.period;
                                     setBillingPromptData(null);
                                     navigate('sri_facturacion', {
-                                        clientId: client.id
+                                        clientId: client.id,
+                                        initialPeriod: period
                                     });
                                 }}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"

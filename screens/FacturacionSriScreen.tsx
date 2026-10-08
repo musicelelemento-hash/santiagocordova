@@ -11,7 +11,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
 import { getActivePeriodsForClient, getObligationsForPeriod } from '../services/complianceEngine';
 import { getClientServiceFee } from '../services/clientService';
-import { formatPeriodForDisplay } from '../services/sri';
+import { formatPeriodForDisplay, isFuturePeriod } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
 import { DEFAULT_FACTURACION_API_TOKEN, FACTURACION_API_TOKEN, getFacturacionApiToken, setFacturacionApiToken, isValidApiToken } from '../services/facturacionApi';
@@ -137,6 +137,7 @@ interface FacturacionSriScreenProps {
   initialClientId?: string | null;
   initialAmount?: number | null;
   initialDescription?: string | null;
+  initialPeriod?: string | null;
   onClearInitialData?: () => void;
 }
 
@@ -144,9 +145,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   initialClientId,
   initialAmount,
   initialDescription,
+  initialPeriod,
   onClearInitialData
 }) => {
   const { clients, serviceFees, updateClient } = useAppStore();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'factura' | 'retencion' | 'nota_credito' | 'nota_debito' | 'guia' | 'liquidacion' | 'historial' | 'validador' | 'configuracion' | 'firma'>('dashboard');
   const [isFacturacionOpen, setIsFacturacionOpen] = useState(true);
   const [isHerramientasOpen, setIsHerramientasOpen] = useState(true);
@@ -433,27 +436,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [buyerAddress, setBuyerAddress] = useState('');
   const [buyerIdType, setBuyerIdType] = useState('05'); // 04 = RUC, 05 = Cédula, 06 = Pasaporte
 
-  // Invoice specifics
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>(() => {
-    const stored = localStorage.getItem('sc_emisor_regimen');
-    const initialRegime = (!stored || stored === '0' || stored === '1') ? '3' : stored;
-    const initialIva = initialRegime === '3' ? 0.00 : 0.15;
-    const initialSub = 120.00;
-    const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
-    return [
-      {
-        id: '1',
-        codigoPrincipal: '001',
-        descripcion: 'Servicios Tributarios F. 104 Declaracion Iva Mensual',
-        cantidad: 1,
-        precioUnitario: 120.00,
-        ivaRate: initialIva,
-        subtotal: initialSub,
-        iva: initialIvaVal,
-        total: Number((initialSub + initialIvaVal).toFixed(2))
-      }
-    ];
-  });
+  // Invoice specifics - Inicializa vacío para evitar ítems ficticios de $120
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [formaPago, setFormaPago] = useState('20'); // 01 = Sin sist. financiero, 20 = Con sist. financiero (transferencia/tarjeta)
 
   // Withholding specifics
@@ -525,11 +509,58 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     return clients.find(c => c.id === selectedClient) || null;
   }, [selectedClient, clients]);
 
+  interface AvailableObligation {
+    id: string;
+    period: string;
+    type: 'IVA' | 'RENTA' | 'ICE' | 'ANEXO';
+    label: string;
+    amount: number;
+    isDeclared?: boolean;
+    isPaid?: boolean;
+    isAdvance?: boolean;
+  }
+
+  // Períodos agregados como adelanto
+  const [adelantoPeriods, setAdelantoPeriods] = useState<AvailableObligation[]>([]);
+
+  // Helper para avanzar períodos futuros según frecuencia
+  const getNextPeriodKey = (basePeriod: string, freq?: string): string => {
+    if (!basePeriod) {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+    const clean = basePeriod.split(':')[0];
+    if (freq === 'Semestral' || clean.includes('-S')) {
+      const parts = clean.split('-S');
+      let y = parseInt(parts[0], 10) || new Date().getFullYear();
+      let s = parseInt(parts[1], 10) || 1;
+      s += 1;
+      if (s > 2) {
+        s = 1;
+        y += 1;
+      }
+      return `${y}-S${s}`;
+    }
+    if (clean.includes('-')) {
+      const parts = clean.split('-');
+      let y = parseInt(parts[0], 10) || new Date().getFullYear();
+      let m = parseInt(parts[1], 10) || 1;
+      m += 1;
+      if (m > 12) {
+        m = 1;
+        y += 1;
+      }
+      return `${y}-${String(m).padStart(2, '0')}`;
+    }
+    const y = parseInt(clean, 10);
+    return isNaN(y) ? `${new Date().getFullYear() + 1}` : `${y + 1}`;
+  };
+
   // Compute pending obligations/balances list
-  const pendingObligations = useMemo(() => {
+  const pendingObligations = useMemo<AvailableObligation[]>(() => {
     if (!activeClientObj) return [];
     
-    const list: Array<{ id: string; period: string; type: 'IVA' | 'RENTA' | 'ICE' | 'ANEXO'; label: string; amount: number; isDeclared: boolean; isPaid: boolean }> = [];
+    const list: AvailableObligation[] = [];
     const declarations = activeClientObj.declarations || [];
     
     const activePeriods = getActivePeriodsForClient(activeClientObj, new Date());
@@ -541,8 +572,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const declared = !!decl && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada || !!decl.proof_file);
         const paid = !!decl && (decl.status === DeclarationStatus.Pagada || !!decl.is_paid);
         
-        // If not declared or not paid, it has an outstanding balance
-        if (!declared || !paid) {
+        // Si no está declarado o no está pagado, o si viene como período inicial preseleccionado desde la modal de cobro
+        if (!declared || !paid || (initialPeriod && p === initialPeriod)) {
           const amount = decl?.amount || getClientServiceFee(activeClientObj, serviceFees, p);
           list.push({
             id: `${p}:${ob.type}`,
@@ -557,8 +588,96 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       });
     });
     
-    return list;
-  }, [activeClientObj, serviceFees]);
+    // Orden cronológico (más antiguo primero) para que al pagar 1, 2, 3 o 4 meses se tomen en orden
+    return list.sort((a, b) => a.period.localeCompare(b.period));
+  }, [activeClientObj, serviceFees, initialPeriod]);
+
+  // Lista unificada de obligaciones pendientes + adelantos añadidos
+  const allAvailableObs = useMemo(() => {
+    return [...pendingObligations, ...adelantoPeriods];
+  }, [pendingObligations, adelantoPeriods]);
+
+  // Encontrar el período más reciente existente entre pendientes y adelantos ya añadidos
+  const getLatestPeriodSoFar = (): string => {
+    const allPeriods = [
+      ...pendingObligations.map(o => o.period),
+      ...adelantoPeriods.map(a => a.period)
+    ];
+    if (allPeriods.length > 0) {
+      return [...allPeriods].sort().reverse()[0];
+    }
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // Botón: Añadir un período futuro como adelanto
+  const handleAddAdelantoPeriod = () => {
+    if (!activeClientObj) return;
+    const freq = activeClientObj.taxProfile?.ivaFrequency || (activeClientObj.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : 'Mensual');
+    const latest = getLatestPeriodSoFar();
+    const nextKey = getNextPeriodKey(latest, freq);
+    const fee = getClientServiceFee(activeClientObj, serviceFees, nextKey);
+    
+    const newAdv = {
+      id: `${nextKey}:IVA`,
+      period: nextKey,
+      type: 'IVA' as const,
+      label: `IVA (Adelanto)`,
+      amount: fee,
+      isAdvance: true as const
+    };
+
+    setAdelantoPeriods(prev => [...prev, newAdv]);
+    setSelectedPeriods(prev => Array.from(new Set([...prev, newAdv.id])));
+  };
+
+  // Botón: Remover un adelanto individual
+  const handleRemoveAdelantoPeriod = (id: string) => {
+    setAdelantoPeriods(prev => prev.filter(a => a.id !== id));
+    setSelectedPeriods(prev => prev.filter(pId => pId !== id));
+  };
+
+  // Presets rápidos: Seleccionar 1, 2, 3 o 4 meses automáticamente
+  const handleSelectQuickCount = (count: number) => {
+    if (!activeClientObj) return;
+    const freq = activeClientObj.taxProfile?.ivaFrequency || (activeClientObj.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : 'Mensual');
+    
+    if (pendingObligations.length >= count) {
+      // Tomamos los primeros `count` meses pendientes (en orden cronológico)
+      const toSelect = pendingObligations.slice(0, count).map(o => o.id);
+      setSelectedPeriods(toSelect);
+    } else {
+      // Tomamos todos los pendientes que hay
+      const selectedIds = pendingObligations.map(o => o.id);
+      let needed = count - pendingObligations.length;
+      
+      const newAdelantos = [...adelantoPeriods];
+      let latest = getLatestPeriodSoFar();
+      
+      while (needed > 0) {
+        const unusedAdv = newAdelantos.find(a => !selectedIds.includes(a.id));
+        if (unusedAdv) {
+          selectedIds.push(unusedAdv.id);
+        } else {
+          latest = getNextPeriodKey(latest, freq);
+          const fee = getClientServiceFee(activeClientObj, serviceFees, latest);
+          const adv = {
+            id: `${latest}:IVA`,
+            period: latest,
+            type: 'IVA' as const,
+            label: `IVA (Adelanto)`,
+            amount: fee,
+            isAdvance: true as const
+          };
+          newAdelantos.push(adv);
+          selectedIds.push(adv.id);
+        }
+        needed--;
+      }
+      setAdelantoPeriods(newAdelantos);
+      setSelectedPeriods(selectedIds);
+    }
+  };
 
   const filteredClientsForSearch = useMemo(() => {
     if (!clientSearchQuery.trim()) return clients.filter(c => !c.isDeleted);
@@ -574,6 +693,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setSelectedClient(clientId);
     setIsClientDropdownOpen(false);
     setSelectedPeriods([]); // Reset selected periods when client changes
+    setAdelantoPeriods([]); // Reset advance periods
+    setInvoiceItems([]); // Reset invoice items to avoid $120 dummy default
     
     const client = clients.find(c => c.id === clientId);
     if (client) {
@@ -645,17 +766,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Synchronize selected periods to invoice items
   useEffect(() => {
-    if (selectedPeriods.length === 0) return;
     if (!activeClientObj) return;
+
+    if (selectedPeriods.length === 0) {
+      setInvoiceItems([]);
+      return;
+    }
  
-    const checkedObs = pendingObligations.filter(ob => selectedPeriods.includes(ob.id));
-    if (checkedObs.length === 0) return;
+    const checkedObs = allAvailableObs.filter(ob => selectedPeriods.includes(ob.id));
+    if (checkedObs.length === 0) {
+      setInvoiceItems([]);
+      return;
+    }
  
     const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
  
     if (billingMode === 'detallado') {
-      const newItems: InvoiceItem[] = checkedObs.map((ob, idx) => {
-        const desc = `Declaración de ${ob.label} - Período ${formatPeriodForDisplay(ob.period)}`;
+      const newItems: InvoiceItem[] = checkedObs.map((ob) => {
+        const isAdv = (ob as any).isAdvance || isFuturePeriod(ob.period);
+        const desc = `Declaración de ${ob.label} - Período ${formatPeriodForDisplay(ob.period)}${isAdv && !ob.label.includes('Adelanto') ? ' (Adelanto)' : ''}`;
         const sub = ob.amount;
         const tax = Number((sub * currentIvaRate).toFixed(2));
         return {
@@ -677,12 +806,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       const monthNames = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
       
       const periodsStr = checkedObs.map(ob => {
+        const isAdv = (ob as any).isAdvance || isFuturePeriod(ob.period);
         if (ob.type === 'IVA') {
           const [y, m] = ob.period.split('-');
           const mText = monthNames[parseInt(m) - 1] || m;
-          return `Servicios Tributarios F. 104 Declaracion Iva Mensual ${mText} ${y}`;
+          return `Servicios Tributarios F. 104 Declaracion Iva Mensual ${mText} ${y}${isAdv ? ' (Adelanto)' : ''}`;
         }
-        return `${ob.type} ${formatPeriodForDisplay(ob.period).replace('IVA ', '')}`;
+        return `${ob.type} ${formatPeriodForDisplay(ob.period).replace('IVA ', '')}${isAdv ? ' (Adelanto)' : ''}`;
       }).join(', ');
       
       const desc = periodsStr;
@@ -701,7 +831,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         }
       ]);
     }
-  }, [selectedPeriods, billingMode, activeClientObj, pendingObligations, emisorRegimen]);
+  }, [selectedPeriods, billingMode, activeClientObj, allAvailableObs, emisorRegimen]);
 
   // ID Validator utility
   const [validationInput, setValidationInput] = useState('');
@@ -998,13 +1128,20 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             total: Number((initialAmount + tax).toFixed(2))
           }
         ]);
+      } else {
+        // Al venir sin monto fijo (ej. "Facturar y Elegir Más Obligaciones"),
+        // aseguramos que no queden ítems residuales de $120.
+        setInvoiceItems([]);
+        if (initialPeriod) {
+          setSelectedPeriods([`${initialPeriod}:IVA`]);
+        }
       }
       
       if (onClearInitialData) {
         onClearInitialData();
       }
     }
-  }, [initialClientId, initialAmount, initialDescription, onClearInitialData, emisorRegimen]);
+  }, [initialClientId, initialAmount, initialDescription, initialPeriod, onClearInitialData, emisorRegimen]);
 
   // Auto-populate buyer details when client is selected
   useEffect(() => {
@@ -1123,23 +1260,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setBuyerPhone('');
     setBuyerAddress('');
     setBuyerIdType('05');
-    const initialIva = emisorRegimen === '3' ? 0.00 : 0.15;
-    const initialSub = 120.00;
-    const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
-    setInvoiceItems([
-      {
-        id: '1',
-        codigoPrincipal: '001',
-        descripcion: 'Servicios Tributarios F. 104 Declaracion Iva Mensual',
-        cantidad: 1,
-        precioUnitario: 120.00,
-        ivaRate: initialIva,
-        subtotal: initialSub,
-        iva: initialIvaVal,
-        total: Number((initialSub + initialIvaVal).toFixed(2))
-      }
-    ]);
+    setInvoiceItems([]);
     setSelectedPeriods([]);
+    setAdelantoPeriods([]);
     setGeneratedXml('');
     setGeneratedJson('');
     setGeneratedAccessKey('');
@@ -1333,6 +1456,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Run the full invoicing workflow (Generate, Sign, Send, Authorize)
   const handleProcessDocument = async () => {
+    if (docType === 'factura' && invoiceItems.length === 0) {
+      toast.error('La factura debe tener al menos un ítem agregado');
+      return;
+    }
+
     // Calcular siguiente secuencial robusto usando base de datos atómicamente:
     let nextNum = 0;
     try {
@@ -1364,10 +1492,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               return d.period === spPeriod && (d.type === spType || (!d.type && spType === 'IVA'));
             });
             if (isSelected) {
+              const isAdv = adelantoPeriods.some(a => a.id.startsWith(d.period)) || isFuturePeriod(d.period);
               return {
                 ...d,
                 status: 'Pagada' as any,
                 is_paid: true,
+                is_advance: isAdv || d.is_advance,
                 paidAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
               };
@@ -1379,14 +1509,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             const [spPeriod, spType] = spId.split(':');
             const exists = (client.declarations || []).some(d => d.period === spPeriod && (d.type === spType || (!d.type && spType === 'IVA')));
             if (!exists) {
+              const obFound = allAvailableObs.find(o => o.id === spId);
+              const isAdv = obFound?.isAdvance || isFuturePeriod(spPeriod);
               updatedDeclarations.push({
                 period: spPeriod,
                 type: spType as any,
                 status: 'Pagada' as any,
                 is_paid: true,
+                is_advance: isAdv,
                 paidAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                amount: pendingObligations.find(o => o.id === spId)?.amount || 0
+                amount: obFound?.amount || 0
               });
             }
           });
@@ -3698,19 +3831,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     setBuyerPhone('');
                     setBuyerAddress('');
                     if (docType === 'factura') {
-                      setInvoiceItems([
-                        {
-                          id: '1',
-                          codigoPrincipal: '001',
-                          descripcion: 'Servicios Tributarios F. 104 Declaracion Iva Mensual',
-                          cantidad: 1,
-                          precioUnitario: 120.00,
-                          ivaRate: emisorRegimen === '3' ? 0.00 : 0.15,
-                          subtotal: 120.00,
-                          iva: emisorRegimen === '3' ? 0.00 : 18.00,
-                          total: emisorRegimen === '3' ? 120.00 : 138.00
-                        }
-                      ]);
+                      setInvoiceItems([]);
+                      setAdelantoPeriods([]);
                     } else {
                       setWithholdings([
                         {
@@ -3855,35 +3977,81 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 )}
               </div>
 
-              {/* Obligaciones y Saldos Pendientes (Inventario) */}
-              {selectedClient && pendingObligations.length > 0 && (
+              {/* Obligaciones y Saldos Pendientes (Inventario Interactivo) */}
+              {selectedClient && (
                 <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 space-y-3 animate-fade-in">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                      <AlertCircle size={12} className="text-primary animate-pulse" />
-                      Saldo de Declaraciones Pendientes ({pendingObligations.length})
-                    </h4>
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                        <AlertCircle size={12} className="text-primary animate-pulse" />
+                        Meses y Obligaciones a Facturar ({pendingObligations.length} pendientes{adelantoPeriods.length > 0 ? `, ${adelantoPeriods.length} adelanto` : ''})
+                      </h4>
+                      <p className="text-[9px] text-slate-400 font-semibold leading-relaxed uppercase tracking-wider mt-0.5">
+                        Seleccione los períodos para generar la factura. Tarifa calculada según el perfil del cliente.
+                        {selectedPeriods.length > 0 && (
+                          <span className="ml-2 text-primary font-black font-mono">
+                            ({selectedPeriods.length} seleccionados — ${allAvailableObs
+                              .filter(o => selectedPeriods.includes(o.id))
+                              .reduce((s, o) => s + o.amount, 0)
+                              .toFixed(2)})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Controles de Lote y Modo */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {/* Presets rápidos: 1, 2, 3, 4 meses */}
+                      <div className="flex items-center gap-1 bg-slate-100 dark:bg-black/20 p-1 rounded-xl border border-slate-200/50 dark:border-white/5">
+                        {[1, 2, 3, 4].map(num => (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => handleSelectQuickCount(num)}
+                            className="px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary shadow-sm active:scale-95 border border-slate-200/40 dark:border-white/5"
+                            title={`Seleccionar ${num} ${num === 1 ? 'mes' : 'meses'} en orden cronológico`}
+                          >
+                            ⚡ {num} {num === 1 ? 'Mes' : 'Meses'}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPeriods(pendingObligations.map(o => o.id))}
+                          className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-primary hover:text-primary-hover transition-colors rounded-lg"
+                          title="Seleccionar todos los pendientes"
+                        >
+                          Todos
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedPeriods([]);
+                            setAdelantoPeriods([]);
+                          }}
+                          className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400 hover:text-rose-500 transition-colors rounded-lg"
+                          title="Limpiar selección"
+                        >
+                          Ninguno
+                        </button>
+                      </div>
+
+                      {/* Botón + Adelanto */}
                       <button
                         type="button"
-                        onClick={() => setSelectedPeriods(pendingObligations.map(o => o.id))}
-                        className="text-[9px] font-black uppercase tracking-wider text-primary hover:text-primary-hover transition-colors"
+                        onClick={handleAddAdelantoPeriod}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 hover:from-amber-500/25 hover:to-yellow-500/25 text-amber-500 dark:text-amber-300 border border-amber-500/30 rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-95 shadow-sm"
+                        title="Agregar el siguiente mes por adelantado"
                       >
-                        Todos
+                        <Plus size={11} strokeWidth={3} />
+                        <span>+ Adelanto</span>
                       </button>
-                      <span className="text-slate-300 dark:text-white/10">|</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPeriods([])}
-                        className="text-[9px] font-black uppercase tracking-wider text-slate-400 hover:text-rose-500 transition-colors"
-                      >
-                        Ninguno
-                      </button>
-                      <div className="ml-2 flex items-center gap-1 bg-slate-100 dark:bg-black/20 p-1 rounded-xl border border-slate-200/50 dark:border-white/5">
+
+                      {/* Switch Detallado / Consolidado */}
+                      <div className="flex items-center gap-1 bg-slate-100 dark:bg-black/20 p-1 rounded-xl border border-slate-200/50 dark:border-white/5">
                         <button
                           type="button"
                           onClick={() => setBillingMode('detallado')}
-                          className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg ${
+                          className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg ${
                             billingMode === 'detallado' 
                               ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
                               : 'text-slate-400 hover:text-slate-600'
@@ -3894,7 +4062,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => setBillingMode('consolidado')}
-                          className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg ${
+                          className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg ${
                             billingMode === 'consolidado' 
                               ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
                               : 'text-slate-400 hover:text-slate-600'
@@ -3905,57 +4073,85 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </div>
                     </div>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-semibold leading-relaxed uppercase tracking-wider">
-                    Marque los meses para auto-generar la factura. El detalle se calculará con su tarifa respectiva.
-                    {selectedPeriods.length > 0 && (
-                      <span className="ml-2 text-primary font-black">
-                        ({selectedPeriods.length} seleccionados — ${pendingObligations
-                          .filter(o => selectedPeriods.includes(o.id))
-                          .reduce((s, o) => s + o.amount, 0)
-                          .toFixed(2)})
-                      </span>
-                    )}
-                  </p>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[180px] overflow-y-auto no-scrollbar pr-1 pt-1">
-                    {pendingObligations.map(ob => {
-                      const isChecked = selectedPeriods.includes(ob.id);
-                      return (
-                        <label
-                          key={ob.id}
-                          className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
-                            isChecked
-                              ? 'border-primary/50 bg-primary/5 dark:bg-primary/10 shadow-sm scale-[1.01]'
-                              : 'border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 hover:border-slate-300 dark:hover:border-white/10'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedPeriods([...selectedPeriods, ob.id]);
-                              } else {
+                  {allAvailableObs.length === 0 ? (
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 text-center space-y-1">
+                      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        ✨ Este cliente está al día con sus declaraciones pasadas.
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        Usa el botón <strong className="text-amber-500">+ Adelanto</strong> o los botones <strong className="text-primary">⚡ 1, 2, 3, 4 Meses</strong> para prepagar períodos futuros.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto no-scrollbar pr-1 pt-1">
+                      {allAvailableObs.map(ob => {
+                        const isChecked = selectedPeriods.includes(ob.id);
+                        const isAdv = (ob as any).isAdvance || isFuturePeriod(ob.period);
+                        return (
+                          <div
+                            key={ob.id}
+                            onClick={() => {
+                              if (isChecked) {
                                 setSelectedPeriods(selectedPeriods.filter(id => id !== ob.id));
+                              } else {
+                                setSelectedPeriods([...selectedPeriods, ob.id]);
                               }
                             }}
-                            className="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-black text-slate-700 dark:text-slate-200 truncate uppercase tracking-wide">
-                              {ob.label}
-                            </p>
-                            <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase mt-0.5">
-                              Período: {formatPeriodForDisplay(ob.period).replace('IVA ', '')}
-                            </p>
+                            className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all cursor-pointer select-none relative group ${
+                              isChecked
+                                ? isAdv
+                                  ? 'border-amber-500/60 bg-amber-500/10 shadow-sm scale-[1.01]'
+                                  : 'border-primary/50 bg-primary/5 dark:bg-primary/10 shadow-sm scale-[1.01]'
+                                : 'border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 hover:border-slate-300 dark:hover:border-white/10'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}} // Manejado por el contenedor onClick
+                              className="rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 truncate uppercase tracking-wide">
+                                  {formatPeriodForDisplay(ob.period).replace('IVA ', '')}
+                                </p>
+                                {isAdv ? (
+                                  <span className="text-[7.5px] font-black uppercase px-1 py-0.2 bg-amber-500/20 text-amber-500 dark:text-amber-300 rounded border border-amber-500/30">
+                                    Adelanto
+                                  </span>
+                                ) : (
+                                  <span className="text-[7.5px] font-black uppercase px-1 py-0.2 bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 rounded">
+                                    {ob.isPaid ? 'Marcado' : 'Pendiente'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[8.5px] font-bold text-slate-400 tracking-wider uppercase mt-0.5 truncate">
+                                {ob.label}
+                              </p>
+                            </div>
+                            <span className="text-xs font-black text-primary font-mono shrink-0">
+                              ${ob.amount.toFixed(2)}
+                            </span>
+                            {isAdv && adelantoPeriods.some(a => a.id === ob.id) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveAdelantoPeriod(ob.id);
+                                }}
+                                className="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-colors ml-1"
+                                title="Eliminar adelanto"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            )}
                           </div>
-                          <span className="text-xs font-black text-primary font-mono shrink-0">
-                            ${ob.amount.toFixed(2)}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4091,17 +4287,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
                 {/* Items Grid */}
                 <div className="space-y-3">
-                  {invoiceItems.map((item) => (
-                    <div key={item.id} className="p-4 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl space-y-3 relative group">
-                      {invoiceItems.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeInvoiceItem(item.id)}
-                          className="absolute right-3 top-3 text-slate-400 hover:text-rose-500 transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+                  {invoiceItems.length === 0 ? (
+                    <div className="p-6 text-center border border-dashed border-slate-300 dark:border-white/10 rounded-2xl bg-slate-50/50 dark:bg-white/5 space-y-2">
+                      <FileText size={28} className="mx-auto text-slate-400 opacity-60" />
+                      <p className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">No hay ítems en la factura</p>
+                      <p className="text-[10px] text-slate-400 font-medium">Seleccione los meses del cliente arriba (ej. ⚡ 1, 2, 3 o 4 Meses) o haga clic en "Agregar Ítem".</p>
+                    </div>
+                  ) : (
+                    invoiceItems.map((item) => (
+                      <div key={item.id} className="p-4 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-xl space-y-3 relative group">
+                        {invoiceItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeInvoiceItem(item.id)}
+                            className="absolute right-3 top-3 text-slate-400 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pr-6">
                         <div className="md:col-span-3">
@@ -4177,7 +4380,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                )}
                 </div>
               </div>
             )}
