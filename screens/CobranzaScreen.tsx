@@ -24,7 +24,7 @@ import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
 import { getFacturacionApiToken } from '../services/facturacionApi';
 import { downloadStoredFile } from '../services/fileService';
-import { downloadRidePdf, viewRideInNewWindow, buildWhatsAppInvoiceUrl, RideComprobanteData } from '../services/rideService';
+import { downloadRidePdf, openRidePdfDirect, viewRideInNewWindow, buildWhatsAppInvoiceUrl, RideComprobanteData } from '../services/rideService';
 
 interface CobranzaScreenProps {
     reminderConfigProp?: ReminderConfig;
@@ -569,6 +569,24 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             setFastBillingStep('success');
             addLog("¡Factura emitida, firmada y autorizada por el SRI exitosamente! (Éxito)");
             toast.success("Factura SRI emitida y autorizada correctamente.");
+
+            // Descarga directa inmediata del PDF del RIDE
+            try {
+                const autoCompData: RideComprobanteData = {
+                    tipo: 'Factura',
+                    secuencial: result.secuencial,
+                    claveAcceso: result.key,
+                    rucReceptor: item.ruc,
+                    nombreReceptor: item.clientName,
+                    fechaEmision: new Date().toISOString().split('T')[0],
+                    total: item.amount,
+                    xml: result.currentXml,
+                    ambiente: localStorage.getItem('sc_emisor_ambiente') || '1'
+                };
+                downloadRidePdf(autoCompData);
+            } catch (autoPdfErr) {
+                console.warn('Error auto-descargando PDF:', autoPdfErr);
+            }
 
         } catch (err: any) {
             setFastBillingStep('failed');
@@ -4318,13 +4336,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     xml: fastBillingXml,
                                                     ambiente: localStorage.getItem('sc_emisor_ambiente') || '1'
                                                 };
-                                                viewRideInNewWindow(compData);
+                                                openRidePdfDirect(compData);
                                             }}
                                             className="py-3 px-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all border border-white/10 cursor-pointer"
-                                            title="Ver e Imprimir RIDE en pantalla"
+                                            title="Ver PDF Directo en pantalla"
                                         >
-                                            <LucideIcons.Printer size={14} className="text-teal-400" />
-                                            <span>Ver RIDE</span>
+                                            <LucideIcons.FileText size={14} className="text-teal-400" />
+                                            <span>Ver PDF</span>
                                         </button>
 
                                         <button

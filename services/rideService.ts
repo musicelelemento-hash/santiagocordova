@@ -303,18 +303,20 @@ export function generateRideParts(
     }
 
     // Tratamiento Tributario SRI:
-    // Régimen RIMPE Negocio Popular (regimen === '3'): emiten NOTA DE VENTA sin desglose de IVA 15% (Art. 97.6 LRTI).
-    // Régimen RIMPE Emprendedor (regimen === '2'): emiten FACTURA ELECTRÓNICA con IVA.
-    // Régimen General: emiten FACTURA ELECTRÓNICA con IVA.
+    // Todos los comprobantes electrónicos de ventas (código 01) son FACTURA ELECTRÓNICA.
+    // En RIMPE Negocio Popular o Emprendedor se mantiene el distintivo legal del régimen en el membrete.
     const isRimpePopular = emisor.regimen === '3';
     const isRimpeEmprendedor = emisor.regimen === '2';
-    const isRetencion = comprobante.tipo === 'retencion';
+    const isRetencion = comprobante.tipo === 'retencion' || comprobante.tipo?.toLowerCase() === 'retencion';
+    const isNotaCredito = comprobante.tipo === 'nota_credito' || comprobante.tipo?.toLowerCase() === 'nota_credito';
 
     let docTitle = 'FACTURA ELECTRÓNICA';
     if (isRetencion) {
         docTitle = 'COMPROBANTE DE RETENCIÓN';
-    } else if (isRimpePopular) {
-        docTitle = 'NOTA DE VENTA';
+    } else if (isNotaCredito) {
+        docTitle = 'NOTA DE CRÉDITO';
+    } else {
+        docTitle = 'FACTURA ELECTRÓNICA';
     }
 
     const regimeLabel = isRimpePopular
@@ -325,66 +327,45 @@ export function generateRideParts(
 
     const formattedEmissionDate = formatRideDate(receptor.fechaEmision);
     const formattedAuthDate = formatRideDate(rawAuthDate || receptor.fechaEmision);
-    const filename = `RIDE_${isRimpePopular ? 'NotaVenta' : (isRetencion ? 'Retencion' : 'Factura')}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`;
+    const docPrefix = isRetencion ? 'Retencion' : (isNotaCredito ? 'NotaCredito' : 'Factura');
+    const filename = `RIDE_${docPrefix}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`;
 
-    // Totales según tratamiento tributario:
-    // En Nota de Venta (Negocio Popular) NO se desglosan líneas de IVA 15%.
+    // Totales según tratamiento tributario SRI para Facturas Electrónicas:
     let totalsTableHtml = '';
-    if (isRimpePopular) {
-        totalsTableHtml = `
-        <table class="aurea-totals-table">
-            <tbody>
-                <tr>
-                    <td class="tot-label">SUBTOTAL:</td>
-                    <td class="tot-val">$${total.toFixed(2)}</td>
-                </tr>
-                ${totalDescuento > 0 ? `
-                <tr>
-                    <td class="tot-label">DESCUENTO:</td>
-                    <td class="tot-val">$${totalDescuento.toFixed(2)}</td>
-                </tr>` : ''}
-                <tr class="tot-hero-row">
-                    <td class="tot-hero-label">VALOR TOTAL:</td>
-                    <td class="tot-hero-val">$${total.toFixed(2)}</td>
-                </tr>
-            </tbody>
-        </table>`;
-    } else {
-        const subtotalSinImp = (subtotal15 + subtotal0);
-        totalsTableHtml = `
-        <table class="aurea-totals-table">
-            <tbody>
-                ${subtotal15 > 0 ? `
-                <tr>
-                    <td class="tot-label">SUBTOTAL 15%:</td>
-                    <td class="tot-val">$${subtotal15.toFixed(2)}</td>
-                </tr>` : ''}
-                ${subtotal0 > 0 ? `
-                <tr>
-                    <td class="tot-label">SUBTOTAL 0%:</td>
-                    <td class="tot-val">$${subtotal0.toFixed(2)}</td>
-                </tr>` : ''}
-                <tr>
-                    <td class="tot-label">SUBTOTAL SIN IMPUESTOS:</td>
-                    <td class="tot-val">$${(subtotalSinImp > 0 ? subtotalSinImp : total).toFixed(2)}</td>
-                </tr>
-                ${totalDescuento > 0 ? `
-                <tr>
-                    <td class="tot-label">DESCUENTO:</td>
-                    <td class="tot-val">$${totalDescuento.toFixed(2)}</td>
-                </tr>` : ''}
-                ${iva15 > 0 ? `
-                <tr>
-                    <td class="tot-label">IVA 15%:</td>
-                    <td class="tot-val">$${iva15.toFixed(2)}</td>
-                </tr>` : ''}
-                <tr class="tot-hero-row">
-                    <td class="tot-hero-label">VALOR TOTAL:</td>
-                    <td class="tot-hero-val">$${total.toFixed(2)}</td>
-                </tr>
-            </tbody>
-        </table>`;
-    }
+    const subtotalSinImp = (subtotal15 + subtotal0);
+    totalsTableHtml = `
+    <table class="aurea-totals-table">
+        <tbody>
+            ${subtotal15 > 0 ? `
+            <tr>
+                <td class="tot-label">SUBTOTAL 15%:</td>
+                <td class="tot-val">$${subtotal15.toFixed(2)}</td>
+            </tr>` : ''}
+            ${(subtotal0 > 0 || isRimpePopular || subtotal15 === 0) ? `
+            <tr>
+                <td class="tot-label">SUBTOTAL 0%:</td>
+                <td class="tot-val">$${(subtotal0 > 0 ? subtotal0 : (subtotal15 === 0 ? total : 0)).toFixed(2)}</td>
+            </tr>` : ''}
+            <tr>
+                <td class="tot-label">SUBTOTAL SIN IMPUESTOS:</td>
+                <td class="tot-val">$${(subtotalSinImp > 0 ? subtotalSinImp : total).toFixed(2)}</td>
+            </tr>
+            ${totalDescuento > 0 ? `
+            <tr>
+                <td class="tot-label">DESCUENTO:</td>
+                <td class="tot-val">$${totalDescuento.toFixed(2)}</td>
+            </tr>` : ''}
+            ${iva15 > 0 ? `
+            <tr>
+                <td class="tot-label">IVA 15%:</td>
+                <td class="tot-val">$${iva15.toFixed(2)}</td>
+            </tr>` : ''}
+            <tr class="tot-hero-row">
+                <td class="tot-hero-label">VALOR TOTAL:</td>
+                <td class="tot-hero-val">$${total.toFixed(2)}</td>
+            </tr>
+        </tbody>
+    </table>`;
 
     const cardContentHtml = `
     <div class="invoice-card">
@@ -982,6 +963,50 @@ export async function downloadRidePdf(
 
     try {
         await (html2pdf as any)().set(opt).from(container).save();
+    } finally {
+        if (container.parentNode) {
+            document.body.removeChild(container);
+        }
+    }
+}
+
+/**
+ * Abre el PDF del RIDE directamente en el visor nativo de PDF del navegador (o lo descarga si los popups están bloqueados)
+ */
+export async function openRidePdfDirect(
+    comprobante: RideComprobanteData,
+    emisorOverride?: RideEmisorData,
+    buyerOverride?: RideBuyerData
+): Promise<void> {
+    const { cardContentHtml, cssStyles, filename } = generateRideParts(comprobante, emisorOverride, buyerOverride);
+
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '794px'; // Ancho A4 exacto a 96 DPI
+    container.innerHTML = `<style>${cssStyles}</style><div style="padding: 20px;">${cardContentHtml}</div>`;
+    document.body.appendChild(container);
+
+    const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: filename,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+    };
+
+    try {
+        const worker = (html2pdf as any)().set(opt).from(container);
+        const pdfBlobUrl = await worker.outputPdf('bloburl');
+        const win = window.open(pdfBlobUrl, '_blank');
+        if (!win) {
+            // Si el navegador bloqueó la pestaña emergente, descargar directamente el archivo
+            await worker.save();
+        }
+    } catch (err) {
+        console.warn('[rideService] Error generando bloburl de PDF directo, abriendo vista HTML:', err);
+        viewRideInNewWindow(comprobante, emisorOverride, buyerOverride);
     } finally {
         if (container.parentNode) {
             document.body.removeChild(container);

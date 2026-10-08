@@ -27,6 +27,7 @@ import html2pdf from 'html2pdf.js';
 import { 
   generateRideParts as generateAureaRideParts, 
   downloadRidePdf as downloadAureaRidePdf, 
+  openRidePdfDirect,
   viewRideInNewWindow,
   RideComprobanteData, 
   RideEmisorData, 
@@ -1897,6 +1898,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
         await saveRecordToHistory(newRecord);
         await onSuccessBilling(nextNum);
+        downloadRideDocument(newRecord);
       } else {
         let isAuthorized = false;
         let authData: any = null;
@@ -1982,6 +1984,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           mensajeError: isAuthorized ? undefined : errorMsg
         };
         await saveRecordToHistory(newRecord);
+        if (isAuthorized) {
+          downloadRideDocument(newRecord);
+        }
       }
 
     } catch (err: any) {
@@ -2262,98 +2267,76 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     return generateAureaRideParts(comprobanteData, emisorOverride, buyerOverride);
   };
 
-  const viewRideDocument = (comprobante: HistoricComprobante) => {
-    const { fullDocHtml } = generateRideParts(comprobante);
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(fullDocHtml);
-      win.document.close();
-    } else {
-      alert("Por favor permite las ventanas emergentes para ver el RIDE.");
+  const getRidePayloads = (comprobante: HistoricComprobante) => {
+    const emisorOverride: RideEmisorData = {
+      ruc: emisorRuc,
+      razonSocial: emisorRazonSocial,
+      nombreComercial: emisorNombreComercial,
+      dirMatriz: emisorDirMatriz,
+      estab: emisorEstab,
+      ptoEmi: emisorPtoEmi,
+      regimen: emisorRegimen,
+      ambiente: comprobante.ambiente,
+      logoUrl: emisorLogo
+    };
+
+    const buyerOverride: RideBuyerData = {
+      razonSocial: comprobante.nombreReceptor,
+      identificacion: comprobante.rucReceptor,
+      direccion: comprobante.rucReceptor === buyerRuc ? buyerAddress : undefined,
+      fechaEmision: comprobante.fechaEmision,
+      phone: buyerPhone,
+      email: buyerEmail
+    };
+
+    const periodStr = (comprobante as any).period || (selectedPeriods.length > 0 ? selectedPeriods.map(p => formatPeriodForDisplay(p)).join(', ') : undefined);
+
+    const comprobanteData: RideComprobanteData = {
+      id: comprobante.id,
+      tipo: comprobante.tipo,
+      secuencial: comprobante.secuencial,
+      claveAcceso: comprobante.claveAcceso,
+      numeroAutorizacion: comprobante.claveAcceso,
+      rucReceptor: comprobante.rucReceptor,
+      nombreReceptor: comprobante.nombreReceptor,
+      fechaEmision: comprobante.fechaEmision,
+      total: comprobante.total,
+      xml: comprobante.xml,
+      ambiente: comprobante.ambiente,
+      period: periodStr
+    };
+
+    return { comprobanteData, emisorOverride, buyerOverride };
+  };
+
+  const viewRideDocument = async (comprobante: HistoricComprobante) => {
+    toast.info("Abriendo visor directo de PDF...");
+    try {
+      const { comprobanteData, emisorOverride, buyerOverride } = getRidePayloads(comprobante);
+      await openRidePdfDirect(comprobanteData, emisorOverride, buyerOverride);
+    } catch (err: any) {
+      console.warn("Error abriendo visor directo, usando fallback HTML:", err);
+      const { fullDocHtml } = generateRideParts(comprobante);
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(fullDocHtml);
+        win.document.close();
+      } else {
+        alert("Por favor permite las ventanas emergentes para ver el RIDE.");
+      }
     }
   };
 
-  const downloadRideDocument = (comprobante: HistoricComprobante) => {
-    const { cssStyles, cardContentHtml, filename } = generateRideParts(comprobante);
-
-    // Create a temporary visible modal overlay for crisp html2canvas capture on mobile and desktop
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.inset = '0';
-    overlay.style.zIndex = '999999';
-    overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.85)';
-    overlay.style.backdropFilter = 'blur(4px)';
-    overlay.style.display = 'flex';
-    overlay.style.flexDirection = 'column';
-    overlay.style.alignItems = 'center';
-    overlay.style.justifyContent = 'center';
-    overlay.style.padding = '16px';
-    overlay.style.overflow = 'auto';
-
-    const loadingText = document.createElement('div');
-    loadingText.style.color = '#ffffff';
-    loadingText.style.fontFamily = 'system-ui, sans-serif';
-    loadingText.style.fontSize = '13px';
-    loadingText.style.fontWeight = '800';
-    loadingText.style.marginBottom = '12px';
-    loadingText.style.textTransform = 'uppercase';
-    loadingText.style.letterSpacing = '1px';
-    loadingText.innerText = 'Generando PDF del RIDE para descarga...';
-    overlay.appendChild(loadingText);
-
-    const container = document.createElement('div');
-    container.style.backgroundColor = '#ffffff';
-    container.style.padding = '16px';
-    container.style.borderRadius = '14px';
-    container.style.width = '794px';
-    container.style.maxWidth = '95vw';
-    container.style.maxHeight = '75vh';
-    container.style.overflowY = 'auto';
-    container.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
-    container.innerHTML = `<style>${cssStyles}</style>${cardContentHtml}`;
-
-    overlay.appendChild(container);
-    document.body.appendChild(overlay);
-
-    const opt = {
-      margin:       5,
-      filename:     filename,
-      image:        { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-    };
-
-    setTimeout(() => {
-      try {
-        if (typeof html2pdf !== 'undefined') {
-          html2pdf().set(opt).from(container).save().then(() => {
-            if (document.body.contains(overlay)) {
-              document.body.removeChild(overlay);
-            }
-          }).catch((err: any) => {
-            console.error('Error al generar PDF con html2pdf:', err);
-            if (document.body.contains(overlay)) {
-              document.body.removeChild(overlay);
-            }
-          });
-        } else {
-          window.print();
-          if (document.body.contains(overlay)) {
-            document.body.removeChild(overlay);
-          }
-        }
-      } catch (err) {
-        console.error('Error al descargar PDF:', err);
-        if (document.body.contains(overlay)) {
-          document.body.removeChild(overlay);
-        }
-      }
-    }, 250);
+  const downloadRideDocument = async (comprobante: HistoricComprobante) => {
+    toast.info("Descargando PDF directo de la Factura...");
+    try {
+      const { comprobanteData, emisorOverride, buyerOverride } = getRidePayloads(comprobante);
+      await downloadAureaRidePdf(comprobanteData, emisorOverride, buyerOverride);
+      toast.success("PDF descargado correctamente.");
+    } catch (err: any) {
+      console.error('Error al generar PDF directo:', err);
+      toast.error('Error al descargar PDF: ' + (err?.message || 'Error desconocido'));
+    }
   };
 
   const printRideDocument = (comprobante: HistoricComprobante) => {
@@ -4544,7 +4527,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     className="flex items-center justify-center gap-1 py-2 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <FileText size={11} />
-                    Ver RIDE
+                    Ver PDF
                   </button>
                   <button
                     onClick={() => {
@@ -4563,10 +4546,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       };
                       downloadRideDocument(currentComp);
                     }}
-                    className="flex items-center justify-center gap-1 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <Download size={11} />
-                    Bajar RIDE
+                    Bajar PDF
                   </button>
                   <button
                     onClick={() => {
@@ -5103,12 +5086,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <div className="truncate"><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Clave de Acceso SRI:</strong> {generatedAccessKey}</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-2 relative z-10">
-              {/* Button 1: Ver RIDE */}
+            <div className="grid grid-cols-2 gap-2.5 pt-2 relative z-10">
+              {/* Button 1: Descargar PDF Factura Directo (Destacado) */}
               <button
                 type="button"
                 onClick={() => {
-                  setShowWhatsAppModal(false);
                   const currentComp: HistoricComprobante = {
                     id: Date.now().toString(),
                     tipo: docType,
@@ -5122,19 +5104,43 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     xml: generatedXml,
                     ambiente
                   };
-                  printRideDocument(currentComp);
+                  downloadRideDocument(currentComp);
+                }}
+                className="col-span-2 py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-[#00A896] hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-xl shadow-emerald-600/30 cursor-pointer border border-emerald-400/40 flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                <Download size={15} />
+                <span>Descargar PDF Factura</span>
+              </button>
+
+              {/* Button 2: Ver PDF Directo */}
+              <button
+                type="button"
+                onClick={() => {
+                  const currentComp: HistoricComprobante = {
+                    id: Date.now().toString(),
+                    tipo: docType,
+                    secuencial: generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001',
+                    claveAcceso: generatedAccessKey,
+                    rucReceptor: buyerRuc,
+                    nombreReceptor: buyerName,
+                    fechaEmision: generatedAccessKey ? `${generatedAccessKey.substring(4, 8)}-${generatedAccessKey.substring(2, 4)}-${generatedAccessKey.substring(0, 2)}` : new Date().toISOString().split('T')[0],
+                    total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+                    estado: 'Autorizado',
+                    xml: generatedXml,
+                    ambiente
+                  };
+                  viewRideDocument(currentComp);
                 }}
                 className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-[0.98]"
               >
                 <FileText size={12} />
-                <span>Ver RIDE</span>
+                <span>Ver PDF Directo</span>
               </button>
 
-              {/* Button 2: Descargar XML */}
+              {/* Button 3: Descargar XML */}
               <button
                 type="button"
                 onClick={() => {
-                  setShowWhatsAppModal(false);
                   const currentComp: HistoricComprobante = {
                     id: Date.now().toString(),
                     tipo: docType,
@@ -5156,7 +5162,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <span>Descargar XML</span>
               </button>
 
-              {/* Button 3: WhatsApp */}
+              {/* Button 4: WhatsApp */}
               <a
                 href={`https://api.whatsapp.com/send?phone=${
                   (() => {
@@ -5172,14 +5178,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setShowWhatsAppModal(false)}
                 className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer border border-white/10 active:scale-[0.98]"
               >
                 <Globe size={11} />
                 <span>WhatsApp</span>
               </a>
 
-              {/* Button 4: Correo */}
+              {/* Button 5: Correo */}
               <a
                 href={`mailto:${buyerEmail}?subject=${encodeURIComponent(`Comprobante Electrónico SRI Autorizado - ${emisorNombreComercial}`)}&body=${encodeURIComponent(
                   `Estimado/a ${buyerName},\n\n` +
@@ -5194,7 +5199,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   `Atentamente,\n` +
                   `${emisorNombreComercial}`
                 )}`}
-                onClick={() => setShowWhatsAppModal(false)}
                 className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/20 cursor-pointer border border-white/10 active:scale-[0.98]"
               >
                 <Mail size={12} />
@@ -5204,7 +5208,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setShowWhatsAppModal(false)}
-                className="col-span-2 py-3 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
+                className="col-span-2 py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
               >
                 Cerrar Ventana
               </button>

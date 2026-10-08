@@ -209,7 +209,7 @@ export const printSalesNote = (data: ReceiptData, businessProfile: BusinessProfi
                     </div>
                 </div>
                 <div class="receipt-box">
-                    <div class="receipt-header">Nota de Venta</div>
+                    <div class="receipt-header">Factura / Comprobante de Pago</div>
                     <div class="receipt-body">
                         <span class="ruc-number">R.U.C. ${businessProfile.ruc}</span>
                         <span class="sequence-number">${sequenceStr}</span>
