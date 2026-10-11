@@ -271,3 +271,54 @@ export const requestPruebaClavesFromExtension = () => {
 export const openSRIPortal = (url?: string) => {
   window.open(url || 'https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
 };
+
+export const sendZifactAutoLoginToExtension = (data: { username: string; password: string; clientName?: string }) => {
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'ZIFAC_AUTOFILL_DATA',
+    data: {
+      username: data.username,
+      password: data.password,
+      clientName: data.clientName || '',
+      timestamp: Date.now()
+    }
+  };
+
+  window.postMessage(payload, "*");
+  window.dispatchEvent(new CustomEvent('zifactAutofillReady', { detail: payload.data }));
+  try {
+    localStorage.setItem('_zifact_autofill_pending', JSON.stringify(payload.data));
+  } catch (e) {}
+  console.log(`⚡ [Auto-Login Zifact] Solicitud enviada a la extensión para ${data.clientName || data.username}.`);
+};
+
+export const enterZifactDirect = (client: Client) => {
+  const plan = client.billingPlan || client.facturadorConfig || {};
+  const user = plan.username || client.ruc;
+  const pwd = plan.password || client.sriPassword;
+
+  if (!user || !pwd) {
+    return { success: false, reason: 'missing_credentials' as const };
+  }
+
+  sendZifactAutoLoginToExtension({
+    username: user,
+    password: pwd,
+    clientName: client.tradeName || client.name
+  });
+
+  // Respaldo de seguridad con hash (#autologin=base64), no se envía al servidor web
+  let targetUrl = 'https://zifact.com/login';
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify({
+      username: user,
+      password: pwd,
+      clientName: client.tradeName || client.name
+    }))));
+    targetUrl += `#autologin=${b64}`;
+  } catch (e) {}
+
+  window.open(targetUrl, '_blank');
+  return { success: true };
+};
+

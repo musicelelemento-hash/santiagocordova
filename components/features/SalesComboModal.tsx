@@ -275,7 +275,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             setEstimatedCost(18.00);
             setExpirationYears(1);
             setIncludesSignature(true);
-            setWebUrl(systemSettings?.zifactUrl || 'https://sistema.zifac.com');
+            setWebUrl(systemSettings?.zifactUrl || 'https://zifact.com/login');
         } else if (cat === 'firma') {
             setProgramName('Firma Electrónica .p12 (1 Año + Soporte SRI)');
             setDocumentCount('');

@@ -25,6 +25,7 @@ import { FacturaRegistroModal } from '../components/features/FacturaRegistroModa
 import { AddFacturadorClientModal } from '../components/features/AddFacturadorClientModal';
 import { ResendNoticeModal } from '../components/features/ResendNoticeModal';
 import { SupabaseService } from '../services/supabaseClientService';
+import { enterZifactDirect } from '../services/extensionBridge';
 
 interface FacturadoresScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -390,7 +391,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         const plan = client.billingPlan || client.facturadorConfig || {};
         const url = plan.url || (
             plan.programName?.toLowerCase().includes('talonario') ? 'https://talonarioamigo.santiagocordova.com' :
-            plan.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' :
+            plan.programName?.toLowerCase().includes('zifac') ? 'https://zifact.com/login' :
             plan.programName?.toLowerCase().includes('sri') ? 'https://srienlinea.sri.gob.ec' :
             'https://app.ecuafact.com'
         );
@@ -409,6 +410,16 @@ RUC: ${client.ruc}
         setCopiedId(client.id);
         toast.success(`Ficha de acceso de ${client.tradeName || client.name} copiada.`);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    // Auto-Login Rápido en Zifact (Abre e Inicia Sesión en 1-Clic)
+    const handleLaunchZifactLogin = (client: Client) => {
+        const res = enterZifactDirect(client);
+        if (!res.success) {
+            toast.error(`No hay usuario o clave de facturador guardada para ${client.tradeName || client.name}.`);
+            return;
+        }
+        toast.success(`⚡ Abriendo Zifact con Auto-Login para ${client.tradeName || client.name}...`);
     };
 
     const handleOpenResendModal = (client: Client, noticeType: 'renewal' | 'low_docs' | 'credentials' | 'filling_statement', additionalData?: any) => {
@@ -1108,7 +1119,7 @@ RUC: ${client.ruc}
 
                                 const providerUrl = config.url || (
                                     config.programName?.toLowerCase().includes('talonario') ? 'https://talonarioamigo.santiagocordova.com' :
-                                    config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' :
+                                    config.programName?.toLowerCase().includes('zifac') ? 'https://zifact.com/login' :
                                     config.programName?.toLowerCase().includes('sri') ? 'https://srienlinea.sri.gob.ec' :
                                     'https://app.ecuafact.com'
                                 );
@@ -1156,13 +1167,31 @@ RUC: ${client.ruc}
                                                         </div>
                                                     </div>
 
-                                                    <button
-                                                        onClick={() => window.open(providerUrl, '_blank')}
-                                                        className="px-3 py-1.5 bg-tertiary/15 hover:bg-tertiary text-tertiary hover:text-white border border-tertiary/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md shadow-tertiary/10"
-                                                        title="Abrir facturador en nueva pestaña"
-                                                    >
-                                                        <ExternalLink size={12} />
-                                                    </button>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {(config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact')) && (
+                                                            <button
+                                                                onClick={() => handleLaunchZifactLogin(client)}
+                                                                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500 hover:to-teal-500 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-500/10 active:scale-95"
+                                                                title="⚡ Auto-Login Zifact: Inicia sesión en 1 clic"
+                                                            >
+                                                                <Zap size={12} className="text-emerald-400" />
+                                                                <span className="hidden sm:inline">Ingresar</span>
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {
+                                                                if (config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact')) {
+                                                                    handleLaunchZifactLogin(client);
+                                                                } else {
+                                                                    window.open(providerUrl, '_blank');
+                                                                }
+                                                            }}
+                                                            className="px-3 py-1.5 bg-tertiary/15 hover:bg-tertiary text-tertiary hover:text-white border border-tertiary/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md shadow-tertiary/10"
+                                                            title={config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact') ? "Ingresar automáticamente a Zifact" : "Abrir facturador en nueva pestaña"}
+                                                        >
+                                                            <ExternalLink size={12} />
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-foreground/5 text-[9px]">
@@ -1217,6 +1246,16 @@ RUC: ${client.ruc}
                                                     <ClipboardCopy size={11} />
                                                     <span>Copiar Ficha de Acceso Oficial</span>
                                                 </button>
+
+                                                {(config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact')) && (
+                                                    <button
+                                                        onClick={() => handleLaunchZifactLogin(client)}
+                                                        className="w-full mt-1 pt-1.5 border-t border-foreground/5 text-[9px] text-emerald-400 hover:text-emerald-300 font-bold uppercase flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                                                    >
+                                                        <Zap size={11} className="text-emerald-400" />
+                                                        <span>Auto-Login Rápido Zifact (1-Clic)</span>
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {/* Widget Métrico del Período */}

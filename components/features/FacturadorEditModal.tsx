@@ -18,7 +18,7 @@ const PRESET_PLATFORMS = [
     { name: 'Talonario Amigo', url: 'https://talonarioamigo.santiagocordova.com', type: 'paquete_docs' as BillingPlanType, icon: '💎' },
     { name: 'SRI en Línea (Gratuito)', url: 'https://srienlinea.sri.gob.ec', type: 'sri_gratuito' as BillingPlanType, icon: '🏛️' },
     { name: 'Ecuafact', url: 'https://app.ecuafact.com', type: 'por_factura' as BillingPlanType, icon: '⚡' },
-    { name: 'Zifact', url: 'https://sistema.zifac.com', type: 'paquete_docs' as BillingPlanType, icon: '📦' },
+    { name: 'Zifact', url: 'https://zifact.com/login', type: 'paquete_docs' as BillingPlanType, icon: '📦' },
     { name: 'Siigo Contífico', url: 'https://login.contifico.com', type: 'plan_mensual' as BillingPlanType, icon: '💼' },
     { name: 'Dátil', url: 'https://app.datil.co', type: 'por_factura' as BillingPlanType, icon: '📊' },
     { name: 'Facturito', url: 'https://facturito.ec', type: 'por_factura' as BillingPlanType, icon: '🛒' },

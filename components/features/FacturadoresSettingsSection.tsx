@@ -163,7 +163,7 @@ export const FacturadoresSettingsSection: React.FC<FacturadoresSettingsSectionPr
             setFormAccessUrl('https://app.ecuafact.com');
             if (!formName) setFormName('Combo ECUAFACT 60 docs');
         } else if (cat === 'zifact') {
-            setFormAccessUrl('https://sistema.zifac.com');
+            setFormAccessUrl('https://zifact.com/login');
             if (!formName) setFormName('Combo ZIFACT 100 docs');
         } else if (cat === 'firma') {
             setFormDocCount(0);
