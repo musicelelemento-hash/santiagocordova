@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../components/ui/Logo';
 import {
-    ArrowRight, BadgeCheck, Briefcase, Building, ChevronLeft,
-    Eye, EyeOff, HelpCircle, Loader, Lock, ShieldCheck, User
+    ArrowRight, BadgeCheck, ChevronLeft,
+    Eye, EyeOff, Loader, Lock, ShieldCheck, User
 } from 'lucide-react';
 import { Client } from '../types';
 import { authService } from '../services/authService';
@@ -20,9 +20,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [loginType, setLoginType] = useState<'admin' | 'client'>('client');
     const [showPassword, setShowPassword] = useState(false);
-    const [showSriHelp, setShowSriHelp] = useState(false);
     const [rememberMe, setRememberMe] = useState(true);
 
     // ── Rate limiter (P0 Security) ──────────────────────────────────────────
@@ -79,46 +77,62 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
             localStorage.removeItem('login_remember_id');
         }
 
-        if (loginType === 'admin') {
-            // 🔐 Autenticación REAL contra Supabase Auth (reemplaza el flag falso)
-            const { error } = await authService.signIn(cleanIdentifier, cleanPassword);
-            if (!error) {
+        const isEmail = cleanIdentifier.includes('@');
+
+        // 1. Si parece correo, autenticar primero como Administrador (Supabase Auth)
+        if (isEmail) {
+            const { error: adminAuthErr } = await authService.signIn(cleanIdentifier, cleanPassword);
+            if (!adminAuthErr) {
                 localStorage.setItem(RATE_KEY, '0');
                 localStorage.removeItem(RATE_TS_KEY);
                 setPassword('');
                 onSuccess('admin');
-            } else {
-                const newAttempts = attempts + 1;
-                localStorage.setItem(RATE_KEY, String(newAttempts));
-                if (newAttempts >= 5) {
-                    const unblockAt = Date.now() + 30_000;
-                    localStorage.setItem(RATE_TS_KEY, String(unblockAt));
-                    setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
-                } else {
-                    setError(`Credenciales incorrectas. Verifique su correo y contraseña. (Intento ${newAttempts}/5)`);
-                }
+                setIsSubmitting(false);
+                return;
             }
+        }
+
+        // 2. Verificar si es Cliente registrado por RUC o Cédula (con su clave SRI)
+        const foundClient = clients.find(c => 
+            (c.ruc === cleanIdentifier || (cleanIdentifier.length === 10 && c.ruc.startsWith(cleanIdentifier))) &&
+            c.sriPassword === cleanPassword
+        );
+
+        if (foundClient) {
+            if (foundClient.isActive === false) {
+                setError('Su cuenta se encuentra pausada o inactiva. Contacte a su asesor contable.');
+            } else {
+                localStorage.setItem(RATE_KEY, '0');
+                localStorage.removeItem(RATE_TS_KEY);
+                setPassword('');
+                onSuccess('client', foundClient);
+            }
+            setIsSubmitting(false);
+            return;
+        }
+
+        // 3. Fallback administrativo: si el admin no usó arroba en el formulario pero tiene cuenta
+        if (!isEmail) {
+            const { error: fallbackAdminErr } = await authService.signIn(cleanIdentifier, cleanPassword);
+            if (!fallbackAdminErr) {
+                localStorage.setItem(RATE_KEY, '0');
+                localStorage.removeItem(RATE_TS_KEY);
+                setPassword('');
+                onSuccess('admin');
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
+        // Si ninguna combinación fue válida
+        const newAttempts = attempts + 1;
+        localStorage.setItem(RATE_KEY, String(newAttempts));
+        if (newAttempts >= 5) {
+            const unblockAt = Date.now() + 30_000;
+            localStorage.setItem(RATE_TS_KEY, String(unblockAt));
+            setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
         } else {
-            const foundClient = clients.find(c => c.ruc === cleanIdentifier && c.sriPassword === cleanPassword);
-            if (foundClient) {
-                if (foundClient.isActive === false) {
-                    setError('Su cuenta se encuentra inactiva. Contacte a soporte.');
-                } else {
-                    localStorage.setItem(RATE_KEY, '0');
-                    setPassword('');
-                    onSuccess('client', foundClient);
-                }
-            } else {
-                const newAttempts = attempts + 1;
-                localStorage.setItem(RATE_KEY, String(newAttempts));
-                if (newAttempts >= 5) {
-                    const unblockAt = Date.now() + 30_000;
-                    localStorage.setItem(RATE_TS_KEY, String(unblockAt));
-                    setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
-                } else {
-                    setError(`RUC o Clave SRI incorrectos. (Intento ${newAttempts}/5)`);
-                }
-            }
+            setError(`Credenciales no reconocidas. Verifique sus datos de acceso. (Intento ${newAttempts}/5)`);
         }
         setIsSubmitting(false);
     };
@@ -206,72 +220,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             </motion.div>
 
                             <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-                                {loginType === 'admin' ? 'Comando Central' : 'Bóveda del Cliente'}
+                                Portal de Acceso Seguro
                             </h1>
                             <p className="text-slate-400 text-xs mt-2 font-medium flex items-center justify-center gap-1.5">
                                 <ShieldCheck size={14} className="text-brand-teal" />
-                                <span>{loginType === 'admin' ? 'Acceso Administrativo Privado' : 'Gestión Contable & Tributaria SRI'}</span>
+                                <span>Identificación Digital & Servicios Contables</span>
                             </p>
                         </div>
 
-                        {/* Role Switcher Tabs (Espaciosos y no aplastados) */}
-                        <div className="grid grid-cols-2 gap-2 bg-slate-900/90 p-2 rounded-2xl border border-slate-800/80 relative">
-                            <button
-                                type="button"
-                                onClick={() => { setLoginType('client'); setError(''); }}
-                                className={`relative py-3 px-4 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 z-10 ${
-                                    loginType === 'client' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                                }`}
-                            >
-                                {loginType === 'client' && (
-                                    <motion.div
-                                        layoutId="activeRoleTab"
-                                        className="absolute inset-0 bg-gradient-to-r from-brand-teal to-teal-600 rounded-xl shadow-lg shadow-brand-teal/25"
-                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                    />
-                                )}
-                                <span className="relative z-10 flex items-center gap-2">
-                                    <Briefcase size={16} /> Cliente SRI
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => { setLoginType('admin'); setError(''); }}
-                                className={`relative py-3 px-4 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 z-10 ${
-                                    loginType === 'admin' ? 'text-slate-950 font-extrabold' : 'text-slate-400 hover:text-slate-200'
-                                }`}
-                            >
-                                {loginType === 'admin' && (
-                                    <motion.div
-                                        layoutId="activeRoleTab"
-                                        className="absolute inset-0 bg-white rounded-xl shadow-lg shadow-white/20"
-                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                    />
-                                )}
-                                <span className="relative z-10 flex items-center gap-2">
-                                    <Lock size={16} /> Administrador
-                                </span>
-                            </button>
-                        </div>
-
-                        {/* Main Login Form */}
+                        {/* Main Login Form - Única Entrada Discreta */}
                         <form onSubmit={handleLogin} className="space-y-5">
                             {/* Identifier Input Field (h-14 alto y espacioso) */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1 block">
-                                    {loginType === 'client' ? 'RUC o Identificación SRI' : 'Correo del Administrador'}
+                                    Identificación o Usuario
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">
-                                        {loginType === 'client' ? <Building size={18} /> : <User size={18} />}
+                                        <User size={18} />
                                     </div>
                                     <input
                                         type="text"
                                         value={identifier}
                                         onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
                                         className="w-full h-14 bg-slate-900/90 border border-slate-800 rounded-2xl pl-12 pr-4 text-sm font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/60 focus:ring-4 focus:ring-brand-teal/15 transition-all shadow-inner"
-                                        placeholder={loginType === 'client' ? "Ingrese su RUC o Cédula" : "Ingrese su correo electrónico"}
+                                        placeholder="Ingrese RUC, Cédula o Correo de Acceso"
                                         autoComplete="username"
                                         name="username"
                                         autoFocus
@@ -282,7 +255,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             {/* Password Input Field (h-14 alto y espacioso) */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1 block">
-                                    {loginType === 'client' ? 'Clave de Acceso SRI' : 'Contraseña Segura'}
+                                    Clave de Seguridad
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">

@@ -1585,7 +1585,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Buscar por RUC, nombre, cédula... (Ctrl+K)"
-                            className="w-full pl-10 pr-20 py-2.5 bg-surface-medium border border-outline-variant/30 rounded-2xl text-xs font-bold text-on-surface placeholder:text-slate-400 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="w-full pl-10 pr-20 py-2.5 bg-slate-100 dark:bg-[#020b14]/80 border border-slate-200/80 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all font-mono"
                         />
                         <div className="absolute right-2.5 flex items-center gap-1">
                             {searchTerm ? (

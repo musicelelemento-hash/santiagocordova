@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     ShoppingCart, FileText, CheckCircle2, AlertCircle, Plus, Search,
     Sparkles, Building2, MessageCircle, ArrowRightLeft, Filter, Tag,
-    ChevronLeft, ChevronRight, Check, X, DollarSign, Calendar, Info, Trash2
+    ChevronLeft, ChevronRight, Check, X, DollarSign, Calendar, Info, Trash2,
+    UploadCloud
 } from 'lucide-react';
 import { Client } from '../../../../types';
 import { formatPeriodForDisplay } from '../../../../services/sri';
@@ -41,6 +42,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ── Formulario de Factura Manual ────────────────────────────────────────────
     const [newInvoice, setNewInvoice] = useState<Partial<PurchaseInvoiceItem>>({
@@ -210,6 +212,98 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
         SupplierCatalogService.saveClientPurchases(updatedAudit);
         setPurchasesAudit(SupplierCatalogService.getClientPurchases(client, selectedPeriod));
         toast.info('Factura removida.');
+    };
+
+    // Importar archivo TXT oficial descargado del portal del SRI
+    const handleImportTxt = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const text = event.target?.result as string;
+                if (!text) return;
+
+                const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+                if (lines.length < 2) {
+                    toast.error('El archivo TXT no contiene registros de comprobantes.');
+                    return;
+                }
+
+                const headers = lines[0].split('\t').map(h => h.trim().toUpperCase());
+                const rucIdx = headers.findIndex(h => h.includes('RUC') || h.includes('EMISOR'));
+                const razonIdx = headers.findIndex(h => h.includes('RAZON') || h.includes('SOCIAL'));
+                const serieIdx = headers.findIndex(h => h.includes('SERIE') || h.includes('SECUENCIAL') || h.includes('NUMERO'));
+                const fechaIdx = headers.findIndex(h => h.includes('FECHA'));
+                const baseIdx = headers.findIndex(h => h.includes('VALOR_SIN') || h.includes('BASE') || h.includes('SUBTOTAL'));
+                const ivaIdx = headers.findIndex(h => h === 'IVA' || h.includes('IVA'));
+                const totalIdx = headers.findIndex(h => h.includes('TOTAL') || h.includes('IMPORTE'));
+
+                const importedInvoices: PurchaseInvoiceItem[] = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split('\t').map(c => c.trim());
+                    if (cols.length < 3) continue;
+
+                    const rucEmisor = (rucIdx !== -1 ? cols[rucIdx] : cols[0] || '').replace(/\D/g, '');
+                    const razonSocial = (razonIdx !== -1 ? cols[razonIdx] : cols[1] || 'PROVEEDOR').trim();
+                    const secuencial = (serieIdx !== -1 ? cols[serieIdx] : cols[2] || '').trim();
+                    const fechaEmision = (fechaIdx !== -1 ? cols[fechaIdx] : `${selectedPeriod}-01`).trim();
+
+                    const parseMonto = (raw: string) => {
+                        const clean = (raw || '').replace(',', '.').replace(/[^0-9.-]/g, '');
+                        const num = parseFloat(clean);
+                        return isNaN(num) ? 0 : num;
+                    };
+
+                    const base = baseIdx !== -1 ? parseMonto(cols[baseIdx]) : 0;
+                    const iva = ivaIdx !== -1 ? parseMonto(cols[ivaIdx]) : 0;
+                    const total = totalIdx !== -1 ? parseMonto(cols[totalIdx]) : (base + iva);
+                    const tarifaIva = iva > 0 ? (Math.abs(iva / (base || 1) - 0.05) < 0.01 ? 5 : 15) : 0;
+
+                    // Clasificar automáticamente con catálogo general de proveedores y actividad del cliente
+                    const supplier = SupplierCatalogService.findSupplier(rucEmisor);
+                    const evalTax = SupplierCatalogService.evaluateTaxCredit(supplier, currentActivityId, tarifaIva);
+
+                    importedInvoices.push({
+                        id: `imp-${Date.now()}-${i}`,
+                        numero: i,
+                        secuencial: secuencial || `001-001-${String(i).padStart(9, '0')}`,
+                        fechaEmision,
+                        rucEmisor,
+                        razonSocial,
+                        categoria: supplier?.categoria || 'general',
+                        valorSinImpuestos: base,
+                        iva,
+                        importeTotal: total,
+                        tieneCreditoTributario: evalTax.tieneCredito,
+                        tarifaIva
+                    });
+                }
+
+                if (importedInvoices.length === 0) {
+                    toast.error('No se encontraron facturas válidas en el archivo TXT.');
+                    return;
+                }
+
+                const updatedAudit: ClientPurchasesAudit = {
+                    ruc: client.ruc,
+                    period: selectedPeriod,
+                    updatedAt: new Date().toISOString(),
+                    invoices: importedInvoices,
+                    summary: SupplierCatalogService.calculateSummary(importedInvoices)
+                };
+
+                SupplierCatalogService.saveClientPurchases(updatedAudit);
+                setPurchasesAudit(updatedAudit);
+                toast.success(`🎉 ${importedInvoices.length} facturas de compras importadas para ${client.name}.`);
+            } catch (err: any) {
+                toast.error(`Error al procesar archivo: ${err.message}`);
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
     };
 
     // Generar mensaje de WhatsApp
@@ -475,11 +569,28 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
                 </div>
 
                 {/* Acciones */}
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImportTxt}
+                        accept=".txt"
+                        className="hidden"
+                    />
+
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3.5 py-2 bg-[#020b14] hover:bg-white/10 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                        title="Importar archivo TXT de comprobantes recibido descargado del portal del SRI"
+                    >
+                        <UploadCloud size={14} className="text-cyan-400" />
+                        <span>Importar TXT SRI</span>
+                    </button>
+
                     <button
                         onClick={() => setIsCatalogModalOpen(true)}
                         className="px-3.5 py-2 bg-[#020b14] hover:bg-white/10 text-slate-300 border border-white/10 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                        title="Ver y editar catálogo general de proveedores"
+                        title="Ver y editar catálogo general de proveedores (normativa compartida)"
                     >
                         <Building2 size={14} className="text-amber-400" />
                         <span>Catálogo General</span>
@@ -514,9 +625,44 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
                         <tbody className="divide-y divide-white/5">
                             {filteredInvoices.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="p-12 text-center text-slate-400">
-                                        <ShoppingCart size={32} className="mx-auto mb-2 opacity-30 text-slate-500" />
-                                        <p className="font-bold">No hay comprobantes para el filtro seleccionado.</p>
+                                    <td colSpan={8} className="p-10 text-center">
+                                        {purchasesAudit.invoices.length === 0 ? (
+                                            <div className="max-w-md mx-auto space-y-3">
+                                                <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+                                                    <ShoppingCart size={22} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-white">
+                                                        Sin facturas de compras en {formatPeriodForDisplay(selectedPeriod)}
+                                                    </h4>
+                                                    <p className="text-xs text-slate-400 mt-1 font-sans">
+                                                        El arqueo de comprobantes es exclusivo de <strong className="text-white">{client.name}</strong> (RUC {client.ruc}). El catálogo general de proveedores clasifica deducciones en cuanto ingreses o importes facturas.
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center justify-center gap-2 pt-2">
+                                                    <button
+                                                        onClick={() => setIsAddModalOpen(true)}
+                                                        className="px-4 py-2 bg-[#00A896] hover:bg-[#008f80] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#00A896]/20"
+                                                    >
+                                                        <Plus size={14} />
+                                                        <span>Agregar Factura Manual</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <UploadCloud size={14} />
+                                                        <span>Importar TXT SRI</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-1">
+                                                <ShoppingCart size={28} className="mx-auto mb-2 opacity-30 text-slate-500" />
+                                                <p className="font-bold text-xs text-slate-300">No hay comprobantes que coincidan con el filtro seleccionado.</p>
+                                                <p className="text-[10px] text-slate-500">Prueba cambiando el filtro o borrando el término de búsqueda.</p>
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ) : (

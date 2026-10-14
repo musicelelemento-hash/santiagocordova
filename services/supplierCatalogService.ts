@@ -66,6 +66,27 @@ export interface ClientPurchasesAudit {
     summary: ClientPurchasesSummary;
 }
 
+export interface ClientPurchasesDisplayData {
+    totalDocs: number;
+    base15: number;
+    iva15: number;
+    base15SinCredito: number;
+    iva15SinCredito: number;
+    base5: number;
+    iva5: number;
+    base0: number;
+    totalBase: number;
+    totalIva: number;
+    topProviders: Array<{
+        nombre: string;
+        ruc?: string;
+        monto: number;
+        facturas?: number;
+    }>;
+    hasData: boolean;
+    source: 'invoices' | 'resumen' | 'extension' | 'declaration' | 'none';
+}
+
 export interface EconomicActivityOption {
     id: string;
     label: string;
@@ -574,7 +595,9 @@ export class SupplierCatalogService {
     }
 
     /**
-     * Carga o genera las facturas de compras para un cliente y período.
+     * Carga las facturas de compras registradas para un cliente y período específico.
+     * Si no hay facturas guardadas, devuelve una lista vacía y montos en cero.
+     * NUNCA genera facturas demo ficticias ni mezcla datos de otros clientes.
      */
     static getClientPurchases(client: Client, period: string): ClientPurchasesAudit {
         const storageKey = `sc_compras_${client.ruc}_${period}`;
@@ -583,142 +606,210 @@ export class SupplierCatalogService {
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (parsed.invoices && Array.isArray(parsed.invoices)) {
-                    return {
-                        ...parsed,
-                        summary: this.calculateSummary(parsed.invoices)
-                    };
+                    // Detectar y purgar si son facturas demo ficticias generadas por el mock anterior
+                    const isLegacyMock = parsed.invoices.length === 7 &&
+                        parsed.invoices.every((i: any) => i.id?.startsWith(`inv-${client.ruc}-`)) &&
+                        parsed.invoices.some((i: any) => i.rucEmisor === '1790010937001' && i.razonSocial?.includes('PICHINCHA'));
+
+                    if (!isLegacyMock) {
+                        return {
+                            ...parsed,
+                            summary: this.calculateSummary(parsed.invoices)
+                        };
+                    } else {
+                        try {
+                            localStorage.removeItem(storageKey);
+                        } catch {}
+                    }
                 }
             }
         } catch (e) {
             console.warn('Error leyendo compras guardadas:', e);
         }
 
-        // Si no hay detalle guardado, intentar leer resumen del arqueo previo o generar facturas iniciales
-        let storedArqueo: any = null;
-        try {
-            const rawArqueo = localStorage.getItem(`sc_compras_${client.ruc}`);
-            if (rawArqueo) storedArqueo = JSON.parse(rawArqueo);
-        } catch {}
-
-        const clientActivity = client.economicActivity || client.taxProfile?.economicActivity || 'servicios_profesionales';
-        const catalog = this.getCatalog();
-
-        // Generar facturas demo / reales inteligentes basadas en los top proveedores o actividad
-        const initialInvoices: PurchaseInvoiceItem[] = [
-            {
-                id: `inv-${client.ruc}-1`,
-                numero: 1,
-                secuencial: '001-010-000189234',
-                fechaEmision: `${period}-04`,
-                rucEmisor: '1790010937001',
-                razonSocial: 'BANCO PICHINCHA C.A.',
-                categoria: 'bancos_financiero',
-                valorSinImpuestos: 35.50,
-                iva: 5.33,
-                importeTotal: 40.83,
-                tieneCreditoTributario: true,
-                tarifaIva: 15
-            },
-            {
-                id: `inv-${client.ruc}-2`,
-                numero: 2,
-                secuencial: '002-100-000543210',
-                fechaEmision: `${period}-08`,
-                rucEmisor: '1791256115001',
-                razonSocial: 'CONECEL S.A. (CLARO)',
-                categoria: 'telecomunicaciones',
-                valorSinImpuestos: 45.00,
-                iva: 6.75,
-                importeTotal: 51.75,
-                tieneCreditoTributario: true,
-                tarifaIva: 15
-            },
-            {
-                id: `inv-${client.ruc}-3`,
-                numero: 3,
-                secuencial: '001-005-000781290',
-                fechaEmision: `${period}-12`,
-                rucEmisor: '1790016919001',
-                razonSocial: 'CORPORACION FAVORITA C.A. (SUPERMAXI)',
-                categoria: 'supermercados_alimentos',
-                valorSinImpuestos: 185.40,
-                iva: 27.81,
-                importeTotal: 213.21,
-                tieneCreditoTributario: clientActivity === 'gastronomia', // Por defecto Sin Crédito Tributario para servicios/transporte
-                tarifaIva: 15
-            },
-            {
-                id: `inv-${client.ruc}-4`,
-                numero: 4,
-                secuencial: '004-001-000045612',
-                fechaEmision: `${period}-15`,
-                rucEmisor: '1791715845001',
-                razonSocial: 'FARMAENLACE CIA. LTDA. (FARMACIAS ECONOMICAS)',
-                categoria: 'salud_farmacia',
-                valorSinImpuestos: 28.50,
-                iva: 4.28,
-                importeTotal: 32.78,
-                tieneCreditoTributario: false, // Medicinas / salud personal
-                tarifaIva: 15
-            },
-            {
-                id: `inv-${client.ruc}-5`,
-                numero: 5,
-                secuencial: '001-002-000012948',
-                fechaEmision: `${period}-18`,
-                rucEmisor: '1791789725001',
-                razonSocial: 'PRIMAX COMERCIAL DEL ECUADOR S.A.',
-                categoria: 'combustibles_transporte',
-                valorSinImpuestos: 65.00,
-                iva: 9.75,
-                importeTotal: 74.75,
-                tieneCreditoTributario: clientActivity === 'transporte' || clientActivity === 'comercio' || clientActivity === 'agropecuario',
-                tarifaIva: 15
-            },
-            {
-                id: `inv-${client.ruc}-6`,
-                numero: 6,
-                secuencial: '001-001-000098172',
-                fechaEmision: `${period}-22`,
-                rucEmisor: '0791726354001',
-                razonSocial: 'FERRETERIA EL ORO S.A.',
-                categoria: 'ferreteria_construccion',
-                valorSinImpuestos: 120.00,
-                iva: 6.00,
-                importeTotal: 126.00,
-                tieneCreditoTributario: true,
-                tarifaIva: 5 // Materiales tarifa 5%
-            },
-            {
-                id: `inv-${client.ruc}-7`,
-                numero: 7,
-                secuencial: '001-002-000054321',
-                fechaEmision: `${period}-25`,
-                rucEmisor: '0968599020001',
-                razonSocial: 'CNEL EP (ENERGIA ELECTRICA)',
-                categoria: 'servicios_basicos',
-                valorSinImpuestos: 42.00,
-                iva: 0.00,
-                importeTotal: 42.00,
-                tieneCreditoTributario: false,
-                tarifaIva: 0 // Tarifa 0%
-            }
-        ];
-
-        const summary = this.calculateSummary(initialInvoices);
-        const audit: ClientPurchasesAudit = {
+        // Si no hay facturas guardadas para este cliente y período, devolver estructura limpia
+        const emptyAudit: ClientPurchasesAudit = {
             ruc: client.ruc,
             period,
             updatedAt: new Date().toISOString(),
-            invoices: initialInvoices,
-            summary
+            invoices: [],
+            summary: {
+                totalFacturas: 0,
+                base15ConCredito: 0,
+                iva15ConCredito: 0,
+                base15SinCredito: 0,
+                iva15SinCredito: 0,
+                base5: 0,
+                iva5: 0,
+                base0: 0,
+                totalBase: 0,
+                totalIva: 0,
+                totalGasto: 0
+            }
         };
 
+        return emptyAudit;
+    }
+
+    /**
+     * Obtiene el arqueo de compras consolidado para el perfil del cliente.
+     * Busca únicamente información correspondiente a ese cliente específico:
+     * 1. Facturas detalladas del período (`sc_compras_${client.ruc}_${period}`)
+     * 2. Resumen de compras del período (`sc_compras_resumen_${client.ruc}_${period}`)
+     * 3. Arqueo reciente emitido por la extensión Nueva Luz 3.0 (`sc_compras_${client.ruc}`)
+     * 4. Historial de declaraciones presentadas del cliente (`client.declarationHistory`)
+     * 
+     * Si no hay registros, devuelve un estado en cero verídico (sin mockups ni datos genéricos).
+     */
+    static getClientPurchasesSummary(client: Client, targetPeriod?: string): ClientPurchasesDisplayData {
+        const now = new Date();
+        let defaultMonth = now.getMonth() - 1;
+        let defaultYear = now.getFullYear();
+        if (defaultMonth < 0) { defaultMonth = 11; defaultYear--; }
+        const period = targetPeriod || `${defaultYear}-${String(defaultMonth + 1).padStart(2, '0')}`;
+
+        // 1. Verificar facturas detalladas del cliente para este período
         try {
-            localStorage.setItem(storageKey, JSON.stringify(audit));
+            const audit = this.getClientPurchases(client, period);
+            if (audit.invoices && audit.invoices.length > 0) {
+                const s = audit.summary;
+                const provMap = new Map<string, { nombre: string; ruc: string; monto: number; facturas: number }>();
+                audit.invoices.forEach(inv => {
+                    const key = inv.rucEmisor || inv.razonSocial;
+                    const prev = provMap.get(key) || { nombre: inv.razonSocial, ruc: inv.rucEmisor, monto: 0, facturas: 0 };
+                    prev.monto += inv.importeTotal || (inv.valorSinImpuestos + inv.iva);
+                    prev.facturas += 1;
+                    provMap.set(key, prev);
+                });
+                const topProviders = Array.from(provMap.values())
+                    .sort((a, b) => b.monto - a.monto)
+                    .slice(0, 3)
+                    .map(p => ({
+                        nombre: p.nombre,
+                        ruc: p.ruc,
+                        monto: Math.round(p.monto * 100) / 100,
+                        facturas: p.facturas
+                    }));
+
+                return {
+                    totalDocs: audit.invoices.length,
+                    base15: s.base15ConCredito,
+                    iva15: s.iva15ConCredito,
+                    base15SinCredito: s.base15SinCredito,
+                    iva15SinCredito: s.iva15SinCredito,
+                    base5: s.base5,
+                    iva5: s.iva5,
+                    base0: s.base0,
+                    totalBase: s.totalBase,
+                    totalIva: s.totalIva,
+                    topProviders,
+                    hasData: true,
+                    source: 'invoices'
+                };
+            }
         } catch {}
 
-        return audit;
+        // 2. Verificar resumen plano guardado para el período
+        try {
+            const rawResumen = localStorage.getItem(`sc_compras_resumen_${client.ruc}_${period}`);
+            if (rawResumen) {
+                const r = JSON.parse(rawResumen);
+                if (r && (r.totalDocs > 0 || r.base15 > 0 || r.base5 > 0 || r.base0 > 0)) {
+                    return {
+                        totalDocs: r.totalDocs || 0,
+                        base15: Number(r.base15 || 0),
+                        iva15: Number(r.iva15 || 0),
+                        base15SinCredito: Number(r.base15SinCredito || 0),
+                        iva15SinCredito: Number(r.iva15SinCredito || 0),
+                        base5: Number(r.base5 || 0),
+                        iva5: Number(r.iva5 || 0),
+                        base0: Number(r.base0 || 0),
+                        totalBase: Number((r.base15 || 0) + (r.base15SinCredito || 0) + (r.base5 || 0) + (r.base0 || 0)),
+                        totalIva: Number((r.iva15 || 0) + (r.iva15SinCredito || 0) + (r.iva5 || 0)),
+                        topProviders: (r.topProviders || []).slice(0, 3),
+                        hasData: true,
+                        source: 'resumen'
+                    };
+                }
+            }
+        } catch {}
+
+        // 3. Verificar arqueo de la extensión Nueva Luz 3.0 específico para este cliente
+        try {
+            const rawExt = localStorage.getItem(`sc_compras_${client.ruc}`);
+            if (rawExt) {
+                const ext = JSON.parse(rawExt);
+                if (ext && ext.ruc === client.ruc && (ext.totalFacturas > 0 || ext.totalBase > 0)) {
+                    return {
+                        totalDocs: ext.totalFacturas || 0,
+                        base15: Number(ext.base15 || 0),
+                        iva15: Number(ext.iva15 || 0),
+                        base15SinCredito: 0,
+                        iva15SinCredito: 0,
+                        base5: Number(ext.base5 || 0),
+                        iva5: Number(ext.iva5 || 0),
+                        base0: Number(ext.base0 || 0),
+                        totalBase: Number(ext.totalBase || 0),
+                        totalIva: Number(ext.totalIva || 0),
+                        topProviders: (ext.topProveedores || []).map((p: any) => ({
+                            nombre: p.nombre,
+                            monto: p.total || p.monto || 0,
+                            facturas: p.facturas
+                        })),
+                        hasData: true,
+                        source: 'extension'
+                    };
+                }
+            }
+        } catch {}
+
+        // 4. Verificar cifras en declaraciones del cliente (si existen para ese período)
+        try {
+            const dec = (client.declarations || []).find(d => d.period === period);
+            const historyItem = (client as any).declarationHistory?.[period];
+            const meta = dec?.proof_file?.metadata || historyItem?.metadata || historyItem?.cifras || historyItem;
+            if (meta) {
+                const compras15 = Number(meta.compras15 || 0);
+                const compras5 = Number(meta.compras5 || 0);
+                const compras0 = Number(meta.compras0 || 0);
+                const montoIvaCompras = Number(meta.montoIvaCompras || (compras15 * 0.15 + compras5 * 0.05));
+
+                if (compras15 > 0 || compras5 > 0 || compras0 > 0 || montoIvaCompras > 0) {
+                    return {
+                        totalDocs: 0,
+                        base15: compras15,
+                        iva15: montoIvaCompras,
+                        base15SinCredito: 0,
+                        iva15SinCredito: 0,
+                        base5: compras5,
+                        iva5: Math.round(compras5 * 0.05 * 100) / 100,
+                        base0: compras0,
+                        totalBase: Math.round((compras15 + compras5 + compras0) * 100) / 100,
+                        totalIva: Math.round(montoIvaCompras * 100) / 100,
+                        topProviders: [],
+                        hasData: true,
+                        source: 'declaration'
+                    };
+                }
+            }
+        } catch {}
+
+        // 5. Estado verídico sin datos
+        return {
+            totalDocs: 0,
+            base15: 0,
+            iva15: 0,
+            base15SinCredito: 0,
+            iva15SinCredito: 0,
+            base5: 0,
+            iva5: 0,
+            base0: 0,
+            totalBase: 0,
+            totalIva: 0,
+            topProviders: [],
+            hasData: false,
+            source: 'none'
+        };
     }
 
     /**

@@ -21,7 +21,10 @@
     
     --surface: 0 0% 100%;        /* Brilliant White */
     --surface-low: 210 40% 96%; 
+    --surface-medium: 210 40% 92%;
     --surface-lowest: 210 40% 94%; 
+    --on-surface: 224 71.4% 4.1%;   /* Deep Obsidian for text in light mode */
+    --on-surface-variant: 215 16% 47%; /* Slate 500 for secondary text in light mode */
     
     --outline-variant: 220 14.3% 95.9%;
     --border: 214.3 31.8% 91.4%;
@@ -70,6 +73,7 @@
     --background: 224 71.4% 4.1%;    /* Deepest Obsidian Navy #020617 */
     --surface: 224 71.4% 6.5%;      /* Tactical Surface #050a1b */
     --surface-low: 224 71.4% 8.5%; 
+    --surface-medium: 224 71.4% 10%; 
     --surface-lowest: 224 71.4% 11%; 
     
     --foreground: 210 20% 98%;   /* Soft Slate for comfort */
@@ -1320,47 +1324,82 @@ h1, h2, h3, h4 {
     animation: view-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ── Provider Identity Pills ── */
+/* ── Provider Identity Pills & Dynamic Card Styling ── */
 .provider-talonario {
-    background: rgba(201, 169, 110, 0.14);
-    border: 1px solid rgba(201, 169, 110, 0.38);
-    color: #C9A96E;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08));
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #FBBF24;
 }
 .provider-talonario-glow {
-    box-shadow: 0 0 16px -4px rgba(201, 169, 110, 0.35);
+    box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.28), 0 0 40px -10px rgba(217, 119, 6, 0.15);
+}
+.factcard-talonario {
+    border-color: rgba(245, 158, 11, 0.32) !important;
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+}
+.factcard-talonario:hover {
+    border-color: rgba(245, 158, 11, 0.55) !important;
+    box-shadow: 0 12px 30px -8px rgba(245, 158, 11, 0.2);
 }
 
 .provider-ecuafact {
-    background: rgba(43, 106, 255, 0.14);
-    border: 1px solid rgba(43, 106, 255, 0.38);
-    color: #5b8fff;
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.16), rgba(14, 165, 233, 0.08));
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #38BDF8;
 }
 .provider-ecuafact-glow {
-    box-shadow: 0 0 16px -4px rgba(43, 106, 255, 0.35);
+    box-shadow: 0 0 20px -3px rgba(56, 189, 248, 0.28), 0 0 40px -10px rgba(2, 132, 199, 0.15);
+}
+.factcard-ecuafact {
+    border-color: rgba(56, 189, 248, 0.30) !important;
+    background: linear-gradient(180deg, rgba(2, 132, 199, 0.04) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+}
+.factcard-ecuafact:hover {
+    border-color: rgba(56, 189, 248, 0.55) !important;
+    box-shadow: 0 12px 30px -8px rgba(56, 189, 248, 0.2);
 }
 
 .provider-zifact {
-    background: rgba(245, 158, 11, 0.14);
-    border: 1px solid rgba(245, 158, 11, 0.38);
-    color: #F59E0B;
+    background: linear-gradient(135deg, rgba(4, 177, 123, 0.16), rgba(16, 185, 129, 0.08));
+    border: 1px solid rgba(52, 211, 153, 0.45);
+    color: #34D399;
 }
 .provider-zifact-glow {
-    box-shadow: 0 0 16px -4px rgba(245, 158, 11, 0.35);
+    box-shadow: 0 0 20px -3px rgba(4, 177, 123, 0.32), 0 0 40px -10px rgba(16, 185, 129, 0.15);
+}
+.factcard-zifact {
+    border-color: rgba(52, 211, 153, 0.30) !important;
+    background: linear-gradient(180deg, rgba(4, 177, 123, 0.04) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+}
+.factcard-zifact:hover {
+    border-color: rgba(52, 211, 153, 0.55) !important;
+    box-shadow: 0 12px 30px -8px rgba(4, 177, 123, 0.2);
 }
 
 .provider-sri {
-    background: rgba(4, 177, 123, 0.14);
-    border: 1px solid rgba(4, 177, 123, 0.38);
-    color: #04B17B;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(30, 64, 175, 0.08));
+    border: 1px solid rgba(96, 165, 250, 0.45);
+    color: #93C5FD;
 }
 .provider-sri-glow {
-    box-shadow: 0 0 16px -4px rgba(4, 177, 123, 0.35);
+    box-shadow: 0 0 20px -3px rgba(37, 99, 235, 0.28), 0 0 40px -10px rgba(30, 64, 175, 0.15);
+}
+.factcard-sri {
+    border-color: rgba(96, 165, 250, 0.30) !important;
+    background: linear-gradient(180deg, rgba(37, 99, 235, 0.04) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+}
+.factcard-sri:hover {
+    border-color: rgba(96, 165, 250, 0.55) !important;
+    box-shadow: 0 12px 30px -8px rgba(37, 99, 235, 0.2);
 }
 
 .provider-default {
     background: rgba(100, 116, 139, 0.12);
     border: 1px solid rgba(100, 116, 139, 0.30);
     color: #94A3B8;
+}
+.factcard-default {
+    border-color: rgba(100, 116, 139, 0.25) !important;
 }
 
 /* ── Doc Progress Bar ── */

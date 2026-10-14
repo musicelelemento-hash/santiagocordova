@@ -17,6 +17,7 @@ import { useToast } from '../../../../context/ToastContext';
 import { fileToBase64 } from '../../../../services/pdfExtraction';
 import { UnifiedStorageService } from '../../../../services/unifiedStorageService';
 import { downloadStoredFile } from '../../../../services/fileService';
+import { SupplierCatalogService } from '../../../../services/supplierCatalogService';
 
 interface ProfileTabProps {
     client: Client;
@@ -532,7 +533,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 const targetPeriod = `${defaultYear}-${String(defaultMonth + 1).padStart(2, '0')}`;
                                 const targetPeriodLabel = formatPeriodForDisplay(targetPeriod);
 
-                                const declActual = (editedClient.declarations || []).find((d: any) => d && (d.period === targetPeriod || d.period?.startsWith(targetPeriod)));
+                                const allDecls = (editedClient.declarations || (editedClient as any).declaration_history || []);
+                                const declActual = allDecls.find((d: any) => d && (d.period === targetPeriod || d.period?.startsWith(targetPeriod)));
                                 const isDeclared = !!declActual && (declActual.status === DeclarationStatus.Enviada || declActual.status === DeclarationStatus.Pagada || !!declActual.proof_file);
                                 const hasPdf = !!declActual && (!!declActual.proof_file || !!(declActual as any).pdf_url || !!(declActual as any).proof_file_url);
 
@@ -853,7 +855,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </div>
                     </div>
 
-                    {/* ── 3. RADIOGRAFÍA & ARQUEO DE COMPRAS (PILAR 3) ── */}
+                    {/* ── 3. RADIOGRAFÍA & ARQUEO DE COMPRAS (PILAR 3 - EXCLUSIVO DEL CLIENTE) ── */}
                     {(() => {
                         const now = new Date();
                         let defaultMonth = now.getMonth() - 1;
@@ -862,27 +864,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         const targetPeriod = `${defaultYear}-${String(defaultMonth + 1).padStart(2, '0')}`;
                         const targetPeriodLabel = formatPeriodForDisplay(targetPeriod);
 
-                        let purchasesData = {
-                            totalDocs: 14,
-                            base15: 1250.00,
-                            iva15: 187.50,
-                            base5: 340.00,
-                            iva5: 17.00,
-                            base0: 210.00,
-                            topProviders: [
-                                { nombre: 'CORPORACIÓN FAVORITA C.A.', ruc: '1790016919001', monto: 485.20 },
-                                { nombre: 'TIENDAS INDUSTRIALES ASOCIADAS TIA', ruc: '0990017514001', monto: 290.40 },
-                                { nombre: 'FERRETERÍA EL ORO S.A.', ruc: '0791726354001', monto: 340.00 }
-                            ]
-                        };
-
-                        try {
-                            const stored = localStorage.getItem(`sc_compras_${editedClient.ruc}_${targetPeriod}`);
-                            if (stored) {
-                                purchasesData = { ...purchasesData, ...JSON.parse(stored) };
-                            }
-                        } catch {}
-
+                        // Obtener arqueo verídico estricto y exclusivo de ESTE cliente
+                        const purchasesData = SupplierCatalogService.getClientPurchasesSummary(editedClient, targetPeriod);
                         const totalIvaCredito = purchasesData.iva15 + purchasesData.iva5;
 
                         return (
@@ -901,60 +884,105 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                             </p>
                                         </div>
                                     </div>
-                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 uppercase">
-                                        Form 104 SRI
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        {purchasesData.hasData ? (
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 uppercase">
+                                                {purchasesData.source === 'invoices' ? 'Facturas Cliente' : purchasesData.source === 'extension' ? 'SRI Extensión' : 'Form 104 SRI'}
+                                            </span>
+                                        ) : (
+                                            <span className="px-2.5 py-1 rounded-full text-[9px] font-bold bg-slate-500/15 text-slate-400 border border-slate-500/30 uppercase">
+                                                Sin Compras
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
+                                {/* Valores Impositivos Reales */}
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-black/30 border border-slate-200/40 dark:border-white/5">
-                                        <span className="text-[10px] text-slate-400 block mb-0.5">Base Imponible (15%)</span>
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <span className="text-[10px] text-slate-400">Base Imponible (15%)</span>
+                                            {purchasesData.base15SinCredito > 0 && (
+                                                <span className="text-[9px] text-rose-400 font-bold">500 vs 502</span>
+                                            )}
+                                        </div>
                                         <span className="text-sm font-black text-slate-900 dark:text-white font-mono">
                                             ${purchasesData.base15.toFixed(2)}
                                         </span>
-                                        <span className="text-[9px] text-emerald-500 block mt-0.5 font-bold">Crédito IVA: ${purchasesData.iva15.toFixed(2)}</span>
+                                        <div className="mt-0.5 space-y-0.5">
+                                            <span className="text-[9px] text-emerald-500 block font-bold">
+                                                Crédito IVA (520): ${purchasesData.iva15.toFixed(2)}
+                                            </span>
+                                            {purchasesData.base15SinCredito > 0 && (
+                                                <span className="text-[9px] text-rose-400/90 block font-mono">
+                                                    Sin Crédito (502): ${purchasesData.base15SinCredito.toFixed(2)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-black/30 border border-slate-200/40 dark:border-white/5">
                                         <span className="text-[10px] text-slate-400 block mb-0.5">Tarifa 5% (Construcción)</span>
                                         <span className="text-sm font-black text-[#2B6AFF] font-mono">
                                             ${purchasesData.base5.toFixed(2)}
                                         </span>
-                                        <span className="text-[9px] text-[#2B6AFF] block mt-0.5 font-bold">Casillero 203: OK</span>
+                                        <span className="text-[9px] text-[#2B6AFF] block mt-0.5 font-bold">
+                                            {purchasesData.base5 > 0 ? `Crédito 5%: $${purchasesData.iva5.toFixed(2)}` : 'Casillero 203: OK ($0)'}
+                                        </span>
                                     </div>
                                 </div>
 
+                                {/* Top Proveedores Reales del Cliente o Estado Vacío Verídico */}
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                                        <span>Top Proveedores del Mes</span>
-                                        <span className="text-[9px] text-slate-500 font-normal">Catastro El Oro</span>
+                                        <span>Proveedores Recibidos del Cliente</span>
+                                        <span className="text-[9px] text-slate-500 font-normal">Exclusivo RUC {editedClient.ruc.slice(0, 10)}...</span>
                                     </p>
-                                    <div className="space-y-1.5 text-[11px]">
-                                        {purchasesData.topProviders.map((prov, i) => (
-                                            <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
-                                                <div className="truncate max-w-[170px]">
-                                                    <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">{prov.nombre}</span>
-                                                    <span className="text-[9px] text-slate-400 font-mono">{prov.ruc}</span>
+
+                                    {purchasesData.topProviders.length > 0 ? (
+                                        <div className="space-y-1.5 text-[11px]">
+                                            {purchasesData.topProviders.map((prov, i) => (
+                                                <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
+                                                    <div className="truncate max-w-[170px]">
+                                                        <span className="font-bold text-slate-800 dark:text-slate-200 block truncate">{prov.nombre}</span>
+                                                        {prov.ruc && <span className="text-[9px] text-slate-400 font-mono">{prov.ruc}</span>}
+                                                    </div>
+                                                    <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0 font-mono">
+                                                        ${prov.monto.toFixed(2)}
+                                                    </span>
                                                 </div>
-                                                <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0 font-mono">
-                                                    ${prov.monto.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-white/[0.03] border border-dashed border-slate-200 dark:border-white/10 text-center space-y-1">
+                                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                                {purchasesData.hasData
+                                                    ? 'Sin detalle individual de emisores en el resumen del período.'
+                                                    : `No hay facturas de compras registradas para ${editedClient.name} en ${targetPeriodLabel}.`}
+                                            </p>
+                                            <p className="text-[9px] text-slate-400 font-sans">
+                                                Cada cliente tiene su propio arqueo de comprobantes, independiente de la clasificación general.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
+                                {/* Acciones Tácticas del Arqueo */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                                     <button
                                         type="button"
                                         onClick={() => setActiveTab('purchases')}
                                         className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                                     >
-                                        <ShoppingCart size={14} /> Clasificar Compras (500 vs 502)
+                                        <ShoppingCart size={14} />
+                                        <span>{purchasesData.hasData ? 'Clasificar Compras (500 vs 502)' : 'Gestionar Compras del Cliente'}</span>
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const msg = encodeURIComponent(`Hola estimado(a) ${editedClient.name} 👋,\n\nEn su declaración de ${targetPeriodLabel} registramos ${purchasesData.totalDocs} facturas de compras con un crédito tributario IVA de $${totalIvaCredito.toFixed(2)} a su favor.\n\nSus comprobantes están debidamente respaldados en el sistema contable.\n\nSaludos cordiales,\nSantiago Córdova - Asesoría Tributaria`);
+                                            const msgText = purchasesData.hasData
+                                                ? `Hola estimado(a) ${editedClient.name} 👋,\n\nEn su declaración de ${targetPeriodLabel} registramos ${purchasesData.totalDocs} facturas de compras con un crédito tributario IVA de $${totalIvaCredito.toFixed(2)} a su favor.\n\nSus comprobantes están debidamente respaldados en el sistema contable.\n\nSaludos cordiales,\nSantiago Córdova - Asesoría Tributaria`
+                                                : `Hola estimado(a) ${editedClient.name} 👋,\n\nLe saluda su asesor tributario Santiago Córdova. Para su declaración de ${targetPeriodLabel}, no registramos facturas de compras recibidas a la fecha.\n\nSi dispone de facturas físicas o electrónicas de su actividad, por favor háganoslas llegar para el descargo tributario.\n\nSaludos cordiales,\nSantiago Córdova - Asesoría Tributaria`;
+                                            const msg = encodeURIComponent(msgText);
                                             const phone = (editedClient as any).phone || editedClient.phones?.[0] || '';
                                             window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
                                         }}

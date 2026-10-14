@@ -322,3 +322,146 @@ export const enterZifactDirect = (client: Client) => {
   return { success: true };
 };
 
+export const enterEcuafactDirect = (client: Client) => {
+  const plan = client.billingPlan || client.facturadorConfig || {};
+  const user = plan.username || client.ruc;
+  const pwd = plan.password || client.sriPassword;
+
+  if (!user) {
+    return { success: false, reason: 'missing_credentials' as const };
+  }
+
+  // Copiar al portapapeles para acceso inmediato
+  if (pwd) {
+    try {
+      navigator.clipboard.writeText(`${user}\t${pwd}`);
+    } catch (e) {}
+  }
+
+  // Notificar por postMessage a la extensión o ventanas escuchando
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'ECUAFACT_AUTOFILL_DATA',
+    data: {
+      username: user,
+      password: pwd || '',
+      clientName: client.tradeName || client.name,
+      ruc: client.ruc,
+      timestamp: Date.now()
+    }
+  };
+  window.postMessage(payload, "*");
+  window.dispatchEvent(new CustomEvent('ecuafactAutofillReady', { detail: payload.data }));
+
+  const targetUrl = plan.url || 'https://app.ecuafact.com';
+  window.open(targetUrl, '_blank');
+  return { success: true, username: user, hasPassword: !!pwd };
+};
+
+export const enterTalonarioDirect = (client: Client) => {
+  const plan = client.billingPlan || client.facturadorConfig || {};
+  const user = plan.username || client.ruc;
+  const pwd = plan.password || client.sriPassword;
+
+  if (!user) {
+    return { success: false, reason: 'missing_credentials' as const };
+  }
+
+  if (pwd) {
+    try {
+      navigator.clipboard.writeText(`${user}\t${pwd}`);
+    } catch (e) {}
+  }
+
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'TALONARIO_AUTOFILL_DATA',
+    data: {
+      username: user,
+      password: pwd || '',
+      clientName: client.tradeName || client.name,
+      ruc: client.ruc,
+      timestamp: Date.now()
+    }
+  };
+  window.postMessage(payload, "*");
+  window.dispatchEvent(new CustomEvent('talonarioAutofillReady', { detail: payload.data }));
+
+  let targetUrl = plan.url || 'https://talonarioamigo.santiagocordova.com';
+  // Respaldo hash para auto-login si la web lo soporta
+  if (pwd) {
+    try {
+      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify({ username: user, password: pwd }))));
+      targetUrl += `#autologin=${b64}`;
+    } catch (e) {}
+  }
+
+  window.open(targetUrl, '_blank');
+  return { success: true, username: user, hasPassword: !!pwd };
+};
+
+export const enterSriDirect = (client: Client) => {
+  if (!client.ruc) {
+    return { success: false, reason: 'missing_credentials' as const };
+  }
+
+  const pwd = client.sriPassword || '';
+
+  // 1. Envío a la extensión Nueva Luz 3.0 para sesión automática y detenerse en el perfil
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_ENTER_PORTAL_SESSION',
+    data: {
+      ruc: client.ruc,
+      name: client.tradeName || client.name,
+      password: pwd,
+      timestamp: Date.now()
+    }
+  };
+  window.postMessage(payload, "*");
+  window.dispatchEvent(new CustomEvent('sriEnterPortalReady', { detail: payload.data }));
+
+  // 2. Copiar clave al portapapeles como respaldo
+  if (pwd) {
+    try {
+      navigator.clipboard.writeText(pwd);
+    } catch (e) {}
+  }
+
+  const targetUrl = 'https://srienlinea.sri.gob.ec/tuportal-internet/';
+  window.open(targetUrl, '_blank');
+  return { success: true, username: client.ruc, hasPassword: !!pwd };
+};
+
+export const enterFacturadorDirect = (client: Client) => {
+  const plan = client.billingPlan || client.facturadorConfig || {};
+  const prog = (plan.programName || '').toLowerCase();
+  const url = (plan.url || '').toLowerCase();
+
+  if (prog.includes('zifac') || url.includes('zifact')) {
+    return { ...enterZifactDirect(client), provider: 'zifact' as const };
+  }
+  if (prog.includes('talonario') || url.includes('talonarioamigo')) {
+    return { ...enterTalonarioDirect(client), provider: 'talonario' as const };
+  }
+  if (prog.includes('sri') || url.includes('sri.gob.ec')) {
+    return { ...enterSriDirect(client), provider: 'sri' as const };
+  }
+  if (prog.includes('ecuafact') || url.includes('ecuafact')) {
+    return { ...enterEcuafactDirect(client), provider: 'ecuafact' as const };
+  }
+
+  // Facturador genérico
+  const user = plan.username || client.ruc;
+  const pwd = plan.password || client.sriPassword;
+  if (pwd) {
+    try {
+      navigator.clipboard.writeText(`${user}\t${pwd}`);
+    } catch (e) {}
+  }
+  const target = plan.url || 'https://app.ecuafact.com';
+  window.open(target, '_blank');
+  return { success: true, provider: 'default' as const, username: user, hasPassword: !!pwd };
+};
+
+

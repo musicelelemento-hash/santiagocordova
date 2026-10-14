@@ -4732,7 +4732,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   placeholder="Buscar RUC, nombre o clave..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary transition-all font-semibold uppercase tracking-wider"
+                  className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary transition-all font-semibold uppercase tracking-wider text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </div>
 
@@ -4740,7 +4740,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold text-slate-900 dark:text-white"
               >
                 <option value="all">TODOS LOS ESTADOS</option>
                 <option value="Autorizado">AUTORIZADO</option>
@@ -4895,7 +4895,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   value={validationInput}
                   onChange={(e) => setValidationInput(e.target.value)}
                   placeholder="Ingrese RUC (13 dígitos) o Cédula (10 dígitos)"
-                  className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-mono font-semibold"
+                  className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-mono font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
                 <button
                   type="button"

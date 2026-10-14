@@ -25,7 +25,20 @@ import { FacturaRegistroModal } from '../components/features/FacturaRegistroModa
 import { AddFacturadorClientModal } from '../components/features/AddFacturadorClientModal';
 import { ResendNoticeModal } from '../components/features/ResendNoticeModal';
 import { SupabaseService } from '../services/supabaseClientService';
-import { enterZifactDirect } from '../services/extensionBridge';
+import { 
+    enterZifactDirect, 
+    enterEcuafactDirect, 
+    enterTalonarioDirect, 
+    enterSriDirect, 
+    enterFacturadorDirect 
+} from '../services/extensionBridge';
+import { 
+    ProviderLogo, 
+    TalonarioAmigoLogo, 
+    SriLogo, 
+    EcuafactLogo, 
+    ZifactLogo 
+} from '../components/ui/ProviderLogos';
 
 interface FacturadoresScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -48,23 +61,169 @@ type FilterStatus =
     | 'agotados';
 
 // ── HELPER: Detectar proveedor desde programName ──────────────────────────
-const getProviderInfo = (programName?: string): { key: string; label: string; cssClass: string; glowClass: string; icon: React.ReactNode } => {
+export interface ProviderMeta {
+    key: 'talonario' | 'ecuafact' | 'zifact' | 'sri' | 'default';
+    label: string;
+    sublabel: string;
+    badgeTag: string;
+    cssClass: string;
+    glowClass: string;
+    cardClass: string;
+    accentColor: string;
+    icon: React.ReactNode;
+    logo: React.ReactNode;
+}
+
+const getProviderInfo = (programName?: string): ProviderMeta => {
     const name = (programName || '').toLowerCase();
-    if (name.includes('talonario')) return { key: 'talonario', label: 'Talonario Amigo', cssClass: 'provider-talonario', glowClass: 'provider-talonario-glow', icon: <BookOpen size={11} /> };
-    if (name.includes('ecuafact'))  return { key: 'ecuafact',  label: 'Ecuafact',        cssClass: 'provider-ecuafact',  glowClass: 'provider-ecuafact-glow',  icon: <FileText size={11} /> };
-    if (name.includes('zifac'))     return { key: 'zifact',    label: 'Zifact',          cssClass: 'provider-zifact',    glowClass: 'provider-zifact-glow',    icon: <Zap size={11} /> };
-    if (name.includes('sri'))       return { key: 'sri',       label: 'SRI Gratuito',    cssClass: 'provider-sri',       glowClass: 'provider-sri-glow',       icon: <Landmark size={11} /> };
-    return { key: 'default', label: programName || 'Facturador', cssClass: 'provider-default', glowClass: '', icon: <Globe size={11} /> };
+    if (name.includes('talonario')) {
+        return { 
+            key: 'talonario', 
+            label: 'Talonario Amigo', 
+            sublabel: 'Software Propio SC',
+            badgeTag: '💎 PROPIO SC',
+            cssClass: 'provider-talonario', 
+            glowClass: 'provider-talonario-glow', 
+            cardClass: 'factcard-talonario',
+            accentColor: '#F59E0B',
+            icon: <ProviderLogo providerKey="talonario" size={13} />,
+            logo: <ProviderLogo providerKey="talonario" size={24} />
+        };
+    }
+    if (name.includes('ecuafact')) {
+        return { 
+            key: 'ecuafact', 
+            label: 'Ecuafact', 
+            sublabel: 'Facturación Cloud',
+            badgeTag: '☁️ CLOUD',
+            cssClass: 'provider-ecuafact', 
+            glowClass: 'provider-ecuafact-glow', 
+            cardClass: 'factcard-ecuafact',
+            accentColor: '#38BDF8',
+            icon: <ProviderLogo providerKey="ecuafact" size={13} />,
+            logo: <ProviderLogo providerKey="ecuafact" size={24} />
+        };
+    }
+    if (name.includes('zifac')) {
+        return { 
+            key: 'zifact', 
+            label: 'Zifact', 
+            sublabel: 'Emisión 1-Clic',
+            badgeTag: '⚡ AUTO-LOGIN',
+            cssClass: 'provider-zifact', 
+            glowClass: 'provider-zifact-glow', 
+            cardClass: 'factcard-zifact',
+            accentColor: '#34D399',
+            icon: <ProviderLogo providerKey="zifact" size={13} />,
+            logo: <ProviderLogo providerKey="zifact" size={24} />
+        };
+    }
+    if (name.includes('sri')) {
+        return { 
+            key: 'sri', 
+            label: 'SRI Gratuito', 
+            sublabel: 'Portal Oficial SRI',
+            badgeTag: '🏛️ OFICIAL',
+            cssClass: 'provider-sri', 
+            glowClass: 'provider-sri-glow', 
+            cardClass: 'factcard-sri',
+            accentColor: '#60A5FA',
+            icon: <ProviderLogo providerKey="sri" size={13} />,
+            logo: <ProviderLogo providerKey="sri" size={24} />
+        };
+    }
+    return { 
+        key: 'default', 
+        label: programName || 'Facturador', 
+        sublabel: 'Particular',
+        badgeTag: '🌐 OTRO',
+        cssClass: 'provider-default', 
+        glowClass: '', 
+        cardClass: 'factcard-default',
+        accentColor: '#94A3B8',
+        icon: <ProviderLogo providerKey="default" size={13} />,
+        logo: <ProviderLogo providerKey="default" size={24} />
+    };
 };
 
-// ── MINI-COMPONENTE: Provider Badge ───────────────────────────────────────
+// ── MINI-COMPONENTE: Provider Badge con Logo Vectorial ───────────────────
 const ProviderBadge: React.FC<{ programName?: string; size?: 'sm' | 'md' }> = ({ programName, size = 'sm' }) => {
     const p = getProviderInfo(programName);
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${p.cssClass} ${size === 'md' ? 'px-3 py-1 text-[10px]' : ''}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${p.cssClass} ${size === 'md' ? 'px-3 py-1.5 text-[10px]' : ''}`}>
             {p.icon}
-            {p.label}
+            <span className="font-extrabold">{p.label}</span>
+            <span className="opacity-75 text-[8px] font-mono border-l border-current/25 pl-1.5 ml-0.5">{p.badgeTag}</span>
         </span>
+    );
+};
+
+// ── MINI-COMPONENTE: Semáforo de Caducidad Táctico ────────────────────────
+const CaducidadBadge: React.FC<{
+    planExpiration?: string;
+    sigExpiration?: string;
+    hasSignature?: boolean;
+}> = ({ planExpiration, sigExpiration, hasSignature }) => {
+    let planDays: number | null = null;
+    let planExpired = false;
+    if (planExpiration) {
+        const exp = new Date(planExpiration);
+        planDays = Math.ceil((exp.getTime() - Date.now()) / (1000 * 3600 * 24));
+        planExpired = planDays < 0;
+    }
+
+    let sigDays: number | null = null;
+    let sigExpired = false;
+    if (sigExpiration) {
+        const exp = new Date(sigExpiration);
+        sigDays = Math.ceil((exp.getTime() - Date.now()) / (1000 * 3600 * 24));
+        sigExpired = sigDays < 0;
+    }
+
+    let statusClass = 'bg-surface-lowest text-on-surface-variant border-foreground/10';
+    let statusLabel = 'Sin fecha reg.';
+
+    if (planDays !== null) {
+        if (planExpired) {
+            statusClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm shadow-rose-500/20 font-black';
+            statusLabel = `⛔ Vencido (${Math.abs(planDays)}d)`;
+        } else if (planDays <= 15) {
+            statusClass = 'bg-rose-500/15 text-rose-400 border-rose-500/30 animate-pulse font-black';
+            statusLabel = `🚨 Vence en ${planDays}d`;
+        } else if (planDays <= 30) {
+            statusClass = 'bg-amber-500/15 text-amber-300 border-amber-500/30 font-bold';
+            statusLabel = `⏰ Vence en ${planDays}d`;
+        } else {
+            statusClass = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 font-bold';
+            statusLabel = `🟢 ${planDays}d restantes`;
+        }
+    }
+
+    return (
+        <div className="flex items-center gap-1.5 flex-wrap">
+            <span 
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider border ${statusClass}`}
+                title={planExpiration ? `Plan expira el ${format(new Date(planExpiration), 'dd/MM/yyyy')}` : 'Sin fecha de caducidad registrada'}
+            >
+                <Calendar size={10} className="shrink-0" />
+                <span>{statusLabel}</span>
+            </span>
+
+            {/* Aviso complementario de Firma .p12 */}
+            {sigDays !== null && (
+                <span 
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                        sigExpired ? 'bg-rose-500/20 text-rose-400 border-rose-500/40' :
+                        sigDays <= 15 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
+                        'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    }`}
+                    title={`Firma .p12 vence el ${format(new Date(sigExpiration!), 'dd/MM/yyyy')}`}
+                >
+                    <Key size={9} className="shrink-0" />
+                    <span>{sigExpired ? 'Firma Vencida' : sigDays <= 30 ? `Firma: ${sigDays}d` : 'Firma OK'}</span>
+                </span>
+            )}
+        </div>
     );
 };
 
@@ -378,6 +537,14 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
+    const toggleSriPasswordVisibility = (id: string) => {
+        setVisibleSriPasswords(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const toggleSigPasswordVisibility = (id: string) => {
+        setVisibleSigPasswords(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
     const handleCopyPassword = (id: string, passwordText?: string) => {
         if (!passwordText) return;
         navigator.clipboard.writeText(passwordText);
@@ -412,14 +579,30 @@ RUC: ${client.ruc}
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    // Auto-Login Rápido en Zifact (Abre e Inicia Sesión en 1-Clic)
-    const handleLaunchZifactLogin = (client: Client) => {
-        const res = enterZifactDirect(client);
+    // Acceso Rápido y Facturación Directa Multi-Facturador (Extensión + Portapapeles)
+    const handleLaunchFacturador = (client: Client) => {
+        const res = enterFacturadorDirect(client);
         if (!res.success) {
-            toast.error(`No hay usuario o clave de facturador guardada para ${client.tradeName || client.name}.`);
+            toast.error(`Faltan credenciales configuradas para ${client.tradeName || client.name}. Haz clic en Configurar (⚙️) para completarlas.`);
             return;
         }
-        toast.success(`⚡ Abriendo Zifact con Auto-Login para ${client.tradeName || client.name}...`);
+
+        if (res.provider === 'zifact') {
+            toast.success(`⚡ Abriendo Zifact con Auto-Login para ${client.tradeName || client.name}...`);
+        } else if (res.provider === 'sri') {
+            toast.success(`🏛️ Abriendo SRI en Línea. Credenciales enviadas a Nueva Luz 3.0 para entrar a tu perfil.`);
+        } else if (res.provider === 'talonario') {
+            toast.success(`💎 Abriendo Talonario Amigo. Usuario (${res.username}) y clave copiados al portapapeles.`);
+        } else if (res.provider === 'ecuafact') {
+            toast.success(`📄 Abriendo Ecuafact. Usuario (${res.username}) y credenciales copiadas.`);
+        } else {
+            toast.success(`🌐 Abriendo portal del facturador.`);
+        }
+    };
+
+    // Auto-Login Rápido en Zifact (Compatibilidad retroactiva)
+    const handleLaunchZifactLogin = (client: Client) => {
+        handleLaunchFacturador(client);
     };
 
     const handleOpenResendModal = (client: Client, noticeType: 'renewal' | 'low_docs' | 'credentials' | 'filling_statement', additionalData?: any) => {
@@ -1048,7 +1231,7 @@ RUC: ${client.ruc}
                             placeholder="BUSCAR CLIENTE, RUC O SOFTWARE..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-10 py-3 bg-surface-lowest rounded-2xl border border-foreground/10 text-xs font-mono uppercase text-on-surface placeholder-on-surface-variant outline-none focus:border-tertiary/50 transition-all"
+                            className="w-full pl-11 pr-10 py-3 bg-slate-100 dark:bg-[#020b14]/80 rounded-2xl border border-slate-200/80 dark:border-white/10 text-xs font-mono uppercase text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-tertiary/60 transition-all shadow-inner"
                         />
                         {searchTerm && (
                             <button
@@ -1063,28 +1246,32 @@ RUC: ${client.ruc}
                     {/* Filtros de Categorización Inteligente */}
                     <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
                         {[
-                            { id: 'todos', label: `Todos (${kpis.total})` },
-                            { id: 'talonario', label: `💎 Talonario Amigo (${kpis.talonario})` },
-                            { id: 'ecuafact', label: `📄 Ecuafact (${kpis.ecuafact})` },
-                            { id: 'zifact', label: `⚡ Zifact (${kpis.zifact})` },
-                            { id: 'sri_gratuito', label: `🏛️ SRI Gratuito (${kpis.sriGratuito})` },
-                            { id: 'con_firma', label: `🔑 Con Firma (${kpis.conFirma})` },
-                            { id: 'sin_firma', label: `⚠️ Sin Firma (${kpis.sinFirma})` },
-                            { id: 'planta', label: `🏛️ Planta (${kpis.planta})` },
-                            { id: 'externos', label: `👤 Externos (${kpis.externos})` },
-                            { id: 'por_vencer', label: `⏰ Por Vencer (${kpis.porVencer})` },
-                            { id: 'agotados', label: `🛑 Cupo Bajo (${kpis.agotados})` },
+                            { id: 'todos', label: 'Todos', count: kpis.total, icon: <Layers size={13} />, activeClass: 'bg-foreground/20 text-on-surface border-foreground/30 shadow-md' },
+                            { id: 'talonario', label: 'Talonario Amigo', count: kpis.talonario, icon: <TalonarioAmigoLogo size={14} />, activeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-md shadow-amber-500/10' },
+                            { id: 'ecuafact', label: 'Ecuafact', count: kpis.ecuafact, icon: <EcuafactLogo size={14} />, activeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-md shadow-sky-500/10' },
+                            { id: 'zifact', label: 'Zifact', count: kpis.zifact, icon: <ZifactLogo size={14} />, activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-md shadow-emerald-500/10' },
+                            { id: 'sri_gratuito', label: 'SRI Gratuito', count: kpis.sriGratuito, icon: <SriLogo size={14} />, activeClass: 'bg-blue-600/20 text-blue-300 border-blue-600/40 shadow-md shadow-blue-600/10' },
+                            { id: 'con_firma', label: 'Con Firma', count: kpis.conFirma, icon: <Key size={12} className="text-emerald-400" />, activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                            { id: 'sin_firma', label: 'Sin Firma', count: kpis.sinFirma, icon: <AlertTriangle size={12} className="text-amber-400" />, activeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+                            { id: 'planta', label: 'Planta', count: kpis.planta, icon: <Landmark size={12} className="text-emerald-400" />, activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                            { id: 'externos', label: 'Externos', count: kpis.externos, icon: <User size={12} className="text-sky-400" />, activeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+                            { id: 'por_vencer', label: 'Por Vencer', count: kpis.porVencer, icon: <Clock size={12} className="text-amber-400" />, activeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+                            { id: 'agotados', label: 'Cupo Bajo', count: kpis.agotados, icon: <AlertOctagon size={12} className="text-rose-400" />, activeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setFilterStatus(tab.id as any)}
                                 className={`px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     filterStatus === tab.id
-                                        ? 'bg-foreground/15 text-on-surface border-foreground/20 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest border-foreground/5 text-on-surface-variant hover:text-on-surface'
+                                        ? `${tab.activeClass} scale-[1.03]`
+                                        : 'bg-surface-lowest border-foreground/5 text-on-surface-variant hover:text-on-surface hover:bg-foreground/5'
                                 }`}
                             >
+                                <span className="shrink-0">{tab.icon}</span>
                                 <span>{tab.label}</span>
+                                <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-foreground/10 text-on-surface-variant font-black">
+                                    {tab.count}
+                                </span>
                             </button>
                         ))}
                     </div>
@@ -1124,6 +1311,11 @@ RUC: ${client.ruc}
                                     'https://app.ecuafact.com'
                                 );
 
+                                const pInfo = getProviderInfo(config.programName);
+                                const totalDocs = config.documentCount ?? 100;
+                                const usedDocs = config.documentsUsed ?? 0;
+                                const isSri = pInfo.key === 'sri';
+
                                 const billingModeLabel = 
                                     record.billingMode === 'monthly_combo_10' ? 'Combo Mensual $10 (Decl. $5 + Fact. $5)' :
                                     record.billingMode === 'pack_5' ? 'Pack hasta 5 facturas ($5.00)' :
@@ -1133,28 +1325,33 @@ RUC: ${client.ruc}
                                 return (
                                     <div 
                                         key={client.id}
-                                        className="fact-card-stagger bg-surface-low border border-foreground/10 rounded-[2rem] p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between factcard-lift font-mono"
+                                        className={`fact-card-stagger ${pInfo.cardClass} border rounded-[2rem] p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between factcard-lift font-mono transition-all duration-300 relative overflow-hidden`}
                                     >
+                                        {/* Línea de Acento Superior con el Color del Proveedor */}
+                                        <div 
+                                            className="absolute top-0 left-0 right-0 h-1" 
+                                            style={{ background: `linear-gradient(90deg, transparent, ${pInfo.accentColor}, transparent)` }} 
+                                        />
+
                                         <div className="space-y-4">
                                             {/* Header */}
                                             <div>
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-start gap-2 flex-wrap">
+                                                        {/* Badges de Proveedor & Caducidad */}
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
                                                             <ProviderBadge programName={config.programName} />
-                                                            {client.signatureFile ? (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-emerald-500/12 border border-emerald-500/30 text-emerald-400 sig-ok-glow">
-                                                                    <Key size={9} /> .p12 ✓
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/12 border border-amber-500/30 text-amber-400">
-                                                                    <AlertTriangle size={9} /> Sin Firma
-                                                                </span>
-                                                            )}
+                                                            <CaducidadBadge 
+                                                                planExpiration={config.expirationDate} 
+                                                                sigExpiration={client.signatureExpirationDate} 
+                                                                hasSignature={!!client.signatureFile} 
+                                                            />
                                                         </div>
-                                                        <h4 className="text-sm font-black text-on-surface uppercase truncate tracking-tight mt-1.5">
+
+                                                        <h4 className="text-sm font-black text-on-surface uppercase truncate tracking-tight mt-2">
                                                             {client.tradeName || client.name}
                                                         </h4>
+
                                                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                                             <span className="text-[10px] text-on-surface-variant font-mono">{client.ruc}</span>
                                                             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
@@ -1164,98 +1361,192 @@ RUC: ${client.ruc}
                                                             }`}>
                                                                 {client.hasExternalAccountant || client.clientType === 'solo_plan' ? '👤 Externo' : '🏛️ Planta'}
                                                             </span>
+                                                            {client.signatureFile ? (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 sig-ok-glow">
+                                                                    <Key size={8} /> .p12 ✓
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-amber-500/10 border border-amber-500/25 text-amber-400">
+                                                                    <AlertTriangle size={8} /> Sin .p12
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                        {(config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact')) && (
-                                                            <button
-                                                                onClick={() => handleLaunchZifactLogin(client)}
-                                                                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500 hover:to-teal-500 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-500/10 active:scale-95"
-                                                                title="⚡ Auto-Login Zifact: Inicia sesión en 1 clic"
-                                                            >
-                                                                <Zap size={12} className="text-emerald-400" />
-                                                                <span className="hidden sm:inline">Ingresar</span>
-                                                            </button>
-                                                        )}
+                                                    {/* Configuración Rápida */}
+                                                    <div className="flex items-center gap-1 shrink-0">
                                                         <button
-                                                            onClick={() => {
-                                                                if (config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact')) {
-                                                                    handleLaunchZifactLogin(client);
-                                                                } else {
-                                                                    window.open(providerUrl, '_blank');
-                                                                }
-                                                            }}
-                                                            className="px-3 py-1.5 bg-tertiary/15 hover:bg-tertiary text-tertiary hover:text-white border border-tertiary/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md shadow-tertiary/10"
-                                                            title={config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact') ? "Ingresar automáticamente a Zifact" : "Abrir facturador en nueva pestaña"}
+                                                            onClick={() => setEditingFacturadorClient(client)}
+                                                            className="p-2 rounded-xl bg-foreground/5 hover:bg-foreground/15 text-on-surface-variant hover:text-on-surface transition-all cursor-pointer"
+                                                            title="Configurar credenciales, plan y caducidad"
                                                         >
-                                                            <ExternalLink size={12} />
+                                                            <Sliders size={13} />
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-foreground/5 text-[9px]">
+                                                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-foreground/5 text-[9px]">
                                                     <span className="text-on-surface-variant">{billingModeLabel}</span>
+                                                    {config.expirationDate && (
+                                                        <span className="text-on-surface-variant font-mono text-[9px]">
+                                                            Expira: <strong className="text-on-surface">{format(new Date(config.expirationDate), 'dd/MM/yyyy')}</strong>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Credenciales de 1 toque */}
+                                            {/* BOTÓN MAESTRO: FACTURAR AHORA / ENTRAR DIRECTO */}
+                                            <div>
+                                                <button
+                                                    onClick={() => handleLaunchFacturador(client)}
+                                                    className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-98 ${
+                                                        pInfo.key === 'zifact' 
+                                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black shadow-emerald-500/20' :
+                                                        pInfo.key === 'talonario'
+                                                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black shadow-amber-500/20' :
+                                                        pInfo.key === 'sri'
+                                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-blue-500/20' :
+                                                        pInfo.key === 'ecuafact'
+                                                            ? 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-sky-500/20' :
+                                                            'bg-gradient-to-r from-tertiary to-teal-700 text-white shadow-tertiary/20'
+                                                    }`}
+                                                    title={
+                                                        pInfo.key === 'zifact' ? 'Inicia sesión automáticamente en Zifact con la extensión' :
+                                                        pInfo.key === 'sri' ? 'Inicia sesión en el portal del SRI y entra a tu perfil' :
+                                                        `Abre ${pInfo.label} y copia credenciales al portapapeles`
+                                                    }
+                                                >
+                                                    {pInfo.icon}
+                                                    <span>
+                                                        {pInfo.key === 'zifact' ? '⚡ Facturar en Zifact (1-Clic)' :
+                                                         pInfo.key === 'talonario' ? '💎 Entrar a Talonario Amigo' :
+                                                         pInfo.key === 'sri' ? '🏛️ Entrar a Facturar SRI' :
+                                                         pInfo.key === 'ecuafact' ? '📄 Entrar a Ecuafact' :
+                                                         `🚀 Abrir ${pInfo.label}`}
+                                                    </span>
+                                                    <ArrowUpRight size={13} className="opacity-80" />
+                                                </button>
+                                            </div>
+
+                                            {/* Saldo de Timbres / Documentos */}
+                                            <div className="p-2.5 bg-surface-lowest/70 border border-foreground/5 rounded-xl">
+                                                <DocProgressBar used={usedDocs} total={totalDocs} isSriGratuito={isSri} />
+                                            </div>
+
+                                            {/* Cockpit Táctico de Credenciales */}
                                             <div className="p-3 bg-surface-lowest border border-foreground/10 rounded-2xl space-y-1.5 text-[10px]">
+                                                {/* User */}
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <span className="text-on-surface-variant">👤 User:</span>
+                                                    <span className="text-on-surface-variant flex items-center gap-1">
+                                                        <User size={11} className="text-tertiary" /> User:
+                                                    </span>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="text-on-surface font-mono truncate max-w-[130px]">{config.username || client.ruc}</span>
+                                                        <span className="text-on-surface font-mono truncate max-w-[130px] font-bold">
+                                                            {config.username || client.ruc}
+                                                        </span>
                                                         <button
                                                             onClick={() => {
                                                                 navigator.clipboard.writeText(config.username || client.ruc);
                                                                 toast.success("Usuario copiado");
                                                             }}
-                                                            className="p-1 hover:text-tertiary text-on-surface-variant cursor-pointer"
+                                                            className="p-1 hover:text-tertiary text-on-surface-variant cursor-pointer transition-colors"
+                                                            title="Copiar Usuario"
                                                         >
                                                             <Copy size={11} />
                                                         </button>
                                                     </div>
                                                 </div>
 
+                                                {/* Clave Facturador */}
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <span className="text-on-surface-variant">🔑 Clave Fact.:</span>
+                                                    <span className="text-on-surface-variant flex items-center gap-1">
+                                                        <Key size={11} className="text-amber-400" /> Clave Fact.:
+                                                    </span>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="text-on-surface-variant font-mono">
+                                                        <span className="text-on-surface font-mono">
                                                             {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
                                                         </span>
                                                         <button
                                                             onClick={() => togglePasswordVisibility(client.id)}
                                                             className="p-1 hover:text-on-surface text-on-surface-variant cursor-pointer"
+                                                            title={pwdVisible ? "Ocultar" : "Mostrar"}
                                                         >
                                                             {pwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
                                                         </button>
                                                         <button
                                                             onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
-                                                            className="p-1 hover:text-tertiary text-on-surface-variant cursor-pointer"
+                                                            className="p-1 hover:text-tertiary text-on-surface-variant cursor-pointer transition-colors"
+                                                            title="Copiar Clave Facturador"
                                                         >
                                                             <Copy size={11} />
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                {/* Botón Nivel Contador: Copiar Ficha de Acceso */}
+                                                {/* Clave SRI */}
+                                                {client.sriPassword && (
+                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-foreground/5">
+                                                        <span className="text-on-surface-variant flex items-center gap-1">
+                                                            <Landmark size={11} className="text-sky-400" /> Clave SRI:
+                                                        </span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-on-surface font-mono">
+                                                                {sriPwdVisible ? client.sriPassword : '••••••••'}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => toggleSriPasswordVisibility(client.id)}
+                                                                className="p-1 hover:text-on-surface text-on-surface-variant cursor-pointer"
+                                                                title={sriPwdVisible ? "Ocultar" : "Mostrar"}
+                                                            >
+                                                                {sriPwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCopyPassword(client.id, client.sriPassword)}
+                                                                className="p-1 hover:text-sky-400 text-on-surface-variant cursor-pointer transition-colors"
+                                                                title="Copiar Clave SRI"
+                                                            >
+                                                                <Copy size={11} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Clave Firma .p12 */}
+                                                {client.electronicSignaturePassword && (
+                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-foreground/5">
+                                                        <span className="text-on-surface-variant flex items-center gap-1">
+                                                            <ShieldCheck size={11} className="text-emerald-400" /> Clave Firma:
+                                                        </span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-on-surface font-mono">
+                                                                {sigPwdVisible ? client.electronicSignaturePassword : '••••••••'}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => toggleSigPasswordVisibility(client.id)}
+                                                                className="p-1 hover:text-on-surface text-on-surface-variant cursor-pointer"
+                                                                title={sigPwdVisible ? "Ocultar" : "Mostrar"}
+                                                            >
+                                                                {sigPwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCopyPassword(client.id, client.electronicSignaturePassword)}
+                                                                className="p-1 hover:text-emerald-400 text-on-surface-variant cursor-pointer transition-colors"
+                                                                title="Copiar Clave Firma .p12"
+                                                            >
+                                                                <Copy size={11} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Copiar Ficha Oficial */}
                                                 <button
                                                     onClick={() => handleCopyDirectLogin(client)}
-                                                    className="w-full mt-1 pt-1.5 border-t border-foreground/5 text-[9px] text-sky-400 hover:text-sky-300 font-bold uppercase flex items-center justify-center gap-1 cursor-pointer"
+                                                    className="w-full mt-1.5 pt-1.5 border-t border-foreground/5 text-[9px] text-sky-400 hover:text-sky-300 font-bold uppercase flex items-center justify-center gap-1 cursor-pointer transition-colors"
                                                 >
                                                     <ClipboardCopy size={11} />
-                                                    <span>Copiar Ficha de Acceso Oficial</span>
+                                                    <span>Copiar Ficha Completa Nivel Contador</span>
                                                 </button>
-
-                                                {(config.programName?.toLowerCase().includes('zifac') || providerUrl.includes('zifact')) && (
-                                                    <button
-                                                        onClick={() => handleLaunchZifactLogin(client)}
-                                                        className="w-full mt-1 pt-1.5 border-t border-foreground/5 text-[9px] text-emerald-400 hover:text-emerald-300 font-bold uppercase flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                                                    >
-                                                        <Zap size={11} className="text-emerald-400" />
-                                                        <span>Auto-Login Rápido Zifact (1-Clic)</span>
-                                                    </button>
-                                                )}
                                             </div>
 
                                             {/* Widget Métrico del Período */}
@@ -1452,9 +1743,14 @@ RUC: ${client.ruc}
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-5">
-                                                        <div className="font-bold text-on-surface text-xs">{plan.programName || 'SRI Gratuito'}</div>
-                                                        <div className="text-[10px] text-on-surface-variant mt-0.5">
-                                                            {plan.expirationDate ? `Vence: ${format(new Date(plan.expirationDate), 'dd/MM/yyyy')}` : 'Permanente'}
+                                                        <div className="flex items-center gap-2.5">
+                                                            <ProviderLogo providerKey={plan.programName} size={22} />
+                                                            <div>
+                                                                <div className="font-bold text-on-surface text-xs">{plan.programName || 'SRI Gratuito'}</div>
+                                                                <div className="text-[10px] text-on-surface-variant mt-0.5">
+                                                                    {plan.expirationDate ? `Vence: ${format(new Date(plan.expirationDate), 'dd/MM/yyyy')}` : 'Permanente'}
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-5">
@@ -1494,6 +1790,13 @@ RUC: ${client.ruc}
                                                     <td className="py-4 px-5 text-right">
                                                         <div className="flex items-center justify-end gap-1.5">
                                                             <button
+                                                                onClick={() => handleLaunchFacturador(client)}
+                                                                className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all cursor-pointer"
+                                                                title="Entrar al Facturador (1-Clic)"
+                                                            >
+                                                                <Zap size={14} />
+                                                            </button>
+                                                            <button
                                                                 onClick={() => handleOpenResendModal(client, 'credentials')}
                                                                 className="p-2 text-sky-400 hover:bg-sky-500/10 rounded-xl transition-all cursor-pointer"
                                                                 title="Enviar credenciales por Resend"
@@ -1527,11 +1830,24 @@ RUC: ${client.ruc}
                                     const pInfo = getProviderInfo(plan.programName);
 
                                     return (
-                                        <div key={client.id} className={`fact-card-stagger p-5 rounded-2xl bg-surface-lowest border border-foreground/10 factcard-lift space-y-4 ${pInfo.glowClass}`}>
+                                        <div key={client.id} className={`fact-card-stagger p-5 rounded-2xl bg-surface-lowest border factcard-lift space-y-4 ${pInfo.cardClass} relative overflow-hidden transition-all duration-300`}>
+                                            {/* Línea de Acento Superior con Color del Facturador */}
+                                            <div 
+                                                className="absolute top-0 left-0 right-0 h-1" 
+                                                style={{ background: `linear-gradient(90deg, transparent, ${pInfo.accentColor}, transparent)` }} 
+                                            />
+
                                             <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <ProviderBadge programName={plan.programName} size="md" />
-                                                    <div className="font-bold text-on-surface uppercase text-xs truncate mt-1.5">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <ProviderBadge programName={plan.programName} size="md" />
+                                                        <CaducidadBadge 
+                                                            planExpiration={plan.expirationDate} 
+                                                            sigExpiration={client.signatureExpirationDate} 
+                                                            hasSignature={!!client.signatureFile} 
+                                                        />
+                                                    </div>
+                                                    <div className="font-bold text-on-surface uppercase text-xs truncate mt-2">
                                                         {client.tradeName || client.name}
                                                     </div>
                                                     <div className="text-[10px] text-on-surface-variant font-mono mt-0.5">{client.ruc}</div>
@@ -1550,12 +1866,38 @@ RUC: ${client.ruc}
                                                 </div>
                                             </div>
 
+                                            {/* BOTÓN MAESTRO: ENTRAR / FACTURAR DIRECTO */}
+                                            <button
+                                                onClick={() => handleLaunchFacturador(client)}
+                                                className={`w-full py-2 px-3 rounded-xl font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98 ${
+                                                    pInfo.key === 'zifact' 
+                                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black shadow-emerald-500/20' :
+                                                    pInfo.key === 'talonario'
+                                                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black shadow-amber-500/20' :
+                                                    pInfo.key === 'sri'
+                                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-blue-500/20' :
+                                                    pInfo.key === 'ecuafact'
+                                                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-sky-500/20' :
+                                                        'bg-gradient-to-r from-tertiary to-teal-700 text-white shadow-tertiary/20'
+                                                }`}
+                                            >
+                                                {pInfo.icon}
+                                                <span>
+                                                    {pInfo.key === 'zifact' ? '⚡ Facturar en Zifact' :
+                                                     pInfo.key === 'talonario' ? '💎 Entrar a Talonario' :
+                                                     pInfo.key === 'sri' ? '🏛️ Entrar a Facturar SRI' :
+                                                     pInfo.key === 'ecuafact' ? '📄 Entrar a Ecuafact' :
+                                                     `Abrir ${pInfo.label}`}
+                                                </span>
+                                                <ArrowUpRight size={12} className="opacity-80" />
+                                            </button>
+
                                             {/* Barra de progreso de documentos */}
-                                            <div className="p-3 bg-surface-low rounded-xl space-y-2.5">
+                                            <div className="p-3 bg-surface-low rounded-xl space-y-2">
                                                 <DocProgressBar used={usedDocs} total={totalDocs} isSriGratuito={isSriGratuito} />
                                                 {plan.expirationDate && (
-                                                    <div className="flex items-center justify-between text-[9px]">
-                                                        <span className="text-on-surface-variant">Vence:</span>
+                                                    <div className="flex items-center justify-between text-[9px] pt-1 border-t border-foreground/5">
+                                                        <span className="text-on-surface-variant font-mono">Fecha Caducidad:</span>
                                                         <span className="font-mono font-bold text-on-surface">{format(new Date(plan.expirationDate), 'dd/MM/yyyy')}</span>
                                                     </div>
                                                 )}

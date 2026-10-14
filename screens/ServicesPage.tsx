@@ -452,7 +452,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             {theme === 'dark' ? <LucideIcons.Sun size={16} /> : <LucideIcons.Moon size={16} />} Cambiar Tema
                         </button>
                     )}
-                    <button onClick={() => { onAdminAccess(); setMobileMenuOpen(false); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-8 border border-white/10 px-6 py-3 rounded-full bg-white/5">Acceso Admin</button>
+                    <button onClick={() => { onAdminAccess(); setMobileMenuOpen(false); }} className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-8 border border-white/10 px-6 py-3 rounded-full bg-white/5 cursor-pointer hover:text-white transition-colors">Acceso al Portal</button>
                 </div>
             )}
 

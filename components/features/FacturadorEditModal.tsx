@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Client, BillingPlan, BillingPlanType } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { ProviderLogo } from '../ui/ProviderLogos';
 
 interface FacturadorEditModalProps {
     isOpen: boolean;
@@ -171,7 +172,7 @@ export const FacturadorEditModal: React.FC<FacturadorEditModalProps> = ({
                                                 : 'bg-[#020b14] border-white/10 text-slate-400 hover:text-white hover:border-white/20'
                                         }`}
                                     >
-                                        <span className="text-base">{p.icon}</span>
+                                        <ProviderLogo providerKey={p.name} size={18} />
                                         <span className="truncate text-[11px]">{p.name}</span>
                                     </button>
                                 );

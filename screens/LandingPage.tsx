@@ -911,11 +911,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                         <button
                             onClick={handleProtectedAccess}
-                            aria-label="Acceso al panel administrativo"
+                            aria-label="Acceso al portal seguro"
                             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${
                                 theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/40' : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
-                            title="Panel Administrativo"
+                            title="Acceso al Portal"
                         >
                             <ShieldCheck size={16} />
                         </button>
@@ -946,13 +946,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <MessageCircle size={20} />
                         </a>
                     </div>
-                    <button onClick={() => scrollToSection('calendario-ruc')} className={`flex flex-col items-center p-1 ${activeSection === 'calendario-ruc' ? 'text-[#00A896]' : 'text-slate-400'}`}>
-                        <Calendar size={18} />
-                        <span className="text-[8px] font-bold uppercase mt-0.5 font-mono">RUC SRI</span>
-                    </button>
                     <button onClick={() => scrollToSection('servicios')} className={`flex flex-col items-center p-1 ${activeSection === 'servicios' ? 'text-[#00A896]' : 'text-slate-400'}`}>
                         <Layers size={18} />
                         <span className="text-[8px] font-bold uppercase mt-0.5 font-mono">Servicios</span>
+                    </button>
+                    <button onClick={handleProtectedAccess} className="flex flex-col items-center p-1 text-slate-400 hover:text-[#00A896] transition-colors" title="Acceso al Portal">
+                        <ShieldCheck size={18} />
+                        <span className="text-[8px] font-bold uppercase mt-0.5 font-mono">Portal</span>
                     </button>
                 </div>
             </div>

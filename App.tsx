@@ -961,7 +961,7 @@ const App: React.FC = () => {
                         setIsGlobalDropdownOpen(true);
                     }}
                     onFocus={() => setIsGlobalDropdownOpen(true)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/10 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896] transition-all font-mono tracking-wider"
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/10 rounded-2xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896] transition-all font-mono tracking-wider"
                 />
             {globalSearchQuery ? (
                 <button 

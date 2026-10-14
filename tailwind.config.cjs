@@ -24,6 +24,7 @@ module.exports = {
         foreground: 'hsl(var(--foreground))',
         surface: 'hsl(var(--surface))',
         'surface-low': 'hsl(var(--surface-low))',
+        'surface-medium': 'hsl(var(--surface-medium))',
         'surface-lowest': 'hsl(var(--surface-lowest))',
         'on-surface': 'hsl(var(--on-surface))',
         'on-surface-variant': 'hsl(var(--on-surface-variant))',

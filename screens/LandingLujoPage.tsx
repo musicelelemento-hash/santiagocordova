@@ -586,22 +586,26 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         >
           <MessageCircle size={22} />
         </a>
-        {[
-          { href: '#servicios', icon: LayoutGrid, label: 'SERVICIOS' },
-          { href: '#faq', icon: HelpCircle, label: 'FAQ' },
-        ].map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            ref={registerNav(item.href.slice(1))}
-            data-active={activeId === item.href.slice(1) ? '1' : '0'}
-            className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 font-mono text-[8.5px] font-bold tracking-[0.12em]"
-            style={{ minHeight: 46 }}
-          >
-            <item.icon size={17} />
-            {item.label}
-          </a>
-        ))}
+        <a
+          href="#servicios"
+          ref={registerNav('servicios')}
+          data-active={activeId === 'servicios' ? '1' : '0'}
+          className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 font-mono text-[8.5px] font-bold tracking-[0.12em]"
+          style={{ minHeight: 46 }}
+        >
+          <LayoutGrid size={17} />
+          SERVICIOS
+        </a>
+        <button
+          type="button"
+          onClick={handleProtectedAccess}
+          className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 hover:text-[#00A896] font-mono text-[8.5px] font-bold tracking-[0.12em] transition-colors cursor-pointer border-0 bg-transparent"
+          style={{ minHeight: 46 }}
+          title="Acceso al Portal"
+        >
+          <ShieldCheck size={17} />
+          PORTAL
+        </button>
       </div>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
