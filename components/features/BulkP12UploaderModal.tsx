@@ -6,9 +6,9 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAppStore } from '../../store/useAppStore';
-import { extractP12Metadata } from '../../utils/p12Reader';
+import { extractP12Metadata, isValidRuc, isValidCedula } from '../../utils/p12Reader';
 import { useToast } from '../../context/ToastContext';
-import { Client, StoredFile, TaxRegime } from '../../types';
+import { Client, StoredFile, TaxRegime, TaxProfile } from '../../types';
 import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { v4 as uuidv4 } from 'uuid';
 import { Modal } from '../ui/Modal';
@@ -73,8 +73,8 @@ const cleanFileName = (filename?: string): string => {
 };
 
 const extractPossibleRucOrCedula = (filename: string): string[] => {
-    const matches = filename.match(/\d{9,13}/g) || [];
-    return Array.from(new Set(matches));
+    const matches = filename.match(/\d{10,13}/g) || [];
+    return Array.from(new Set(matches.filter(m => isValidRuc(m) || isValidCedula(m))));
 };
 
 // Extraer nombre limpio desde patrones del SRI: cert-CORDOVA-RAMIREZ-ROBERTO-SANTIAGO44 -> "CORDOVA RAMIREZ ROBERTO SANTIAGO"
@@ -349,17 +349,24 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const tryUnlockItem = (item: P12ItemQueue, passwordToTest: string): P12ItemQueue => {
         try {
             const meta = extractP12Metadata(item.base64Content, passwordToTest);
-            const matched = meta.ruc ? clients.find(c => c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
+            const matched = (meta.ruc && isValidRuc(meta.ruc)) ? clients.find(c => c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
             const expComp = evaluateExpirationComparison(meta.notAfter, matched, item.fileName);
 
-            const defaultSaveMode = expComp.status === 'duplicate' ? 'omit' : item.saveMode;
+            let resolvedMode = item.saveMode;
+            if (expComp.status === 'duplicate' || expComp.status === 'older') {
+                resolvedMode = 'omit';
+            } else if (matched) {
+                resolvedMode = matched.requiresDeclarations ? 'create_client' : (matched.clientType === 'solo_plan' ? 'system_only' : 'signature_only');
+            } else if (item.saveMode === 'create_client') {
+                resolvedMode = 'backup_only';
+            }
 
             return {
                 ...item,
                 passwordInput: passwordToTest,
                 status: 'unlocked',
                 errorMessage: undefined,
-                saveMode: defaultSaveMode,
+                saveMode: resolvedMode,
                 expirationComparison: expComp,
                 metadata: {
                     ruc: meta.ruc,
@@ -415,11 +422,20 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                 const expCompFinal = evaluateExpirationComparison(res.metadata?.notAfter, finalMatched, item.fileName);
 
+                let resolvedSaveMode: SaveModeOption = 'backup_only';
+                if (expCompFinal.status === 'duplicate' || expCompFinal.status === 'older') {
+                    resolvedSaveMode = 'omit';
+                } else if (finalMatched) {
+                    resolvedSaveMode = finalMatched.requiresDeclarations ? 'create_client' : (finalMatched.clientType === 'solo_plan' ? 'system_only' : 'signature_only');
+                } else {
+                    resolvedSaveMode = 'backup_only';
+                }
+
                 return {
                     ...res,
                     matchedClient: finalMatched,
                     expirationComparison: expCompFinal,
-                    saveMode: (expCompFinal.status === 'duplicate' || expCompFinal.status === 'older') ? 'omit' : item.saveMode,
+                    saveMode: resolvedSaveMode,
                     unlockedViaPattern: candPassword
                 };
             }
@@ -427,6 +443,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         return updatedItem;
     };
+
 
     const handleFilesSelected = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
@@ -453,7 +470,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     fileName: file.name,
                     passwordInput: '',
                     manualRucInput: '',
-                    saveMode: 'create_client',
+                    saveMode: 'backup_only', // Default seguro: Bóveda de Respaldo (no crea cliente ni declaraciones sin autorización)
                     status: 'pending'
                 };
 
@@ -521,12 +538,29 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         setQueue(prev => prev.map(item => item.id === itemId ? { ...item, saveMode: mode } : item));
     };
 
+    const handleBatchSetSaveMode = (mode: SaveModeOption) => {
+        setQueue(prev => prev.map(item => {
+            if (item.status === 'unlocked' && item.saveMode !== 'omit') {
+                return { ...item, saveMode: mode };
+            }
+            return item;
+        }));
+        const modeLabels: Record<SaveModeOption, string> = {
+            backup_only: '🔑 Solo Venta de Firma (Bóveda)',
+            system_only: '💻 Vincular a Facturador (Sin Declaraciones)',
+            signature_only: '👤 Catálogo de Clientes (Directorio)',
+            create_client: '📊 Suscribir a Declaraciones SRI',
+            omit: 'Omitir'
+        };
+        toast.info(`⚡ Destino "${modeLabels[mode]}" asignado a todas las firmas listas.`);
+    };
+
     const handleRemoveItem = (itemId: string) => {
         setQueue(prev => prev.filter(i => i.id !== itemId));
     };
 
     const handleApplyAllUnlocked = async () => {
-        const unlockedItems = queue.filter(i => i.status === 'unlocked' && i.metadata?.ruc && i.saveMode !== 'omit');
+        const unlockedItems = queue.filter(i => i.status === 'unlocked' && i.saveMode !== 'omit');
         if (unlockedItems.length === 0) {
             toast.error("No hay firmas descifradas marcadas para guardar.");
             return;
@@ -540,7 +574,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         const backupList: any[] = JSON.parse(localStorage.getItem('sri_backup_signatures') || '[]');
 
         for (const item of unlockedItems) {
-            const { ruc, commonName, issuerName, notBefore, notAfter } = item.metadata!;
+            const { ruc: metaRuc, commonName, issuerName, notBefore, notAfter } = item.metadata || {};
+            const cleanMetaRuc = metaRuc && isValidRuc(metaRuc) ? metaRuc.trim() : undefined;
+            const cleanManualRuc = item.manualRucInput && isValidRuc(item.manualRucInput) ? item.manualRucInput.trim() : undefined;
+            const targetRuc = cleanMetaRuc || cleanManualRuc || item.matchedClient?.ruc;
+
             const signatureFileObj: StoredFile = await UnifiedStorageService.uploadFile(
                 item.file,
                 item.fileName,
@@ -550,18 +588,61 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const expDate = notAfter ? notAfter.toISOString().split('T')[0] : '';
             const issueDate = notBefore ? notBefore.toISOString().split('T')[0] : '';
 
-            const existingClient = clients.find(c => c.ruc.trim() === ruc?.trim()) || item.possibleClientHint;
+            const existingClient = (targetRuc ? clients.find(c => c.ruc.trim() === targetRuc) : null)
+                || item.matchedClient
+                || item.possibleClientHint;
 
-            if (existingClient && !existingClient.isDeleted) {
+            if (item.saveMode === 'backup_only' || !targetRuc) {
+                // Si es solo venta de firma o si no se conoce un RUC tributario válido ("si en caso no lo sabe que no lo pongan")
+                backupList.push({
+                    id: uuidv4(),
+                    titular: commonName || item.extractedNameFromCert || 'Cliente Esporádico',
+                    ruc: (targetRuc && isValidRuc(targetRuc)) ? targetRuc.trim() : '',
+                    fileName: item.fileName,
+                    password: item.passwordInput,
+                    provider: issuerName,
+                    expirationDate: expDate,
+                    fileContent: item.base64Content,
+                    category: 'Venta Esporádica de Firma',
+                    savedAt: new Date().toISOString()
+                });
+                backupCount++;
+            } else if (existingClient && !existingClient.isDeleted) {
                 const isOlderThanClient = item.expirationComparison?.status === 'older';
                 
                 if (!isOlderThanClient) {
+                    const isSystemOnly = item.saveMode === 'system_only';
+                    const isSignatureOnly = item.saveMode === 'signature_only';
+                    const isDeclarationClient = item.saveMode === 'create_client';
+
+                    const updatedClientType = isSystemOnly ? 'solo_plan' : (isDeclarationClient ? 'completo' : (existingClient.clientType || 'completo'));
+                    const updatedRequiresDecl = isDeclarationClient ? true : (isSystemOnly || isSignatureOnly ? false : existingClient.requiresDeclarations);
+
+                    const updatedTaxProfile: TaxProfile = {
+                        ivaFrequency: isDeclarationClient 
+                            ? (existingClient.taxProfile?.ivaFrequency && existingClient.taxProfile.ivaFrequency !== 'Ninguno' ? existingClient.taxProfile.ivaFrequency : 'Mensual')
+                            : (isSystemOnly || isSignatureOnly ? 'Ninguno' : (existingClient.taxProfile?.ivaFrequency || 'Ninguno')),
+                        requiresAnnualRenta: isDeclarationClient ? true : (isSystemOnly || isSignatureOnly ? false : (existingClient.taxProfile?.requiresAnnualRenta ?? false)),
+                        requiresAnexosGastos: existingClient.taxProfile?.requiresAnexosGastos ?? false,
+                        hasActiveDevolucionIva: existingClient.taxProfile?.hasActiveDevolucionIva ?? false,
+                        hasActiveElderlyDevolucionIva: existingClient.taxProfile?.hasActiveElderlyDevolucionIva ?? false,
+                        requiresIce: existingClient.taxProfile?.requiresIce ?? false,
+                        requiresAnexoPvp: existingClient.taxProfile?.requiresAnexoPvp ?? false,
+                        sriCredencial: existingClient.taxProfile?.sriCredencial,
+                        alias: existingClient.taxProfile?.alias,
+                        quickNote: existingClient.taxProfile?.quickNote,
+                        economicActivity: existingClient.taxProfile?.economicActivity
+                    };
+
                     await updateClient(existingClient.id, {
                         signatureFile: signatureFileObj,
                         electronicSignaturePassword: item.passwordInput,
                         signatureExpirationDate: expDate,
                         signatureIssueDate: issueDate,
-                        signatureProvider: issuerName
+                        signatureProvider: issuerName,
+                        clientType: updatedClientType,
+                        requiresDeclarations: updatedRequiresDecl,
+                        taxProfile: updatedTaxProfile
                     });
                     updatedCount++;
                 } else {
@@ -579,36 +660,24 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     });
                     backupCount++;
                 }
-            } else if (item.saveMode === 'backup_only') {
-                backupList.push({
-                    id: uuidv4(),
-                    titular: commonName || item.extractedNameFromCert || 'Cliente Esporádico',
-                    ruc: ruc || '',
-                    fileName: item.fileName,
-                    password: item.passwordInput,
-                    provider: issuerName,
-                    expirationDate: expDate,
-                    fileContent: item.base64Content,
-                    category: 'Venta Esporádica de Firma',
-                    savedAt: new Date().toISOString()
-                });
-                backupCount++;
             } else {
-                const categoryNote = item.saveMode === 'system_only' 
-                    ? 'Categoría: Solo Venta de Facturador / Sistema Ecuafact'
-                    : item.saveMode === 'signature_only'
-                    ? 'Categoría: Solo Venta de Firma Electrónica'
-                    : 'Categoría: Cliente Contable Completo';
+                const isSystemOnly = item.saveMode === 'system_only';
+                const isSignatureOnly = item.saveMode === 'signature_only';
+                const isDeclarationClient = item.saveMode === 'create_client';
 
-                const isSoloPlan = item.saveMode === 'system_only';
-                const isSoloFirma = item.saveMode === 'signature_only';
-                const clientType: 'completo' | 'solo_plan' = isSoloPlan ? 'solo_plan' : 'completo';
-                const requiresDeclarations = item.saveMode === 'create_client';
+                const categoryNote = isSystemOnly 
+                    ? 'Categoría: Solo Venta de Facturador / Sistema Ecuafact'
+                    : isSignatureOnly
+                    ? 'Categoría: Directorio de Clientes (Solo Firma / Trámites)'
+                    : 'Categoría: Cliente Contable Completo (Declaraciones SRI)';
+
+                const clientType: 'completo' | 'solo_plan' = isSystemOnly ? 'solo_plan' : 'completo';
+                const requiresDeclarations = isDeclarationClient;
 
                 const newClient: Client = {
                     id: uuidv4(),
                     name: commonName || item.extractedNameFromCert || 'Contribuyente Nuevo',
-                    ruc: ruc || '',
+                    ruc: targetRuc,
                     sriPassword: '',
                     email: '',
                     phones: [],
@@ -822,6 +891,47 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                             </button>
                         </div>
 
+                        {/* BARRA DE ASIGNACIÓN EN LOTE (1 CLIC PARA TODAS LAS FIRMAS LISTAS) */}
+                        {countUnlocked > 0 && (
+                            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-teal-500/30 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-lg">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-black text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Sparkles size={13} className="text-teal-400" /> Destino en lote ({countUnlocked} firmas listas):
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <button
+                                        onClick={() => handleBatchSetSaveMode('backup_only')}
+                                        className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                                        title="Asignar a todas: Solo Venta de Firma (Bóveda sin declaraciones)"
+                                    >
+                                        <Archive size={12} /> 🔑 Solo Venta de Firma
+                                    </button>
+                                    <button
+                                        onClick={() => handleBatchSetSaveMode('system_only')}
+                                        className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                                        title="Asignar a todas: Facturador electrónico sin declaraciones"
+                                    >
+                                        <Laptop size={12} /> 💻 Facturador
+                                    </button>
+                                    <button
+                                        onClick={() => handleBatchSetSaveMode('signature_only')}
+                                        className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                                        title="Asignar a todas: Catálogo general de clientes sin declaraciones"
+                                    >
+                                        <Shield size={12} /> 👤 Catálogo
+                                    </button>
+                                    <button
+                                        onClick={() => handleBatchSetSaveMode('create_client')}
+                                        className="px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                                        title="Asignar a todas: Cliente contable con declaraciones periódicas SRI"
+                                    >
+                                        <UserPlus size={12} /> 📊 Declaraciones SRI
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Lista Interactiva de Firmas */}
                         <div className="space-y-3.5 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
                             {filteredQueue.length === 0 ? (
@@ -947,89 +1057,110 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 RUC: <strong className="text-white">{item.metadata.ruc || 'No disponible'}</strong> · Emisor: {item.metadata.issuerName || 'N/A'}
                                                             </p>
 
-                                                            {item.matchedClient ? (
-                                                                <div className="flex items-center justify-between gap-2 text-[10px] text-teal-400 font-bold">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <UserCheck size={12} />
-                                                                        <span>
-                                                                            Cliente Activo: {item.matchedClient.name} ({item.matchedClient.ruc})
-                                                                            {item.matchedClient.isDeleted && <span className="text-amber-400 ml-1">(Papelera)</span>}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10">
-                                                                        <button
-                                                                            onClick={() => handleToggleSaveMode(item.id, 'create_client')}
-                                                                            className={`px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
-                                                                                item.saveMode === 'create_client'
-                                                                                    ? 'bg-teal-500 text-slate-950'
-                                                                                    : 'text-slate-400 hover:text-white'
-                                                                            }`}
-                                                                        >
-                                                                            {expComp?.status === 'renewal' ? '🎉 Aplicar Renovación' : 'Guardar en Perfil'}
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleToggleSaveMode(item.id, 'omit')}
-                                                                            className={`px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
-                                                                                item.saveMode === 'omit'
-                                                                                    ? 'bg-slate-700 text-slate-200'
-                                                                                    : 'text-slate-400 hover:text-white'
-                                                                            }`}
-                                                                        >
-                                                                            Omitir
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-wrap items-center gap-2 pt-1">
-                                                                    <span className="text-[10px] text-amber-300 font-bold flex items-center gap-1">
-                                                                        <AlertTriangle size={11} className="text-amber-400" /> Cliente no registrado. Selecciona la categoría de guardado:
+                                                            {item.matchedClient && (
+                                                                <div className="flex items-center gap-1.5 text-[10px] text-teal-400 font-bold pb-1">
+                                                                    <UserCheck size={12} />
+                                                                    <span>
+                                                                        Coincide con Cliente Activo: <strong>{item.matchedClient.name}</strong> ({item.matchedClient.ruc})
+                                                                        {item.matchedClient.isDeleted && <span className="text-amber-400 ml-1">(Papelera)</span>}
                                                                     </span>
-
-                                                                    <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 flex-wrap">
-                                                                        <button
-                                                                            onClick={() => handleToggleSaveMode(item.id, 'create_client')}
-                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
-                                                                                item.saveMode === 'create_client'
-                                                                                    ? 'bg-teal-500 text-slate-950 shadow-sm'
-                                                                                    : 'text-slate-400 hover:text-white'
-                                                                            }`}
-                                                                        >
-                                                                            <UserPlus size={11} /> 📊 Contable Completo
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleToggleSaveMode(item.id, 'system_only')}
-                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
-                                                                                item.saveMode === 'system_only'
-                                                                                    ? 'bg-cyan-400 text-slate-950 shadow-sm'
-                                                                                    : 'text-slate-400 hover:text-white'
-                                                                            }`}
-                                                                        >
-                                                                            <Laptop size={11} /> 💻 Solo Facturador/Ecuafact
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleToggleSaveMode(item.id, 'signature_only')}
-                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
-                                                                                item.saveMode === 'signature_only'
-                                                                                    ? 'bg-purple-400 text-slate-950 shadow-sm'
-                                                                                    : 'text-slate-400 hover:text-white'
-                                                                            }`}
-                                                                        >
-                                                                            <Shield size={11} /> 🔑 Solo Firma Esporádica
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleToggleSaveMode(item.id, 'backup_only')}
-                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
-                                                                                item.saveMode === 'backup_only'
-                                                                                    ? 'bg-amber-400 text-slate-950 shadow-sm'
-                                                                                    : 'text-slate-400 hover:text-white'
-                                                                            }`}
-                                                                        >
-                                                                            <Archive size={11} /> 📦 Solo Bóveda Respaldo
-                                                                        </button>
-                                                                    </div>
                                                                 </div>
                                                             )}
+
+                                                            {(!item.metadata?.ruc || !isValidRuc(item.metadata.ruc)) && !item.matchedClient && (
+                                                                <div className="flex items-center gap-1.5 text-[10px] text-amber-300/90 font-mono bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20">
+                                                                    <AlertTriangle size={12} className="shrink-0 text-amber-400" />
+                                                                    <span>Sin RUC verificado en firma. Si no lo ingresas, se guardará en Bóveda sin inventar número.</span>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Selector unificado de los 4 destinos */}
+                                                            <div className="space-y-1.5 pt-1">
+                                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                                    <span className="text-[9.5px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                                                                        Destino de guardado para esta firma:
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => handleToggleSaveMode(item.id, 'omit')}
+                                                                        className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
+                                                                            item.saveMode === 'omit'
+                                                                                ? 'bg-rose-500 text-white'
+                                                                                : 'text-slate-400 hover:text-white'
+                                                                        }`}
+                                                                    >
+                                                                        {item.saveMode === 'omit' ? '✓ Omitida' : 'Omitir'}
+                                                                    </button>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-1 bg-black/50 p-1.5 rounded-2xl border border-white/10 flex-wrap">
+                                                                    <button
+                                                                        onClick={() => handleToggleSaveMode(item.id, 'backup_only')}
+                                                                        className={`px-2.5 py-1 rounded-xl text-[9.5px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                                            item.saveMode === 'backup_only'
+                                                                                ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                                        }`}
+                                                                        title="Guardar en Bóveda de Respaldos. No genera cliente contable ni declaraciones SRI."
+                                                                    >
+                                                                        <Archive size={11} /> 🔑 Solo Venta de Firma
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleToggleSaveMode(item.id, 'system_only')}
+                                                                        className={`px-2.5 py-1 rounded-xl text-[9.5px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                                            item.saveMode === 'system_only'
+                                                                                ? 'bg-cyan-400 text-slate-950 font-black shadow-md'
+                                                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                                        }`}
+                                                                        title="Vincular a Facturador electrónico (Ecuafact, SRI, Talonario). Sin declaraciones periódicas de impuestos."
+                                                                    >
+                                                                        <Laptop size={11} /> 💻 Facturador
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleToggleSaveMode(item.id, 'signature_only')}
+                                                                        className={`px-2.5 py-1 rounded-xl text-[9.5px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                                            item.saveMode === 'signature_only'
+                                                                                ? 'bg-purple-400 text-slate-950 font-black shadow-md'
+                                                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                                        }`}
+                                                                        title="Agregar al Catálogo general de clientes para custodia de firma y trámites, sin declaraciones SRI."
+                                                                    >
+                                                                        <Shield size={11} /> 👤 Catálogo Clientes
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleToggleSaveMode(item.id, 'create_client')}
+                                                                        className={`px-2.5 py-1 rounded-xl text-[9.5px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                                            item.saveMode === 'create_client'
+                                                                                ? 'bg-teal-400 text-slate-950 font-black shadow-md'
+                                                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                                        }`}
+                                                                        title="Suscribir a Declaraciones periódicas en el SRI (Cliente Contable con obligaciones de IVA y Renta)."
+                                                                    >
+                                                                        <UserPlus size={11} /> 📊 Declaraciones SRI
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Micro-guía contextual según el modo seleccionado */}
+                                                                {item.saveMode === 'backup_only' && (
+                                                                    <p className="text-[9.5px] text-amber-300/80 font-mono">
+                                                                        🛡️ <strong>Solo Venta de Firma:</strong> Se resguarda en la Bóveda. No genera cliente contable ni declaraciones SRI.
+                                                                    </p>
+                                                                )}
+                                                                {item.saveMode === 'system_only' && (
+                                                                    <p className="text-[9.5px] text-cyan-300/80 font-mono">
+                                                                        💻 <strong>Facturador Electrónico:</strong> Vinculado para facturar (Ecuafact, SRI, etc.). Blindado con 0 obligaciones de declaraciones.
+                                                                    </p>
+                                                                )}
+                                                                {item.saveMode === 'signature_only' && (
+                                                                    <p className="text-[9.5px] text-purple-300/80 font-mono">
+                                                                        👤 <strong>Catálogo de Clientes:</strong> Registrado en el directorio general para custodia y trámites futuros, sin declaraciones SRI.
+                                                                    </p>
+                                                                )}
+                                                                {item.saveMode === 'create_client' && (
+                                                                    <p className="text-[9.5px] text-teal-300/80 font-mono">
+                                                                        📊 <strong>Declaraciones SRI:</strong> Cliente contable suscrito a declaraciones periódicas en el calendario tributario.
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
 

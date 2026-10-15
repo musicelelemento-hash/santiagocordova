@@ -1126,9 +1126,24 @@ export const useAppStore = create<AppState>((set, get) => ({
 
               const rawStatus = rawStatusById.get(cloudClient.id);
 
+              // Auto-reparación y blindaje de RUCs dañados por captura indebida de marcas de tiempo de firmas .p12 (ej: 2026...)
+              const KNOWN_RUC_FIXES: Record<string, string> = {
+                'e3a10deb-87b6-4d72-ad16-74963b682472': '0706534088001', // CEDENO LUNA JOSELYN BRIGITTE
+                'd599f987-d139-42ba-b32f-6af7fde15d85': '0705787745001', // CORDOVA RAMIREZ ROBERTO SANTIAGO
+                '817b0482-5779-4dfa-937c-0cefebe42b26': '0702126335001', // MERCHAN HERAS JACINTO EULOGIO
+                '35b0338e-1922-49e7-bf89-e962e40b6015': '0700948508001'  // MURILLO . FRANCISCO EFRAIN
+              };
+
+              const correctedRuc = KNOWN_RUC_FIXES[cloudClient.id] || cloudClient.ruc;
+              if (KNOWN_RUC_FIXES[cloudClient.id] && cloudClient.ruc !== correctedRuc) {
+                // Sincronizar en segundo plano la corrección de RUC hacia la nube
+                db.updateRecord('sc_pro_clients', cloudClient.id, { ruc: correctedRuc }).catch(() => {});
+              }
+
               return {
                 ...localMatch,
                 ...cloudClient,
+                ruc: correctedRuc,
                 // PROTECCIÓN DE ESTADO: si la nube NO pudo leer estas columnas
                 // (permiso de columna para el rol `anon`), llegan undefined y
                 // pisaban el estado local. Era lo que resucitaba en cada

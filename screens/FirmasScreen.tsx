@@ -15,6 +15,7 @@ import { BulkP12UploaderModal } from '../components/features/BulkP12UploaderModa
 import { v4 as uuidv4 } from 'uuid';
 import { type Screen } from '../types';
 import { downloadStoredFile } from '../services/fileService';
+import { isValidRuc } from '../utils/p12Reader';
 
 interface FirmasScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -49,17 +50,30 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
     const [backupSignatures, setBackupSignatures] = useState<BackupSignatureItem[]>([]);
     const [selectedProvider, setSelectedProvider] = useState<string>('all');
 
+    // Estado para incorporación interactiva de firma desde Bóveda de Respaldos
+    const [convertingItem, setConvertingItem] = useState<BackupSignatureItem | null>(null);
+    const [convertDestination, setConvertDestination] = useState<'system_only' | 'catalogo' | 'declaraciones'>('catalogo');
+    const [convertManualRuc, setConvertManualRuc] = useState<string>('');
+
     // Cargar Bóveda de Respaldos de Clientes Esporádicos / Externos
     useEffect(() => {
         const loadBackups = () => {
             try {
                 const stored: BackupSignatureItem[] = JSON.parse(localStorage.getItem('sri_backup_signatures') || '[]');
                 // Limpiar automáticamente cualquier firma cuyo RUC pertenezca a un cliente activo del directorio
-                const cleaned = stored.filter(b => {
-                    if (!b.ruc) return true;
-                    return !clients.some(c => !c.isDeleted && c.isActive && c.ruc.trim() === b.ruc.trim());
-                });
-                if (cleaned.length !== stored.length) {
+                // y sanitizar RUCs inválidos (ej: marcas de tiempo capturadas erróneamente)
+                const cleaned = stored
+                    .map(b => {
+                        if (b.ruc && !isValidRuc(b.ruc)) {
+                            return { ...b, ruc: '' };
+                        }
+                        return b;
+                    })
+                    .filter(b => {
+                        if (!b.ruc) return true;
+                        return !clients.some(c => !c.isDeleted && c.isActive && c.ruc.trim() === b.ruc.trim());
+                    });
+                if (cleaned.length !== stored.length || JSON.stringify(cleaned) !== JSON.stringify(stored)) {
                     localStorage.setItem('sri_backup_signatures', JSON.stringify(cleaned));
                 }
                 setBackupSignatures(cleaned);
@@ -189,31 +203,62 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
         toast.success("Firma de respaldo eliminada");
     };
 
-    const handleConvertBackupToActiveClient = async (item: BackupSignatureItem) => {
-        const existing = clients.find(c => !c.isDeleted && c.ruc.trim() === item.ruc.trim());
+    const handleOpenConvertModal = (item: BackupSignatureItem) => {
+        setConvertingItem(item);
+        setConvertDestination('catalogo');
+        setConvertManualRuc(item.ruc && isValidRuc(item.ruc) ? item.ruc.trim() : '');
+    };
+
+    const handleConfirmConvert = async () => {
+        if (!convertingItem) return;
+        const rucClean = convertManualRuc.trim().replace(/\D/g, '');
+
+        if (convertDestination === 'declaraciones') {
+            if (!isValidRuc(rucClean)) {
+                toast.error("Para suscribir a Declaraciones SRI se requiere un RUC válido de 13 dígitos terminado en 001.");
+                return;
+            }
+        }
+
+        const existing = clients.find(c => !c.isDeleted && c.ruc.trim() === rucClean && rucClean.length >= 10);
         if (existing) {
-            toast.error(`El cliente ${item.titular} ya existe en tu directorio activo.`);
+            toast.error(`El cliente ${existing.name} (${existing.ruc}) ya existe en tu directorio activo.`);
             return;
         }
 
+        const isSystem = convertDestination === 'system_only';
+        const isDecl = convertDestination === 'declaraciones';
+        const isCat = convertDestination === 'catalogo';
+
+        const clientType: 'completo' | 'solo_plan' = isSystem ? 'solo_plan' : 'completo';
+        const requiresDeclarations = isDecl;
+
+        const categoryNote = isSystem
+            ? 'Categoría: Facturador Electrónico (Ecuafact / SRI / Zifact) — Sin declaraciones'
+            : isCat
+            ? 'Categoría: Catálogo General de Clientes — Solo custodia de firma y trámites'
+            : 'Categoría: Cliente Contable Completo — Suscrito a Declaraciones SRI';
+
         const newClient: Client = {
             id: uuidv4(),
-            name: item.titular,
-            ruc: item.ruc,
+            name: convertingItem.titular,
+            ruc: rucClean || (convertingItem.ruc && isValidRuc(convertingItem.ruc) ? convertingItem.ruc : ''),
             sriPassword: '',
             email: '',
             phones: [],
             declarations: [],
-            notes: `Convertido desde Bóveda de Respaldos (${item.category || 'Venta Esporádica'}).\nEmisor: ${item.provider || 'N/A'}`,
+            clientType,
+            requiresDeclarations,
+            notes: `${categoryNote}\nConvertido desde Bóveda de Respaldos (${convertingItem.category || 'Venta Esporádica'}).\nEmisor: ${convertingItem.provider || 'N/A'}`,
             isActive: true,
             regime: TaxRegime.General,
             address: '',
-            electronicSignaturePassword: item.password,
-            signatureExpirationDate: item.expirationDate,
-            signatureProvider: item.provider,
+            electronicSignaturePassword: convertingItem.password,
+            signatureExpirationDate: convertingItem.expirationDate,
+            signatureProvider: convertingItem.provider,
             taxProfile: {
-                ivaFrequency: 'Mensual',
-                requiresAnnualRenta: true,
+                ivaFrequency: isDecl ? 'Mensual' : 'Ninguno',
+                requiresAnnualRenta: isDecl,
                 requiresAnexosGastos: false,
                 hasActiveDevolucionIva: false,
                 hasActiveElderlyDevolucionIva: false,
@@ -223,8 +268,15 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
         };
 
         await addClient(newClient);
-        handleDeleteBackupItem(item.id);
-        toast.success(`🎉 ${item.titular} agregado exitosamente al Directorio Activo de Clientes.`);
+        handleDeleteBackupItem(convertingItem.id);
+
+        const destLabel = isSystem 
+            ? 'Facturador Electrónico' 
+            : isCat 
+            ? 'Catálogo de Clientes' 
+            : 'Cliente Contable con Declaraciones SRI';
+        toast.success(`🎉 ${convertingItem.titular} incorporado como ${destLabel}.`);
+        setConvertingItem(null);
     };
 
     const formatExpiry = (date?: string) => {
@@ -799,11 +851,11 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                             </button>
                                                         )}
                                                         <button
-                                                            onClick={() => handleConvertBackupToActiveClient(item)}
+                                                            onClick={() => handleOpenConvertModal(item)}
                                                             className="px-3 py-1.5 rounded-xl bg-tertiary/15 hover:bg-tertiary/25 text-tertiary text-[10px] font-bold uppercase transition-all border border-tertiary/30 inline-flex items-center gap-1 cursor-pointer"
-                                                            title="Convertir a Cliente Contable Activo"
+                                                            title="Incorporar firma al sistema (Facturador, Catálogo o Declaraciones)"
                                                         >
-                                                            <UserPlus size={12} /> Convertir a Cliente
+                                                            <UserPlus size={12} /> Incorporar Firma
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteBackupItem(item.id)}
@@ -858,6 +910,122 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             >
                                 <PhoneCall size={14} /> Abrir WhatsApp
                             </a>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── MODAL INCORPORAR FIRMA DESDE BÓVEDA (Stitch Obsidian Luxury) ── */}
+            {convertingItem && (
+                <Modal isOpen={true} onClose={() => setConvertingItem(null)} title="📂 Incorporar Firma al Sistema" size="md">
+                    <div className="space-y-5 p-4 text-on-surface">
+                        <div className="p-4 rounded-2xl bg-surface-lowest border border-foreground/10 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-tertiary uppercase tracking-wider">Titular de la Firma</span>
+                                <span className="text-[10px] font-mono text-on-surface-variant">{formatExpiry(convertingItem.expirationDate)}</span>
+                            </div>
+                            <h4 className="text-base font-black text-on-surface uppercase tracking-tight font-display">{convertingItem.titular}</h4>
+                            <p className="text-[10px] text-on-surface-variant font-mono truncate">{convertingItem.fileName} · Emisor: {convertingItem.provider || 'N/A'}</p>
+                        </div>
+
+                        {/* RUC Input */}
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block">
+                                RUC del Contribuyente (13 dígitos)
+                            </label>
+                            <input
+                                type="text"
+                                value={convertManualRuc}
+                                onChange={(e) => setConvertManualRuc(e.target.value)}
+                                placeholder="Ej: 0706534088001 (o dejar vacío si no se conoce)"
+                                className="w-full px-3.5 py-2 rounded-xl bg-surface-lowest border border-foreground/15 text-xs text-on-surface font-mono placeholder:text-on-surface-variant/40 outline-none focus:border-tertiary/60"
+                            />
+                            {convertManualRuc && !isValidRuc(convertManualRuc) && (
+                                <p className="text-[10px] text-amber-400 font-mono">
+                                    ⚠️ El RUC ingresado no cumple con el formato tributario oficial de Ecuador (13 dígitos terminado en 001).
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Selector de Destino */}
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block">
+                                Selecciona el destino en el sistema:
+                            </label>
+                            
+                            <div className="space-y-2">
+                                <div
+                                    onClick={() => setConvertDestination('system_only')}
+                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                                        convertDestination === 'system_only'
+                                            ? 'bg-cyan-500/15 border-cyan-400 shadow-sm'
+                                            : 'bg-surface-lowest border-foreground/10 hover:border-foreground/20'
+                                    }`}
+                                >
+                                    <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 shrink-0">
+                                        <Laptop size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-on-surface">💻 Vincular a Facturador Electrónico</p>
+                                        <p className="text-[10px] text-on-surface-variant leading-relaxed mt-0.5">
+                                            Para emisión de comprobantes en sistemas (Ecuafact, SRI Emisión, Talonario). <strong>No genera declaraciones periódicas en el SRI.</strong>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    onClick={() => setConvertDestination('catalogo')}
+                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                                        convertDestination === 'catalogo'
+                                            ? 'bg-purple-500/15 border-purple-400 shadow-sm'
+                                            : 'bg-surface-lowest border-foreground/10 hover:border-foreground/20'
+                                    }`}
+                                >
+                                    <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 shrink-0">
+                                        <Shield size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-on-surface">👤 Agregar a Catálogo de Clientes</p>
+                                        <p className="text-[10px] text-on-surface-variant leading-relaxed mt-0.5">
+                                            Directorio general para trámites y custodia de firma. <strong>No genera declaraciones mensuales en el SRI.</strong>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    onClick={() => setConvertDestination('declaraciones')}
+                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
+                                        convertDestination === 'declaraciones'
+                                            ? 'bg-teal-500/15 border-teal-400 shadow-sm'
+                                            : 'bg-surface-lowest border-foreground/10 hover:border-foreground/20'
+                                    }`}
+                                >
+                                    <div className="p-2 rounded-xl bg-teal-500/20 text-teal-300 shrink-0">
+                                        <UserPlus size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-on-surface">📊 Suscribir a Declaraciones SRI</p>
+                                        <p className="text-[10px] text-on-surface-variant leading-relaxed mt-0.5">
+                                            Cliente contable completo. <strong>Genera obligaciones periódicas de IVA y Renta en el calendario tributario.</strong> Requiere RUC válido.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-3 border-t border-foreground/10">
+                            <button
+                                onClick={() => setConvertingItem(null)}
+                                className="px-4 py-2 rounded-xl bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant text-xs font-bold cursor-pointer border border-foreground/10"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmConvert}
+                                className="px-5 py-2 rounded-xl bg-gradient-to-r from-tertiary to-teal-600 hover:from-tertiary hover:to-teal-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-tertiary/25 flex items-center gap-1.5 border border-foreground/10 cursor-pointer"
+                            >
+                                <Check size={14} /> Incorporar al Sistema
+                            </button>
                         </div>
                     </div>
                 </Modal>
