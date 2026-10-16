@@ -227,7 +227,7 @@ const ToolModal: React.FC<{ title: string; tag: string; color: string; onClose: 
 
   return (
     <div
-      className="fixed inset-0 z-[250] flex items-center justify-center p-4 animate-in fade-in"
+      className="fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
       style={{ background: 'rgba(2,6,23,0.86)', backdropFilter: 'blur(20px)' }}
       onClick={onClose}
     >
@@ -236,20 +236,20 @@ const ToolModal: React.FC<{ title: string; tag: string; color: string; onClose: 
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[480px] max-h-[86vh] overflow-y-auto no-scrollbar rounded-[26px]"
-        style={{ padding: 30, border: '1px solid rgba(255,255,255,0.10)', background: '#051424', boxShadow: '0 50px 100px -30px rgba(0,0,0,0.9)' }}
+        className="relative w-full max-w-[480px] max-h-[88vh] overflow-y-auto no-scrollbar rounded-[24px] sm:rounded-[26px] p-5 sm:p-7"
+        style={{ border: '1px solid rgba(255,255,255,0.10)', background: '#051424', boxShadow: '0 50px 100px -30px rgba(0,0,0,0.9)' }}
       >
         <button
           ref={closeBtnRef}
           onClick={onClose}
           aria-label="Cerrar"
-          className="absolute top-5 right-5 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 flex items-center justify-center w-8 h-8 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white transition-colors"
         >
           <X size={14} />
         </button>
-        <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color }}>{tag}</span>
-        <h3 className="font-display font-extrabold text-white" style={{ margin: '12px 0 0', fontSize: 'clamp(1.3rem,3vw,1.7rem)', letterSpacing: '-0.02em' }}>{title}</h3>
-        <div style={{ marginTop: 22 }}>{children}</div>
+        <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.28em]" style={{ color }}>{tag}</span>
+        <h3 className="font-display font-extrabold text-white" style={{ margin: '10px 0 0', fontSize: 'clamp(1.2rem,3vw,1.7rem)', letterSpacing: '-0.02em' }}>{title}</h3>
+        <div style={{ marginTop: 18 }}>{children}</div>
       </div>
     </div>
   );
@@ -479,10 +479,10 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 <ArrowLeft size={15} className="text-slate-300" />
               </button>
             )}
-            <a href="#top" className="flex items-center gap-2.5">
-              <Logo className="w-9 h-9 flex-none" />
+            <a href="#top" className="flex items-center gap-2 sm:gap-2.5">
+              <Logo className="w-8 h-8 sm:w-9 sm:h-9 flex-none" />
               <span className="flex flex-col leading-tight whitespace-nowrap">
-                <span className="font-display font-extrabold text-[13px] tracking-tight text-white">SANTIAGO CÓRDOVA</span>
+                <span className="font-display font-extrabold text-[12px] sm:text-[13px] tracking-tight text-white">SANTIAGO CÓRDOVA</span>
                 <span className="hidden min-[900px]:block font-mono text-[9px] font-bold tracking-[0.22em] text-[#00A896] mt-0.5">SOLUCIONES TRIBUTARIAS PRO</span>
               </span>
             </a>
@@ -500,12 +500,12 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               </a>
             ))}
           </div>
-          <div className="flex-none flex items-center gap-2">
+          <div className="flex-none flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleProtectedAccess}
               aria-label="Acceso administrativo"
               title="Panel Administrativo"
-              className="hidden min-[480px]:flex items-center justify-center w-9 h-9 rounded-full border border-white/10 bg-white/5 text-slate-500 hover:text-[#00A896] hover:border-[#00A896]/40 transition-colors flex-none"
+              className="hidden min-[480px]:flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-white/10 bg-white/5 text-slate-500 hover:text-[#00A896] hover:border-[#00A896]/40 transition-colors flex-none"
             >
               <ShieldCheck size={15} />
             </button>
@@ -513,11 +513,12 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-none inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#00A896]/50 bg-[#00A896]/15 hover:bg-[#00A896] text-[#4edea3] hover:text-[#050f18] font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-300 shadow-sm group"
+              className="flex-none inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#00A896]/50 bg-[#00A896]/15 hover:bg-[#00A896] text-[#4edea3] hover:text-white font-mono text-[10.5px] sm:text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-300 shadow-sm group"
               title="Iniciar consulta directa por WhatsApp con Santiago Córdova"
             >
-              <span className="w-2 h-2 rounded-full bg-[#4edea3] group-hover:bg-[#050f18] animate-pulse transition-colors" />
-              <span>WhatsApp Directo</span>
+              <span className="w-2 h-2 rounded-full bg-[#4edea3] group-hover:bg-white animate-pulse transition-colors" />
+              <span className="hidden sm:inline">WhatsApp Directo</span>
+              <span className="sm:hidden">WhatsApp</span>
             </a>
           </div>
         </nav>
@@ -581,10 +582,10 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Escribir por WhatsApp"
-          className="flex-none flex items-center justify-center rounded-full bg-[#00A896] text-[#031310]"
-          style={{ width: 54, height: 54, marginTop: -22, border: '3px solid #051424', boxShadow: '0 0 26px -4px rgba(0,168,150,0.85)' }}
+          className="flex-none flex items-center justify-center rounded-full bg-gradient-to-tr from-[#00A896] to-[#00d6aa] text-white shadow-[0_0_24px_rgba(0,168,150,0.85)] active:scale-95 transition-transform"
+          style={{ width: 54, height: 54, marginTop: -22, border: '3px solid #051424' }}
         >
-          <MessageCircle size={22} />
+          <MessageCircle size={22} className="text-white fill-white/20" />
         </a>
         <a
           href="#servicios"
@@ -648,7 +649,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color: '#e6d3ab' }}>PASAJE · EL ORO · ECUADOR</span>
             </span>
           </Reveal>
-          <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.02, fontSize: 'clamp(2.6rem,7.4vw,6.4rem)' }}>
+          <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,7vw,6.4rem)' }}>
             Ingeniería tributaria
             <br />
             <span
@@ -664,31 +665,31 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               de precisión
             </span>
           </Reveal>
-          <Reveal index={2} as="p" className="lujo-hero-desc font-light" style={{ margin: '26px auto 0', maxWidth: 620, fontSize: 'clamp(1rem,1.5vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
+          <Reveal index={2} as="p" className="lujo-hero-desc font-light" style={{ margin: '26px auto 0', maxWidth: 620, fontSize: 'clamp(0.98rem,1.45vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
             Contabilidad, declaraciones y blindaje fiscal para empresas y profesionales del Ecuador. Automatización algorítmica con revisión humana experta.
           </Reveal>
-          <Reveal index={3} className="lujo-hero-ctas flex flex-wrap gap-4 justify-center items-center" style={{ marginTop: 38 }}>
+          <Reveal index={3} className="lujo-hero-ctas flex flex-col sm:flex-row gap-3.5 sm:gap-4 justify-center items-center w-full max-w-md sm:max-w-none mx-auto" style={{ marginTop: 38 }}>
             <a
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario gratuito.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 h-14 px-8 rounded-2xl font-mono text-xs font-black uppercase tracking-[0.14em] text-[#050f18] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-8 rounded-2xl font-mono text-xs sm:text-[12.5px] font-black uppercase tracking-[0.14em] text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
               style={{
-                background: 'linear-gradient(135deg, #F9DE8B 0%, #D4AF37 52%, #A87E23 100%)',
-                boxShadow: '0 20px 45px -12px rgba(212,175,55,0.6), 0 0 25px -6px rgba(212,175,55,0.35)',
-                border: '1px solid rgba(255, 245, 200, 0.45)',
+                background: 'linear-gradient(135deg, #00C49F 0%, #00A896 48%, #027A8A 100%)',
+                boxShadow: '0 18px 40px -10px rgba(0,168,150,0.65), 0 0 20px -4px rgba(0,168,150,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
+                border: '1px solid rgba(130, 250, 206, 0.45)',
               }}
             >
-              <MessageCircle size={18} className="fill-[#050f18]/15" />
-              Agendar Diagnóstico Tributario
+              <MessageCircle size={18} className="text-white fill-white/20 shrink-0" />
+              <span>Agendar Diagnóstico Tributario</span>
             </a>
             <a
               href="#servicios"
-              className="inline-flex items-center gap-2.5 h-14 px-7 rounded-2xl text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-[0.14em] transition-all duration-300 hover:border-[#00A896]/60 hover:bg-[#00A896]/10"
+              className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-7 rounded-2xl text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-[0.14em] transition-all duration-300 hover:border-[#00A896]/60 hover:bg-[#00A896]/10"
               style={{ border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(5,20,36,0.7)', backdropFilter: 'blur(12px)' }}
             >
-              Ver Servicios & Tarifas
-              <ArrowRight size={14} className="text-[#00A896]" />
+              <span>Ver Servicios & Tarifas</span>
+              <ArrowRight size={14} className="text-[#00A896] shrink-0" />
             </a>
           </Reveal>
         </div>
@@ -721,7 +722,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </span>
           <div
             className="relative z-[2] w-full max-w-[1160px] px-6"
-            style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * -90px), calc((0.5 - var(--p,0)) * -46px), 0)' }}
+            style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(-90px, -6vw, -30px)), calc((0.5 - var(--p,0)) * -46px), 0)' }}
           >
             <div style={{ maxWidth: 620 }}>
               <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#00A896' }}>ACTO I — CIFRADO DE DATOS</span>
@@ -999,7 +1000,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               className="rounded-xl font-mono text-[10px] font-bold uppercase tracking-wide"
               style={
                 penaltyType === 'sin_ventas'
-                  ? { padding: '10px 6px', background: '#C9A96E', color: '#1a1508' }
+                  ? { padding: '10px 6px', background: '#C9A96E', color: '#050e18', fontWeight: 800 }
                   : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
               }
             >
@@ -1011,7 +1012,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               className="rounded-xl font-mono text-[10px] font-bold uppercase tracking-wide"
               style={
                 penaltyType === 'con_ventas'
-                  ? { padding: '10px 6px', background: '#C9A96E', color: '#1a1508' }
+                  ? { padding: '10px 6px', background: '#C9A96E', color: '#050e18', fontWeight: 800 }
                   : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
               }
             >
@@ -1074,7 +1075,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 className="rounded-xl font-mono text-[13px] font-bold aspect-square flex items-center justify-center"
                 style={
                   selectedRucDigit === digit
-                    ? { background: '#00A896', color: '#031310' }
+                    ? { background: '#00A896', color: '#ffffff', fontWeight: 800, boxShadow: '0 0 16px rgba(0,168,150,0.6)' }
                     : { border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
                 }
               >
@@ -1122,7 +1123,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </span>
           <div
             className="relative z-[2] w-full max-w-[1160px] px-6 flex justify-end"
-            style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * 90px), calc((0.5 - var(--p,0)) * -46px), 0)' }}
+            style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(30px, 6vw, 90px)), calc((0.5 - var(--p,0)) * -46px), 0)' }}
           >
             <div style={{ maxWidth: 620, textAlign: 'left' }}>
               <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>ACTO II — RESULTADOS MEDIBLES</span>
@@ -1206,7 +1207,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </span>
           <div
             className="relative z-[2] w-full max-w-[1160px] px-6"
-            style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * -70px), calc((0.5 - var(--p,0)) * -50px), 0)' }}
+            style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(-70px, -5vw, -24px)), calc((0.5 - var(--p,0)) * -50px), 0)' }}
           >
             <div style={{ maxWidth: 640 }}>
               <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#C9A96E' }}>ACTO IV — RAÍCES PRODUCTIVAS</span>
@@ -1458,18 +1459,18 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 rounded-2xl font-mono text-[13px] font-black uppercase tracking-[0.14em] text-[#050f18] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto rounded-2xl font-mono text-xs sm:text-[13px] font-black uppercase tracking-[0.14em] text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
               style={{
                 marginTop: 36,
-                height: 60,
-                padding: '0 36px',
-                background: 'linear-gradient(135deg, #F9DE8B 0%, #D4AF37 52%, #A87E23 100%)',
-                boxShadow: '0 24px 55px -16px rgba(212,175,55,0.65), 0 0 25px -4px rgba(212,175,55,0.3)',
-                border: '1px solid rgba(255, 245, 200, 0.45)',
+                minHeight: 56,
+                padding: '16px 36px',
+                background: 'linear-gradient(135deg, #00C49F 0%, #00A896 48%, #027A8A 100%)',
+                boxShadow: '0 20px 45px -12px rgba(0,168,150,0.7), 0 0 22px -4px rgba(0,168,150,0.35), inset 0 1px 0 rgba(255,255,255,0.3)',
+                border: '1px solid rgba(130, 250, 206, 0.45)',
               }}
             >
-              <MessageCircle size={19} className="fill-[#050f18]/15" />
-              Agendar Diagnóstico Tributario
+              <MessageCircle size={19} className="text-white fill-white/20 shrink-0" />
+              <span>Agendar Diagnóstico Tributario</span>
             </a>
           </Reveal>
           <Reveal index={3} as="div" className="font-mono text-[11px] tracking-[0.18em]" style={{ marginTop: 18, color: '#7d8ca1' }}>
