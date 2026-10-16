@@ -1,0 +1,27 @@
+<svg width="256" height="256" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo negro mate con esquinas redondeadas -->
+  <rect width="108" height="108" rx="24" fill="#1A1A1A"/>
+
+  <!-- Balanza estilizada usando un color sólido para compatibilidad -->
+  <g stroke="#D4AF37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Base de la balanza -->
+    <path d="M36 88 H 72"/>
+    
+    <!-- Soporte vertical -->
+    <path d="M54 88 V 32"/>
+    
+    <!-- Brazo horizontal -->
+    <path d="M24 38 H 84"/>
+    
+    <!-- Punto de pivote -->
+    <circle cx="54" cy="30" r="3.5" fill="#D4AF37"/>
+    
+    <!-- Colgador y platillo izquierdo -->
+    <path d="M34 38 V 48"/>
+    <path d="M22 62 C 28 72, 40 72, 46 62" fill="none"/>
+    
+    <!-- Colgador y platillo derecho -->
+    <path d="M74 38 V 48"/>
+    <path d="M62 62 C 68 72, 80 72, 86 62" fill="none"/>
+  </g>
+</svg>

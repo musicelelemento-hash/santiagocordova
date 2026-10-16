@@ -69,14 +69,27 @@ export const calculateDetailedTax = (ingresos: number, actividad: ActividadTipo,
 
     // RIMPE Scale
     if (ingresos <= 20000) {
+        let impuestoEstimado = 0;
+        if (ingresos <= 2500) {
+            impuestoEstimado = 0;
+        } else if (ingresos <= 5000) {
+            impuestoEstimado = 5;
+        } else if (ingresos <= 10000) {
+            impuestoEstimado = 15;
+        } else if (ingresos <= 15000) {
+            impuestoEstimado = 35;
+        } else {
+            impuestoEstimado = 60;
+        }
+
         return {
             regimen: "RIMPE - Negocio Popular",
             planTitle: "RIMPE Negocio Popular",
             price: npPrice,
-            impuestoEstimadoAnual: 60,
+            impuestoEstimadoAnual: impuestoEstimado,
             ahorroEstimado: 350,
             formularios: "Formulario 102A Simplificado Anual (Notas de venta autorizadas)",
-            description: "Declaración anual obligatoria simplificada para microempresarios, tiendas, talleres y comercios con facturación de hasta $20,000 USD al año."
+            description: "Declaración anual obligatoria simplificada para microempresarios, tiendas, talleres y comercios con facturación de hasta $20,000 USD al año (Tarifa progresiva $0 a $60 según tramo de ingresos)."
         };
     } else if (ingresos <= 300000) {
         let impuestoEstimado = 60;
@@ -151,19 +164,24 @@ export interface RucDeadlineInfo {
 /**
  * Calendario de vencimiento mensual según el 9no dígito del RUC/cédula
  * (0 -> día 28, 1 -> día 10, ... 9 -> día 26), con días restantes hasta el
- * próximo vencimiento. Misma tabla usada por `screens/LandingPage.tsx`'s
- * `getRucDeadlineInfo`.
+ * próximo vencimiento calculado sobre el calendario real.
  */
 export const getRucDeadlineInfo = (digit: number): RucDeadlineInfo => {
     const days = [28, 10, 12, 14, 16, 18, 20, 22, 24, 26];
     const day = days[digit] ?? 10;
 
     const now = new Date();
-    const currentMonthDay = now.getDate();
-    let daysLeft = day - currentMonthDay;
-    if (daysLeft < 0) {
-        daysLeft += 30; // Next cycle
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+
+    let targetDate = new Date(currentYear, currentMonth, day);
+    if (currentDay > day) {
+        targetDate = new Date(currentYear, currentMonth + 1, day);
     }
+
+    const diffMs = targetDate.getTime() - now.getTime();
+    const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
     const isImminent = daysLeft <= 3;
 
     return {

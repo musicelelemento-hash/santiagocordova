@@ -513,11 +513,11 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-none inline-flex items-center gap-2 px-[18px] py-[11px] rounded-full bg-[#00A896] text-[#031310] font-mono text-[11px] font-bold uppercase tracking-[0.12em]"
-              style={{ boxShadow: '0 12px 30px -12px rgba(0,168,150,0.8)' }}
+              className="flex-none inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#00A896]/50 bg-[#00A896]/15 hover:bg-[#00A896] text-[#4edea3] hover:text-[#050f18] font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-300 shadow-sm group"
+              title="Iniciar consulta directa por WhatsApp con Santiago Córdova"
             >
-              <MessageCircle size={14} />
-              Diagnóstico
+              <span className="w-2 h-2 rounded-full bg-[#4edea3] group-hover:bg-[#050f18] animate-pulse transition-colors" />
+              <span>WhatsApp Directo</span>
             </a>
           </div>
         </nav>
@@ -667,23 +667,28 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           <Reveal index={2} as="p" className="lujo-hero-desc font-light" style={{ margin: '26px auto 0', maxWidth: 620, fontSize: 'clamp(1rem,1.5vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
             Contabilidad, declaraciones y blindaje fiscal para empresas y profesionales del Ecuador. Automatización algorítmica con revisión humana experta.
           </Reveal>
-          <Reveal index={3} className="lujo-hero-ctas flex flex-wrap gap-3.5 justify-center" style={{ marginTop: 38 }}>
+          <Reveal index={3} className="lujo-hero-ctas flex flex-wrap gap-4 justify-center items-center" style={{ marginTop: 38 }}>
             <a
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario gratuito.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 h-14 px-7 rounded-2xl text-white font-mono text-xs font-bold uppercase tracking-[0.14em]"
-              style={{ background: 'linear-gradient(135deg,#00A896,#028090)', boxShadow: '0 22px 50px -18px rgba(0,168,150,0.9)' }}
+              className="inline-flex items-center gap-3 h-14 px-8 rounded-2xl font-mono text-xs font-black uppercase tracking-[0.14em] text-[#050f18] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              style={{
+                background: 'linear-gradient(135deg, #F9DE8B 0%, #D4AF37 52%, #A87E23 100%)',
+                boxShadow: '0 20px 45px -12px rgba(212,175,55,0.6), 0 0 25px -6px rgba(212,175,55,0.35)',
+                border: '1px solid rgba(255, 245, 200, 0.45)',
+              }}
             >
-              <MessageCircle size={17} />
-              Agendar diagnóstico
+              <MessageCircle size={18} className="fill-[#050f18]/15" />
+              Agendar Diagnóstico Tributario
             </a>
             <a
               href="#servicios"
-              className="inline-flex items-center gap-2.5 h-14 px-6 rounded-2xl text-slate-100 font-mono text-xs font-bold uppercase tracking-[0.14em]"
-              style={{ border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)' }}
+              className="inline-flex items-center gap-2.5 h-14 px-7 rounded-2xl text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-[0.14em] transition-all duration-300 hover:border-[#00A896]/60 hover:bg-[#00A896]/10"
+              style={{ border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(5,20,36,0.7)', backdropFilter: 'blur(12px)' }}
             >
-              Ver servicios
+              Ver Servicios & Tarifas
+              <ArrowRight size={14} className="text-[#00A896]" />
             </a>
           </Reveal>
         </div>
@@ -868,8 +873,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             href={wa(`Hola Santiago Córdova, valide mi identificación (${rucInput}) y quiero confirmar mi situación tributaria.`)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
-            style={{ marginTop: 20, height: 48, background: '#00A896', color: '#031310' }}
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
+            style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #00A896, #028090)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(0,168,150,0.6)' }}
           >
             <MessageCircle size={15} />
             Consultar por WhatsApp
@@ -904,20 +909,40 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </div>
           {simActividad !== 'discapacidad_3ra_edad' && (
             <div style={{ marginTop: 20 }}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>INGRESOS ANUALES ESTIMADOS</span>
-                <span className="font-mono text-[15px] font-bold" style={{ color: '#00A896' }}>${simIngresos.toLocaleString()}</span>
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#00A896]/60 transition-colors">
+                  <span className="font-mono text-xs font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000000}
+                    step={100}
+                    value={simIngresos || ''}
+                    onChange={(e) => setSimIngresos(Math.max(0, Number(e.target.value) || 0))}
+                    aria-label="Ingresos anuales estimados en dólares"
+                    className="w-24 bg-transparent font-mono text-[14px] font-bold text-[#00A896] outline-none text-right"
+                  />
+                  <span className="font-mono text-[10px] text-slate-500">USD</span>
+                </div>
               </div>
               <input
                 type="range"
                 min={0}
                 max={320000}
                 step={500}
-                value={simIngresos}
+                value={Math.min(320000, simIngresos)}
                 onChange={(e) => setSimIngresos(Number(e.target.value))}
-                className="w-full mt-3"
+                aria-label="Control deslizante de ingresos anuales"
+                className="w-full mt-2 cursor-pointer"
                 style={{ accentColor: '#00A896' }}
               />
+              <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                <span>$0</span>
+                <span>$20k (NP)</span>
+                <span>$100k</span>
+                <span>$300k+ (General)</span>
+              </div>
             </div>
           )}
           <div className="rounded-2xl" style={{ marginTop: 22, padding: '18px 20px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
@@ -940,8 +965,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             href={wa(`Hola Santiago Córdova, he realizado la simulación para ingresos de $${simIngresos.toLocaleString()} USD (${taxDetails.regimen}). Quisiera agendar el plan ${taxDetails.planTitle}.`)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
-            style={{ marginTop: 18, height: 48, background: '#00A896', color: '#031310' }}
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
+            style={{ marginTop: 18, height: 48, background: 'linear-gradient(135deg, #00A896, #028090)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(0,168,150,0.6)' }}
           >
             <MessageCircle size={15} />
             Agendar este plan
@@ -1029,8 +1054,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             href={wa(`Hola Santiago Córdova, tengo ${penaltyMeses} meses sin declarar en el SRI y necesito regularizar mi RUC de forma urgente.`)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
-            style={{ marginTop: 18, height: 48, background: '#C9A96E', color: '#1a1508' }}
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-black uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
+            style={{ marginTop: 18, height: 48, background: 'linear-gradient(135deg, #F3D382, #C9A96E)', color: '#0d131f', boxShadow: '0 10px 24px -8px rgba(201,169,110,0.5)' }}
           >
             <MessageCircle size={15} />
             Regularizar ahora
@@ -1070,8 +1095,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             href={wa(`Hola Santiago Córdova, mi RUC termina en dígito ${selectedRucDigit} (vence el ${deadlineInfo.label}) y deseo asegurar mi declaración a tiempo.`)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full"
-            style={{ marginTop: 20, height: 48, background: '#00A896', color: '#031310' }}
+            className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
+            style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #00A896, #028090)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(0,168,150,0.6)' }}
           >
             <MessageCircle size={15} />
             Asegurar mi declaración
@@ -1363,8 +1388,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 href={wa('Hola Santiago Córdova, quiero mi diagnóstico tributario sin costo.')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em]"
-                style={{ marginTop: 20, height: 48, background: '#00A896', color: '#031310' }}
+                className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] transition-transform active:scale-95"
+                style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #00A896, #028090)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(0,168,150,0.6)' }}
               >
                 <MessageCircle size={15} />
                 Escribir por WhatsApp
@@ -1433,11 +1458,18 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 rounded-2xl text-white font-mono text-[12.5px] font-bold uppercase tracking-[0.14em]"
-              style={{ marginTop: 36, height: 60, padding: '0 34px', background: 'linear-gradient(135deg,#00A896,#028090)', boxShadow: '0 26px 60px -20px rgba(0,168,150,0.9)' }}
+              className="inline-flex items-center gap-3 rounded-2xl font-mono text-[13px] font-black uppercase tracking-[0.14em] text-[#050f18] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+              style={{
+                marginTop: 36,
+                height: 60,
+                padding: '0 36px',
+                background: 'linear-gradient(135deg, #F9DE8B 0%, #D4AF37 52%, #A87E23 100%)',
+                boxShadow: '0 24px 55px -16px rgba(212,175,55,0.65), 0 0 25px -4px rgba(212,175,55,0.3)',
+                border: '1px solid rgba(255, 245, 200, 0.45)',
+              }}
             >
-              <MessageCircle size={18} />
-              Agendar diagnóstico tributario
+              <MessageCircle size={19} className="fill-[#050f18]/15" />
+              Agendar Diagnóstico Tributario
             </a>
           </Reveal>
           <Reveal index={3} as="div" className="font-mono text-[11px] tracking-[0.18em]" style={{ marginTop: 18, color: '#7d8ca1' }}>

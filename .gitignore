@@ -55,6 +55,7 @@ santiagocordova-main/
 
 SRI_RUC_El_Oro.csv
 *.png
+!public/og-preview.png
 Contraseñas de Chrome.csv
 respaldos_locales/
 *.sqlite*

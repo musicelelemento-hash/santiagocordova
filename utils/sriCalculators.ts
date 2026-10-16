@@ -90,7 +90,7 @@ export const validarIdentificacionEcuatoriana = (id: string): boolean => {
     if (cedula.length !== 10 && cedula.length !== 13) return false;
     
     const provincia = parseInt(cedula.substring(0, 2), 10);
-    if (provincia < 1 || provincia > 24) return false;
+    if ((provincia < 1 || provincia > 24) && provincia !== 30) return false;
     
     const tercerDigito = parseInt(cedula.substring(2, 3), 10);
     if (tercerDigito < 0 || (tercerDigito > 6 && tercerDigito !== 9)) return false;
@@ -114,7 +114,8 @@ export const validarIdentificacionEcuatoriana = (id: string): boolean => {
         const esIdentificacionValida = verificadorCalculado === digitoVerificador;
         
         if (cedula.length === 13) {
-            return esIdentificacionValida && cedula.substring(10, 13) === "001";
+            const establecimiento = parseInt(cedula.substring(10, 13), 10);
+            return esIdentificacionValida && !isNaN(establecimiento) && establecimiento >= 1;
         }
         return esIdentificacionValida;
     }
@@ -131,8 +132,9 @@ export const validarIdentificacionEcuatoriana = (id: string): boolean => {
         
         const residuo = suma % 11;
         const verificadorCalculado = residuo === 0 ? 0 : 11 - residuo;
+        const establecimiento = parseInt(cedula.substring(10, 13), 10);
         
-        return verificadorCalculado === digitoVerificador && cedula.substring(10, 13) === "001";
+        return verificadorCalculado === digitoVerificador && !isNaN(establecimiento) && establecimiento >= 1;
     }
     
     // Sociedades públicas (tercer dígito 6 - Módulo 11)
@@ -147,8 +149,9 @@ export const validarIdentificacionEcuatoriana = (id: string): boolean => {
         
         const residuo = suma % 11;
         const verificadorCalculado = residuo === 0 ? 0 : 11 - residuo;
+        const establecimiento = parseInt(cedula.substring(9, 13), 10);
         
-        return verificadorCalculado === digitoVerificador && cedula.substring(9, 13) === "0001";
+        return verificadorCalculado === digitoVerificador && !isNaN(establecimiento) && establecimiento >= 1;
     }
     
     return false;
@@ -167,7 +170,7 @@ export const PROVINCES_MAP: Record<string, string> = {
     "10": "Imbabura", "11": "Loja", "12": "Los Ríos", "13": "Manabí", "14": "Morona Santiago",
     "15": "Napo", "16": "Pastaza", "17": "Pichincha (Quito)", "18": "Tungurahua",
     "19": "Zamora Chinchipe", "20": "Galápagos", "21": "Sucumbíos", "22": "Orellana",
-    "23": "Santo Domingo", "24": "Santa Elena"
+    "23": "Santo Domingo", "24": "Santa Elena", "30": "Extranjeros sin Cédula (SRI)"
 };
 
 export interface IdentificacionInfo {

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /portal
+
+Sitemap: https://santiagocordova.com/sitemap.xml
