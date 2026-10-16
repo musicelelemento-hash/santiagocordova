@@ -22,6 +22,7 @@ import {
   X,
   Zap,
   Boxes,
+  CheckCircle,
 } from 'lucide-react';
 import { Logo } from '../components/ui/Logo';
 import { Crystal3D } from '../components/3d/Crystal3D';
@@ -153,6 +154,13 @@ const TESTIMONIALS = [
     quote:
       'Gestionaron la devolución del IVA de mi abuelita en tiempo récord. Cada mes recibimos el depósito directo en la cuenta sin complicaciones.',
   },
+  {
+    name: 'David Zambrano M.',
+    role: 'Emprendedor & Consultor · RUC Reactivado',
+    city: 'GUAYAQUIL',
+    quote:
+      'Tenía más de 2 años con declaraciones atrasadas y el RUC en estado pasivo. Pensé que las multas me iban a quebrar. Santiago auditó mi historial, aplicó los recargos mínimos de ley y en 48 horas tenía mi RUC 100% activo y limpio.',
+  },
 ];
 
 // Same real FAQ copy shown on the current landing (screens/LandingPage.tsx).
@@ -185,7 +193,19 @@ const FAQS = [
     tag: 'ATRASOS',
     color: '#2B6AFF',
     q: '¿Qué hacer si tengo declaraciones atrasadas o multas acumuladas en el SRI?',
-    a: 'Analizamos tu historial tributario sin costo inicial, estructuramos las declaraciones pendientes con cálculo exacto de intereses y gestionamos facilidades de pago o remisiones de ley para restablecer tu RUC en estado activo en menos de 48 horas.',
+    a: 'Analizamos tu historial tributario sin costo inicial, auditamos los comprobantes omitidos y liquidamos cada ejercicio con los recargos mínimos de ley. Si tienes deudas antiguas, evaluamos la prescripción tributaria para no pagar lo que legalmente ya caducó, rehabilitando tu RUC en menos de 48 horas.',
+  },
+  {
+    tag: 'PRESCRIPCIÓN',
+    color: '#C9A96E',
+    q: '¿Cuándo prescriben las deudas y multas del SRI en Ecuador?',
+    a: 'Según el Artículo 55 del Código Tributario, las obligaciones tributarias prescriben en 5 años contados desde que fueron exigibles, o en 7 años si nunca se presentó la declaración. En Soluciones Tributarias PRO auditamos tu expediente para invocar formalmente la prescripción y evitar que pagues deudas que ya han caducado.',
+  },
+  {
+    tag: 'RUC BLOQUEADO',
+    color: '#00A896',
+    q: '¿Cómo reactivar un RUC suspendido o pasivo por declaraciones omisas?',
+    a: 'El SRI suspende o pasa a estado pasivo los RUC con declaraciones pendientes. Elaboramos y enviamos los formularios 104 (IVA) y 102 (Renta) atrasados con sincronización digital algorítmica y gestionamos el levantamiento inmediato de la suspensión para que vuelvas a facturar en menos de 24 horas.',
   },
 ];
 
@@ -341,9 +361,9 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         tag: 'DEFENSA FISCAL',
         price: 60,
         period: 'base',
-        title: 'Regularización de RUC & glosas',
-        desc: 'Reactivación de RUC suspendido, declaraciones pendientes al día y solicitud de facilidades de pago.',
-        bullets: ['Diagnóstico histórico sin costo', 'Eliminación de clausuras', 'Cálculo exacto de recargos mínimos'],
+        title: 'Regularización de declaraciones atrasadas & RUC',
+        desc: 'Reactivación de RUC suspendido, puesta al día de años omisos con recargos mínimos y defensa de prescripción tributaria.',
+        bullets: ['Auditoría histórica de omisiones sin costo', 'Reactivación y levantamiento de clausura en 24h', 'Cálculo exacto de recargos mínimos de ley', 'Defensa de prescripción (deudas > 5 años)'],
       },
       {
         id: 'devolucion_iva',
@@ -643,10 +663,14 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           }}
         />
         <div className="relative z-[2] w-full max-w-[1100px] px-6 text-center">
-          <Reveal index={0} className="inline-flex items-center gap-2.5 px-[15px] py-[7px] rounded-full" as="div">
+          <Reveal index={0} className="inline-flex flex-wrap items-center justify-center gap-2" as="div">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '7px 15px', borderRadius: 999, border: '1px solid rgba(201,169,110,0.42)', background: 'rgba(201,169,110,0.10)' }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: '#C9A96E', animation: 'lujoPulse 2.4s infinite' }} />
               <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color: '#e6d3ab' }}>PASAJE · EL ORO · ECUADOR</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 15px', borderRadius: 999, border: '1px solid rgba(0,168,150,0.40)', background: 'rgba(0,168,150,0.10)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: 999, background: '#4edea3' }} />
+              <span className="font-mono text-[10px] font-bold tracking-[0.22em]" style={{ color: '#4edea3' }}>REGULARIZACIÓN SRI · CERO MULTAS ABUSIVAS</span>
             </span>
           </Reveal>
           <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,7vw,6.4rem)' }}>
@@ -665,8 +689,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               de precisión
             </span>
           </Reveal>
-          <Reveal index={2} as="p" className="lujo-hero-desc font-light" style={{ margin: '26px auto 0', maxWidth: 620, fontSize: 'clamp(0.98rem,1.45vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
-            Contabilidad, declaraciones y blindaje fiscal para empresas y profesionales del Ecuador. Automatización algorítmica con revisión humana experta.
+          <Reveal index={2} as="p" className="lujo-hero-desc font-light" style={{ margin: '26px auto 0', maxWidth: 660, fontSize: 'clamp(0.98rem,1.45vw,1.2rem)', lineHeight: 1.65, color: '#a9b6c9' }}>
+            Contabilidad de precisión, regularización de declaraciones atrasadas y blindaje fiscal ante el SRI en Ecuador. Reactivación de RUC en 24h y liquidación con recargos mínimos de ley.
           </Reveal>
           <Reveal index={3} className="lujo-hero-ctas flex flex-col sm:flex-row gap-3.5 sm:gap-4 justify-center items-center w-full max-w-md sm:max-w-none mx-auto" style={{ marginTop: 38 }}>
             <a
@@ -691,6 +715,20 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <span>Ver Servicios & Tarifas</span>
               <ArrowRight size={14} className="text-[#00A896] shrink-0" />
             </a>
+          </Reveal>
+          <Reveal index={4} className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-slate-400 font-mono text-[10.5px] sm:text-[11.5px]" style={{ marginTop: 26 }}>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle size={13} className="text-[#00A896]" />
+              <span>Auditoría inicial sin costo</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle size={13} className="text-[#00A896]" />
+              <span>Reactivación RUC en 24-48h</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle size={13} className="text-[#00A896]" />
+              <span>Recargos mínimos de ley & Prescripción</span>
+            </span>
           </Reveal>
         </div>
         <div className="lujo-scrollcue hidden min-[1040px]:flex absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[2] flex-col items-center gap-2.5">
@@ -808,7 +846,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               [
                 { id: 'ruc', icon: Search, color: '#00A896', tag: 'VALIDACIÓN SRI', title: 'Validar RUC o cédula', desc: 'Módulo 10/11, provincia y tipo de contribuyente en segundos.' },
                 { id: 'simulador', icon: Calculator, color: '#2B6AFF', tag: 'RIMPE 2026', title: 'Simular tu declaración', desc: 'Encuadre de régimen e impuesto estimado según tus ingresos.' },
-                { id: 'multas', icon: ShieldAlert, color: '#C9A96E', tag: 'ATRASOS', title: 'Calcular multas', desc: 'Riesgo estimado por meses sin declarar, con o sin ventas.' },
+                { id: 'multas', icon: ShieldAlert, color: '#C9A96E', tag: 'ATRASOS & MULTAS SRI', title: 'Calcular multas y atrasos', desc: 'Riesgo estimado por meses sin declarar, recargos mínimos y análisis de prescripción.' },
                 { id: 'calendario', icon: Calendar, color: '#00A896', tag: 'CALENDARIO SRI', title: 'Fecha límite por RUC', desc: 'Tu día exacto de vencimiento según el 9no dígito.' },
               ] as const
             ).map((tool, i) => (
@@ -976,23 +1014,43 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       )}
 
       {activeTool === 'multas' && (
-        <ToolModal title="Calcular multas por atraso" tag="RIESGO ESTIMADO SRI" color="#C9A96E" onClose={() => setActiveTool(null)}>
+        <ToolModal title="Calcular multas y atrasos SRI" tag="RIESGO ESTIMADO · ART. 100 LRTI" color="#C9A96E" onClose={() => setActiveTool(null)}>
           <div>
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>MESES SIN DECLARAR</span>
-              <span className="font-mono text-[15px] font-bold text-white">{penaltyMeses} {penaltyMeses === 1 ? 'mes' : 'meses'}</span>
+              <span className="font-mono text-[14px] font-bold text-white">
+                {penaltyMeses} {penaltyMeses === 1 ? 'mes' : 'meses'}
+                {penaltyMeses >= 60 ? ' (5+ años · Posible Prescripción)' : ''}
+              </span>
             </div>
             <input
               type="range"
               min={1}
-              max={36}
+              max={60}
               step={1}
               value={penaltyMeses}
               onChange={(e) => setPenaltyMeses(Number(e.target.value))}
-              className="w-full mt-3"
+              aria-label="Meses sin declarar en el SRI"
+              className="w-full mt-3 cursor-pointer"
               style={{ accentColor: '#C9A96E' }}
             />
+            <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+              <span>1 mes</span>
+              <span>12 meses (1 año)</span>
+              <span>36 meses (3 años)</span>
+              <span>60 meses (5 años)</span>
+            </div>
           </div>
+          {penaltyMeses >= 60 && (
+            <div className="rounded-xl p-3.5 border border-[#C9A96E]/40 bg-[#C9A96E]/10 text-left" style={{ marginTop: 14 }}>
+              <div className="font-mono text-[9.5px] font-bold text-[#e6d3ab] tracking-wider flex items-center gap-1.5">
+                <span>⚖️ ALERTA LEGAL · ART. 55 CÓDIGO TRIBUTARIO</span>
+              </div>
+              <p className="text-[11.5px] text-slate-300 mt-1 leading-relaxed">
+                Tus obligaciones tributarias con más de 5 años pueden calificar para <strong>extinción por prescripción</strong>. No pagues sin antes auditar tu expediente para evitar desembolsos por deudas ya caducadas.
+              </p>
+            </div>
+          )}
           <div className="grid gap-2" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 18 }}>
             <button
               type="button"
@@ -1004,7 +1062,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
               }
             >
-              Sin ventas
+              Sin ventas (En cero)
             </button>
             <button
               type="button"
@@ -1016,7 +1074,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   : { padding: '10px 6px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.04)', color: '#9fadc0' }
               }
             >
-              Con ventas
+              Con ventas registradas
             </button>
           </div>
           {penaltyType === 'con_ventas' && (
@@ -1032,7 +1090,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 step={100}
                 value={penaltyVentasEst}
                 onChange={(e) => setPenaltyVentasEst(Number(e.target.value))}
-                className="w-full mt-3"
+                aria-label="Ventas mensuales estimadas en dólares"
+                className="w-full mt-3 cursor-pointer"
                 style={{ accentColor: '#C9A96E' }}
               />
             </div>
@@ -1043,23 +1102,27 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <span className="font-mono font-extrabold text-[20px]" style={{ color: '#C9A96E' }}>${penaltyResult.totalRiesgo.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
-              <span className="font-light text-[12px]" style={{ color: '#9fadc0' }}>Multa base + interés</span>
+              <span className="font-light text-[12px]" style={{ color: '#9fadc0' }}>Multa base + interés estimado</span>
               <span className="font-mono text-[12px]" style={{ color: '#9fadc0' }}>${penaltyResult.multaBase} + ${penaltyResult.interes}</span>
             </div>
             <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
               <span className="font-light text-[12px]" style={{ color: '#9fadc0' }}>Ahorro gestionando con nosotros</span>
               <span className="font-mono font-bold text-[13px]" style={{ color: '#4edea3' }}>${penaltyResult.ahorroConNosotros.toLocaleString()}</span>
             </div>
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 text-[11px] text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] shrink-0" />
+              <span>Auditoría de retenciones a favor y liquidación con recargos mínimos de ley.</span>
+            </div>
           </div>
           <a
-            href={wa(`Hola Santiago Córdova, tengo ${penaltyMeses} meses sin declarar en el SRI y necesito regularizar mi RUC de forma urgente.`)}
+            href={wa(`Hola Santiago Córdova, calculé en la web que tengo ${penaltyMeses} meses sin declarar en el SRI (${penaltyType === 'sin_ventas' ? 'sin ventas' : 'con ventas aprox. $' + penaltyVentasEst}). Deseo agendar una auditoría inicial para regularizar mi RUC con recargos mínimos.`)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-black uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
             style={{ marginTop: 18, height: 48, background: 'linear-gradient(135deg, #F3D382, #C9A96E)', color: '#0d131f', boxShadow: '0 10px 24px -8px rgba(201,169,110,0.5)' }}
           >
             <MessageCircle size={15} />
-            Regularizar ahora
+            Regularizar con recargos mínimos
           </a>
         </ToolModal>
       )}
@@ -1481,10 +1544,12 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             <div className="font-mono text-[10px] tracking-[0.26em] text-slate-500">O ENTRA DIRECTO AL TEMA</div>
             <div className="flex flex-wrap gap-2.5 justify-center" style={{ marginTop: 20 }}>
               {[
+                { label: 'Declaraciones atrasadas SRI', color: '#C9A96E', msg: 'Hola Santiago Córdova, tengo declaraciones pendientes en el SRI y quiero regularizar mi RUC con recargos mínimos.', gold: true, icon: ShieldAlert },
+                { label: 'RUC suspendido o pasivo', color: '#4edea3', msg: 'Hola Santiago Córdova, mi RUC está suspendido en el SRI y necesito reactivarlo de forma urgente.', gold: false, icon: Zap },
+                { label: 'Prescripción de deudas SRI', color: '#e6d3ab', msg: 'Hola Santiago Córdova, tengo deudas del SRI de hace varios años y quiero verificar si aplican a prescripción tributaria.', gold: false, icon: HelpCircle },
                 { label: 'Encuadre RIMPE 2026', color: '#4edea3', msg: 'Hola Santiago Córdova, deseo simular y encuadrar mi régimen RIMPE 2026.', gold: false, icon: FileSpreadsheet },
                 { label: 'Firma electrónica .P12', color: '#7ea6ff', msg: 'Hola Santiago Córdova, requiero tramitar mi Firma Electrónica .P12 en 24h.', gold: false, icon: FileKey },
                 { label: 'Devolución de IVA', color: '#4edea3', msg: 'Hola Santiago Córdova, deseo gestionar la devolución de IVA para adulto mayor o discapacidad.', gold: false, icon: Heart },
-                { label: 'Declaraciones atrasadas', color: '#C9A96E', msg: 'Hola Santiago Córdova, tengo declaraciones pendientes y quiero regularizar mi RUC.', gold: true, icon: ShieldAlert },
               ].map((item) => (
                 <a
                   key={item.label}
