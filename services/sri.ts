@@ -302,11 +302,11 @@ export const formatPeriodForDisplay = (period: string): string => {
     // Normalizar formato semestral alternativo (2025-2S -> 2025-S2) para compatibilidad con datos históricos
     period = period.replace(/(20\d{2})-([12])S/i, '$1-S$2');
     if (period.length === 4) { // Annual
-        return `Renta ${period}`;
+        return `Renta Anual ${period}`;
     }
     if (period.includes('-S')) { // Semestral
         const [year, semester] = period.split('-S');
-        const semesterText = semester === '1' ? '1er Sem.' : '2do Sem.';
+        const semesterText = semester === '1' ? '1er Semestre (Ene - Jun)' : '2do Semestre (Jul - Dic)';
         return `IVA ${semesterText} ${year}`;
     }
     if (period.includes('-')) { // Monthly
@@ -593,14 +593,28 @@ export const generateDeclarationWhatsAppMessage = (
     const name = clientName.split(' ')[0];
     const formattedPeriod = formatPeriodForDisplay(period);
     
-    let msg = `¡Hola ${name}! 👋 ${greeting}. Le saludo de SantiagoCordova.com. Le informo que su obligación de ${type} correspondiente a ${formattedPeriod} ya ha sido procesada con éxito en el SRI. Adjunto el comprobante de la declaración.\n\n`;
+    // Identificar claramente si es semestral, mensual o renta anual
+    const isSemestral = period.includes('-S');
+    const isAnual = period.length === 4 || (type && type.toUpperCase().includes('RENTA'));
+    
+    let obligationLabel = 'Declaración Mensual de IVA';
+    if (isSemestral) {
+        obligationLabel = 'Declaración Semestral de IVA';
+    } else if (isAnual) {
+        obligationLabel = 'Declaración Anual de Impuesto a la Renta';
+    } else if (type && type !== 'IVA') {
+        obligationLabel = `Declaración de ${type}`;
+    }
+
+    let msg = `¡Hola ${name}! 👋 ${greeting}. Le saluda Santiago Córdova (Soluciones Contables).\n\n` +
+              `Le informo que su **${obligationLabel}** correspondiente al ciclo fiscal **${formattedPeriod}** ya fue procesada y presentada con éxito ante el Servicio de Rentas Internas (SRI). Adjunto su comprobante oficial.\n\n`;
     
     if (isPaid) {
-        msg += `El cobro de honorarios por este trámite se encuentra pagado. ¡Muchas gracias por su puntualidad!`;
+        msg += `✅ El cobro de honorarios profesionales por este trámite se encuentra cancelado. ¡Muchas gracias por su puntualidad y confianza!`;
     } else if (amount > 0) {
-        msg += `El valor total de honorarios es de $${amount.toFixed(2)}. Puede realizar el pago por transferencia o depósito.\n\n¡Muchas gracias por su confianza!`;
+        msg += `📌 El valor total de honorarios profesionales por este trámite es de **$${amount.toFixed(2)}**.\nPuede realizar el pago mediante transferencia o depósito bancario.\n\n¡Muchas gracias por su preferencia!`;
     } else {
-        msg += `¡Muchas gracias por su confianza!`;
+        msg += `¡Muchas gracias por su preferencia y confianza!`;
     }
     
     return msg;

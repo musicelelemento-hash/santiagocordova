@@ -2092,11 +2092,15 @@ export async function getMonthlyCollectionReport(): Promise<string> {
                          : obligations.ivaFrequency === 'Semestral' ? (c.fee_structure?.semestral ?? 10)
                          : 0;
 
+            const isSemestral = obligations.ivaFrequency === 'Semestral';
             const history = c.sri_declaraciones || [];
-            const relevantDecls = history.filter((d: any) =>
-                (d.period === currentMonthPeriod || d.period === lastMonthPeriod) &&
-                (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)
-            );
+            const relevantDecls = history.filter((d: any) => {
+                if (d.status !== 'Enviada' && d.status !== 'Pagada' && !d.proof_file) return false;
+                if (isSemestral) {
+                    return typeof d.period === 'string' && d.period.includes('-S');
+                }
+                return d.period === currentMonthPeriod || d.period === lastMonthPeriod;
+            });
 
             const paidDecls = relevantDecls.filter((d: any) => d.is_paid);
             const unpaidDecls = relevantDecls.filter((d: any) => !d.is_paid);
@@ -2907,6 +2911,9 @@ export async function generateDailyOperationalReport(): Promise<string> {
         const prevMonthNum = currentMonth === 1 ? 12 : currentMonth - 1;
         const activeIvaPeriod = `${prevMonthYear}-${String(prevMonthNum).padStart(2, '0')}`;
 
+        const activeSemestre = currentMonth <= 6 ? `${currentYear - 1}-S2` : `${currentYear}-S1`;
+        const activeSemestreLabel = currentMonth <= 6 ? `2do Semestre ${currentYear - 1}` : `1er Semestre ${currentYear}`;
+
         const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
 
         // Colecciones de auditoría
@@ -2914,10 +2921,12 @@ export async function generateDailyOperationalReport(): Promise<string> {
         const pendingMonthlyDecl: Array<{ name: string; ruc: string; dueDay: number | string }> = [];
         const popularClients: Array<{ name: string; ruc: string }> = [];
         const semestralClients: Array<{ name: string; ruc: string }> = [];
+        const pendingSemestralDecl: Array<{ name: string; ruc: string; dueDay: number | string }> = [];
         const upcomingDueThisWeek: Array<{ name: string; ruc: string; dueDay: number; status: string }> = [];
         const debtorsList: Array<{ name: string; debt: number }> = [];
         let totalDebt = 0;
         let alDiaMonthlyCount = 0;
+        let alDiaSemestralCount = 0;
         let noAplicaMonthlyCount = 0;
         let verifiedKeyCount = 0;
 
@@ -2963,6 +2972,16 @@ export async function generateDailyOperationalReport(): Promise<string> {
             if (isPopular) {
                 popularClients.push({ name: c.name, ruc: c.ruc });
             } else if (ivaFreq === 'Semestral') {
+                const isSemDeclared = allDecls.some((d: any) => {
+                    const cleanP = String(d.period || '').split(':')[0].trim();
+                    return (cleanP === activeSemestre || cleanP.includes(activeSemestre)) &&
+                           (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
+                });
+                if (isSemDeclared) {
+                    alDiaSemestralCount++;
+                } else {
+                    pendingSemestralDecl.push({ name: c.name, ruc: c.ruc, dueDay });
+                }
                 semestralClients.push({ name: c.name, ruc: c.ruc });
             } else {
                 // Verificar si para el período activo aplica o NO APLICA (inicio posterior)
@@ -3079,6 +3098,24 @@ export async function generateDailyOperationalReport(): Promise<string> {
             if (pendingMonthlyDecl.length > 8) {
                 msg += `<i>...y ${pendingMonthlyDecl.length - 8} pendientes más.</i>\n`;
             }
+        }
+        msg += `\n`;
+
+        // 2b. Contribuyentes Semestrales (RIMPE Emprendedor / IVA 0%)
+        msg += `🗓️ <b>CONTRIBUYENTES SEMESTRALES (${semestralClients.length} clientes — RIMPE Emprendedor / IVA 0%):</b>\n`;
+        msg += `• Ciclo Vigente: <b>${activeSemestreLabel} (${activeSemestre})</b>\n`;
+        msg += `• Al Día: <b>${alDiaSemestralCount}</b> clientes\n`;
+        msg += `• Pendientes: <b>${pendingSemestralDecl.length}</b> clientes\n`;
+        if (pendingSemestralDecl.length > 0 && (currentMonth === 1 || currentMonth === 7)) {
+            msg += `\n🚨 <b>Pendientes semestrales urgentes (vencen este mes):</b>\n`;
+            pendingSemestralDecl.slice(0, 6).forEach(c => {
+                msg += `• <b>${c.name}</b> (Vence día ${c.dueDay})\n`;
+            });
+            if (pendingSemestralDecl.length > 6) {
+                msg += `<i>...y ${pendingSemestralDecl.length - 6} semestrales más.</i>\n`;
+            }
+        } else {
+            msg += `ℹ️ <i>Próximo vencimiento de IVA semestral: ${currentMonth <= 6 ? 'JULIO' : 'ENERO'}.</i>\n`;
         }
         msg += `\n`;
 

@@ -11,7 +11,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
 import { getActivePeriodsForClient, getObligationsForPeriod } from '../services/complianceEngine';
 import { getClientServiceFee } from '../services/clientService';
-import { formatPeriodForDisplay, isFuturePeriod } from '../services/sri';
+import { formatPeriodForDisplay, isFuturePeriod, getClientIvaFrequency } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
 import { DEFAULT_FACTURACION_API_TOKEN, FACTURACION_API_TOKEN, getFacturacionApiToken, setFacturacionApiToken, isValidApiToken } from '../services/facturacionApi';
@@ -623,7 +623,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       id: `${nextKey}:IVA`,
       period: nextKey,
       type: 'IVA' as const,
-      label: `IVA (Adelanto)`,
+      label: freq === 'Semestral' ? `IVA Semestral (Adelanto)` : `IVA Mensual (Adelanto)`,
       amount: fee,
       isAdvance: true as const
     };
@@ -666,7 +666,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             id: `${latest}:IVA`,
             period: latest,
             type: 'IVA' as const,
-            label: `IVA (Adelanto)`,
+            label: freq === 'Semestral' ? `IVA Semestral (Adelanto)` : `IVA Mensual (Adelanto)`,
             amount: fee,
             isAdvance: true as const
           };
@@ -3984,19 +3984,33 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
                     {/* Controles de Lote y Modo */}
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {/* Presets rápidos: 1, 2, 3, 4 meses */}
+                      {/* Presets rápidos adaptativos: Mensual vs Semestral */}
                       <div className="flex items-center gap-1 bg-slate-100 dark:bg-black/20 p-1 rounded-xl border border-slate-200/50 dark:border-white/5">
-                        {[1, 2, 3, 4].map(num => (
-                          <button
-                            key={num}
-                            type="button"
-                            onClick={() => handleSelectQuickCount(num)}
-                            className="px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary shadow-sm active:scale-95 border border-slate-200/40 dark:border-white/5"
-                            title={`Seleccionar ${num} ${num === 1 ? 'mes' : 'meses'} en orden cronológico`}
-                          >
-                            ⚡ {num} {num === 1 ? 'Mes' : 'Meses'}
-                          </button>
-                        ))}
+                        {activeClientObj && getClientIvaFrequency(activeClientObj) === 'Semestral' ? (
+                          [1, 2].map(num => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => handleSelectQuickCount(num)}
+                              className="px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary shadow-sm active:scale-95 border border-slate-200/40 dark:border-white/5"
+                              title={`Seleccionar ${num} ${num === 1 ? 'semestre' : 'semestres'} en orden cronológico`}
+                            >
+                              ⚡ {num} {num === 1 ? 'Semestre' : 'Semestres (Año)'}
+                            </button>
+                          ))
+                        ) : (
+                          [1, 2, 3, 4].map(num => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => handleSelectQuickCount(num)}
+                              className="px-2 py-1 text-[9px] font-black uppercase tracking-wider transition-all rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary shadow-sm active:scale-95 border border-slate-200/40 dark:border-white/5"
+                              title={`Seleccionar ${num} ${num === 1 ? 'mes' : 'meses'} en orden cronológico`}
+                            >
+                              ⚡ {num} {num === 1 ? 'Mes' : 'Meses'}
+                            </button>
+                          ))
+                        )}
                         <button
                           type="button"
                           onClick={() => setSelectedPeriods(pendingObligations.map(o => o.id))}

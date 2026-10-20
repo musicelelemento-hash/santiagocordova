@@ -1172,11 +1172,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 return isActive && hasRenta;
             }
 
-            if (searchTerm.trim() && matrixMode === 'IVA') {
-                return isActive && (clientFreq === 'Mensual' || clientFreq === 'Semestral');
+            if (matrixMode === 'IVA') {
+                return isActive && clientFreq === frequency;
             }
 
-            return isActive && clientFreq === frequency;
+            return isActive;
         }).sort((a, b) => {
             const priorityA = hasPriorityDeclaration(a);
             const priorityB = hasPriorityDeclaration(b);
@@ -1268,6 +1268,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             return digitA - digitB || (a.tradeName || a.name).localeCompare(b.tradeName || b.name);
         });
     }, [clients, frequency, matrixMode, isWorkspaceMode, filterPastYearDebts, selectedYear, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption, searchTerm]);
+
+    const alternativeFrequencyMatches = useMemo(() => {
+        if (!searchTerm.trim() || matrixMode !== 'IVA') return { count: 0, targetFreq: null as IvaFrequency | null };
+        const q = searchTerm.toLowerCase().trim();
+        const otherFreq: IvaFrequency = frequency === 'Mensual' ? 'Semestral' : 'Mensual';
+        const matches = clients.filter(c => {
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan' || !c.isActive || c.isDeleted) return false;
+            const matchName = c.name.toLowerCase().includes(q) || (c.tradeName && c.tradeName.toLowerCase().includes(q));
+            const matchRuc = c.ruc.includes(q);
+            if (!matchName && !matchRuc) return false;
+            const cFreq = c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
+            return cFreq === otherFreq;
+        });
+        return { count: matches.length, targetFreq: otherFreq, clients: matches };
+    }, [clients, searchTerm, matrixMode, frequency]);
 
     const batchType = matrixMode === 'RENTA' ? 'renta' : (frequency === 'Mensual' ? 'mensual' : 'semestral');
     const batchTargetPeriod = targetPeriodForDeclaration(batchType);
@@ -2169,6 +2184,27 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     );
                 })()}
             </div>
+
+            {/* Banner inteligente de sugerencia de frecuencia alternativa */}
+            {alternativeFrequencyMatches.count > 0 && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#0b1326] to-transparent border border-amber-500/30 text-xs shadow-lg animate-fade-in font-mono">
+                    <div className="flex items-center gap-2.5 text-amber-300 font-bold">
+                        <LucideIcons.Sparkles size={16} className="text-amber-400 shrink-0 animate-pulse" />
+                        <span>
+                            Se {alternativeFrequencyMatches.count === 1 ? 'encontró' : 'encontraron'} <strong className="text-white font-black">{alternativeFrequencyMatches.count}</strong> {alternativeFrequencyMatches.count === 1 ? 'cliente con obligación' : 'clientes con obligación'} de <strong className="text-amber-200">IVA {alternativeFrequencyMatches.targetFreq}</strong> para tu búsqueda.
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => {
+                            if (alternativeFrequencyMatches.targetFreq) setFrequency(alternativeFrequencyMatches.targetFreq);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 text-[10px] font-black uppercase tracking-wider font-mono transition-all flex items-center gap-2 cursor-pointer shadow-md active:scale-95 shrink-0"
+                    >
+                        <span>Ver en IVA {alternativeFrequencyMatches.targetFreq}</span>
+                        <LucideIcons.ArrowRight size={13} />
+                    </button>
+                </div>
+            )}
 
             {/* 🚀 SUPER DOCK BAR DE ACCIONES MASIVAS (Stitch Nueva Luz 3.0) */}
             <div className="bg-gradient-to-r from-[#051424]/95 via-[#0b1326]/90 to-[#051424]/95 backdrop-blur-2xl p-5 rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl flex flex-wrap items-center justify-between gap-4 font-mono">

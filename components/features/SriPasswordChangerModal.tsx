@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
     Key, Copy, Check, ExternalLink, RefreshCw, Zap, Search, 
-    ShieldCheck, Lock, ArrowRight, UserCheck, AlertTriangle, X, Sparkles, Upload
+    ShieldCheck, Lock, ArrowRight, X, Sparkles, Upload, Eye, EyeOff, FileText, ChevronRight
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Client } from '../../types';
@@ -19,35 +19,21 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
     const { clients, updateClient } = useAppStore();
     const { toast } = useToast();
 
+    // Mode state: 'focus' (single client) | 'directory' (search list) | 'csv' (bulk Chrome passwords)
+    const [activeTab, setActiveTab] = useState<'focus' | 'directory' | 'csv'>('focus');
+    const [selectedClient, setSelectedClient] = useState<Client | null>(clientToFocus || null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
-    const [copiedPass, setCopiedPass] = useState<string | null>(null);
-    const [processedMap, setProcessedMap] = useState<Record<string, boolean>>({});
-    const [manualPassMap, setManualPassMap] = useState<Record<string, string>>({});
+    const [showCurrentPass, setShowCurrentPass] = useState(false);
+    const [showNewPass, setShowNewPass] = useState(true);
+    const [copiedField, setCopiedField] = useState<'ruc' | 'oldPass' | 'newPass' | null>(null);
 
-    React.useEffect(() => {
-        if (isOpen && clientToFocus) {
-            setSearchTerm(clientToFocus.ruc || clientToFocus.name);
-        } else if (isOpen && !clientToFocus) {
-            setSearchTerm('');
-        }
-    }, [isOpen, clientToFocus]);
+    // Form state for current selected client
+    const [newPasswordValue, setNewPasswordValue] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    const csvInputRef = React.useRef<HTMLInputElement>(null);
-
-    /**
-     * Lo que el CSV cambiaria, antes de tocar nada.
-     *
-     * Antes el import aplicaba los cambios de una y solo avisaba despues. Si
-     * el archivo traia una clave vieja, pisaba una buena sin que nadie
-     * pudiera verlo venir.
-     *
-     * `cambian` no guarda la clave, solo a quien le cambiaria: el archivo de
-     * Chrome ya es texto plano, no hace falta volver a pintarlo en pantalla.
-     */
-    /** Las claves leídas del archivo, fuera del estado de React. */
-    const claves = React.useRef<Record<string, string>>({});
-
+    // CSV Import refs and state
+    const csvInputRef = useRef<HTMLInputElement>(null);
+    const clavesRef = useRef<Record<string, string>>({});
     const [propuesta, setPropuesta] = useState<{
         leidas: number;
         cambian: { id: string; ruc: string; name: string; teniaClave: boolean }[];
@@ -55,10 +41,140 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
         noEstan: string[];
     } | null>(null);
 
+    // Sync focused client on open or prop change
+    useEffect(() => {
+        if (isOpen) {
+            if (clientToFocus) {
+                setSelectedClient(clientToFocus);
+                setActiveTab('focus');
+                const old = clientToFocus.sriPassword || '';
+                setNewPasswordValue(transformPasswordForSri(old));
+            } else {
+                // If no specific client focused, default to directory or first client
+                const active = clients.filter(c => !c.isDeleted && (c.isActive ?? true));
+                if (active.length > 0 && !selectedClient) {
+                    setSelectedClient(active[0]);
+                    const old = active[0].sriPassword || '';
+                    setNewPasswordValue(transformPasswordForSri(old));
+                }
+                setActiveTab(clientToFocus ? 'focus' : 'directory');
+            }
+        }
+    }, [isOpen, clientToFocus, clients]);
+
+    // Handle switching client
+    const handleSelectClient = (c: Client) => {
+        setSelectedClient(c);
+        const old = c.sriPassword || '';
+        setNewPasswordValue(transformPasswordForSri(old));
+        setActiveTab('focus');
+    };
+
     const activeClients = useMemo(() => {
         return clients.filter(c => !c.isDeleted && (c.isActive ?? true));
     }, [clients]);
 
+    const filteredClients = useMemo(() => {
+        const q = searchTerm.toLowerCase().trim();
+        if (!q) return activeClients.slice(0, 30);
+        return activeClients.filter(c => 
+            c.name.toLowerCase().includes(q) || 
+            c.ruc.includes(q) || 
+            (c.tradeName && c.tradeName.toLowerCase().includes(q))
+        ).slice(0, 50);
+    }, [activeClients, searchTerm]);
+
+    // Copy to clipboard helper with micro-feedback
+    const handleCopy = (text: string, field: 'ruc' | 'oldPass' | 'newPass') => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        setCopiedField(field);
+        toast.success(`Copiado al portapapeles: ${text}`);
+        setTimeout(() => setCopiedField(null), 2000);
+    };
+
+    // Password transformers
+    const handleApplyRotationRule = () => {
+        if (!selectedClient) return;
+        const current = selectedClient.sriPassword || '';
+        const rotated = transformPasswordForSri(current);
+        setNewPasswordValue(rotated);
+        toast.info(`Regla SRI aplicada: ${rotated}`);
+    };
+
+    const handleGenerateRandomPass = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+        let pass = '';
+        for (let i = 0; i < 8; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        pass += '@2026';
+        setNewPasswordValue(pass);
+        toast.info(`Clave segura generada: ${pass}`);
+    };
+
+    // Save password in system
+    const handleSavePassword = async () => {
+        if (!selectedClient) return;
+        const oldPass = selectedClient.sriPassword || '';
+        const cleanNew = newPasswordValue.trim();
+
+        if (!cleanNew) {
+            toast.warning("Por favor ingresa una clave válida.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const nowIso = new Date().toISOString();
+            await updateClient(selectedClient.id, {
+                sriPassword: cleanNew,
+                sriPasswordUpdatedAt: nowIso,
+                taxProfile: {
+                    ...(selectedClient.taxProfile as any),
+                    sriCredencial: {
+                        estado: 'ok',
+                        motivo: 'Clave actualizada manualmente',
+                        ultimo_ingreso: nowIso
+                    }
+                }
+            });
+
+            // Update local selection
+            setSelectedClient({
+                ...selectedClient,
+                sriPassword: cleanNew,
+                sriPasswordUpdatedAt: nowIso
+            });
+
+            // Sync with extension bridge
+            sendSRIPasswordChangeToExtension(selectedClient.ruc, oldPass, cleanNew);
+            toast.success(`✅ Clave SRI de ${selectedClient.name.split(' ')[0]} actualizada con éxito.`);
+        } catch (e: any) {
+            toast.error(`Error guardando contraseña: ${e.message}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Open SRI portal with new credentials on clipboard
+    const handleOpenSriPortal = () => {
+        if (!selectedClient) return;
+        const passToCopy = newPasswordValue.trim() || selectedClient.sriPassword || '';
+        
+        if (passToCopy) {
+            navigator.clipboard.writeText(passToCopy);
+        }
+
+        // Bridge notification
+        sendSRIPasswordChangeToExtension(selectedClient.ruc, selectedClient.sriPassword || '', passToCopy);
+
+        // Open SRI URL
+        openSRIPortal('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT');
+        toast.success(`🚀 Abriendo SRI. Clave (${passToCopy}) copiada al portapapeles.`);
+    };
+
+    // CSV Import from Chrome
     const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -67,15 +183,13 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
             const content = evt.target?.result as string;
             if (!content) return;
             const creds = parseCredentialsCSV(content);
-            claves.current = creds;   // en una ref, no en el estado de React
+            clavesRef.current = creds;
             const credKeys = Object.keys(creds);
             if (credKeys.length === 0) {
                 toast.error("No se encontraron claves de usuario/RUC válidas en el archivo CSV.");
                 return;
             }
 
-            // Se arma la propuesta y se muestra. Nada se toca hasta que el
-            // usuario lo confirme.
             const cambian: { id: string; ruc: string; name: string; teniaClave: boolean }[] = [];
             let sinCambio = 0;
             const rucsUsados = new Set<string>();
@@ -91,151 +205,91 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
 
             const noEstan = credKeys.filter(k => !rucsUsados.has(k));
             setPropuesta({ leidas: credKeys.length, cambian, sinCambio, noEstan });
+            setActiveTab('csv');
         };
         reader.readAsText(file);
         if (csvInputRef.current) csvInputRef.current.value = '';
     };
 
-    /** Aplica lo que el usuario acaba de aprobar. */
-    const aplicarPropuesta = () => {
+    const aplicarPropuestaCsv = () => {
         if (!propuesta) return;
         const cuando = new Date().toISOString();
         propuesta.cambian.forEach(c => {
-            const cliente = clients.find(x => x.id === c.id);
-            const clave = claves.current[c.ruc] || claves.current[c.ruc.slice(0, 10)];
-            if (cliente && clave) {
+            const clave = clavesRef.current[c.ruc] || clavesRef.current[c.ruc.slice(0, 10)];
+            if (clave) {
                 updateClient(c.id, { sriPassword: clave, sriPasswordUpdatedAt: cuando });
             }
         });
-        toast.success(`✅ ${propuesta.cambian.length} clave(s) actualizada(s).`);
+        toast.success(`✅ ${propuesta.cambian.length} clave(s) sincronizadas desde Chrome.`);
         setPropuesta(null);
-        claves.current = {};
-    };
-
-    const filteredClients = useMemo(() => {
-        const q = searchTerm.toLowerCase().trim();
-        return activeClients.filter(c => {
-            if (!q) return true;
-            return c.name.toLowerCase().includes(q) || c.ruc.includes(q) || (c.sriPassword || '').toLowerCase().includes(q);
-        });
-    }, [activeClients, searchTerm]);
-
-    const handleCopy = (text: string, type: 'ruc' | 'pass', clientId: string) => {
-        navigator.clipboard.writeText(text);
-        if (type === 'ruc') setCopiedRuc(clientId);
-        else setCopiedPass(clientId);
-        toast.success(`Copiado: ${text}`);
-        setTimeout(() => {
-            setCopiedRuc(null);
-            setCopiedPass(null);
-        }, 2000);
-    };
-
-    const handleApplyPasswordChange = (client: Client, customPass?: string) => {
-        const oldPass = client.sriPassword || '';
-        const newPass = (customPass !== undefined ? customPass : (manualPassMap[client.id] !== undefined ? manualPassMap[client.id] : transformPasswordForSri(oldPass))).trim();
-
-        if (!newPass) {
-            toast.warning(`Debes ingresar una clave válida para ${client.name}.`);
-            return;
-        }
-
-        if (oldPass === newPass && !customPass && manualPassMap[client.id] === undefined) {
-            toast.info(`La contraseña para ${client.name} ya está configurada.`);
-            return;
-        }
-
-        const nowIso = new Date().toISOString();
-        updateClient(client.id, { 
-            sriPassword: newPass, 
-            sriPasswordUpdatedAt: nowIso,
-            taxProfile: {
-                ...(client.taxProfile as any),
-                sriCredencial: {
-                    estado: 'ok',
-                    motivo: 'Clave actualizada manualmente',
-                    ultimo_ingreso: nowIso
-                }
-            }
-        });
-        setProcessedMap(prev => ({ ...prev, [client.id]: true }));
-        toast.success(`🔑 Clave SRI de ${client.name} actualizada y habilitada: ${newPass}`);
-
-        // Notificar a la extensión de Chrome
-        sendSRIPasswordChangeToExtension(client.ruc, oldPass, newPass);
-    };
-
-    const handleLaunchSriChange = (client: Client) => {
-        const oldPass = client.sriPassword || '';
-        const newPass = (manualPassMap[client.id] !== undefined ? manualPassMap[client.id] : transformPasswordForSri(oldPass)).trim();
-
-        // Copiar la nueva contraseña al portapapeles
-        navigator.clipboard.writeText(newPass);
-
-        // Notificar a la extensión de Chrome
-        sendSRIPasswordChangeToExtension(client.ruc, oldPass, newPass);
-
-        // Abrir el portal SRI
-        openSRIPortal('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT');
-
-        toast.success(`🚀 Abriendo SRI para ${client.name}. Nueva clave (${newPass}) copiada al portapapeles.`);
+        clavesRef.current = {};
+        setActiveTab('focus');
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-fade-in">
-            <div className="relative w-full max-w-5xl h-[88vh] bg-[hsl(222,47%,5%)] rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col overflow-hidden text-white">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="relative w-full max-w-xl bg-[#030712] rounded-3xl border border-white/10 shadow-2xl flex flex-col overflow-hidden text-white font-sans">
                 
-                {/* Header */}
-                <div className="p-6 bg-slate-900/90 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Header Obsidian & Liquid Gold */}
+                <div className="px-5 py-4 bg-slate-900/60 border-b border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 text-white font-bold shadow-lg shadow-amber-500/20 shrink-0">
-                            <Key size={24} />
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/30 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm shrink-0">
+                            <Key size={18} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black uppercase text-amber-400 tracking-[0.2em]">Asistente de Rotación de Credenciales SRI</span>
-                                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-mono font-bold">
-                                    Regla: * ➔ @
+                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-mono">Bóveda SRI</span>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">
+                                    AES-256 Cloud Sync
                                 </span>
                             </div>
-                            <h2 className="text-xl font-black text-white tracking-tight">
-                                Cambio & Actualización de Contraseñas SRI
+                            <h2 className="text-sm font-black text-white tracking-tight">
+                                Gestión de Claves del Portal SRI
                             </h2>
                         </div>
                     </div>
 
-                    <button onClick={onClose} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white shrink-0 self-end sm:self-auto">
-                        <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button 
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all cursor-pointer"
+                        >
+                            <X size={15} />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Subheader Informático */}
-                <div className="px-6 py-3 bg-amber-500/10 border-b border-amber-500/20 text-amber-200 text-xs flex items-center justify-between font-medium">
-                    <div className="flex items-center gap-2">
-                        <Zap size={14} className="text-amber-400 shrink-0" />
-                        <span>Reemplaza automáticamente el asterisco final <strong>*</strong> por <strong>@</strong> (o agrega @) para cumplir con la renovación periódica solicitada por el SRI.</span>
+                {/* Sub-bar Navigation Pills */}
+                <div className="px-5 py-2.5 bg-slate-950/80 border-b border-white/5 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('focus')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                activeTab === 'focus'
+                                    ? 'bg-[#00A896] text-white shadow-sm font-black'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            Cliente Actual
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('directory')}
+                            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                activeTab === 'directory'
+                                    ? 'bg-[#00A896] text-white shadow-sm font-black'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            Explorar Cartera ({activeClients.length})
+                        </button>
                     </div>
-                    <span className="font-mono font-bold text-slate-400 text-[10px] hidden lg:block">
-                        Total Clientes con Clave: {activeClients.length}
-                    </span>
-                </div>
 
-                {/* Controls */}
-                <div className="p-4 bg-slate-950/60 border-b border-white/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
-                        <input
-                            type="text"
-                            placeholder="Buscar cliente, RUC o contraseña..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-amber-500"
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
+                    {/* CSV Button Discreet */}
+                    <div>
                         <input 
                             type="file" 
                             ref={csvInputRef} 
@@ -244,175 +298,271 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
                             className="hidden" 
                         />
                         <button 
+                            type="button"
                             onClick={() => csvInputRef.current?.click()} 
-                            className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-2 shrink-0 shadow-lg shadow-amber-500/10"
-                            title="Importar archivo CSV exportado desde Google Chrome"
+                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            title="Importar CSV exportado desde Google Chrome"
                         >
-                            <Upload size={14} className="text-amber-400" />
-                            <span>📥 Importar CSV Contraseñas Chrome</span>
+                            <Upload size={12} className="text-amber-400" />
+                            <span>CSV Chrome</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Lo que el CSV cambiaría, antes de tocar nada */}
-                {propuesta && (
-                    <div className="mx-6 mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/[0.07] overflow-hidden">
-                        <div className="px-5 py-4 border-b border-amber-500/20">
-                            <div className="text-sm font-black text-amber-200">
-                                Leí {propuesta.leidas} clave{propuesta.leidas === 1 ? '' : 's'} del archivo. Todavía no cambié nada.
+                {/* Body Content */}
+                <div className="p-5 overflow-y-auto max-h-[70vh] space-y-4">
+
+                    {/* MODE 1: FOCUSED CLIENT VIEW */}
+                    {activeTab === 'focus' && selectedClient && (
+                        <div className="space-y-4">
+                            {/* Client Summary Hero */}
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 border border-white/10 shadow-sm flex items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="text-[10px] font-black uppercase text-[#C9A96E] tracking-wider font-mono">
+                                        {selectedClient.regime || 'Régimen General'} • {selectedClient.taxProfile?.ivaFrequency || 'Mensual'}
+                                    </div>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-tight leading-snug">
+                                        {selectedClient.tradeName || selectedClient.name}
+                                    </h3>
+                                    <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                                        <span>RUC: {selectedClient.ruc}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(selectedClient.ruc, 'ruc')}
+                                            className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-colors"
+                                            title="Copiar RUC"
+                                        >
+                                            {copiedField === 'ruc' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('directory')}
+                                    className="px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10 transition-colors shrink-0"
+                                >
+                                    Cambiar Cliente ➔
+                                </button>
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] font-bold">
-                                <span className="text-amber-300">
-                                    {propuesta.cambian.length} cliente{propuesta.cambian.length === 1 ? '' : 's'} cambiaría{propuesta.cambian.length === 1 ? '' : 'n'} de clave
-                                </span>
-                                {propuesta.sinCambio > 0 && (
-                                    <span className="text-slate-400">{propuesta.sinCambio} ya la tenía{propuesta.sinCambio === 1 ? '' : 'n'} igual</span>
-                                )}
-                                {propuesta.noEstan.length > 0 && (
-                                    <span className="text-slate-400">
-                                        {propuesta.noEstan.length} RUC{propuesta.noEstan.length === 1 ? '' : 's'} del archivo no {propuesta.noEstan.length === 1 ? 'está' : 'están'} en el sistema
+
+                            {/* Current Password Field */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">
+                                    Contraseña Actual Registrada
+                                </label>
+                                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/80 border border-white/10">
+                                    <Lock size={14} className="text-slate-500 shrink-0 ml-1" />
+                                    <span className="flex-1 font-mono text-xs font-bold text-slate-200 tracking-wider truncate">
+                                        {selectedClient.sriPassword ? (
+                                            showCurrentPass ? selectedClient.sriPassword : '••••••••••••'
+                                        ) : (
+                                            <span className="text-slate-500 italic font-normal">Sin clave registrada</span>
+                                        )}
                                     </span>
-                                )}
+                                    {selectedClient.sriPassword && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCurrentPass(!showCurrentPass)}
+                                                className="p-1 rounded text-slate-400 hover:text-white"
+                                                title={showCurrentPass ? 'Ocultar' : 'Mostrar'}
+                                            >
+                                                {showCurrentPass ? <EyeOff size={13} /> : <Eye size={13} />}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopy(selectedClient.sriPassword || '', 'oldPass')}
+                                                className="p-1 rounded text-slate-400 hover:text-amber-400"
+                                                title="Copiar Clave Actual"
+                                            >
+                                                {copiedField === 'oldPass' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* New Password / Transformer Section */}
+                            <div className="space-y-2 p-4 rounded-2xl bg-amber-500/[0.04] border border-amber-500/20">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-mono flex items-center gap-1.5">
+                                        <Sparkles size={12} />
+                                        <span>Nueva Contraseña Propuesta</span>
+                                    </label>
+                                    
+                                    {/* Action Chips */}
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={handleApplyRotationRule}
+                                            className="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[9px] font-bold font-mono transition-all"
+                                            title="Reemplaza * con @ (o agrega @ al final)"
+                                        >
+                                            ⚡ Rotar (* ➔ @)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateRandomPass}
+                                            className="px-2 py-0.5 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-bold font-mono transition-all"
+                                            title="Generar contraseña segura aleatoria"
+                                        >
+                                            🎲 Aleatoria
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 focus-within:border-amber-400">
+                                    <input
+                                        type={showNewPass ? 'text' : 'password'}
+                                        value={newPasswordValue}
+                                        onChange={(e) => setNewPasswordValue(e.target.value)}
+                                        placeholder="Ingresa o edita la nueva clave..."
+                                        className="flex-1 bg-transparent border-0 outline-none font-mono text-xs font-bold text-amber-300 placeholder-slate-600"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPass(!showNewPass)}
+                                        className="p-1 rounded text-slate-400 hover:text-white"
+                                        title={showNewPass ? 'Ocultar' : 'Mostrar'}
+                                    >
+                                        {showNewPass ? <EyeOff size={13} /> : <Eye size={13} />}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopy(newPasswordValue, 'newPass')}
+                                        className="p-1 rounded text-slate-400 hover:text-amber-400"
+                                        title="Copiar Nueva Clave"
+                                    >
+                                        {copiedField === 'newPass' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Primary Action Buttons */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleSavePassword}
+                                    disabled={isSaving || !newPasswordValue.trim()}
+                                    className="py-3 px-4 rounded-xl bg-[#00A896] hover:bg-[#008f80] disabled:opacity-40 text-white text-xs font-black uppercase tracking-wider font-mono shadow-md shadow-[#00A896]/20 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                                >
+                                    <Check size={14} />
+                                    <span>Guardar en Sistema</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleOpenSriPortal}
+                                    className="py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-xs font-black uppercase tracking-wider font-mono shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                                    title="Copia la nueva clave y abre el portal SRI en línea"
+                                >
+                                    <ExternalLink size={14} />
+                                    <span>Copiar & Abrir SRI</span>
+                                </button>
                             </div>
                         </div>
+                    )}
 
-                        {propuesta.cambian.length > 0 && (
-                            <div className="max-h-52 overflow-y-auto px-5 py-3 space-y-1.5">
+                    {/* MODE 2: DIRECTORY SEARCH LIST */}
+                    {activeTab === 'directory' && (
+                        <div className="space-y-3">
+                            <div className="relative">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por cliente o RUC..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-amber-500/50"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="divide-y divide-white/5 border border-white/5 rounded-2xl bg-slate-950/40 max-h-[50vh] overflow-y-auto">
+                                {filteredClients.map(c => {
+                                    const hasPass = !!c.sriPassword;
+                                    const isSelected = selectedClient?.id === c.id;
+
+                                    return (
+                                        <div 
+                                            key={c.id}
+                                            onClick={() => handleSelectClient(c)}
+                                            className={`p-3 flex items-center justify-between gap-3 hover:bg-white/[0.03] transition-colors cursor-pointer group ${
+                                                isSelected ? 'bg-amber-500/5 border-l-2 border-amber-500' : ''
+                                            }`}
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-bold text-xs text-white uppercase truncate group-hover:text-amber-300 transition-colors">
+                                                    {c.tradeName || c.name}
+                                                </div>
+                                                <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                                                    RUC: {c.ruc} • {c.taxProfile?.ivaFrequency || 'Mensual'}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                                    hasPass ? 'bg-slate-900 text-slate-300 border border-white/10' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                                }`}>
+                                                    {hasPass ? c.sriPassword : 'Sin Clave'}
+                                                </span>
+                                                <ChevronRight size={14} className="text-slate-500 group-hover:text-white transition-colors" />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODE 3: CSV IMPORT AUDIT */}
+                    {activeTab === 'csv' && propuesta && (
+                        <div className="space-y-4 p-4 rounded-2xl bg-amber-500/[0.05] border border-amber-500/30">
+                            <div>
+                                <h4 className="text-sm font-black text-amber-200 flex items-center gap-2">
+                                    <FileText size={16} />
+                                    <span>Auditoría de Claves Chrome ({propuesta.leidas} leídas)</span>
+                                </h4>
+                                <p className="text-xs text-slate-300 mt-1">
+                                    Se identificaron <strong>{propuesta.cambian.length} clientes</strong> con credencial a actualizar en Supabase.
+                                </p>
+                            </div>
+
+                            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 divide-y divide-white/5">
                                 {propuesta.cambian.map(c => (
-                                    <div key={c.id} className="flex items-center gap-3 text-xs py-1.5 border-b border-white/5 last:border-0">
-                                        <span className="flex-1 font-bold text-slate-200 truncate">{c.name}</span>
-                                        <span className="font-mono text-[11px] text-slate-400">{c.ruc}</span>
-                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                                            c.teniaClave
-                                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                        }`}>
-                                            {c.teniaClave ? 'reemplaza la actual' : 'clave nueva'}
-                                        </span>
+                                    <div key={c.id} className="pt-1.5 flex items-center justify-between text-xs">
+                                        <span className="font-bold text-slate-200 truncate">{c.name}</span>
+                                        <span className="font-mono text-[10px] text-amber-400 shrink-0 ml-2">{c.ruc}</span>
                                     </div>
                                 ))}
                             </div>
-                        )}
 
-                        <div className="px-5 py-4 flex flex-wrap items-center gap-3 border-t border-amber-500/20">
-                            <button
-                                onClick={aplicarPropuesta}
-                                disabled={propuesta.cambian.length === 0}
-                                className="px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all"
-                            >
-                                {propuesta.cambian.length === 0
-                                    ? 'No hay nada que actualizar'
-                                    : `Actualizar ${propuesta.cambian.length} clave${propuesta.cambian.length === 1 ? '' : 's'}`}
-                            </button>
-                            <button
-                                onClick={() => { setPropuesta(null); claves.current = {}; }}
-                                className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-bold transition-all"
-                            >
-                                No cambiar nada
-                            </button>
-                            {propuesta.cambian.some(c => c.teniaClave) && (
-                                <span className="text-[11px] text-amber-300/80">
-                                    Las marcadas «reemplaza la actual» pisan una clave que ya tenías guardada.
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Table list */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-3 no-scrollbar">
-                    {filteredClients.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                            No se encontraron clientes con contraseña registrada.
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
-                            <table className="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                        <th className="py-4 px-5">Cliente / RUC</th>
-                                        <th className="py-4 px-5">Clave Actual SRI</th>
-                                        <th className="py-4 px-5">Nueva Clave (* ➔ @)</th>
-                                        <th className="py-4 px-5 text-right">Acciones de Actualización</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {filteredClients.map(c => {
-                                        const oldPass = c.sriPassword || '';
-                                        const suggestedPass = transformPasswordForSri(oldPass);
-                                        const isUpdated = processedMap[c.id] || oldPass.endsWith('@');
-
-                                        return (
-                                            <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
-                                                <td className="py-4 px-5">
-                                                    <div className="font-bold text-white uppercase">{c.name}</div>
-                                                    <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400 mt-0.5">
-                                                        <span>RUC: {c.ruc}</span>
-                                                        <button 
-                                                            onClick={() => handleCopy(c.ruc, 'ruc', c.id)}
-                                                            className="text-slate-500 hover:text-amber-400 p-0.5"
-                                                            title="Copiar RUC"
-                                                        >
-                                                            {copiedRuc === c.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-                                                        </button>
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-4 px-5 font-mono">
-                                                    <span className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold ${oldPass ? 'bg-slate-900 border-white/10 text-slate-300' : 'bg-slate-800/50 border-slate-700/50 text-slate-500 italic'}`}>
-                                                        {oldPass || 'Sin clave registrada'}
-                                                    </span>
-                                                </td>
-
-                                                <td className="py-4 px-5 font-mono">
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={manualPassMap[c.id] !== undefined ? manualPassMap[c.id] : suggestedPass}
-                                                            onChange={(e) => setManualPassMap(prev => ({ ...prev, [c.id]: e.target.value }))}
-                                                            placeholder="Nueva clave..."
-                                                            className="px-2.5 py-1 rounded-xl bg-slate-900 border border-amber-500/40 text-amber-300 font-bold text-xs outline-none focus:border-amber-400 w-36"
-                                                        />
-                                                        <button
-                                                            onClick={() => handleCopy(manualPassMap[c.id] !== undefined ? manualPassMap[c.id] : suggestedPass, 'pass', c.id)}
-                                                            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                                                            title="Copiar Nueva Clave al Portapapeles (para Ecuafact/SRI)"
-                                                        >
-                                                            {copiedPass === c.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                                                        </button>
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-4 px-5 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleApplyPasswordChange(c)}
-                                                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                                                                isUpdated
-                                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                                                    : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border-indigo-500/30'
-                                                            }`}
-                                                        >
-                                                            {isUpdated ? '✓ En Sistema' : '⚡ Cambiar en Sistema'}
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() => handleLaunchSriChange(c)}
-                                                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-[10px] font-black uppercase tracking-wider shadow-md flex items-center gap-1 active:scale-95"
-                                                            title="Copiar nueva clave y abrir SRI"
-                                                        >
-                                                            <ExternalLink size={12} />
-                                                            <span>Abrir SRI</span>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                            <div className="flex items-center gap-2 pt-2 border-t border-amber-500/20">
+                                <button
+                                    type="button"
+                                    onClick={aplicarPropuestaCsv}
+                                    className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-black uppercase tracking-wider transition-all"
+                                >
+                                    Confirmar y Aplicar ({propuesta.cambian.length})
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setPropuesta(null); setActiveTab('focus'); }}
+                                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-bold transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
                         </div>
                     )}
+
+                </div>
+
+                {/* Footer Micro-Status */}
+                <div className="px-5 py-2.5 bg-slate-950 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                    <span>Nueva Luz 3.0 • Bridge Automático</span>
+                    <span>SRI Ecuador 2026</span>
                 </div>
             </div>
         </div>
