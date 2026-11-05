@@ -8,6 +8,8 @@ import { Logo } from '../components/ui/Logo';
 import { downloadStoredFile, openStoredFileInNewTab } from '../services/fileService';
 import { FinancialMetricsOverview } from '../components/features/ClientDetail/FinancialMetricsOverview';
 
+const TaxShield3DBadge = React.lazy(() => import('../components/3d/TaxShield3DBadge'));
+
 // ─────────────────────────────────────────────────────────
 // UI SUB-COMPONENTS (Stitch Obsidian Luxury)
 // ─────────────────────────────────────────────────────────

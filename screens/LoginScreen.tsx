@@ -15,6 +15,8 @@ interface LoginScreenProps {
     clients?: Client[];
 }
 
+const SecurityVault3D = React.lazy(() => import('../components/3d/SecurityVault3D'));
+
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, clients = [] }) => {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
@@ -193,13 +195,36 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                 </div>
             </div>
 
-            {/* Main Auth Card (Ampliada a 500px con excelente espaciado) */}
-            <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="relative z-10 w-full max-w-[500px]"
-            >
+            {/* Two-Column Responsive Layout with 3D Security Vault */}
+            <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-14 pt-16 lg:pt-0">
+                {/* Left Column: 3D Security Vault (Desktop Showcase) */}
+                <div className="hidden lg:flex flex-col items-center justify-center flex-1 max-w-md text-center space-y-4">
+                    <div className="w-full h-[420px] relative">
+                        <React.Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader size={28} className="animate-spin text-brand-teal" /></div>}>
+                            <SecurityVault3D isAuthenticating={isSubmitting} />
+                        </React.Suspense>
+                    </div>
+                    <div className="space-y-2 font-mono">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-teal/10 border border-brand-teal/30 text-brand-teal text-[10px] font-bold tracking-widest uppercase shadow-sm">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                            Cifrado Cuántico XAdES-BES
+                        </div>
+                        <h2 className="text-2xl font-display font-black text-white tracking-tight">
+                            Bóveda Fiscal Inteligente
+                        </h2>
+                        <p className="text-xs text-slate-400 max-w-sm mx-auto font-sans leading-relaxed">
+                            Acceso de alta seguridad para contribuyentes y despacho. Declaraciones protegidas con token criptográfico y monitoreo SRI 2026 en tiempo real.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Right Column: Main Auth Card (Ampliada a 500px con excelente espaciado) */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative w-full max-w-[500px]"
+                >
                 {/* Outer Glow Wrapper */}
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-teal/40 via-sky-500/20 to-emerald-500/30 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
 
@@ -351,6 +376,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                     </div>
                 </div>
             </motion.div>
+            </div>
         </div>
     );
 };

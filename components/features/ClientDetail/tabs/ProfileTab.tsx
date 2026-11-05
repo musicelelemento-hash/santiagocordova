@@ -286,6 +286,25 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     const { toast } = useToast();
     const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;
 
+    // La extensión es la que tiene el historial de proveedores por cliente.
+    // La web no puede leer chrome.storage, así que se lo pide al bridge y se
+    // refresca cuando llega. Sin esto, el perfil sólo veía el top del período.
+    const [, forceProviderRefresh] = React.useState(0);
+    const [showAllProviders, setShowAllProviders] = React.useState(false);
+
+    React.useEffect(() => {
+        SupplierCatalogService.requestClientProviders(editedClient.ruc);
+        const onProviders = (event: MessageEvent) => {
+            const d = event.data;
+            if (d && d.source === 'SC_PRO_EXTENSION' && d.type === 'SRI_CLIENT_PROVIDERS_SYNC' &&
+                d.data && d.data.ruc === editedClient.ruc) {
+                forceProviderRefresh((n) => n + 1);
+            }
+        };
+        window.addEventListener('message', onProviders);
+        return () => window.removeEventListener('message', onProviders);
+    }, [editedClient.ruc]);
+
     const handleCopy = (text?: string) => {
         if (!text) return;
         navigator.clipboard.writeText(text);
@@ -867,6 +886,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         // Obtener arqueo verídico estricto y exclusivo de ESTE cliente
                         const purchasesData = SupplierCatalogService.getClientPurchasesSummary(editedClient, targetPeriod);
                         const totalIvaCredito = purchasesData.iva15 + purchasesData.iva5;
+                        const perfilProv = purchasesData.profile;
+                        const proveedoresProv = purchasesData.providers || [];
+                        const visiblesProv = showAllProviders ? proveedoresProv : proveedoresProv.slice(0, 6);
 
                         return (
                             <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
@@ -931,14 +953,82 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Top Proveedores Reales del Cliente o Estado Vacío Verídico */}
+                                {/* Proveedores del cliente: historial completo + nivel de perfil */}
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
                                         <span>Proveedores Recibidos del Cliente</span>
                                         <span className="text-[9px] text-slate-500 font-normal">Exclusivo RUC {editedClient.ruc.slice(0, 10)}...</span>
                                     </p>
 
-                                    {purchasesData.topProviders.length > 0 ? (
+                                    {perfilProv && perfilProv.proveedores > 0 && (
+                                        <div className="mb-2 p-2.5 rounded-xl bg-slate-100/70 dark:bg-black/30 border border-slate-200/40 dark:border-white/5">
+                                            <div className="flex items-center justify-between text-[10px]">
+                                                <span className="font-bold text-slate-500 uppercase tracking-wider">Nivel de perfil</span>
+                                                <span className={`font-black ${perfilProv.nivel >= 80 ? 'text-emerald-500' : perfilProv.nivel >= 50 ? 'text-amber-500' : 'text-rose-400'}`}>
+                                                    {perfilProv.nivel}%
+                                                </span>
+                                            </div>
+                                            <div className="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 mt-1.5 overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${perfilProv.nivel >= 80 ? 'bg-emerald-500' : perfilProv.nivel >= 50 ? 'bg-amber-500' : 'bg-rose-400'}`}
+                                                    style={{ width: `${Math.max(3, Math.min(100, perfilProv.nivel))}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-[9px] text-slate-500">
+                                                <span><b className="text-slate-700 dark:text-slate-200">{perfilProv.proveedores}</b> proveedores</span>
+                                                <span className="text-emerald-500">{perfilProv.clasificados} clasificados</span>
+                                                <span className="text-sky-500">{perfilProv.conActividad} con actividad</span>
+                                                {perfilProv.faltan > 0 && <span className="text-amber-500">{perfilProv.faltan} por clasificar</span>}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {proveedoresProv.length > 0 ? (
+                                        <div className="space-y-1.5 text-[11px]">
+                                            {visiblesProv.map((prov) => {
+                                                const dec = prov.decision;
+                                                const monto = prov.enPeriodo ? prov.basePeriodo : prov.base;
+                                                const nPer = Array.isArray(prov.periodos) ? prov.periodos.length : 0;
+                                                return (
+                                                    <div key={prov.ruc} className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{prov.nombre || prov.ruc}</span>
+                                                                {prov.enPeriodo && (
+                                                                    <span className="shrink-0 text-[8px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-500 font-bold">este mes</span>
+                                                                )}
+                                                                {dec && dec.deducible !== null && (
+                                                                    <span className={`shrink-0 text-[8px] px-1.5 py-0.5 rounded font-bold ${dec.deducible ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'}`}>
+                                                                        {dec.deducible ? 'crédito' : 'sin crédito'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[9px] text-slate-400 font-mono truncate">
+                                                                {prov.ruc}{prov.actividad ? ` · ${prov.actividad}` : ''}{nPer > 1 ? ` · ${nPer} períodos` : ''}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <div className="font-bold text-amber-600 dark:text-amber-400 font-mono">
+                                                                ${Number(monto || 0).toFixed(2)}
+                                                            </div>
+                                                            <div className="text-[8px] text-slate-400 uppercase">
+                                                                {prov.enPeriodo ? 'período' : 'histórico'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {proveedoresProv.length > 6 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAllProviders(v => !v)}
+                                                    className="w-full text-[10px] font-bold text-[#2B6AFF] py-1 hover:underline cursor-pointer"
+                                                >
+                                                    {showAllProviders ? 'Ver menos' : `Ver los ${proveedoresProv.length} proveedores`}
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : purchasesData.topProviders.length > 0 ? (
                                         <div className="space-y-1.5 text-[11px]">
                                             {purchasesData.topProviders.map((prov, i) => (
                                                 <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/40 dark:border-white/5">

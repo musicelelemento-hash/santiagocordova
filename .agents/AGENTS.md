@@ -47,7 +47,7 @@ Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema),
 | **Matriz de Cumplimiento SRI** | 🟡 **95% (Casi Listo)** | Funcional. Pendiente: Exportador masivo de reportes en Excel/PDF para auditoría. |
 | **Extensiones Web SRI (Chrome/Edge)** | 🟡 **80% (En Proceso)** | Inyección funcional. Pendiente: Empaquetador `manifest.json` v3 listo para distribución e importador 1-click de facturas recibidas del SRI. |
 | **Automatización WhatsApp** | 🟡 **95%** | Sala de envío (`SalaDeEnvio.tsx`): de a uno, con el enlace al comprobante en el mensaje. **Nunca se verificó en pantalla con datos reales.** Pendiente: envío 100% automático (§5) y el email con PDF adjunto, que es lo siguiente (§7). |
-| **Autocompletado de RUC desde el SRI** | 🔴 **ROTO en producción** | `corsproxy.io` dejó de ser gratuito: `fetchSRIPublicData()` devuelve HTTP 403. Ver §7. |
+| **Autocompletado de RUC desde el SRI** | 🟡 **Degradado, no roto** | `corsproxy.io` dejó de ser gratuito. `fetchSRIPublicData()` ya no explota: sin `VITE_CORS_PROXY_KEY` devuelve `null` + warning en consola (no autocompleta, pero no rompe crear cliente). Verificado 05-nov-2026: la key no está configurada en `.env.local`. Ver §7. |
 | **Generador de Anexos (ATS / RDEP)** | 🔴 **Pendiente (Fase 2)** | Generación automática de XMLs de Anexos a partir de comprobantes guardados. |
 
 ---
@@ -181,11 +181,12 @@ Dos cuidados al construirlas:
 
 | Qué | Síntoma | Dónde |
 | :--- | :--- | :--- |
-| **`corsproxy.io` dejó de ser gratuito** | `fetchSRIPublicData()` devuelve **HTTP 403** (`keyless_legacy_url`). Autocompletar al crear un cliente y validar un RUC no funcionan. | `services/sri.ts` |
-| **Supabase rechaza la llave anon (401)** | La extensión declara bien y guarda el comprobante, pero **las métricas del panel no llegan**. Hubo además 500 y 521. Revisar el estado del proyecto antes de tocar credenciales. | raíz §0b.2 |
+| **`corsproxy.io` dejó de ser gratuito** | **Actualizado 05-nov-2026 — degradado, no roto.** `fetchSRIPublicData()` ya no explota con HTTP 403: intenta la URL directa (sin CORS sólo funciona desde la extensión, en el propio dominio del SRI) y, si hay `VITE_CORS_PROXY_KEY` configurada, el proxy de pago con esa key. Sin ninguna de las dos, devuelve `null` + warning — no autocompleta, pero no rompe crear un cliente. Verificado: la key no está en `.env.local`. Para que vuelva a autocompletar hace falta pagar una key de corsproxy.io o montar un proxy propio (un Cloudflare Worker gratis, mismo tier que ya usan para R2) — decisión del usuario, no de código. | `services/sri.ts` |
+| ~~Supabase rechaza la llave anon (401)~~ | **CERRADA el 07-sep-2026** (ver raíz §0b.2): no era la llave, era permiso de columna (`is_deleted`, 42501) + falta de política RLS de SELECT en `sri_declaraciones`. Documentado acá por si esta fila se leía como vigente. | raíz §0b.2 |
 
-> Sobre el 401: una llave guardada en los Ajustes de la extensión **pisa a la
-> del código**. Una llave de repuesto rota tapa a la buena en silencio, y el
+> Sobre el 401 (histórico): una llave guardada en los Ajustes de la extensión
+> **pisa a la del código**. Una llave de repuesto rota tapa a la buena en
+> silencio, y el
 > arreglo suele ser **borrarla**, no salir a buscar una nueva. Regla general:
 > *una credencial de repuesto que no anda es peor que no tener repuesto.*
 

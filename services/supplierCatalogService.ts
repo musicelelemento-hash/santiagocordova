@@ -66,6 +66,41 @@ export interface ClientPurchasesAudit {
     summary: ClientPurchasesSummary;
 }
 
+export interface ClientProviderSummary {
+    ruc: string;
+    nombre: string;
+    veces: number;
+    base: number;
+    iva: number;
+    total: number;
+    tarifas?: Record<string, number>;
+    periodos: string[];
+    enPeriodo: boolean;
+    basePeriodo: number;
+    ivaPeriodo: number;
+    sinMontos: boolean;
+    actividad?: string | null;
+    categoria?: string | null;
+    estadoSri?: string | null;
+    decision?: { deducible: boolean | null; origen: string | null; ambito: string | null };
+}
+
+export interface ClientProviderProfile {
+    ruc: string;
+    periodo: string;
+    actualizado: number;
+    proveedores: ClientProviderSummary[];
+    metricas: {
+        proveedores: number;
+        clasificados: number;
+        conActividad: number;
+        conPeriodo: number;
+        conMontos?: number;
+        nivel: number;
+        faltan: number;
+    };
+}
+
 export interface ClientPurchasesDisplayData {
     totalDocs: number;
     base15: number;
@@ -83,6 +118,10 @@ export interface ClientPurchasesDisplayData {
         monto: number;
         facturas?: number;
     }>;
+    /** Proveedores históricos del cliente que sincroniza la extensión. */
+    providers?: ClientProviderSummary[];
+    /** Nivel de perfil: cuánto se sabe de sus proveedores. */
+    profile?: ClientProviderProfile['metricas'] & { actualizado?: number; periodo?: string };
     hasData: boolean;
     source: 'invoices' | 'resumen' | 'extension' | 'declaration' | 'none';
 }
@@ -652,13 +691,45 @@ export class SupplierCatalogService {
     }
 
     /**
+     * Los proveedores que la extensión conoce para ESTE cliente.
+     *
+     * Se leen de `sc_proveedores_cliente_<ruc>`, que escribe el bridge. Si no
+     * están todavía, se le piden a la extensión y la vista se refresca cuando
+     * lleguen: la web no puede leer `chrome.storage` por su cuenta.
+     */
+    static getClientProviders(client: Client, period?: string): ClientProviderProfile | null {
+        if (!client?.ruc) return null;
+        try {
+            const raw = localStorage.getItem(`sc_proveedores_cliente_${client.ruc}`);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as ClientProviderProfile;
+            if (!parsed || parsed.ruc !== client.ruc || !Array.isArray(parsed.proveedores)) return null;
+            return parsed;
+        } catch {
+            return null;
+        }
+    }
+
+    /** Pide a la extensión el perfil de proveedores de este cliente. */
+    static requestClientProviders(ruc: string, period?: string): void {
+        if (!ruc) return;
+        try {
+            window.postMessage({
+                source: 'SC_PRO_DASHBOARD',
+                type: 'SRI_REQUEST_CLIENT_PROVIDERS',
+                data: { ruc, periodo: period || '' }
+            }, '*');
+        } catch {}
+    }
+
+    /**
      * Obtiene el arqueo de compras consolidado para el perfil del cliente.
      * Busca únicamente información correspondiente a ese cliente específico:
      * 1. Facturas detalladas del período (`sc_compras_${client.ruc}_${period}`)
      * 2. Resumen de compras del período (`sc_compras_resumen_${client.ruc}_${period}`)
      * 3. Arqueo reciente emitido por la extensión Nueva Luz 3.0 (`sc_compras_${client.ruc}`)
      * 4. Historial de declaraciones presentadas del cliente (`client.declarationHistory`)
-     * 
+     *
      * Si no hay registros, devuelve un estado en cero verídico (sin mockups ni datos genéricos).
      */
     static getClientPurchasesSummary(client: Client, targetPeriod?: string): ClientPurchasesDisplayData {
@@ -667,6 +738,21 @@ export class SupplierCatalogService {
         let defaultYear = now.getFullYear();
         if (defaultMonth < 0) { defaultMonth = 11; defaultYear--; }
         const period = targetPeriod || `${defaultYear}-${String(defaultMonth + 1).padStart(2, '0')}`;
+
+        // El perfil de proveedores lo escribe el bridge de la extensión. Si ya
+        // está, viaja junto al arqueo; si no, se pide y la vista se refresca
+        // cuando llegue. No se inventa nada cuando falta.
+        const perfilProv = this.getClientProviders(client, period);
+        const extras = perfilProv
+            ? {
+                providers: perfilProv.proveedores,
+                profile: {
+                    ...perfilProv.metricas,
+                    actualizado: perfilProv.actualizado,
+                    periodo: perfilProv.periodo || period
+                }
+            }
+            : {};
 
         // 1. Verificar facturas detalladas del cliente para este período
         try {
@@ -703,6 +789,7 @@ export class SupplierCatalogService {
                     totalBase: s.totalBase,
                     totalIva: s.totalIva,
                     topProviders,
+                    ...extras,
                     hasData: true,
                     source: 'invoices'
                 };
@@ -727,6 +814,7 @@ export class SupplierCatalogService {
                         totalBase: Number((r.base15 || 0) + (r.base15SinCredito || 0) + (r.base5 || 0) + (r.base0 || 0)),
                         totalIva: Number((r.iva15 || 0) + (r.iva15SinCredito || 0) + (r.iva5 || 0)),
                         topProviders: (r.topProviders || []).slice(0, 3),
+                        ...extras,
                         hasData: true,
                         source: 'resumen'
                     };
@@ -756,6 +844,7 @@ export class SupplierCatalogService {
                             monto: p.total || p.monto || 0,
                             facturas: p.facturas
                         })),
+                        ...extras,
                         hasData: true,
                         source: 'extension'
                     };
@@ -787,6 +876,7 @@ export class SupplierCatalogService {
                         totalBase: Math.round((compras15 + compras5 + compras0) * 100) / 100,
                         totalIva: Math.round(montoIvaCompras * 100) / 100,
                         topProviders: [],
+                        ...extras,
                         hasData: true,
                         source: 'declaration'
                     };
@@ -807,6 +897,7 @@ export class SupplierCatalogService {
             totalBase: 0,
             totalIva: 0,
             topProviders: [],
+            ...extras,
             hasData: false,
             source: 'none'
         };

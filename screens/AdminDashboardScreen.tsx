@@ -43,6 +43,8 @@ import { getClientServiceFee } from '../services/clientService';
 import { generateDeclarationWhatsAppMessage, getClientIvaFrequency } from '../services/sri';
 import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
 
+const TelemetryOrb3D = React.lazy(() => import('../components/3d/TelemetryOrb3D'));
+
 
 interface AdminDashboardScreenProps {
     navigate: (screen: Screen, options?: any) => void;
@@ -1268,59 +1270,71 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     <div className="px-6 sm:px-10 pt-8 pb-6 sm:pt-10 relative z-10">
                         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
 
-                            {/* ── BRAND BLOCK (Stitch Obsidian Luxury) ── */}
-                            <div className="flex flex-col gap-3 font-mono">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-tertiary/15 border border-tertiary/30 backdrop-blur-md shadow-[0_0_10px_rgba(0,168,150,0.2)]">
-                                        <div className="relative w-2 h-2 rounded-full bg-tertiary">
-                                            <div className="absolute inset-0 rounded-full bg-tertiary animate-ping opacity-60" />
-                                        </div>
-                                        <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">SISTEMA ACTIVO · SRI 2026</span>
-                                    </div>
-                                    {(() => {
-                                        const esReciente = liveRpaPulse && (Date.now() - liveRpaPulse.t < 45000);
-                                        const esIncompleto = liveRpaPulse && liveRpaPulse.total && (liveRpaPulse.indice !== undefined) && (liveRpaPulse.indice < liveRpaPulse.total);
-                                        const fueInterrumpido = !esReciente && esIncompleto && liveRpaPulse?.estado !== 'DETENIDO';
-
-                                        if (fueInterrumpido) {
-                                            return (
-                                                <button
-                                                    onClick={() => {
-                                                        window.postMessage({ source: 'SC_PRO_DASHBOARD', type: 'SRI_RESUME_BATCH' }, '*');
-                                                    }}
-                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer backdrop-blur-md shadow-[0_0_12px_rgba(245,158,11,0.25)] group"
-                                                    title={`Interrumpido en ${liveRpaPulse.cliente || 'cliente'} (${liveRpaPulse.paso || ''}). Haz clic para reanudar el lote exactamente aquí.`}
-                                                >
-                                                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                                                    <span className="text-[10px] font-bold font-mono">
-                                                        ⚠️ Interrumpido: {liveRpaPulse.cliente ? liveRpaPulse.cliente.split(' ')[0] : 'Cliente'} ({liveRpaPulse.paso || ''}) · <span className="underline group-hover:text-white">▶ Reanudar</span>
-                                                    </span>
-                                                </button>
-                                            );
-                                        }
-
-                                        return (
-                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_10px_rgba(16,185,129,0.2)]" title={esReciente ? `RPA en curso: ${liveRpaPulse.detalle}` : "Puente RPA con SC TaxPilot PRO sincronizado"}>
-                                                <div className={`w-2 h-2 rounded-full ${esReciente ? 'bg-emerald-300 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
-                                                <span className="text-[10px] font-bold text-emerald-300 font-mono">
-                                                    {esReciente
-                                                        ? `⚡ ${liveRpaPulse.cliente ? liveRpaPulse.cliente.split(' ')[0] : 'RPA'} · ${liveRpaPulse.evento} ${liveRpaPulse.paso ? `(${liveRpaPulse.paso})` : ''}`
-                                                        : 'SC TaxPilot PRO · En Línea'}
-                                                </span>
+                            {/* ── BRAND BLOCK (Stitch Obsidian Luxury + 3D Quantum Core) ── */}
+                            <div className="flex items-center gap-6">
+                                <div className="flex flex-col gap-3 font-mono">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-tertiary/15 border border-tertiary/30 backdrop-blur-md shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                            <div className="relative w-2 h-2 rounded-full bg-tertiary">
+                                                <div className="absolute inset-0 rounded-full bg-tertiary animate-ping opacity-60" />
                                             </div>
-                                        );
-                                    })()}
+                                            <span className="text-[10px] font-bold text-tertiary uppercase tracking-[0.25em]">SISTEMA ACTIVO · SRI 2026</span>
+                                        </div>
+                                        {(() => {
+                                            const esReciente = liveRpaPulse && (Date.now() - liveRpaPulse.t < 45000);
+                                            const esIncompleto = liveRpaPulse && liveRpaPulse.total && (liveRpaPulse.indice !== undefined) && (liveRpaPulse.indice < liveRpaPulse.total);
+                                            const fueInterrumpido = !esReciente && esIncompleto && liveRpaPulse?.estado !== 'DETENIDO';
+
+                                            if (fueInterrumpido) {
+                                                return (
+                                                    <button
+                                                        onClick={() => {
+                                                            window.postMessage({ source: 'SC_PRO_DASHBOARD', type: 'SRI_RESUME_BATCH' }, '*');
+                                                        }}
+                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer backdrop-blur-md shadow-[0_0_12px_rgba(245,158,11,0.25)] group"
+                                                        title={`Interrumpido en ${liveRpaPulse.cliente || 'cliente'} (${liveRpaPulse.paso || ''}). Haz clic para reanudar el lote exactamente aquí.`}
+                                                    >
+                                                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                                                        <span className="text-[10px] font-bold font-mono">
+                                                            ⚠️ Interrumpido: {liveRpaPulse.cliente ? liveRpaPulse.cliente.split(' ')[0] : 'Cliente'} ({liveRpaPulse.paso || ''}) · <span className="underline group-hover:text-white">▶ Reanudar</span>
+                                                        </span>
+                                                    </button>
+                                                );
+                                            }
+
+                                            return (
+                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_10px_rgba(16,185,129,0.2)]" title={esReciente ? `RPA en curso: ${liveRpaPulse.detalle}` : "Puente RPA con SC TaxPilot PRO sincronizado"}>
+                                                    <div className={`w-2 h-2 rounded-full ${esReciente ? 'bg-emerald-300 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+                                                    <span className="text-[10px] font-bold text-emerald-300 font-mono">
+                                                        {esReciente
+                                                            ? `⚡ ${liveRpaPulse.cliente ? liveRpaPulse.cliente.split(' ')[0] : 'RPA'} · ${liveRpaPulse.evento} ${liveRpaPulse.paso ? `(${liveRpaPulse.paso})` : ''}`
+                                                            : 'SC TaxPilot PRO · En Línea'}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                    <div>
+                                        <h1 className="text-3xl sm:text-5xl font-black text-on-surface tracking-tight leading-none font-display">
+                                            CENTRO DE CONTROL
+                                            <span className="ml-3 relative inline-block">
+                                                <span className="relative z-10 bg-gradient-to-r from-tertiary via-tertiary to-primary bg-clip-text text-transparent">TRIBUTARIO</span>
+                                            </span>
+                                        </h1>
+                                        <p className="mt-2.5 text-xs sm:text-sm text-on-surface-variant font-sans font-medium">
+                                            Gestión contable de élite y automatización SRI · <span className="text-tertiary font-bold font-mono">{kpis.total} clientes activos</span>
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1 className="text-3xl sm:text-5xl font-black text-on-surface tracking-tight leading-none font-display">
-                                        CENTRO DE CONTROL
-                                        <span className="ml-3 relative inline-block">
-                                            <span className="relative z-10 bg-gradient-to-r from-tertiary via-tertiary to-primary bg-clip-text text-transparent">TRIBUTARIO</span>
-                                        </span>
-                                    </h1>
-                                    <p className="mt-2.5 text-xs sm:text-sm text-on-surface-variant font-sans font-medium">
-                                        Gestión contable de élite y automatización SRI · <span className="text-tertiary font-bold font-mono">{kpis.total} clientes activos</span>
-                                    </p>
+
+                                {/* 3D Quantum Telemetry Core (Apple/Linear Elite Experience) */}
+                                <div className="hidden xl:flex items-center">
+                                    <React.Suspense fallback={<div className="w-24 h-24" />}>
+                                        <TelemetryOrb3D
+                                            rpaPulseActive={!!(liveRpaPulse && (Date.now() - liveRpaPulse.t < 45000))}
+                                            clientCount={kpis.total}
+                                        />
+                                    </React.Suspense>
                                 </div>
                             </div>
 
