@@ -4,7 +4,8 @@ import {
   FileSpreadsheet, Key, Coins, Wallet, BarChart, FileText, CheckCircle,
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
   Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check,
-  UserPlus, Pin, Bot, Activity
+  UserPlus, Pin, Bot, Activity,
+  Bell,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -26,7 +27,7 @@ import { recordScreenVisit, getMostUsedScreens, getDefaultStartScreen, setDefaul
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
-const VALID_SCREENS: Screen[] = ['home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
+const VALID_SCREENS: Screen[] = ['notificaciones', 'home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
 
 // Lazy-loaded heavy modules & admin screens
 const AdminDashboardScreen = React.lazy(() => import('./screens/AdminDashboardScreen').then(m => ({ default: m.AdminDashboardScreen })));
@@ -34,6 +35,7 @@ const ClientsScreen = React.lazy(() => import('./screens/ClientsScreen').then(m 
 const LoopDeclaracionesScreen = React.lazy(() => import('./screens/LoopDeclaracionesScreen').then(m => ({ default: m.LoopDeclaracionesScreen })));
 const ReportsScreen = React.lazy(() => import('./screens/ReportsScreen').then(m => ({ default: m.ReportsScreen })));
 const SettingsScreen = React.lazy(() => import('./screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
+const NotificationsScreen = React.lazy(() => import('./screens/NotificationsScreen'));
 const CobranzaScreen = React.lazy(() => import('./screens/CobranzaScreen').then(m => ({ default: m.CobranzaScreen })));
 const CalendarScreen = React.lazy(() => import('./screens/CalendarScreen').then(m => ({ default: m.CalendarScreen })));
 const WebOrdersScreen = React.lazy(() => import('./screens/WebOrdersScreen').then(m => ({ default: m.WebOrdersScreen })));
@@ -678,6 +680,7 @@ const App: React.FC = () => {
       case 'bucle': return <LoopDeclaracionesScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'calendar': return <CalendarScreen navigate={navigate} />;
       case 'reports': return <ReportsScreen navigate={navigate} />;
+      case 'notificaciones': return <NotificationsScreen navigate={(s) => navigate(s as Screen)} />;
       case 'cobranza': return <CobranzaScreen navigate={navigate} />;
       case 'web_orders': return <WebOrdersScreen navigate={navigate} />;
       case 'tasks': return <TasksScreen navigate={navigate} taskFilter={taskFilter} clearTaskFilter={() => setTaskFilter(null)} initialTaskData={initialTaskData} clearInitialTaskData={() => setInitialTaskData(null)} />;
@@ -735,6 +738,7 @@ const App: React.FC = () => {
     { screen: 'licencias', icon: Key, label: 'Licencias SaaS' },
     { screen: 'refinanciacion', icon: Coins, label: 'Refinanciación' },
     { screen: 'caja_chica', icon: Wallet, label: 'Caja Chica TPV' },
+    { screen: 'notificaciones', icon: Bell, label: 'Notificaciones' },
     { screen: 'cobranza', icon: BarChart, label: 'Cobranza' },
     { screen: 'reports', icon: TrendingUp, label: 'Reportes IA' },
     { screen: 'sri_facturacion', icon: FileText, label: 'Facturador' },
