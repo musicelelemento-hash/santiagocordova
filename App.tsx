@@ -65,6 +65,7 @@ const TelegramBotScreen = React.lazy(() => import('./screens/TelegramBotScreen')
 const AdaptadorConvert = React.lazy(() => import('./components/features/AdaptadorConvert').then(m => ({ default: m.AdaptadorConvert })));
 const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalUploadModal').then(m => ({ default: m.GlobalUploadModal })));
 const SalesComboModal = React.lazy(() => import('./components/features/SalesComboModal').then(m => ({ default: m.SalesComboModal })));
+const SuggestionBox = React.lazy(() => import('./components/features/SuggestionBox'));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const GlobalNewClientModal = React.lazy(() => import('./components/features/GlobalNewClientModal').then(m => ({ default: m.GlobalNewClientModal })));
 const ClientDetailView = React.lazy(() => import('./components/features/ClientDetailView').then(m => ({ default: m.ClientDetailView })));
@@ -1280,6 +1281,7 @@ const App: React.FC = () => {
             onNavigate={(screen) => navigate(screen as Screen)}
             onAction={handleCommandAction}
           />
+          <SuggestionBox />
         </Suspense>
       </div>
     </ToastProvider>
