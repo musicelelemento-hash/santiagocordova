@@ -90,6 +90,42 @@ export const sendSRIPasswordChangeToExtension = (ruc: string, oldPassword: strin
   console.log("🔑 Cambio de Clave SRI enviado a la extensión para RUC:", ruc);
 };
 
+/**
+ * Pide a la extensión que SOLO recupere el comprobante de una declaración ya
+ * presentada (no vuelve a declarar). Se usa desde la Bóveda cuando el cliente
+ * quedó sin PDF.
+ */
+export const sendRecoverProofToExtension = (client: Client, period: string) => {
+  if (!client.ruc || !client.sriPassword) {
+    console.warn('Faltan credenciales para recuperar el comprobante.');
+    return;
+  }
+  const [y, m] = String(period).split('-').map(Number);
+  const data = {
+    ruc: client.ruc,
+    name: client.name || (client as any).razonSocial || 'Cliente SRI',
+    password: client.sriPassword,
+    soloEstarAdentro: false,
+    mode: 'recover_proof',
+    pendingAction: 'recuperar_comprobante',
+    recuperarComprobante: {
+      ruc: client.ruc,
+      nombre: client.name,
+      periodo: { year: y, monthIndex: (m || 1) - 1 },
+      per: period,
+      intentos: 0
+    },
+    timestamp: Date.now()
+  };
+  const payload = { source: 'SC_PRO_DASHBOARD', type: 'SRI_ENTER_PORTAL_SESSION', data };
+  window.postMessage(payload, '*');
+  window.dispatchEvent(new CustomEvent('sriEnterPortalSession', { detail: data }));
+  try {
+    localStorage.setItem('_sri_autofill_pending', JSON.stringify(data));
+    localStorage.setItem('sri_active_credentials', JSON.stringify(data));
+  } catch (e) { /* sin storage no hay respaldo, pero el mensaje ya salió */ }
+};
+
 export const sendFullClientsMatrixToExtension = (clients: Client[]) => {
   if (!Array.isArray(clients) || clients.length === 0) return;
   const payload = {
