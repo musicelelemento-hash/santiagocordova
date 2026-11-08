@@ -2,7 +2,7 @@ import { Bot, InlineKeyboard, InputFile } from 'grammy';
 require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
 import { clearChatHistory, saveMessage } from './database';
-import { getAuthUrl, setTokenFromCode } from './gmail';
+import { getAuthUrl, setTokenFromCode, sendEmailWithAttachment } from './gmail';
 import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
@@ -3896,6 +3896,51 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
+});
+
+// ── Enviar la copia del comprobante al cliente ──────────────────────────────
+// La llama la extensión 01 después de subir el PDF. Usa el Gmail que ya está
+// autorizado para este bot (mismo chatId de siempre).
+app.post('/email/declaracion', async (req, res) => {
+    try {
+        const esperado = String(process.env.EMAIL_ROUTE_TOKEN || '');
+        const recibido = String(req.headers.authorization || '');
+        if (esperado && recibido !== `Bearer ${esperado}`) {
+            return res.status(401).json({ ok: false, error: 'no autorizado' });
+        }
+
+        const cuerpo: any = req.body || {};
+        const to = String(cuerpo.to || '').trim();
+        const pdfUrl = String(cuerpo.pdfUrl || '').trim();
+        const chatId = String(cuerpo.chatId || process.env.EMAIL_CHAT_ID || '').trim();
+
+        if (!to || !pdfUrl) return res.status(400).json({ ok: false, error: 'faltan to o pdfUrl' });
+        if (!chatId) return res.status(400).json({ ok: false, error: 'falta chatId (EMAIL_CHAT_ID)' });
+
+        const pdfRes = await fetch(pdfUrl);
+        if (!pdfRes.ok) {
+            return res.status(502).json({ ok: false, error: `no pude bajar el PDF (${pdfRes.status})` });
+        }
+        const buffer = Buffer.from(await pdfRes.arrayBuffer());
+
+        const periodo = String(cuerpo.periodo || '');
+        const nombre = String(cuerpo.nombre || '');
+        const archivo = `Declaracion_IVA_${periodo}_${nombre}`.replace(/[^\w.\-]+/g, '_') + '.pdf';
+
+        const enviado = await sendEmailWithAttachment(
+            chatId,
+            to,
+            String(cuerpo.subject || `Declaración de IVA ${periodo}`),
+            String(cuerpo.text || ''),
+            { filename: archivo, contentBase64: buffer.toString('base64'), mimeType: 'application/pdf' },
+        );
+
+        console.log(`[CORREO] Comprobante ${periodo} de ${nombre || to} enviado a ${to}.`);
+        return res.json({ ok: true, detalle: enviado });
+    } catch (e: any) {
+        console.error('[CORREO] Error enviando el comprobante:', e);
+        return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    }
 });
 
 // Start Express HTTP Server (prevents Render "No open ports detected" shutdown)
