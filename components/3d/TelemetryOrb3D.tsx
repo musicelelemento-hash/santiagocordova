@@ -116,7 +116,9 @@ export const TelemetryOrb3D: React.FC<TelemetryOrb3DProps> = ({
     const prefersReducedMotion = usePrefersReducedMotion();
 
     const handleClick = () => {
-        hapticAudio.playTone(880, 'sine', 0.15);
+        // `playTone` no existe en HapticAudioService: el tipo se rompía y el
+        // build moría acá. Al abrir el orbe lo que corresponde es la resonancia.
+        hapticAudio.playCrystalResonance();
         setIsModalOpen(true);
     };
 

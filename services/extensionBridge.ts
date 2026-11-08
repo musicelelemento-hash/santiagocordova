@@ -268,6 +268,45 @@ export const requestPruebaClavesFromExtension = () => {
   }, "*");
 };
 
+export type LoopControlAction = 'pausar' | 'detener' | 'reanudar';
+
+/**
+ * 🎛️ Control del bucle desde la web: pausar, reanudar o cortar una corrida
+ * que ya está andando en el portal.
+ *
+ * Antes la web sólo podía ARRANCAR un lote. Si a mitad de los 40 clientes había
+ * que parar, la única salida era ir al portal y buscar el botón del HUD — que
+ * es exactamente lo que no se puede hacer desde un cyber en Venecia.
+ *
+ * `reanudar` viaja como `SRI_RESUME_BATCH`, que es el camino que ya está
+ * probado (rearma el cliente actual, respeta `sc_declaraciones_locales` y
+ * despierta el portal). `pausar` y `detener` van como `SRI_LOOP_CONTROL` y
+ * escriben el semáforo `sc_loop` con las mismas reglas que usa la extensión:
+ * pausar termina el cliente en curso y NO salta al siguiente; detener corta y
+ * descarta la acción a medias.
+ */
+export const sendLoopControlToExtension = (
+  accion: LoopControlAction,
+  motivo = 'Pedido desde la web SantiagoCordova.com'
+) => {
+  if (accion === 'reanudar') {
+    window.postMessage({ source: 'SC_PRO_DASHBOARD', type: 'SRI_RESUME_BATCH' }, "*");
+    console.log('▶️ [Bucle] Reanudación pedida desde la web.');
+    return;
+  }
+
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_LOOP_CONTROL',
+    data: { accion, motivo, timestamp: Date.now() }
+  };
+  window.postMessage(payload, "*");
+  try {
+    localStorage.setItem('sc_loop_control_pendiente', JSON.stringify(payload.data));
+  } catch (e) { /* sin almacén: el postMessage igual viaja */ }
+  console.log(`🎛️ [Bucle] Orden «${accion}» enviada a Nueva Luz 3.0.`);
+};
+
 export const openSRIPortal = (url?: string) => {
   window.open(url || 'https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
 };
