@@ -3,7 +3,7 @@ require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
 import { clearChatHistory, saveMessage } from './database';
 import { getAuthUrl, setTokenFromCode, sendEmailWithAttachment } from './gmail';
-import { despacharNotificaciones, iniciarDespachador } from './dispatcher';
+import { despacharNotificaciones, iniciarDespachador, estadoCanales } from './dispatcher';
 import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
@@ -3900,6 +3900,15 @@ app.get('/health', (req, res) => {
 });
 
 // Despacho manual de la bandeja de notificaciones (para probar o forzar).
+// Estado de los canales para la pantalla de Ajustes (sin secretos).
+app.get('/notificaciones/estado', async (_req, res) => {
+    try {
+        return res.json({ ok: true, ...(await estadoCanales()) });
+    } catch (e: any) {
+        return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    }
+});
+
 app.post('/notificaciones/despachar', async (req, res) => {
     const esperado = String(process.env.EMAIL_ROUTE_TOKEN || '');
     const recibido = String(req.headers.authorization || '');
