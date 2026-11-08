@@ -8,6 +8,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getGeminiApiKey, MODELS } from './ai';
 import { pendingDialogs, bot, startPaymentFlowForClient, startDeclarationFlowForClient } from './index';
 import { InputFile } from 'grammy';
+import * as path from 'path';
+import { supabase } from './supabase';
 
 
 require('dotenv').config();
@@ -107,6 +109,108 @@ HABILIDAD: REPORTE DE COBRANZA MENSUAL: Cuando Santiago pregunte "¿cuánto he c
 HABILIDAD: COMPROBANTE POR EMAIL: Cuando Santiago diga "mándale el comprobante de [cliente] por correo/email", "envía por mail la declaración de [cliente] del periodo [X]" o similar, usa 'send_proof_email' con el RUC y el período. Si el cliente no tiene email registrado, la herramienta te lo va a decir — pídele a Santiago que te dé un email o que lo agregue al perfil, no inventes uno.`;
 
 
+
+// ── Cobros pendientes (anulaciones sin facturar + meses del plan) ───────────
+// La regla de cobro es la MISMA de la web: `services/annulmentBilling.ts`.
+// No se importa de forma estática porque el tsconfig del bot compila con
+// `rootDir: ./src` (un archivo fuera de src daría TS6059) y porque la web es
+// ESM (`"type": "module"`) mientras el bot compila a CommonJS. Los scripts
+// `predev`/`prebuild` compilan esa regla a `dist/services/annulmentBilling.js`
+// y acá se carga en runtime, sin duplicar la lógica.
+type EstadoAnulacionLocal = 'pendiente' | 'facturado' | 'pagado' | 'no_cobrable' | 'exonerado';
+
+const ESTADOS_ANULACION_VALIDOS: EstadoAnulacionLocal[] = ['pendiente', 'facturado', 'pagado', 'no_cobrable', 'exonerado'];
+
+interface AnulacionLocal {
+    consecutivo: string;
+    clave: string;
+    ruc: string;
+    cliente?: string;
+    receptor?: string;
+    tipo?: string;
+    factura?: string;
+    fecha: string;
+    periodo: string;
+    lote?: string;
+    precio: number;
+    estado: EstadoAnulacionLocal;
+    resultado?: 'success' | 'error';
+    detalle?: string;
+    intentos?: number;
+    facturaRef?: string;
+}
+
+interface MesDeCobroLocal {
+    periodo: string;
+    estado: 'pagado' | 'facturado' | 'pendiente' | 'cortesia';
+    monto: number;
+    facturaRef?: string;
+}
+
+interface CobroPendienteLocal {
+    ruc: string;
+    cliente?: string;
+    anulaciones: { cantidad: number; total: number; incluidas: number };
+    meses: MesDeCobroLocal[];
+    mesesPendientes: number;
+    total: number;
+    texto: string;
+}
+
+interface PoliticaResueltaLocal {
+    precio: number;
+    cupo: number;
+    gratis: boolean;
+    origen: 'cliente' | 'global';
+}
+
+interface ModuloCobros {
+    recordatorioDeCobro: (args: {
+        ruc: string;
+        cliente?: string;
+        annulments?: AnulacionLocal[];
+        politica?: PoliticaResueltaLocal;
+        meses?: MesDeCobroLocal[];
+    }) => CobroPendienteLocal;
+    resolverPolitica: (cliente?: any, global?: any) => PoliticaResueltaLocal;
+    mesesDePlan: (args: {
+        inicio?: string;
+        hasta?: string;
+        cuotaMensual?: number;
+        registros?: Record<string, { isPaid?: boolean; totalFee?: number; sriInvoiceSecuencial?: string; isCourtesy?: boolean }>;
+    }) => MesDeCobroLocal[];
+}
+
+let moduloCobrosCache: ModuloCobros | null = null;
+
+/**
+ * Carga la regla de cobro compilada. En dev (`src`) y en producción (`dist`) el
+ * archivo queda en `telegram-bot/dist/services/annulmentBilling.js`.
+ */
+function cargarModuloCobros(): ModuloCobros {
+    if (moduloCobrosCache) return moduloCobrosCache;
+
+    const candidatos = [
+        path.resolve(__dirname, '../dist/services/annulmentBilling'),
+        path.resolve(__dirname, 'services/annulmentBilling'),
+        path.resolve(__dirname, '../../services/annulmentBilling'),
+    ];
+
+    let ultimoError: any = null;
+    for (const candidato of candidatos) {
+        try {
+            moduloCobrosCache = require(candidato) as ModuloCobros;
+            return moduloCobrosCache;
+        } catch (e: any) {
+            ultimoError = e;
+        }
+    }
+
+    throw new Error(
+        `no pude cargar services/annulmentBilling (${ultimoError?.message || 'archivo no encontrado'}). ` +
+        'Corré `npm run build:shared` en telegram-bot para generarlo'
+    );
+}
 
 // Tool logic implementation
 const availableTools: Record<string, (args: any, chatId: string) => Promise<string>> = {
@@ -321,6 +425,140 @@ _Baku._`;
     },
     get_monthly_collection_report: async (args: any, chatId: string) => {
         return await getMonthlyCollectionReport();
+    },
+    consultar_cobros_pendientes: async ({ ruc, nombre }: { ruc: string; nombre?: string }, chatId: string) => {
+        const rucTexto = String(ruc || '').trim();
+        const rucLimpio = rucTexto.replace(/[^0-9]/g, '') || rucTexto;
+        if (!rucLimpio) {
+            return 'Necesito el RUC del cliente para consultar sus cobros pendientes. Baku.';
+        }
+
+        // 1) Anulaciones del cliente (tabla `annulments`, la escribe la extensión 04).
+        let annulments: AnulacionLocal[] = [];
+        try {
+            const { data, error } = await supabase
+                .from('annulments')
+                .select('*')
+                .eq('client_ruc', rucLimpio);
+            if (error) throw error;
+
+            annulments = (data || []).map((r: any): AnulacionLocal => {
+                const estadoDb = String(r?.estado || '').toLowerCase();
+                const estado: EstadoAnulacionLocal = (ESTADOS_ANULACION_VALIDOS as string[]).includes(estadoDb)
+                    ? (estadoDb as EstadoAnulacionLocal)
+                    : 'no_cobrable'; // estado desconocido: no se cobra por las dudas
+                const fechaCruda = r?.fecha ? new Date(r.fecha) : null;
+                return {
+                    consecutivo: String(r?.consecutivo ?? ''),
+                    clave: String(r?.clave ?? ''),
+                    ruc: rucLimpio,
+                    cliente: nombre || undefined,
+                    receptor: r?.receptor || undefined,
+                    tipo: r?.tipo || undefined,
+                    factura: r?.factura || undefined,
+                    fecha: fechaCruda && !Number.isNaN(fechaCruda.getTime())
+                        ? fechaCruda.toISOString()
+                        : new Date().toISOString(),
+                    periodo: String(r?.periodo || '').slice(0, 7),
+                    lote: r?.lote || undefined,
+                    precio: Number(r?.precio || 0),
+                    estado,
+                    resultado: r?.resultado === 'success' ? 'success' : (r?.resultado ? 'error' : undefined),
+                    detalle: r?.detalle || undefined,
+                    facturaRef: r?.factura_ref || undefined,
+                    intentos: Number(r?.intentos || 1),
+                };
+            });
+        } catch (e: any) {
+            return `No pude leer las anulaciones: ${e?.message || String(e)}`;
+        }
+
+        // 2) Plan del cliente (`billing_plans` o el plan guardado en `tax_profile`).
+        let cliente: any = null;
+        let plan: any = {};
+        let planIncompleto = false;
+        const avisos: string[] = [];
+        try {
+            const conPlan = await supabase
+                .from('clients')
+                .select('id, name, ruc, custom_service_fee, tax_profile, billing_plans(*)')
+                .eq('ruc', rucLimpio)
+                .limit(1);
+
+            let filas = (conPlan.data || []) as any[];
+            if (conPlan.error) {
+                avisos.push(`No pude leer billing_plans (${conPlan.error.message}); usé el plan de tax_profile.`);
+                const simple = await supabase
+                    .from('clients')
+                    .select('id, name, ruc, custom_service_fee, tax_profile')
+                    .eq('ruc', rucLimpio)
+                    .limit(1);
+                if (simple.error) throw simple.error;
+                filas = (simple.data || []) as any[];
+            }
+
+            cliente = filas.length ? filas[0] : null;
+            if (!cliente) {
+                planIncompleto = true;
+                avisos.push(`No encontré el cliente ${rucLimpio} en la base; conté sólo sus anulaciones.`);
+            }
+
+            const tpLocal = (cliente?.tax_profile || {}) as any;
+            const planPerfil = tpLocal.facturadorConfig || tpLocal.billingPlan || tpLocal.billing_plan || null;
+            const planTabla = Array.isArray(cliente?.billing_plans) ? cliente.billing_plans[0] : null;
+            // Si billing_plans falló y tax_profile tampoco tiene el plan, los meses
+            // quedan sin verificar: no se puede afirmar "al día" con seguridad.
+            if (conPlan.error && !planPerfil && !planTabla) planIncompleto = true;
+            plan = {
+                ...(planTabla || {}),
+                ...(planPerfil || {}),
+            };
+        } catch (e: any) {
+            planIncompleto = true;
+            avisos.push(`No pude leer el plan del cliente (${e?.message || String(e)}); conté sólo las anulaciones.`);
+        }
+
+        const tp = (cliente?.tax_profile || {}) as any;
+        const inicioCrudo = plan.startDate ?? plan.start_date;
+        const inicio = inicioCrudo ? String(inicioCrudo).slice(0, 7) : undefined;
+        const cuotaMensual = Number(plan.monthlyFee ?? plan.monthly_fee ?? cliente?.custom_service_fee ?? 0) || 0;
+        const registros = plan.monthlyRecords ?? plan.monthly_records ?? {};
+        const politicaGuardada = plan.annulmentPolicy ?? plan.annulment_policy ?? tp.annulmentPolicy ?? null;
+
+        const nombreMostrar: string | undefined = nombre || cliente?.name || undefined;
+        const aviso = avisos.map((a) => `\n⚠️ ${a}`).join('');
+
+        let modulo: ModuloCobros;
+        try {
+            modulo = cargarModuloCobros();
+        } catch (e: any) {
+            return `No pude calcular el recordatorio de cobro: ${e?.message || String(e)}. Baku.`;
+        }
+
+        const politica = modulo.resolverPolitica(politicaGuardada);
+        const meses = modulo.mesesDePlan({ inicio, cuotaMensual, registros });
+        const resumen = modulo.recordatorioDeCobro({
+            ruc: rucLimpio,
+            cliente: nombreMostrar,
+            annulments,
+            politica,
+            meses,
+        });
+
+        const hayPendiente = resumen.anulaciones.cantidad > 0 || resumen.mesesPendientes > 0;
+        if (!hayPendiente) {
+            // Si no pude leer todo (plan/cliente), no afirmo "al día" a ciegas.
+            if (planIncompleto) return `${nombreMostrar || rucLimpio}: sin anulaciones pendientes${aviso}`;
+            return `${nombreMostrar || rucLimpio}: al día`;
+        }
+
+        const periodosSinFacturar = resumen.meses
+            .filter((m) => m.estado === 'pendiente')
+            .map((m) => m.periodo);
+        const linea = `📅 Meses sin facturar: ${periodosSinFacturar.length ? periodosSinFacturar.join(', ') : 'ninguno'} · ` +
+            `Anulaciones: ${resumen.anulaciones.cantidad} cobrable(s) / ${resumen.anulaciones.incluidas} incluida(s) en cupo`;
+
+        return `${resumen.texto}\n${linea}${aviso}`;
     }
 };
 
@@ -442,7 +680,8 @@ const toolDefinitions = [
     { type: "function", function: { name: "download_client_proof", description: "Descarga y envía el comprobante PDF oficial de declaración de un cliente para un período específico.", parameters: { type: "object", properties: { ruc: { type: "string", description: "Número de RUC del cliente" }, period: { type: "string", description: "El periodo del comprobante a descargar (ej: '2026-04' o '2025')" }, type: { type: "string", enum: ["IVA", "RENTA"], description: "El tipo de impuesto (opcional)" } }, required: ["ruc", "period"] } } },
     { type: "function", function: { name: "set_primary_phone", description: "Establece un número de teléfono como el PRINCIPAL (el primero de la lista) para un cliente. Usar cuando Santiago diga 'pon este número como principal', 'actualiza el teléfono principal de...', etc.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, phone: { type: "string", description: "El número de teléfono a establecer como principal" } }, required: ["identifier", "phone"] } } },
     { type: "function", function: { name: "set_signature_info", description: "Actualiza la información de firma electrónica de un cliente: clave de firma y/o fecha de caducidad. Usar cuando Santiago diga 'actualiza la firma de...', 'la firma de [cliente] vence el...', etc.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, signaturePassword: { type: "string", description: "Nueva clave de la firma electrónica (opcional)" }, expirationDate: { type: "string", description: "Fecha de caducidad de la firma en formato YYYY-MM-DD (opcional)" } }, required: ["identifier"] } } },
-    { type: "function", function: { name: "get_monthly_collection_report", description: "Genera un reporte completo de cobranza del mes actual: total recaudado, total pendiente, eficiencia y lista de deudores. Usar cuando Santiago pregunte '¿cuánto he cobrado?', 'dame el reporte de cobros del mes', 'quién me debe este mes', etc.", parameters: { type: "object", properties: {} } } }
+    { type: "function", function: { name: "get_monthly_collection_report", description: "Genera un reporte completo de cobranza del mes actual: total recaudado, total pendiente, eficiencia y lista de deudores. Usar cuando Santiago pregunte '¿cuánto he cobrado?', 'dame el reporte de cobros del mes', 'quién me debe este mes', etc.", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "consultar_cobros_pendientes", description: "Calcula cuánto tiene pendiente de cobro UN cliente: anulaciones de comprobantes sin facturar + meses de su plan mensual sin facturar. Usar cuando Santiago pregunte '¿cuánto tiene pendiente [cliente]?', '¿cuánto debe [cliente]?', 'cobros pendientes de [cliente]', '¿qué le falta pagar a [cliente]?' o '¿cuánto le tengo que facturar a [cliente]?'. Devuelve el total, los meses sin facturar (YYYY-MM) y las anulaciones cobrables/incluidas en el cupo.", parameters: { type: "object", properties: { ruc: { type: "string", description: "RUC del cliente (13 dígitos)" }, nombre: { type: "string", description: "Nombre del cliente (opcional, para mostrarlo en la respuesta)" } }, required: ["ruc"] } } }
 ];
 
 // Función para convertir herramientas de formato OpenAI/OpenRouter a la especificación nativa del SDK de Google (tipos en MAYÚSCULAS)

@@ -5,6 +5,8 @@ import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
 import { ClientNotes } from '../ClientNotes';
 import { FacturadorCard } from '../FacturadorCard';
+import AnnulmentsBillingPanel from '../../AnnulmentsBillingPanel';
+import AnnulmentPolicyModal from '../../AnnulmentPolicyModal';
 import { SalesComboModal } from '../../SalesComboModal';
 import { extractP12Metadata } from '../../../../utils/p12Reader';
 import { useDropzone } from 'react-dropzone';
@@ -48,6 +50,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     const [vaultSaved, setVaultSaved] = React.useState(false);
     const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
     const { toast } = useToast();
+    const [isAnnulmentPolicyOpen, setIsAnnulmentPolicyOpen] = React.useState(false);
 
     // Estado para gestión y copia de cifras de declaración en Bóveda
     const [editingDeclPeriod, setEditingDeclPeriod] = React.useState<string | null>(null);
@@ -554,6 +557,32 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Cobro de anulaciones: estado, meses y total del cliente */}
+            {Array.isArray(client.annulments) && client.annulments.length > 0 && (
+                <AnnulmentsBillingPanel
+                    modo="ver"
+                    onEditarPolitica={() => setIsAnnulmentPolicyOpen(true)}
+                    cliente={{ ruc: client.ruc, nombre: client.name }}
+                    annulments={client.annulments}
+                    policy={client.billingPlan?.annulmentPolicy}
+                    plan={{
+                        inicio: client.billingPlan?.startDate ? String(client.billingPlan.startDate).slice(0, 7) : undefined,
+                        cuotaMensual: client.billingPlan?.monthlyFee ?? client.customServiceFee ?? 0,
+                        registros: client.billingPlan?.monthlyRecords as any,
+                    }}
+                />
+            )}
+
+            <AnnulmentPolicyModal
+                isOpen={isAnnulmentPolicyOpen}
+                onClose={() => setIsAnnulmentPolicyOpen(false)}
+                cliente={{ ruc: client.ruc, nombre: client.name }}
+                policy={client.billingPlan?.annulmentPolicy}
+                onSave={async (p) => {
+                    await onUpdateClientDirect?.({ billingPlan: { ...(client.billingPlan || {}), annulmentPolicy: p } }, true);
+                }}
+            />
 
             {/* Top Security Cards Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">

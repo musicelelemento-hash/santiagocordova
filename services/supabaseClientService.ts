@@ -88,7 +88,7 @@ export const SupabaseService = {
     // de pedir "todos, con o sin baja" — o filtraba mal, o no filtraba nada.
     let { data, error } = await supabase
       .from('clients')
-      .select('*, sri_declaraciones(*)');
+      .select('*, sri_declaraciones(*), annulments(*)');
 
     // Intento 2+: el rol `anon` no tiene permiso sobre varias columnas de
     // `clients` (sri_password, notes, structured_notes, is_deleted…), así que
@@ -101,9 +101,9 @@ export const SupabaseService = {
       console.warn('[SupabaseService] getClients: la consulta completa falló, se degrada la lectura:', describirError(error));
 
       const lecturasDegradadas = [
-        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, is_deleted, is_active, sri_declaraciones(*)',
-        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, is_deleted, sri_declaraciones(*)',
-        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*)',
+        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, is_deleted, is_active, sri_declaraciones(*), annulments(*)',
+        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, is_deleted, sri_declaraciones(*), annulments(*)',
+        'id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*), annulments(*)',
       ];
 
       for (const columnas of lecturasDegradadas) {
@@ -571,8 +571,8 @@ export const SupabaseService = {
     // que `select('*')` y el filtro por `is_deleted` fallan siempre. Se intenta
     // la consulta completa y, si no, una degradada que sí es legible.
     const perfiles = [
-      { select: '*, sri_declaraciones(*)', filtrarBajas: true, buscarPorRazonSocial: true },
-      { select: 'id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*)', filtrarBajas: false, buscarPorRazonSocial: false },
+      { select: '*, sri_declaraciones(*), annulments(*)', filtrarBajas: true, buscarPorRazonSocial: true },
+      { select: 'id, ruc, name, regime, tax_profile, declaration_history, updated_at, sri_declaraciones(*), annulments(*)', filtrarBajas: false, buscarPorRazonSocial: false },
     ];
 
     let ultimoError: any = null;
@@ -875,6 +875,7 @@ export const SupabaseService = {
       requiresDeclarations,
       facturadorConfig,
       billingPlan: facturadorConfig,
+        annulments: Array.isArray((db as any).annulments) ? (db as any).annulments : (rawTaxProfile.annulments || []),
       facturadorActivationStatus: db.facturador_activation_status || rawTaxProfile.facturadorActivationStatus || 'recursos_listos',
       // Identidad/firma: la columna no existe en `clients`, viven en tax_profile.
       signatureProvider: db.signature_provider || rawTaxProfile.signatureProvider,
@@ -1043,6 +1044,22 @@ export const SupabaseService = {
     }
   },
 
+    /**
+     * Marca las anulaciones como facturadas con el secuencial de la factura.
+     * Se llama después de autorizar el documento: si el SRI rechaza, no se
+     * marcan y quedan pendientes (no se cobran dos veces por error).
+     */
+    async marcarAnulacionesFacturadas(claves: string[], facturaRef: string): Promise<void> {
+        const lista = (claves || []).filter(Boolean);
+        if (!lista.length) return;
+        const { error } = await supabase
+            .from('annulments')
+            .update({ estado: 'facturado', factura_ref: facturaRef, updated_at: new Date().toISOString() })
+            .in('clave', lista);
+        if (error) {
+            console.warn('[annulments] No se pudieron marcar como facturadas:', error.message);
+        }
+    },
   async getNextSriSecuencial(tipo: 'factura' | 'retencion'): Promise<number> {
     try {
       const { data, error } = await supabase

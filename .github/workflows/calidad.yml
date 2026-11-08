@@ -1,0 +1,49 @@
+name: Calidad (web + bot)
+
+# Puerta automática para lo que hoy nadie verifica hasta correrlo a mano:
+# tipos de la web, build de producción y compilación del bot (que incluye la
+# regla de cobro compartida con services/annulmentBilling.ts).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: calidad-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web · typecheck y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+
+  bot:
+    name: Bot · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: telegram-bot/package-lock.json
+      - name: Dependencias del bot
+        working-directory: telegram-bot
+        run: npm ci
+      - name: Compilar (incluye la regla compartida)
+        working-directory: telegram-bot
+        run: npm run build

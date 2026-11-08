@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
     Search, Command, Globe, Users, 
-    LayoutDashboard, Settings, LogOut, 
+    LayoutDashboard, Settings, LogOut,
+    LogIn, 
     ChevronRight, Zap, RefreshCw, PlusCircle,
     Copy, Check, User, FileText, KeyRound, Wallet,
     Calendar, TrendingUp, ShieldCheck, FileSpreadsheet,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Client } from '../types';
 import { hapticAudio } from '../services/hapticAudioService';
+import { sendToSRIExtension } from '../services/extensionBridge';
 
 interface CommandPaletteProps {
     isOpen: boolean;
@@ -101,7 +103,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 client: c,
                 icon: <User size={18} className="text-[#C9A96E]" />
             }));
-            return [...navs, ...actions, ...cls];
+            const sriCls = cls.map((c: any) => ({
+                id: `sri-${c.client.id}`,
+                type: 'sri',
+                label: `Entrar al SRI · ${c.client.name}`,
+                subLabel: `${c.client.ruc} · ${c.client.sriPassword ? 'clave lista' : 'sin clave'}`,
+                client: c.client,
+                icon: <LogIn size={18} className="text-[#00A896]" />,
+            }));
+
+            return [...navs, ...actions, ...cls, ...sriCls];
         }
 
         const navigationResults = ALL_NAV_ITEMS.filter(item => {
@@ -139,7 +150,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 icon: <User size={18} className="text-[#C9A96E]" />
             }));
 
-        return [...navigationResults, ...actionResults, ...clientResults];
+        // Además de abrir la ficha, ofrecer entrar al SRI con ese cliente.
+        const sriResults = clientResults.map((r: any) => ({
+            id: `sri-${r.client.id}`,
+            type: 'sri',
+            label: `Entrar al SRI · ${r.client.name}`,
+            subLabel: `${r.client.ruc} · ${r.client.sriPassword ? 'clave lista' : 'sin clave'}`,
+            client: r.client,
+            icon: <LogIn size={18} className="text-[#00A896]" />,
+        }));
+
+        return [...navigationResults, ...actionResults, ...clientResults, ...sriResults];
     }, [searchTerm, clients]);
 
     useEffect(() => {
@@ -166,6 +187,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         }
     };
 
+    /**
+     * Login rápido: deja las credenciales para la extensión, copia RUC y clave,
+     * y abre la sesión. Es el mismo camino que el botón del expediente, pero
+     * accesible desde Ctrl+K sin entrar a la ficha.
+     */
+    const entrarAlSri = (client: Client) => {
+        if (!client?.ruc) return;
+        try {
+            localStorage.setItem('sri_active_credentials', JSON.stringify({
+                ruc: client.ruc,
+                password: client.sriPassword || '',
+                name: client.name,
+                timestamp: Date.now(),
+            }));
+            if (client.sriPassword) {
+                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+            } else {
+                navigator.clipboard.writeText(client.ruc);
+            }
+        } catch { /* sin portapapeles */ }
+        sendToSRIExtension(client);
+        onClose();
+    };
+
     const handleSelect = (item: any) => {
         hapticAudio.playClick(900);
         if (item.action === 'toggle_haptic') {
@@ -177,6 +222,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onNavigate(item.screen);
         } else if (item.type === 'action') {
             onAction(item.action);
+        } else if (item.type === 'sri') {
+            entrarAlSri(item.client);
         } else if (item.type === 'client') {
             onNavigate('clients');
             onAction('view_client', item.client.id);

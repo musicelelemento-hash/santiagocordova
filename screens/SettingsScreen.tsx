@@ -75,6 +75,9 @@ const importBrowserPasswordsToClients = (
     alert(`Clientes Actualizados:\n${result.clientsToCreate.length} nuevos registros (pendientes de nombre).\n${result.clientsToUpdate.length} claves actualizadas.`);
 };
 
+import ChromePasswordsImportModal from '../components/features/ChromePasswordsImportModal';
+import { sendFullClientsMatrixToExtension } from '../services/extensionBridge';
+import { useToast } from '../context/ToastContext';
 import { useAppStore } from '../store/useAppStore';
 import { TaxCertificateGeneratorModal } from '../components/features/TaxCertificateGeneratorModal';
 import { DigitalBusinessCardModal } from '../components/features/DigitalBusinessCardModal';
@@ -129,6 +132,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
         exportData, syncFromSheets, resetApp,
         systemSettings, setSystemSettings
     } = useAppStore();
+    const { toast } = useToast();
     
     // ─── Estado local: Configuración de Sistema (Combos & Huella) ────────────
     const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>(systemSettings);
@@ -202,6 +206,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
     }, [systemSettings]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const passwordFileInputRef = useRef<HTMLInputElement>(null);
+    const [isPasswordImportOpen, setIsPasswordImportOpen] = useState(false);
     const bulkPdfInputRef = useRef<HTMLInputElement>(null);
     const [fees, setFees] = useState<ServiceFeesConfig>(serviceFees);
     // Dos herramientas que existian sin forma de abrirse.
@@ -1250,7 +1255,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     className="hidden"
                                 />
                                 <button
-                                    onClick={handlePasswordImportClick}
+                                    onClick={() => setIsPasswordImportOpen(true)}
                                     className="p-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-400/50 rounded-2xl text-xs font-bold text-amber-300 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-amber-500/5 text-center"
                                 >
                                     <Upload size={16} className="text-amber-400 shrink-0" />
@@ -1300,7 +1305,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
+                                <ChromePasswordsImportModal
+            isOpen={isPasswordImportOpen}
+            onClose={() => setIsPasswordImportOpen(false)}
+            clients={clients}
+            onApply={async ({ credenciales, actualizar, crear }) => {
+                if (setSriCredentials) {
+                    setSriCredentials(prev => ({ ...prev, ...credenciales }));
+                }
+                const cambios = new Map(actualizar.map(c => [c.id, c]));
+                const lista = clients.map(c => cambios.get(c.id) || c);
+                const final = [...lista, ...crear];
+                setClients(final);
+                if (actualizar.length > 0) {
+                    try {
+                        await db.bulkUpdate('sc_pro_clients', actualizar);
+                    } catch (e) {
+                        console.warn("No se pudo sincronizar la clave en Supabase:", e);
+                    }
+                }
+                if (crear.length > 0) {
+                    bulkAddClients(crear);
+                }
+                // Poner al día la extensión sin esperar a que se sincronice sola
+                try {
+                    sendFullClientsMatrixToExtension(final);
+                } catch (e) {
+                    console.warn("La extensión no está disponible para recibir la matriz:", e);
+                }
+                toast.success(`Claves del SRI: ${Object.keys(credenciales).length} detectadas · ${actualizar.length} actualizados · ${crear.length} nuevos`);
+            }}
+        />
+        <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
                                 <input type="file" ref={bulkPdfInputRef} onChange={handleBulkPdfChange} accept="application/pdf" multiple className="hidden" />
 

@@ -1,3 +1,4 @@
+import type { AnnulmentCharge, AnnulmentPolicy } from './annulment';
 
 export enum DeclarationStatus {
     Pendiente = 'Pendiente',
@@ -205,6 +206,7 @@ export interface BillingPlan {
     providerName?: string;
     freeSupportAndCancellation?: boolean;
     monthlyRecords?: Record<string, MonthlyInvoicingRecord>;
+    annulmentPolicy?: AnnulmentPolicy;
     defaultBillingMode?: 'unit' | 'pack_5' | 'monthly_combo_10' | 'semestral_batch' | 'paquete_docs' | 'custom';
     isExternalAccountant?: boolean; // Cliente tiene otro contador (ej. Armijos K, Naula)
     createdAt?: string;
@@ -283,6 +285,8 @@ export interface Client {
     facturadorActivationStatus?: 'recursos_listos' | 'subido_plataforma' | 'activado';
     clientType?: 'completo' | 'solo_plan';
     requiresDeclarations?: boolean;
+    /** Cobros de anulación del cliente (los escribe la extensión 04 / el import). */
+    annulments?: AnnulmentCharge[];
 }
 
 export type ClientFilter = {

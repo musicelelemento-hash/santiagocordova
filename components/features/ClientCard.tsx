@@ -1,6 +1,7 @@
 
 import React, { memo } from 'react';
 import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime, Declaration, InternalStatus } from '../../types';
+import { sendToSRIExtension } from '../../services/extensionBridge';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat, getWhatsAppUrl, isSriPasswordUpdated } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
@@ -29,6 +30,7 @@ interface ClientCardProps {
 export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false, isCobrosView = false, onNavigate, onEditClient }) => {
     const [copied, setCopied] = React.useState(false);
     const [copiedPass, setCopiedPass] = React.useState(false);
+    const [enviandoSri, setEnviandoSri] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
     const today = new Date();
@@ -321,6 +323,29 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                 <LucideIcons.Lock size={12} />
                                 <span>Bóveda</span>
                             </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    try {
+                                        localStorage.setItem('sri_active_credentials', JSON.stringify({
+                                            ruc: client.ruc,
+                                            password: client.sriPassword || '',
+                                            name: client.name,
+                                            timestamp: Date.now(),
+                                        }));
+                                        navigator.clipboard.writeText(client.sriPassword ? `${client.ruc}\t${client.sriPassword}` : client.ruc);
+                                    } catch { /* sin portapapeles */ }
+                                    sendToSRIExtension(client);
+                                    setEnviandoSri(true);
+                                    setTimeout(() => setEnviandoSri(false), 2200);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A896]/10 text-[#00A896] hover:bg-[#00A896] hover:text-white transition-all text-[10px] font-mono font-bold uppercase tracking-wider border border-[#00A896]/25 active:scale-95 cursor-pointer"
+                                title="Entrar al SRI con este cliente: copia RUC y clave, y abre la sesión en la extensión"
+                            >
+                                {enviandoSri ? <LucideIcons.Check size={12} /> : <LucideIcons.LogIn size={12} />}
+                                <span>{enviandoSri ? 'Enviado' : 'Entrar SRI'}</span>
+                            </button>
+
                             {client.phones && client.phones.length > 0 && client.phones[0] && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(client.phones![0]), '_blank'); }}

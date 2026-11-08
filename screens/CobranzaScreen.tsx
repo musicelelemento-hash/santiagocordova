@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
+import { calcularCapacidad, formatearBytes } from '../services/capacity';
 import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary, arePeriodsEqual } from '../services/complianceEngine';
 
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
@@ -144,7 +145,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
      * Motor centralizado de Facturación Electrónica SRI (Render.com + XAdES-BES + SOAP)
      * Resiliente a almacenamiento local con Auto-Hidratación Cloud desde Supabase (emisor_settings)
      */
-    const emitSingleInvoiceCore = async (item: FinancialItem, logCb?: (msg: string) => void) => {
+    const emitSingleInvoiceCore = async (item: FinancialItem, logCb?: (msg: string) => void, opciones?: { anulaciones?: any[] }) => {
         const log = (msg: string) => {
             if (logCb) logCb(msg);
         };
@@ -245,7 +246,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const buyerIdType = buyerRuc.length === 13 ? '04' : '05';
 
         const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
-        const subtotalVal = item.amount;
+        // Anulaciones que se agregan a esta factura (opcional). En RIMPE
+        // Negocio Popular el IVA es 0%, así que la línea va con tarifa 0.
+        const anulaciones: any[] = (opciones && opciones.anulaciones) || [];
+        const extraAnul = anulaciones.reduce((s: number, a: any) => s + Number(a.precio || 0), 0);
+        const subtotalDecl = item.amount;
+        const subtotalVal = subtotalDecl + extraAnul;
         const ivaVal = Number((subtotalVal * currentIvaRate).toFixed(2));
         const totalVal = Number((subtotalVal + ivaVal).toFixed(2));
 
@@ -301,19 +307,34 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         codigoPrincipal: '001',
                         descripcion: `Servicios Contables y Asesoría Tributaria - Período ${item.period}`,
                         cantidad: '1.00',
-                        precioUnitario: subtotalVal.toFixed(2),
+                        precioUnitario: subtotalDecl.toFixed(2),
                         descuento: '0.00',
-                        precioTotalSinImpuesto: subtotalVal.toFixed(2),
+                        precioTotalSinImpuesto: subtotalDecl.toFixed(2),
                         impuestos: [
                             {
                                 codigo: '2',
                                 codigoPorcentaje: currentIvaRate === 0.00 ? '0' : '4',
                                 tarifa: currentIvaRate === 0.00 ? '0' : '15',
-                                baseImponible: subtotalVal.toFixed(2),
-                                valor: ivaVal.toFixed(2)
+                                baseImponible: subtotalDecl.toFixed(2),
+                                valor: (subtotalDecl * currentIvaRate).toFixed(2)
                             }
                         ]
-                    }
+                    },
+                    ...(extraAnul > 0 ? [{
+                        codigoPrincipal: '002',
+                        descripcion: `Servicio de anulación de comprobantes (${anulaciones.length})`,
+                        cantidad: String(anulaciones.length),
+                        precioUnitario: (extraAnul / anulaciones.length).toFixed(2),
+                        descuento: '0.00',
+                        precioTotalSinImpuesto: extraAnul.toFixed(2),
+                        impuestos: [{
+                            codigo: '2',
+                            codigoPorcentaje: currentIvaRate === 0.00 ? '0' : '4',
+                            tarifa: currentIvaRate === 0.00 ? '0' : '15',
+                            baseImponible: extraAnul.toFixed(2),
+                            valor: (extraAnul * currentIvaRate).toFixed(2)
+                        }]
+                    }] : [])
                 ],
                 infoAdicional: {
                     campoAdicional: [
@@ -516,6 +537,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const updatedHistory = [newRecord, ...currentHistory];
         await db.setLocal('sc_sri_comprobantes_history', updatedHistory);
         await SupabaseService.upsertSriComprobante(newRecord).catch(() => {});
+            if (anulaciones.length > 0) {
+                await SupabaseService.marcarAnulacionesFacturadas(
+                    anulaciones.map((a: any) => a.clave), secuencial
+                ).catch(() => {});
+            }
 
         if (!isAuthorized) {
             throw new Error(errorMsg || "Comprobante emitido con errores.");
@@ -542,6 +568,20 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     };
 
     const handleEmitFastInvoice = async (item: FinancialItem) => {
+        // Aviso de anulaciones pendientes ANTES de emitir. La factura sale
+        // sólo por la declaración: las anulaciones quedan pendientes y se
+        // cobran desde la Bóveda (o se agregan a la factura desde el panel).
+        const clienteFactura = clients.find((c) => c.id === item.clientId);
+        const anulPendientes = (clienteFactura?.annulments || []).filter((a) => a && a.estado === 'pendiente');
+        let anulacionesParaFactura: any[] = [];
+        if (anulPendientes.length > 0) {
+            const totalAnul = anulPendientes.reduce((s, a) => s + Number(a.precio || 0), 0);
+            const aviso = `Este cliente tiene ${anulPendientes.length} anulación(es) por $${totalAnul.toFixed(2)} sin facturar.` +
+                '\n\nAceptar = se agregan a ESTA factura (línea de servicio).' +
+                '\nCancelar = se factura sólo la declaración y quedan pendientes.';
+            toast.warning(aviso);
+            if (window.confirm(aviso)) anulacionesParaFactura = anulPendientes;
+        }
         setFastBillingItem(item);
         setFastBillingStep('generating');
         setFastBillingLogs([]);
@@ -561,7 +601,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 if (msg.includes('Recepción')) setFastBillingStep('sending');
                 if (msg.includes('autorización')) setFastBillingStep('authorizing');
                 addLog(msg);
-            });
+            }, { anulaciones: anulacionesParaFactura });
 
             setFastBillingAccessKey(result.key);
             setFastBillingSecuencial(result.secuencial);
@@ -2262,6 +2302,63 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             <div className="relative z-10 sm:px-0">
                 <CampaignBanner campaign={campaignContext} compact />
             </div>
+
+            {/* ANULACIONES POR COBRAR: aviso global antes de facturar */}
+            {(() => {
+                const filas = (clients || [])
+                    .map((c) => ({ c, pend: (c.annulments || []).filter((x) => x && x.estado === 'pendiente') }))
+                    .filter((x) => x.pend.length > 0);
+                if (filas.length === 0) return null;
+                const total = filas.reduce((s, x) => s + x.pend.reduce((t2, a) => t2 + Number(a.precio || 0), 0), 0);
+                return (
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                            <LucideIcons.ReceiptText size={18} className="text-amber-300" />
+                            <div>
+                                <p className="text-[11px] font-black uppercase tracking-widest text-amber-300">Anulaciones por cobrar</p>
+                                <p className="text-[11px] text-amber-100/80">
+                                    {filas.length} cliente(s) · <b>${total.toFixed(2)}</b> · se agregan al facturar la declaración (IVA 0% por RIMPE)
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => toast.warning('Al facturar, aceptá el aviso para incluir las anulaciones en esa misma factura. Si no, quedan pendientes en la Bóveda.')}
+                            className="rounded-xl border border-amber-400/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-200 hover:bg-amber-500/15"
+                        >
+                            Cómo se cobran
+                        </button>
+                    </div>
+                );
+            })()}
+
+            {/* CAPACIDAD DE LA BASE: cuánto ocupa y cuánto margen queda */}
+            {(() => {
+                const totalAnulaciones = (clients || []).reduce((s, c) => s + (c.annulments?.length || 0), 0);
+                const uso = calcularCapacidad(totalAnulaciones);
+                const pct = Math.min(100, uso.porcentajeDb);
+                return (
+                    <div className="relative z-10 rounded-2xl border border-white/10 bg-[#051424]/70 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Capacidad de la base</p>
+                                <p className="text-[11px] text-slate-300">
+                                    {uso.anulaciones} anulaciones · {formatearBytes(uso.bytesAnulaciones)} de 500 MB · margen ~{uso.margenClientes} clientes
+                                </p>
+                            </div>
+                            <span className="font-mono text-[11px] text-emerald-300">
+                                {uso.porcentajeDb < 0.01 ? '<0,01%' : `${uso.porcentajeDb.toFixed(2)}%`}
+                            </span>
+                        </div>
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                            <div
+                                className="h-full rounded-full bg-gradient-to-r from-[#C9A96E] to-[#e6d3ab]"
+                                style={{ width: `${Math.max(0.8, pct)}%` }}
+                            />
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* ZENITH FINANCIAL STRIP - 3 Executive KPI Cards (Stitch Obsidian Luxury & Clean Light) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 font-mono">

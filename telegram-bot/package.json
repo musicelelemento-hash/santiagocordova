@@ -4,7 +4,10 @@
   "description": "SantiagoBot Telegram Agent",
   "main": "dist/index.js",
   "scripts": {
+    "build:shared": "node scripts/build-shared.js",
+    "predev": "npm run build:shared",
     "dev": "ts-node src/index.ts",
+    "prebuild": "npm run build:shared",
     "build": "tsc",
     "start": "node dist/index.js"
   },
