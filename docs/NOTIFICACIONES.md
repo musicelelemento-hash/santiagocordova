@@ -83,12 +83,73 @@ Tabla `notifications` (Supabase). Corré una vez
 
 ## Quién envía
 
-**El bot.** La web arma, encola y registra. El despachador debe:
+**El bot.** Ya está implementado en `telegram-bot/src/dispatcher.ts`:
 
-1. Leer `notifications` con `estado = 'pendiente'` o
-   (`programado` y `programada_para <= now()`).
-2. Enviar según `canal`: `email` por Gmail; `whatsapp` por el número del bot.
-3. Marcar `enviado` + `enviada_en`, o `fallido` + `error`.
+1. Cada **60 s** lee `notifications` con `estado = 'pendiente'` o
+   (`programado` y `programada_para <= now()`), hasta 50 por vuelta.
+2. Envía según `canal`:
+   - `email` → Gmail del bot, con el **PDF adjunto** si el tipo es `declaracion`
+     y el comprobante está en `declaration_history`.
+   - `whatsapp` → `POST` al gateway (`WHATSAPP_API_URL` + `WHATSAPP_TOKEN`).
+     Un solo número manda a todos: cada fila trae su destinatario.
+   - `nota` → no se envía; queda como registro interno.
+3. Marca `enviado` + `enviada_en`, o `fallido` + `error`.
+
+**Despacho manual** (para probar sin esperar el minuto):
+
+```bash
+curl -X POST https://<bot>/notificaciones/despachar \
+  -H "Authorization: Bearer $EMAIL_ROUTE_TOKEN"
+```
+
+### Correo: Resend (recomendado)
+
+Resend es el que ya usa la web en Facturadores (`services/resendEmailService.ts`).
+
+1. Crear la API key en <https://resend.com/api-keys>.
+2. Verificar el dominio `santiagocordova.com` en Resend (registros DNS: SPF, DKIM).
+3. En Render (bot): `RESEND_API_KEY`, y opcional `RESEND_FROM`
+   (por defecto `Soluciones Contables Pro <facturacion@santiagocordova.com>`) y
+   `RESEND_REPLY_TO`.
+
+Ventaja: no depende de un Gmail autorizado por chat. El correo sale con el PDF
+adjunto si es una declaración.
+
+*Sin `RESEND_API_KEY`, cae al Gmail del bot (`EMAIL_CHAT_ID`).*
+
+### WhatsApp: elegí el proveedor
+
+| `WHATSAPP_PROVIDER` | Variables | Notas |
+| :--- | :--- | :--- |
+| `meta` (recomendado) | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID` | API oficial. Gratis hasta 1.000 conversaciones/mes. Un número manda a todos. Fuera de la ventana de 24 h hay que usar plantilla aprobada. |
+| `ultramsg` | `WHATSAPP_INSTANCE`, `WHATSAPP_TOKEN` | La más simple de configurar. Después del trial es paga. |
+| `generic` (default) | `WHATSAPP_API_URL`, `WHATSAPP_TOKEN` | Contrato propio: `POST { to, message }` con `Bearer`. |
+
+**Meta, paso a paso**
+
+1. En <https://developers.facebook.com> → crear app → producto **WhatsApp**.
+2. Te da un **número de prueba** y un **token** (temporal, 24 h; para producción
+   usá un token permanente de un usuario del sistema).
+3. Copiá el **Phone number ID** → `WHATSAPP_PHONE_ID`.
+4. Para escribirle a un cliente que no te escribió antes, Meta exige una
+   **plantilla aprobada**; dentro de 24 h de su último mensaje, el texto libre
+   funciona.
+
+**UltraMsg, paso a paso**
+
+1. <https://ultramsg.com> → crear instancia (escaneás el QR con el número).
+2. Copiá **Instance ID** y **Token**.
+3. `WHATSAPP_PROVIDER=ultramsg`.
+
+### Otras variables
+
+| Variable | Para qué |
+| :--- | :--- |
+| `EMAIL_CHAT_ID` | chat de Telegram con el Gmail autorizado (respaldo si no hay Resend) |
+| `NOTIF_DISPATCHER=off` | apaga el despacho automático |
+
+Si un canal no está configurado, la fila **queda pendiente** (no se marca
+como fallida) y el bot lo avisa en el log: cuando se configure, sale sola.
 
 **Nunca** se marca enviado desde la web sin que el servicio lo haya hecho: el
 botón “marcar enviada” es para el caso de haberlo mandado a mano.
@@ -97,6 +158,7 @@ botón “marcar enviada” es para el caso de haberlo mandado a mano.
 
 ## Pendiente
 
-- Despachador en el bot (poll cada minuto) con el PDF adjunto para `declaracion`.
-- Adjunto automático del comprobante en el tipo `declaracion`.
+- Elegir el gateway de WhatsApp y cargar las dos variables en Render.
 - WhatsApp con plantillas aprobadas si se usa la API oficial de Meta.
+- Reintentos con espera (hoy un fallo queda `fallido` con el motivo; se
+  reencola a mano o se vuelve a marcar la fila).

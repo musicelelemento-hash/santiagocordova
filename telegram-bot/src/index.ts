@@ -3,6 +3,7 @@ require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
 import { clearChatHistory, saveMessage } from './database';
 import { getAuthUrl, setTokenFromCode, sendEmailWithAttachment } from './gmail';
+import { despacharNotificaciones, iniciarDespachador } from './dispatcher';
 import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
@@ -3898,6 +3899,19 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// Despacho manual de la bandeja de notificaciones (para probar o forzar).
+app.post('/notificaciones/despachar', async (req, res) => {
+    const esperado = String(process.env.EMAIL_ROUTE_TOKEN || '');
+    const recibido = String(req.headers.authorization || '');
+    if (esperado && recibido !== `Bearer ${esperado}`) return res.status(401).json({ ok: false });
+    try {
+        const r = await despacharNotificaciones();
+        return res.json({ ok: true, ...r });
+    } catch (e: any) {
+        return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    }
+});
+
 // ── Enviar la copia del comprobante al cliente ──────────────────────────────
 // La llama la extensión 01 después de subir el PDF. Usa el Gmail que ya está
 // autorizado para este bot (mismo chatId de siempre).
@@ -3947,6 +3961,11 @@ app.post('/email/declaracion', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🌐 Web server listening on port ${PORT} for Render health checks.`);
 });
+
+// Bandeja de notificaciones: cada minuto toma pendientes y programadas vencidas.
+if (process.env.NOTIF_DISPATCHER !== 'off') {
+    iniciarDespachador(60_000);
+}
 
 // ==========================================
 // 🛡️ ANTI-SLEEP ENGINE FOR RENDER (Keep-Alive)
