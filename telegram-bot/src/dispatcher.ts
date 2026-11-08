@@ -240,3 +240,39 @@ export function iniciarDespachador(intervaloMs = 60_000): NodeJS.Timeout {
     console.log(`[NOTIF] Despachador activo cada ${Math.round(intervaloMs / 1000)}s.`);
     return timer;
 }
+
+/** Estado de los canales, sin secretos: sirve para la pantalla de Ajustes. */
+export async function estadoCanales(): Promise<any> {
+    let resend: any = { configurado: Boolean(RESEND_KEY), dominio: null, estado: 'sin configurar' };
+    if (RESEND_KEY) {
+        try {
+            const res = await fetch('https://api.resend.com/domains', {
+                headers: { Authorization: `Bearer ${RESEND_KEY}` },
+            });
+            if (res.ok) {
+                const data: any = await res.json();
+                const dominio = Array.isArray(data?.data) && data.data.length ? data.data[0] : null;
+                resend = {
+                    configurado: true,
+                    dominio: dominio?.name || null,
+                    estado: dominio?.status || 'sin dominio',
+                };
+            } else {
+                resend.estado = `http ${res.status}`;
+            }
+        } catch (e) {
+            resend.estado = 'error de red';
+        }
+    }
+    return {
+        resend,
+        whatsapp: {
+            proveedor: WA_PROVIDER,
+            configurado: WA_PROVIDER === 'meta' ? Boolean(WA_TOKEN && WA_PHONE_ID)
+                : WA_PROVIDER === 'ultramsg' ? Boolean(WA_TOKEN && WA_INSTANCE)
+                : Boolean(WA_URL),
+        },
+        despachador: process.env.NOTIF_DISPATCHER !== 'off',
+        gmail: Boolean(GMAIL_CHAT),
+    };
+}

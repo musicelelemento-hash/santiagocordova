@@ -13,6 +13,7 @@ import { getBackendUrl, syncDataToSheet } from '../services/sheetApi';
 import { extractDataFromSriPdf } from '../services/pdfExtraction';
 import { MigrationUtility } from '../services/migrationUtility';
 import { SriExtensionsStore } from '../components/features/SriExtensionsStore';
+import NotificationChannelsCard from '../components/features/NotificationChannelsCard';
 import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
 import { db } from '../services/db';
 
@@ -1104,7 +1105,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     </div>
                 )}
 
-                {/* --- MÓDULO: RECORDATORIOS DE COBRANZA (WHATSAPP) --- */}
+                {/* --- MÓDULO: CANALES DE NOTIFICACIÓN (Resend / WhatsApp) --- */}
+{(settingsTab === 'all' || settingsTab === 'reminders') && (
+    <NotificationChannelsCard />
+)}
+
+{/* --- MÓDULO: RECORDATORIOS DE COBRANZA (WHATSAPP) --- */}
                 {(settingsTab === 'all' || settingsTab === 'reminders') && (
                     <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden font-mono">
                         <div className="p-6 sm:p-8 border-b border-white/10 bg-[#0b1326]/50">
