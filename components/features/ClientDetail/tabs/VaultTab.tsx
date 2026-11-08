@@ -9,6 +9,7 @@ import AnnulmentsBillingPanel from '../../AnnulmentsBillingPanel';
 import AnnulmentPolicyModal from '../../AnnulmentPolicyModal';
 import PurchaseInvoicesPanel from '../../PurchaseInvoicesPanel';
 import ClientMonthView from '../../ClientMonthView';
+import ClientAttentionPanel from '../../ClientAttentionPanel';
 import { Modal } from '../../../ui/Modal';
 import { SalesComboModal } from '../../SalesComboModal';
 import { extractP12Metadata } from '../../../../utils/p12Reader';
@@ -582,6 +583,9 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     </div>
                 );
             })()}
+
+            {/* Qué le falta a este cliente y qué hacer ahora */}
+            <ClientAttentionPanel client={client} periodo={client.declarations?.[0]?.period} />
 
             {/* Vista simple para el cliente: el mes explicado sin jerga */}
             <div className="flex justify-end">
