@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, Mail, MessageCircle, Send, CalendarClock, StickyNote, RefreshCw, Check, X, Users } from 'lucide-react';
+import { Bell, Mail, MessageCircle, Send, CalendarClock, StickyNote, RefreshCw, Check, X, Search } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 import {
@@ -7,20 +7,23 @@ import {
     type CanalNotificacion,
     type TipoNotificacion,
     listarNotificaciones,
-    crearNotificacion,
+    crearNotificacionesLote,
     actualizarEstado,
     plantilla,
     nombrePeriodo,
     faltanPorNotificar,
     estadoColor,
+    telefonoDe,
+    clientesMarcadosParaRecordatorio,
+    marcarNotificadoWhatsApp,
 } from '../services/notifications';
 
 /**
  * Notificaciones: correo, WhatsApp y notas.
  *
- * Tres vistas: lo que falta avisar, la bandeja de lo enviado/en cola y el
- * compositor (con plantillas por tipo y programación). El envío real lo hace
- * el bot; acá se arma, se encola y se registra — nunca se marca enviado solo.
+ * Un mensaje, **muchos destinatarios**: marcás los clientes (o usás un atajo:
+ * los que faltan, los marcados en Declaraciones, los que tienen WhatsApp) y
+ * sale una fila por cada uno. De un solo número se avisa a varios.
  */
 
 interface Props {
@@ -54,9 +57,11 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
     const [cargando, setCargando] = useState(true);
     const [errorTabla, setErrorTabla] = useState('');
 
-    const [clienteRuc, setClienteRuc] = useState('');
-    const [canal, setCanal] = useState<CanalNotificacion>('email');
-    const [tipo, setTipo] = useState<TipoNotificacion>('declaracion');
+    // Composición
+    const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+    const [busqueda, setBusqueda] = useState('');
+    const [canal, setCanal] = useState<CanalNotificacion>('whatsapp');
+    const [tipo, setTipo] = useState<TipoNotificacion>('recordatorio');
     const [asunto, setAsunto] = useState('');
     const [cuerpo, setCuerpo] = useState('');
     const [programada, setProgramada] = useState('');
@@ -65,8 +70,7 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
     const cargar = useCallback(async () => {
         setCargando(true);
         try {
-            const lista = await listarNotificaciones(200);
-            setNotifs(lista);
+            setNotifs(await listarNotificaciones(200));
             setErrorTabla('');
         } catch (e: any) {
             setErrorTabla(String(e?.message || e));
@@ -77,8 +81,23 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
 
     useEffect(() => { void cargar(); }, [cargar]);
 
-    const cliente = useMemo(() => clients.find((c) => c.ruc === clienteRuc) || null, [clients, clienteRuc]);
     const faltan = useMemo(() => faltanPorNotificar(clients, periodo, notifs), [clients, periodo, notifs]);
+    const conWhatsApp = useMemo(() => clients.filter((c) => telefonoDe(c).length >= 9), [clients]);
+    const marcados = useMemo(() => clientesMarcadosParaRecordatorio(clients, canal === 'email' ? 'email' : 'whatsapp'), [clients, canal]);
+
+    const filtrados = useMemo(() => {
+        const q = busqueda.trim().toLowerCase();
+        const base = clients.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        if (!q) return base;
+        return base.filter((c) => String(c.name || '').toLowerCase().includes(q) || String(c.ruc).includes(q));
+    }, [clients, busqueda]);
+
+    const seleccionados = useMemo(() => clients.filter((c) => seleccion.has(c.ruc)), [clients, seleccion]);
+    const sinTelefono = useMemo(
+        () => (canal === 'whatsapp' ? seleccionados.filter((c) => telefonoDe(c).length < 9) : []),
+        [canal, seleccionados],
+    );
+
     const conteo = useMemo(() => ({
         pendiente: notifs.filter((n) => n.estado === 'pendiente').length,
         programado: notifs.filter((n) => n.estado === 'programado').length,
@@ -86,53 +105,51 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
         fallido: notifs.filter((n) => n.estado === 'fallido').length,
     }), [notifs]);
 
-    const aplicarPlantilla = (t: TipoNotificacion, c = cliente) => {
-        if (!c) return;
-        const p = plantilla(t, c, periodo);
+    const alternar = (ruc: string) => {
+        setSeleccion((prev) => {
+            const s = new Set(prev);
+            if (s.has(ruc)) s.delete(ruc); else s.add(ruc);
+            return s;
+        });
+    };
+
+    const aplicarPlantilla = (t: TipoNotificacion) => {
+        const ejemplo = seleccionados[0] || clients[0];
+        if (!ejemplo) return;
+        const p = plantilla(t, ejemplo, periodo);
         setTipo(t);
         setAsunto(p.asunto);
         setCuerpo(p.cuerpo);
     };
 
-    const guardar = async (c = cliente, enviarAhora = false) => {
-        if (!c) { toast.error('Elegí un cliente.'); return; }
-        if (!asunto.trim() && canal === 'email') { toast.error('Falta el asunto del correo.'); return; }
+    const enviar = async () => {
+        if (!seleccionados.length) { toast.error('Marcá al menos un cliente.'); return; }
         if (!cuerpo.trim()) { toast.error('Falta el mensaje.'); return; }
+        if (canal === 'email' && !asunto.trim()) { toast.error('Falta el asunto del correo.'); return; }
+        if (canal === 'whatsapp' && sinTelefono.length) {
+            toast.error(`${sinTelefono.length} cliente(s) sin teléfono. Quitalos o cargá el número.`);
+            return;
+        }
         setGuardando(true);
         try {
-            await crearNotificacion({
-                ruc: c.ruc,
-                cliente_nombre: c.name,
-                canal,
-                tipo,
-                destinatario: canal === 'email' ? String((c as any).email || '') : String((c as any).whatsapp || (c as any).phone || ''),
-                asunto,
-                cuerpo,
-                periodo,
-                programada_para: enviarAhora ? null : (programada ? new Date(programada).toISOString() : null),
-            });
-            toast.success(programada && !enviarAhora ? 'Programada.' : 'En cola de envío.');
-            setAsunto('');
+            const n = await crearNotificacionesLote(
+                seleccionados.map((client) => ({ client, canal })),
+                { asunto, cuerpo, tipo, periodo, programada_para: programada ? new Date(programada).toISOString() : null },
+            );
+            if (canal === 'whatsapp' && !programada) {
+                await Promise.all(seleccionados.map((c) => marcarNotificadoWhatsApp(c.ruc).catch(() => undefined)));
+            }
+            toast.success(programada ? `${n} mensaje(s) programados.` : `${n} mensaje(s) en cola.`);
+            setSeleccion(new Set());
             setCuerpo('');
+            setAsunto('');
             setProgramada('');
             await cargar();
         } catch (e: any) {
-            toast.error(`No se pudo guardar: ${e?.message || e}`);
+            toast.error(`No se pudo enviar: ${e?.message || e}`);
         } finally {
             setGuardando(false);
         }
-    };
-
-    const notificarFaltante = (ruc: string) => {
-        const c = clients.find((x) => x.ruc === ruc);
-        if (!c) return;
-        setClienteRuc(ruc);
-        const p = plantilla('declaracion', c, periodo);
-        setTipo('declaracion');
-        setCanal('email');
-        setAsunto(p.asunto);
-        setCuerpo(p.cuerpo);
-        setTab('componer');
     };
 
     return (
@@ -143,7 +160,7 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
                         <Bell size={22} className="text-[#C9A96E]" /> Notificaciones
                     </h1>
                     <p className="mt-1 text-xs text-slate-400">
-                        Correo, WhatsApp y notas · período <b className="text-slate-200">{nombrePeriodo(periodo)}</b>
+                        Correo, WhatsApp y notas · un mensaje a varios clientes · período <b className="text-slate-200">{nombrePeriodo(periodo)}</b>
                     </p>
                 </div>
                 <button type="button" onClick={() => void cargar()} className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:bg-white/5">
@@ -167,14 +184,10 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
 
             <div className="mt-4 flex gap-1">
                 {([['faltan', 'Faltan por avisar'], ['bandeja', 'Bandeja'], ['componer', 'Componer']] as const).map(([id, etiqueta]) => (
-                    <button
-                        key={id}
-                        type="button"
-                        onClick={() => setTab(id)}
+                    <button key={id} type="button" onClick={() => setTab(id)}
                         className={`rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${tab === id
                             ? 'border-[#C9A96E]/45 bg-[#C9A96E]/12 text-[#e6d3ab]'
-                            : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
-                    >
+                            : 'border-white/10 text-slate-400 hover:bg-white/5'}`}>
                         {etiqueta}
                         {id === 'faltan' && faltan.length > 0 && <span className="ml-1.5 rounded-full bg-amber-500/20 px-1.5 text-amber-300">{faltan.length}</span>}
                     </button>
@@ -183,37 +196,43 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
 
             {errorTabla && (
                 <p className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
-                    No se pudo leer la tabla <code>notifications</code>: {errorTabla}. ¿Corriste <code>database/notifications.sql</code>?
+                    No se pudo leer <code>notifications</code>: {errorTabla}. ¿Corriste <code>database/notifications.sql</code>?
                 </p>
             )}
 
             {tab === 'faltan' && (
                 <section className="mt-3 rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
                     <p className="text-[11px] text-slate-400">
-                        Clientes con declaración y comprobante en {nombrePeriodo(periodo)} a los que todavía no se les avisó.
+                        Con declaración y comprobante en {nombrePeriodo(periodo)} a los que todavía no se les avisó.
                     </p>
                     {faltan.length === 0 ? (
                         <p className="mt-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-200">
                             ✅ No falta avisar a nadie en este período.
                         </p>
                     ) : (
-                        <div className="mt-3 divide-y divide-white/5">
-                            {faltan.map((c) => (
-                                <div key={c.ruc} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-[12px] font-semibold text-slate-100">{c.name}</p>
-                                        <p className="font-mono text-[10px] text-slate-500">{c.ruc}</p>
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => { setSeleccion(new Set(faltan.map((c) => c.ruc))); setTab('componer'); aplicarPlantilla('declaracion'); }}
+                                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950"
+                            >
+                                <Send size={13} /> Avisar a los {faltan.length}
+                            </button>
+                            <div className="mt-3 divide-y divide-white/5">
+                                {faltan.map((c) => (
+                                    <div key={c.ruc} className="flex items-center justify-between gap-2 py-2">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-[12px] font-semibold text-slate-100">{c.name}</p>
+                                            <p className="font-mono text-[10px] text-slate-500">{c.ruc}</p>
+                                        </div>
+                                        <button type="button" onClick={() => alternar(c.ruc)}
+                                            className={`rounded-lg border px-2 py-1 text-[9.5px] font-bold uppercase tracking-wider ${seleccion.has(c.ruc) ? 'border-[#00A896]/45 bg-[#00A896]/12 text-[#4edea3]' : 'border-white/10 text-slate-400'}`}>
+                                            {seleccion.has(c.ruc) ? '✓' : '+'}
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => notificarFaltante(c.ruc)}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#00A896]/40 bg-[#00A896]/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#4edea3]"
-                                    >
-                                        <Send size={12} /> Notificar
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </section>
             )}
@@ -225,7 +244,7 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
                             <tr>
                                 <th className="px-3 py-2">Cliente</th>
                                 <th className="px-3 py-2">Canal</th>
-                                <th className="px-3 py-2">Tipo</th>
+                                <th className="px-3 py-2">Destino</th>
                                 <th className="px-3 py-2">Asunto</th>
                                 <th className="px-3 py-2">Estado</th>
                                 <th className="px-3 py-2">Cuándo</th>
@@ -238,10 +257,10 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
                             )}
                             {notifs.map((n) => (
                                 <tr key={n.id} className="hover:bg-white/[0.03]">
-                                    <td className="max-w-[180px] truncate px-3 py-1.5 font-semibold text-slate-100">{n.cliente_nombre || n.ruc}</td>
+                                    <td className="max-w-[170px] truncate px-3 py-1.5 font-semibold text-slate-100">{n.cliente_nombre || n.ruc}</td>
                                     <td className="px-3 py-1.5 text-slate-400">{n.canal}</td>
-                                    <td className="px-3 py-1.5 text-slate-400">{n.tipo}</td>
-                                    <td className="max-w-[240px] truncate px-3 py-1.5 text-slate-300">{n.asunto || n.cuerpo.slice(0, 40)}</td>
+                                    <td className="max-w-[150px] truncate px-3 py-1.5 font-mono text-[10px] text-slate-400">{n.destinatario || '—'}</td>
+                                    <td className="max-w-[220px] truncate px-3 py-1.5 text-slate-300">{n.asunto || n.cuerpo.slice(0, 40)}</td>
                                     <td className="px-3 py-1.5">
                                         <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${estadoColor(n.estado)}`}>{n.estado}</span>
                                     </td>
@@ -264,19 +283,61 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
             )}
 
             {tab === 'componer' && (
-                <section className="mt-3 grid gap-3 lg:grid-cols-2">
+                <section className="mt-3 grid gap-3 lg:grid-cols-[1.1fr_.9fr]">
+                    {/* Destinatarios */}
                     <div className="rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
-                        <label className="text-[9px] uppercase tracking-widest text-slate-500">Cliente</label>
-                        <select
-                            value={clienteRuc}
-                            onChange={(e) => { setClienteRuc(e.target.value); const c = clients.find((x) => x.ruc === e.target.value); if (c) aplicarPlantilla(tipo, c); }}
-                            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100"
-                        >
-                            <option value="">Elegí un cliente…</option>
-                            {clients.map((c) => <option key={c.ruc} value={c.ruc}>{c.name} · {c.ruc}</option>)}
-                        </select>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                Destinatarios · {seleccion.size}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                                <button type="button" onClick={() => setSeleccion(new Set(faltan.map((c) => c.ruc)))} className="rounded-lg border border-amber-500/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/10">Faltan</button>
+                                <button type="button" onClick={() => setSeleccion(new Set(marcados.map((c) => c.ruc)))} className="rounded-lg border border-sky-500/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-sky-300 hover:bg-sky-500/10">Marcados</button>
+                                <button type="button" onClick={() => setSeleccion(new Set(conWhatsApp.map((c) => c.ruc)))} className="rounded-lg border border-emerald-500/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/10">Con WhatsApp</button>
+                                <button type="button" onClick={() => setSeleccion(new Set())} className="rounded-lg border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">Ninguno</button>
+                            </div>
+                        </div>
 
-                        <label className="mt-3 block text-[9px] uppercase tracking-widest text-slate-500">Canal</label>
+                        <div className="relative mt-2">
+                            <Search size={13} className="pointer-events-none absolute left-3 top-2.5 text-slate-500" />
+                            <input
+                                value={busqueda}
+                                onChange={(e) => setBusqueda(e.target.value)}
+                                placeholder="Buscar cliente o RUC…"
+                                className="w-full rounded-xl border border-white/10 bg-black/30 py-2 pl-8 pr-3 text-[12px] text-slate-100"
+                            />
+                        </div>
+
+                        <div className="mt-2 max-h-[300px] overflow-auto rounded-xl border border-white/5">
+                            {filtrados.map((c) => {
+                                const on = seleccion.has(c.ruc);
+                                const tel = telefonoDe(c);
+                                return (
+                                    <button
+                                        key={c.ruc}
+                                        type="button"
+                                        onClick={() => alternar(c.ruc)}
+                                        className={`flex w-full items-center gap-2 border-b border-white/5 px-3 py-1.5 text-left text-[11px] ${on ? 'bg-[#00A896]/10' : 'hover:bg-white/[0.03]'}`}
+                                    >
+                                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? 'border-[#00A896] bg-[#00A896] text-slate-950' : 'border-white/20'}`}>
+                                            {on && <Check size={10} />}
+                                        </span>
+                                        <span className="min-w-0 flex-1 truncate text-slate-200">{c.name}</span>
+                                        <span className="font-mono text-[9px] text-slate-500">{tel || 'sin tel.'}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {canal === 'whatsapp' && sinTelefono.length > 0 && (
+                            <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200">
+                                {sinTelefono.length} seleccionado(s) sin teléfono. Cargá el número o quitalos.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Mensaje */}
+                    <div className="rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Canal</p>
                         <div className="mt-1 flex gap-1.5">
                             {CANALES.map((c) => (
                                 <button key={c.id} type="button" onClick={() => setCanal(c.id)}
@@ -286,35 +347,45 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
                             ))}
                         </div>
 
-                        <label className="mt-3 block text-[9px] uppercase tracking-widest text-slate-500">Tipo</label>
-                        <select value={tipo} onChange={(e) => { const t = e.target.value as TipoNotificacion; setTipo(t); if (cliente) aplicarPlantilla(t); }}
+                        <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Tipo</p>
+                        <select value={tipo} onChange={(e) => aplicarPlantilla(e.target.value as TipoNotificacion)}
                             className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100">
                             {TIPOS.map((t) => <option key={t.id} value={t.id}>{t.etiqueta}</option>)}
                         </select>
 
-                        <label className="mt-3 block text-[9px] uppercase tracking-widest text-slate-500">Programar (opcional)</label>
-                        <input type="datetime-local" value={programada} onChange={(e) => setProgramada(e.target.value)}
-                            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-slate-100" />
-                    </div>
+                        {canal === 'email' && (
+                            <>
+                                <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Asunto</p>
+                                <input value={asunto} onChange={(e) => setAsunto(e.target.value)} placeholder="Asunto del correo"
+                                    className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100" />
+                            </>
+                        )}
 
-                    <div className="rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
-                        <label className="text-[9px] uppercase tracking-widest text-slate-500">Asunto</label>
-                        <input value={asunto} onChange={(e) => setAsunto(e.target.value)} placeholder="Asunto del correo"
-                            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100" />
-                        <label className="mt-3 block text-[9px] uppercase tracking-widest text-slate-500">Mensaje</label>
-                        <textarea value={cuerpo} onChange={(e) => setCuerpo(e.target.value)} rows={9} placeholder="Escribí el mensaje…"
+                        <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
+                            Mensaje {canal === 'whatsapp' ? '· corto y claro' : ''}
+                        </p>
+                        <textarea value={cuerpo} onChange={(e) => setCuerpo(e.target.value)} rows={canal === 'whatsapp' ? 6 : 9}
+                            placeholder={canal === 'whatsapp' ? 'Hola {cliente}, le recordamos que…' : 'Escribí el mensaje…'}
                             className="mt-1 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100" />
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            <button type="button" disabled={guardando} onClick={() => void guardar()} className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950 disabled:opacity-50">
-                                <Send size={13} /> {programada ? 'Programar' : 'Poner en cola'}
-                            </button>
-                            <button type="button" onClick={() => navigate('ajustes')} className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:bg-white/5">
-                                <CalendarClock size={13} /> Cómo se envía
+
+                        <div className="mt-2 flex flex-wrap items-end gap-2">
+                            <div className="flex-1">
+                                <p className="text-[9px] uppercase tracking-widest text-slate-500">Programar (opcional)</p>
+                                <input type="datetime-local" value={programada} onChange={(e) => setProgramada(e.target.value)}
+                                    className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-2 py-1.5 text-[11px] text-slate-100" />
+                            </div>
+                            <button type="button" disabled={guardando} onClick={() => void enviar()}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950 disabled:opacity-50">
+                                <Send size={13} /> {programada ? 'Programar' : 'Encolar'} · {seleccion.size}
                             </button>
                         </div>
+
                         <p className="mt-2 text-[10px] text-slate-500">
-                            El envío lo hace el bot. Acá queda en cola y se registra: nunca se marca enviado solo.
+                            Un mensaje, una fila por cliente. El envío lo hace el bot (Gmail / WhatsApp). Acá queda en cola y se registra.
                         </p>
+                        <button type="button" onClick={() => navigate('ajustes')} className="mt-1 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200">
+                            <CalendarClock size={12} /> Cómo se envía
+                        </button>
                     </div>
                 </section>
             )}

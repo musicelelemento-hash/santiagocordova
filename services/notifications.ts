@@ -155,3 +155,60 @@ export function estadoColor(estado: EstadoNotificacion): string {
         default: return 'border-amber-500/35 bg-amber-500/10 text-amber-300';
     }
 }
+
+/** Teléfono para WhatsApp: primero el de la ficha, después el del perfil. */
+export function telefonoDe(c: Client): string {
+    const lista = Array.isArray(c.phones) ? c.phones : [];
+    const delPerfil = Array.isArray((c as any).taxProfile?.phones) ? (c as any).taxProfile.phones : [];
+    const crudo = [...lista, ...delPerfil].map((p) => String(p || '').trim()).find(Boolean) || '';
+    return crudo.replace(/[^\d+]/g, '');
+}
+
+/** Clientes con una marca de recordatorio pendiente (la que se pone en Declaraciones). */
+export function clientesMarcadosParaRecordatorio(clientes: Client[], canal?: 'email' | 'whatsapp'): Client[] {
+    const hoy = new Date();
+    return clientes.filter((c) => {
+        const rem: Array<{ date?: string; channel?: string; type?: string }> = Array.isArray((c as any).reminders) ? (c as any).reminders : [];
+        if (!rem.length) return false;
+        return rem.some((r: { date?: string; channel?: string; type?: string }) => {
+            if (canal && r.channel && r.channel !== canal) return false;
+            const fecha = r.date ? new Date(r.date) : null;
+            return !fecha || fecha <= hoy;
+        });
+    });
+}
+
+/**
+ * Un mensaje, muchos destinatarios: una fila por cliente, mismo asunto y
+ * cuerpo. Es el caso “de un solo número a varios clientes”.
+ */
+export async function crearNotificacionesLote(
+    destinatarios: Array<{ client: Client; canal: CanalNotificacion }>,
+    base: { asunto?: string; cuerpo: string; tipo?: TipoNotificacion; periodo?: string; programada_para?: string | null },
+): Promise<number> {
+    if (!destinatarios.length) return 0;
+    const filas = destinatarios.map(({ client, canal }) => ({
+        ruc: client.ruc,
+        cliente_nombre: client.name || null,
+        canal,
+        tipo: base.tipo || 'libre',
+        destinatario: canal === 'email' ? String((client as any).email || '') : canal === 'whatsapp' ? telefonoDe(client) : '',
+        asunto: base.asunto || '',
+        cuerpo: base.cuerpo,
+        periodo: base.periodo || null,
+        programada_para: base.programada_para || null,
+        estado: base.programada_para ? 'programado' : 'pendiente',
+    }));
+    const { error } = await supabase.from('notifications').insert(filas);
+    if (error) throw error;
+    return filas.length;
+}
+
+/** Marca al cliente como avisado por WhatsApp (lo que muestra la ficha). */
+export async function marcarNotificadoWhatsApp(ruc: string): Promise<void> {
+    const { error } = await supabase
+        .from('clients')
+        .update({ is_notified_whatsapp: true, notified_whatsapp_at: new Date().toISOString() })
+        .eq('ruc', ruc);
+    if (error) throw error;
+}
