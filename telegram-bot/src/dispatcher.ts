@@ -20,6 +20,8 @@ const GMAIL_CHAT = String(process.env.EMAIL_CHAT_ID || '').trim();
 const RESEND_KEY = String(process.env.RESEND_API_KEY || '').trim();
 const RESEND_FROM = String(process.env.RESEND_FROM || 'Soluciones Contables Pro <facturacion@santiagocordova.com>').trim();
 const RESEND_REPLY_TO = String(process.env.RESEND_REPLY_TO || 'santiagocordova@gmail.com').trim();
+// Mientras el dominio no esté verificado, Resend acepta este remitente de prueba.
+const RESEND_FROM_FALLBACK = String(process.env.RESEND_FROM_FALLBACK || '').trim();
 const WA_PROVIDER = String(process.env.WHATSAPP_PROVIDER || 'generic').trim().toLowerCase();
 const WA_PHONE_ID = String(process.env.WHATSAPP_PHONE_ID || '').trim();
 const WA_INSTANCE = String(process.env.WHATSAPP_INSTANCE || '').trim();
@@ -69,10 +71,10 @@ async function adjuntoDeDeclaracion(ruc: string, periodo: string | null): Promis
 }
 
 /** Envío por Resend: sirve aunque el bot no tenga Gmail autorizado. */
-async function enviarEmailResend(to: string, subject: string, text: string, adjunto: Adjunto): Promise<void> {
+async function enviarEmailResend(to: string, subject: string, text: string, adjunto: Adjunto, from: string = RESEND_FROM): Promise<void> {
     if (!RESEND_KEY) throw new Error('Resend no configurado (RESEND_API_KEY)');
     const cuerpo: Record<string, unknown> = {
-        from: RESEND_FROM,
+        from,
         to: [to],
         subject,
         text,
@@ -174,7 +176,16 @@ export async function despacharNotificaciones(): Promise<{ enviadas: number; fal
                 const adjunto = n.tipo === 'declaracion' ? await adjuntoDeDeclaracion(n.ruc, n.periodo) : null;
 
                 if (RESEND_KEY) {
-                    await enviarEmailResend(n.destinatario, asunto, n.cuerpo || '', adjunto);
+                    try {
+                        await enviarEmailResend(n.destinatario, asunto, n.cuerpo || '', adjunto);
+                    } catch (primerError) {
+                        if (RESEND_FROM_FALLBACK && RESEND_FROM_FALLBACK !== RESEND_FROM) {
+                            console.warn('[NOTIF] Dominio propio sin verificar; reintento con remitente de prueba.');
+                            await enviarEmailResend(n.destinatario, asunto, n.cuerpo || '', adjunto, RESEND_FROM_FALLBACK);
+                        } else {
+                            throw primerError;
+                        }
+                    }
                 } else if (GMAIL_CHAT) {
                     const adj = adjunto || {
                         filename: 'notificacion.txt',

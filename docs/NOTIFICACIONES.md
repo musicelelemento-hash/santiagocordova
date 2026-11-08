@@ -156,6 +156,24 @@ botón “marcar enviada” es para el caso de haberlo mandado a mano.
 
 ---
 
+## Diseño (pasada minimalista)
+
+- **Una acción primaria por vista**: “Componer” en la cabecera; el resto en atajos.
+- **Indicadores** con icono + número (pendientes, programadas, enviadas, con error).
+- **Bandeja agrupada por día** (Hoy / Ayer / fecha), con icono del canal, destino,
+  estado y hora; acciones aparecen al pasar el mouse.
+- **Destinatarios** con contador, atajos (`Faltan · n`, `Marcados · n`,
+  `Con WhatsApp · n`) y teléfono visible por cliente.
+- **Estados vacíos con salida**: “La bandeja está vacía → Componer el primero”.
+- Microcopy de consecuencia en el botón: `Encolar · 12`.
+
+## Resend (verificado)
+
+La clave cargada en `telegram-bot/.env` funciona. **No hay dominio verificado**:
+hasta verificar `santiagocordova.com` (SPF + DKIM), el remitente debe ser
+`onboarding@resend.dev`, que **sólo puede enviar al correo de la cuenta** de
+Resend (sirve para probar, no para clientes reales).
+
 ## Pendiente
 
 - Elegir el gateway de WhatsApp y cargar las dos variables en Render.

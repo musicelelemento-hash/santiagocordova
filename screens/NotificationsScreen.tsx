@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, Mail, MessageCircle, Send, CalendarClock, StickyNote, RefreshCw, Check, X, Search } from 'lucide-react';
+import {
+    Bell, Mail, MessageCircle, StickyNote, Send, RefreshCw, Check, X, Search,
+    Users, Clock3, ShieldCheck, Inbox, Plus, CalendarClock, AlertCircle,
+} from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 import {
@@ -19,31 +22,43 @@ import {
 } from '../services/notifications';
 
 /**
- * Notificaciones: correo, WhatsApp y notas.
+ * Notificaciones · centro de mensajes.
  *
- * Un mensaje, **muchos destinatarios**: marcás los clientes (o usás un atajo:
- * los que faltan, los marcados en Declaraciones, los que tienen WhatsApp) y
- * sale una fila por cada uno. De un solo número se avisa a varios.
+ * Minimalismo funcional: una sola acción primaria por vista, el resto en
+ * atajos. Un mensaje a varios clientes; WhatsApp primero; conectado con las
+ * marcas de recordatorio de Declaraciones.
  */
 
 interface Props {
     navigate: (screen: string) => void;
 }
 
-const CANALES: { id: CanalNotificacion; etiqueta: string; icono: React.ReactNode }[] = [
-    { id: 'email', etiqueta: 'Correo', icono: <Mail size={13} /> },
-    { id: 'whatsapp', etiqueta: 'WhatsApp', icono: <MessageCircle size={13} /> },
-    { id: 'nota', etiqueta: 'Nota', icono: <StickyNote size={13} /> },
+const CANALES: { id: CanalNotificacion; etiqueta: string; icono: React.ReactNode; color: string }[] = [
+    { id: 'whatsapp', etiqueta: 'WhatsApp', icono: <MessageCircle size={14} />, color: '#4edea3' },
+    { id: 'email', etiqueta: 'Correo', icono: <Mail size={14} />, color: '#7dd3fc' },
+    { id: 'nota', etiqueta: 'Nota', icono: <StickyNote size={14} />, color: '#c4b5fd' },
 ];
 
 const TIPOS: { id: TipoNotificacion; etiqueta: string }[] = [
-    { id: 'declaracion', etiqueta: 'Declaración presentada' },
     { id: 'recordatorio', etiqueta: 'Recordatorio' },
+    { id: 'declaracion', etiqueta: 'Declaración presentada' },
     { id: 'pago', etiqueta: 'Valor a pagar' },
     { id: 'cobro', etiqueta: 'Cobro de servicios' },
     { id: 'bienvenida', etiqueta: 'Bienvenida' },
     { id: 'libre', etiqueta: 'Mensaje libre' },
 ];
+
+const canalMeta = (c: CanalNotificacion) => CANALES.find((x) => x.id === c) || CANALES[1];
+
+const etiquetaDia = (iso: string): string => {
+    const d = new Date(iso);
+    const hoy = new Date();
+    const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
+    const mismoDia = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (mismoDia(d, hoy)) return 'Hoy';
+    if (mismoDia(d, ayer)) return 'Ayer';
+    return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+};
 
 const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
     const { clients } = useAppStore();
@@ -57,7 +72,6 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
     const [cargando, setCargando] = useState(true);
     const [errorTabla, setErrorTabla] = useState('');
 
-    // Composición
     const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
     const [busqueda, setBusqueda] = useState('');
     const [canal, setCanal] = useState<CanalNotificacion>('whatsapp');
@@ -105,6 +119,17 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
         fallido: notifs.filter((n) => n.estado === 'fallido').length,
     }), [notifs]);
 
+    const porDia = useMemo(() => {
+        const mapa = new Map<string, Notificacion[]>();
+        for (const n of notifs) {
+            const clave = etiquetaDia(n.enviada_en || n.programada_para || n.created_at);
+            const lista = mapa.get(clave) || [];
+            lista.push(n);
+            mapa.set(clave, lista);
+        }
+        return Array.from(mapa.entries());
+    }, [notifs]);
+
     const alternar = (ruc: string) => {
         setSeleccion((prev) => {
             const s = new Set(prev);
@@ -145,6 +170,7 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
             setAsunto('');
             setProgramada('');
             await cargar();
+            setTab('bandeja');
         } catch (e: any) {
             toast.error(`No se pudo enviar: ${e?.message || e}`);
         } finally {
@@ -153,162 +179,235 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
     };
 
     return (
-        <div className="mx-auto w-full max-w-6xl p-4 text-slate-200 sm:p-6">
-            <header className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 className="flex items-center gap-2 font-display text-2xl font-black text-white">
-                        <Bell size={22} className="text-[#C9A96E]" /> Notificaciones
-                    </h1>
-                    <p className="mt-1 text-xs text-slate-400">
-                        Correo, WhatsApp y notas · un mensaje a varios clientes · período <b className="text-slate-200">{nombrePeriodo(periodo)}</b>
-                    </p>
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 text-slate-200 sm:px-6">
+            {/* Cabecera ------------------------------------------------------- */}
+            <header className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#C9A96E]/35 bg-[#C9A96E]/10 text-[#C9A96E]">
+                        <Bell size={20} />
+                    </span>
+                    <div>
+                        <h1 className="font-display text-2xl font-black tracking-tight text-white">Notificaciones</h1>
+                        <p className="text-[11px] text-slate-400">
+                            Un mensaje a varios clientes · <span className="text-slate-300">{nombrePeriodo(periodo)}</span> · correo, WhatsApp y notas
+                        </p>
+                    </div>
                 </div>
-                <button type="button" onClick={() => void cargar()} className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:bg-white/5">
-                    <RefreshCw size={13} className={cargando ? 'animate-spin' : ''} /> Actualizar
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => void cargar()}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/10 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200"
+                    >
+                        <RefreshCw size={13} className={cargando ? 'animate-spin' : ''} /> Actualizar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { setTab('componer'); aplicarPlantilla(tipo); }}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#00A896] px-3.5 text-[10px] font-black uppercase tracking-wider text-slate-950 transition-transform hover:translate-y-[-1px]"
+                    >
+                        <Plus size={14} /> Componer
+                    </button>
+                </div>
             </header>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {/* Indicadores ---------------------------------------------------- */}
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
-                    ['Pendientes', conteo.pendiente, 'text-amber-300'],
-                    ['Programadas', conteo.programado, 'text-sky-300'],
-                    ['Enviadas', conteo.enviado, 'text-emerald-300'],
-                    ['Con error', conteo.fallido, 'text-rose-300'],
-                ].map(([etiqueta, valor, color]) => (
-                    <div key={String(etiqueta)} className="rounded-xl border border-white/10 bg-[#051424]/70 px-3 py-2">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500">{etiqueta}</p>
-                        <p className={`font-mono text-lg font-black ${color}`}>{valor}</p>
+                    ['Pendientes', conteo.pendiente, 'text-amber-300', <Clock3 key="c" size={13} />],
+                    ['Programadas', conteo.programado, 'text-sky-300', <CalendarClock key="c" size={13} />],
+                    ['Enviadas', conteo.enviado, 'text-emerald-300', <Check key="c" size={13} />],
+                    ['Con error', conteo.fallido, 'text-rose-300', <AlertCircle key="c" size={13} />],
+                ].map(([etiqueta, valor, color, icono]) => (
+                    <div key={String(etiqueta)} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#051424]/70 px-3.5 py-3">
+                        <span className={`flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 ${color}`}>{icono}</span>
+                        <div>
+                            <p className="text-[9px] uppercase tracking-widest text-slate-500">{etiqueta}</p>
+                            <p className={`font-mono text-lg font-black leading-tight ${color}`}>{valor}</p>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <div className="mt-4 flex gap-1">
-                {([['faltan', 'Faltan por avisar'], ['bandeja', 'Bandeja'], ['componer', 'Componer']] as const).map(([id, etiqueta]) => (
-                    <button key={id} type="button" onClick={() => setTab(id)}
-                        className={`rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider ${tab === id
-                            ? 'border-[#C9A96E]/45 bg-[#C9A96E]/12 text-[#e6d3ab]'
-                            : 'border-white/10 text-slate-400 hover:bg-white/5'}`}>
+            {/* Pestañas ------------------------------------------------------- */}
+            <div className="mt-5 inline-flex rounded-xl border border-white/10 bg-black/25 p-1">
+                {([['faltan', 'Faltan por avisar', faltan.length], ['bandeja', 'Bandeja', null], ['componer', 'Componer', seleccion.size || null]] as const).map(([id, etiqueta, badge]) => (
+                    <button
+                        key={id}
+                        type="button"
+                        onClick={() => setTab(id as typeof tab)}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${tab === id ? 'bg-[#C9A96E]/15 text-[#e6d3ab]' : 'text-slate-400 hover:text-slate-200'}`}
+                    >
                         {etiqueta}
-                        {id === 'faltan' && faltan.length > 0 && <span className="ml-1.5 rounded-full bg-amber-500/20 px-1.5 text-amber-300">{faltan.length}</span>}
+                        {badge ? <span className="rounded-full bg-white/10 px-1.5 py-0.5 font-mono text-[9px] text-slate-300">{badge}</span> : null}
                     </button>
                 ))}
             </div>
 
             {errorTabla && (
-                <p className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
-                    No se pudo leer <code>notifications</code>: {errorTabla}. ¿Corriste <code>database/notifications.sql</code>?
+                <p className="mt-3 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
+                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                    No se pudo leer <code className="mx-1">notifications</code>: {errorTabla}. ¿Corriste <code className="mx-1">database/notifications.sql</code>?
                 </p>
             )}
 
+            {/* FALTAN --------------------------------------------------------- */}
             {tab === 'faltan' && (
-                <section className="mt-3 rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
-                    <p className="text-[11px] text-slate-400">
-                        Con declaración y comprobante en {nombrePeriodo(periodo)} a los que todavía no se les avisó.
-                    </p>
-                    {faltan.length === 0 ? (
-                        <p className="mt-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-200">
-                            ✅ No falta avisar a nadie en este período.
+                <section className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#051424]/70">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 px-4 py-3">
+                        <p className="text-[11px] text-slate-400">
+                            Con declaración y comprobante en <b className="text-slate-200">{nombrePeriodo(periodo)}</b> a los que todavía no se les avisó.
                         </p>
-                    ) : (
-                        <>
+                        {faltan.length > 0 && (
                             <button
                                 type="button"
                                 onClick={() => { setSeleccion(new Set(faltan.map((c) => c.ruc))); setTab('componer'); aplicarPlantilla('declaracion'); }}
-                                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950"
                             >
                                 <Send size={13} /> Avisar a los {faltan.length}
                             </button>
-                            <div className="mt-3 divide-y divide-white/5">
-                                {faltan.map((c) => (
-                                    <div key={c.ruc} className="flex items-center justify-between gap-2 py-2">
-                                        <div className="min-w-0">
-                                            <p className="truncate text-[12px] font-semibold text-slate-100">{c.name}</p>
-                                            <p className="font-mono text-[10px] text-slate-500">{c.ruc}</p>
-                                        </div>
-                                        <button type="button" onClick={() => alternar(c.ruc)}
-                                            className={`rounded-lg border px-2 py-1 text-[9.5px] font-bold uppercase tracking-wider ${seleccion.has(c.ruc) ? 'border-[#00A896]/45 bg-[#00A896]/12 text-[#4edea3]' : 'border-white/10 text-slate-400'}`}>
-                                            {seleccion.has(c.ruc) ? '✓' : '+'}
-                                        </button>
+                        )}
+                    </div>
+                    {faltan.length === 0 ? (
+                        <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                            <ShieldCheck size={26} className="text-emerald-400" />
+                            <p className="text-[12px] font-semibold text-emerald-200">No falta avisar a nadie en este período.</p>
+                            <button type="button" onClick={() => setTab('bandeja')} className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200">
+                                Ver la bandeja
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-white/5">
+                            {faltan.map((c) => (
+                                <div key={c.ruc} className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-white/[0.03]">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-[12px] font-semibold text-slate-100">{c.name}</p>
+                                        <p className="font-mono text-[10px] text-slate-500">
+                                            {c.ruc}
+                                            {telefonoDe(c) ? <span className="ml-2 text-slate-600">· {telefonoDe(c)}</span> : <span className="ml-2 text-amber-500/70">· sin teléfono</span>}
+                                        </p>
                                     </div>
-                                ))}
-                            </div>
-                        </>
+                                    <button
+                                        type="button"
+                                        onClick={() => alternar(c.ruc)}
+                                        aria-pressed={seleccion.has(c.ruc)}
+                                        className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors ${seleccion.has(c.ruc) ? 'border-[#00A896]/50 bg-[#00A896]/15 text-[#4edea3]' : 'border-white/10 text-slate-500 hover:border-white/25'}`}
+                                        title={seleccion.has(c.ruc) ? 'Quitar de la selección' : 'Sumar a la selección'}
+                                    >
+                                        {seleccion.has(c.ruc) ? <Check size={12} /> : <Plus size={12} />}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </section>
             )}
 
+            {/* BANDEJA -------------------------------------------------------- */}
             {tab === 'bandeja' && (
-                <section className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-[#051424]/70">
-                    <table className="w-full text-left text-[11px]">
-                        <thead className="bg-black/30 text-[9px] uppercase tracking-widest text-slate-500">
-                            <tr>
-                                <th className="px-3 py-2">Cliente</th>
-                                <th className="px-3 py-2">Canal</th>
-                                <th className="px-3 py-2">Destino</th>
-                                <th className="px-3 py-2">Asunto</th>
-                                <th className="px-3 py-2">Estado</th>
-                                <th className="px-3 py-2">Cuándo</th>
-                                <th className="px-3 py-2" />
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {notifs.length === 0 && (
-                                <tr><td colSpan={7} className="px-3 py-6 text-center text-slate-500">Nada todavía. Componé el primero.</td></tr>
-                            )}
-                            {notifs.map((n) => (
-                                <tr key={n.id} className="hover:bg-white/[0.03]">
-                                    <td className="max-w-[170px] truncate px-3 py-1.5 font-semibold text-slate-100">{n.cliente_nombre || n.ruc}</td>
-                                    <td className="px-3 py-1.5 text-slate-400">{n.canal}</td>
-                                    <td className="max-w-[150px] truncate px-3 py-1.5 font-mono text-[10px] text-slate-400">{n.destinatario || '—'}</td>
-                                    <td className="max-w-[220px] truncate px-3 py-1.5 text-slate-300">{n.asunto || n.cuerpo.slice(0, 40)}</td>
-                                    <td className="px-3 py-1.5">
-                                        <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${estadoColor(n.estado)}`}>{n.estado}</span>
-                                    </td>
-                                    <td className="px-3 py-1.5 font-mono text-[10px] text-slate-500">
-                                        {new Date(n.enviada_en || n.programada_para || n.created_at).toLocaleString()}
-                                    </td>
-                                    <td className="px-3 py-1.5 text-right">
-                                        {n.estado !== 'enviado' && n.estado !== 'cancelado' && (
-                                            <div className="inline-flex gap-1">
-                                                <button type="button" title="Marcar enviada" onClick={async () => { await actualizarEstado(n.id, 'enviado'); void cargar(); }} className="rounded-md border border-emerald-500/30 p-1 text-emerald-300 hover:bg-emerald-500/10"><Check size={11} /></button>
-                                                <button type="button" title="Cancelar" onClick={async () => { await actualizarEstado(n.id, 'cancelado'); void cargar(); }} className="rounded-md border border-white/10 p-1 text-slate-400 hover:bg-white/5"><X size={11} /></button>
+                <section className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#051424]/70">
+                    {notifs.length === 0 ? (
+                        <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+                            <Inbox size={26} className="text-slate-500" />
+                            <p className="text-[12px] font-semibold text-slate-300">La bandeja está vacía.</p>
+                            <button type="button" onClick={() => setTab('componer')} className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950">
+                                <Plus size={13} /> Componer el primero
+                            </button>
+                        </div>
+                    ) : (
+                        porDia.map(([dia, filas]) => (
+                            <div key={dia}>
+                                <p className="sticky top-0 z-10 border-b border-white/5 bg-[#051424]/95 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 backdrop-blur">
+                                    {dia} · {filas.length}
+                                </p>
+                                <div className="divide-y divide-white/5">
+                                    {filas.map((n) => {
+                                        const meta = canalMeta(n.canal);
+                                        return (
+                                            <div key={n.id} className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[0.03]">
+                                                <span
+                                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10"
+                                                    style={{ color: meta.color, background: 'rgba(255,255,255,0.04)' }}
+                                                    title={meta.etiqueta}
+                                                >
+                                                    {meta.icono}
+                                                </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-[12px] font-semibold text-slate-100">{n.cliente_nombre || n.ruc}</p>
+                                                    <p className="truncate text-[10.5px] text-slate-500">
+                                                        {n.asunto || n.cuerpo.slice(0, 60)}
+                                                    </p>
+                                                </div>
+                                                <span className="hidden font-mono text-[10px] text-slate-500 sm:block">{n.destinatario || '—'}</span>
+                                                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${estadoColor(n.estado)}`}>
+                                                    {n.estado}
+                                                </span>
+                                                <span className="w-14 shrink-0 text-right font-mono text-[10px] text-slate-500">
+                                                    {new Date(n.enviada_en || n.programada_para || n.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                                    {n.estado !== 'enviado' && n.estado !== 'cancelado' && (
+                                                        <>
+                                                            <button type="button" title="Marcar enviada" onClick={async () => { await actualizarEstado(n.id, 'enviado'); void cargar(); }} className="rounded-md border border-emerald-500/30 p-1 text-emerald-300 hover:bg-emerald-500/10">
+                                                                <Check size={11} />
+                                                            </button>
+                                                            <button type="button" title="Cancelar" onClick={async () => { await actualizarEstado(n.id, 'cancelado'); void cargar(); }} className="rounded-md border border-white/10 p-1 text-slate-400 hover:bg-white/5">
+                                                                <X size={11} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </section>
             )}
 
+            {/* COMPONER ------------------------------------------------------- */}
             {tab === 'componer' && (
-                <section className="mt-3 grid gap-3 lg:grid-cols-[1.1fr_.9fr]">
+                <section className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_.9fr]">
                     {/* Destinatarios */}
                     <div className="rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
-                                Destinatarios · {seleccion.size}
+                            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                <Users size={13} /> Destinatarios
+                                <span className="rounded-full bg-[#C9A96E]/15 px-1.5 py-0.5 font-mono text-[9px] text-[#e6d3ab]">{seleccion.size}</span>
                             </p>
                             <div className="flex flex-wrap gap-1">
-                                <button type="button" onClick={() => setSeleccion(new Set(faltan.map((c) => c.ruc)))} className="rounded-lg border border-amber-500/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/10">Faltan</button>
-                                <button type="button" onClick={() => setSeleccion(new Set(marcados.map((c) => c.ruc)))} className="rounded-lg border border-sky-500/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-sky-300 hover:bg-sky-500/10">Marcados</button>
-                                <button type="button" onClick={() => setSeleccion(new Set(conWhatsApp.map((c) => c.ruc)))} className="rounded-lg border border-emerald-500/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/10">Con WhatsApp</button>
-                                <button type="button" onClick={() => setSeleccion(new Set())} className="rounded-lg border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">Ninguno</button>
+                                {([
+                                    ['Faltan', faltan.length, () => setSeleccion(new Set(faltan.map((c) => c.ruc)))],
+                                    ['Marcados', marcados.length, () => setSeleccion(new Set(marcados.map((c) => c.ruc)))],
+                                    ['Con WhatsApp', conWhatsApp.length, () => setSeleccion(new Set(conWhatsApp.map((c) => c.ruc)))],
+                                    ['Ninguno', 0, () => setSeleccion(new Set())],
+                                ] as Array<[string, number, () => void]>).map(([etiqueta, n, accion]) => (
+                                    <button
+                                        key={String(etiqueta)}
+                                        type="button"
+                                        onClick={accion as () => void}
+                                        className="rounded-lg border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-400 transition-colors hover:border-white/20 hover:text-slate-200"
+                                        title={n ? `${n} cliente(s)` : undefined}
+                                    >
+                                        {etiqueta}{n ? ` · ${n}` : ''}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="relative mt-2">
+                        <div className="relative mt-3">
                             <Search size={13} className="pointer-events-none absolute left-3 top-2.5 text-slate-500" />
                             <input
                                 value={busqueda}
                                 onChange={(e) => setBusqueda(e.target.value)}
                                 placeholder="Buscar cliente o RUC…"
-                                className="w-full rounded-xl border border-white/10 bg-black/30 py-2 pl-8 pr-3 text-[12px] text-slate-100"
+                                className="w-full rounded-xl border border-white/10 bg-black/30 py-2 pl-8 pr-3 text-[12px] text-slate-100 outline-none transition-colors focus:border-[#C9A96E]/50"
                             />
                         </div>
 
-                        <div className="mt-2 max-h-[300px] overflow-auto rounded-xl border border-white/5">
+                        <div className="mt-2 max-h-[320px] overflow-auto rounded-xl border border-white/5">
                             {filtrados.map((c) => {
                                 const on = seleccion.has(c.ruc);
                                 const tel = telefonoDe(c);
@@ -317,20 +416,20 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
                                         key={c.ruc}
                                         type="button"
                                         onClick={() => alternar(c.ruc)}
-                                        className={`flex w-full items-center gap-2 border-b border-white/5 px-3 py-1.5 text-left text-[11px] ${on ? 'bg-[#00A896]/10' : 'hover:bg-white/[0.03]'}`}
+                                        className={`flex w-full items-center gap-2 border-b border-white/5 px-3 py-2 text-left text-[11px] transition-colors ${on ? 'bg-[#00A896]/10' : 'hover:bg-white/[0.03]'}`}
                                     >
-                                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? 'border-[#00A896] bg-[#00A896] text-slate-950' : 'border-white/20'}`}>
+                                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${on ? 'border-[#00A896] bg-[#00A896] text-slate-950' : 'border-white/20'}`}>
                                             {on && <Check size={10} />}
                                         </span>
                                         <span className="min-w-0 flex-1 truncate text-slate-200">{c.name}</span>
-                                        <span className="font-mono text-[9px] text-slate-500">{tel || 'sin tel.'}</span>
+                                        <span className={`font-mono text-[9px] ${tel ? 'text-slate-500' : 'text-amber-500/70'}`}>{tel || 'sin tel.'}</span>
                                     </button>
                                 );
                             })}
                         </div>
                         {canal === 'whatsapp' && sinTelefono.length > 0 && (
-                            <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200">
-                                {sinTelefono.length} seleccionado(s) sin teléfono. Cargá el número o quitalos.
+                            <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[10px] text-amber-200">
+                                <AlertCircle size={12} /> {sinTelefono.length} seleccionado(s) sin teléfono. Cargá el número o quitalos.
                             </p>
                         )}
                     </div>
@@ -338,54 +437,82 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
                     {/* Mensaje */}
                     <div className="rounded-2xl border border-white/10 bg-[#051424]/70 p-4">
                         <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Canal</p>
-                        <div className="mt-1 flex gap-1.5">
+                        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                             {CANALES.map((c) => (
-                                <button key={c.id} type="button" onClick={() => setCanal(c.id)}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider ${canal === c.id ? 'border-[#00A896]/45 bg-[#00A896]/12 text-[#4edea3]' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}>
+                                <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => setCanal(c.id)}
+                                    className={`flex items-center justify-center gap-1.5 rounded-lg border py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${canal === c.id ? 'border-[#00A896]/45 bg-[#00A896]/12 text-[#4edea3]' : 'border-white/10 text-slate-400 hover:bg-white/5'}`}
+                                >
                                     {c.icono} {c.etiqueta}
                                 </button>
                             ))}
                         </div>
 
                         <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Tipo</p>
-                        <select value={tipo} onChange={(e) => aplicarPlantilla(e.target.value as TipoNotificacion)}
-                            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100">
+                        <select
+                            value={tipo}
+                            onChange={(e) => aplicarPlantilla(e.target.value as TipoNotificacion)}
+                            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100 outline-none"
+                        >
                             {TIPOS.map((t) => <option key={t.id} value={t.id}>{t.etiqueta}</option>)}
                         </select>
 
                         {canal === 'email' && (
                             <>
                                 <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">Asunto</p>
-                                <input value={asunto} onChange={(e) => setAsunto(e.target.value)} placeholder="Asunto del correo"
-                                    className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100" />
+                                <input
+                                    value={asunto}
+                                    onChange={(e) => setAsunto(e.target.value)}
+                                    placeholder="Asunto del correo"
+                                    className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100 outline-none transition-colors focus:border-[#C9A96E]/50"
+                                />
                             </>
                         )}
 
-                        <p className="mt-3 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
-                            Mensaje {canal === 'whatsapp' ? '· corto y claro' : ''}
-                        </p>
-                        <textarea value={cuerpo} onChange={(e) => setCuerpo(e.target.value)} rows={canal === 'whatsapp' ? 6 : 9}
+                        <div className="mt-3 flex items-center justify-between">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                Mensaje {canal === 'whatsapp' ? '· corto' : ''}
+                            </p>
+                            <span className="font-mono text-[9px] text-slate-600">{cuerpo.length} car.</span>
+                        </div>
+                        <textarea
+                            value={cuerpo}
+                            onChange={(e) => setCuerpo(e.target.value)}
+                            rows={canal === 'whatsapp' ? 6 : 8}
                             placeholder={canal === 'whatsapp' ? 'Hola {cliente}, le recordamos que…' : 'Escribí el mensaje…'}
-                            className="mt-1 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100" />
+                            className="mt-1 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-slate-100 outline-none transition-colors focus:border-[#C9A96E]/50"
+                        />
 
                         <div className="mt-2 flex flex-wrap items-end gap-2">
                             <div className="flex-1">
                                 <p className="text-[9px] uppercase tracking-widest text-slate-500">Programar (opcional)</p>
-                                <input type="datetime-local" value={programada} onChange={(e) => setProgramada(e.target.value)}
-                                    className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-2 py-1.5 text-[11px] text-slate-100" />
+                                <input
+                                    type="datetime-local"
+                                    value={programada}
+                                    onChange={(e) => setProgramada(e.target.value)}
+                                    className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-2 py-1.5 text-[11px] text-slate-100 outline-none"
+                                />
                             </div>
-                            <button type="button" disabled={guardando} onClick={() => void enviar()}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950 disabled:opacity-50">
+                            <button
+                                type="button"
+                                disabled={guardando}
+                                onClick={() => void enviar()}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A896] px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-950 transition-transform hover:translate-y-[-1px] disabled:opacity-50"
+                            >
                                 <Send size={13} /> {programada ? 'Programar' : 'Encolar'} · {seleccion.size}
                             </button>
                         </div>
 
-                        <p className="mt-2 text-[10px] text-slate-500">
-                            Un mensaje, una fila por cliente. El envío lo hace el bot (Gmail / WhatsApp). Acá queda en cola y se registra.
-                        </p>
-                        <button type="button" onClick={() => navigate('ajustes')} className="mt-1 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200">
-                            <CalendarClock size={12} /> Cómo se envía
-                        </button>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                            <p className="text-[10px] text-slate-500">
+                                Lo envía el bot (Resend / WhatsApp). Acá queda en cola y se registra.
+                            </p>
+                            <button type="button" onClick={() => navigate('ajustes')} className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300">
+                                <CalendarClock size={11} /> Ajustes
+                            </button>
+                        </div>
                     </div>
                 </section>
             )}
