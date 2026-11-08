@@ -7,6 +7,9 @@ import { ClientNotes } from '../ClientNotes';
 import { FacturadorCard } from '../FacturadorCard';
 import AnnulmentsBillingPanel from '../../AnnulmentsBillingPanel';
 import AnnulmentPolicyModal from '../../AnnulmentPolicyModal';
+import PurchaseInvoicesPanel from '../../PurchaseInvoicesPanel';
+import ClientMonthView from '../../ClientMonthView';
+import { Modal } from '../../../ui/Modal';
 import { SalesComboModal } from '../../SalesComboModal';
 import { extractP12Metadata } from '../../../../utils/p12Reader';
 import { useDropzone } from 'react-dropzone';
@@ -51,6 +54,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
     const { toast } = useToast();
     const [isAnnulmentPolicyOpen, setIsAnnulmentPolicyOpen] = React.useState(false);
+    const [isClientViewOpen, setIsClientViewOpen] = React.useState(false);
 
     // Estado para gestión y copia de cifras de declaración en Bóveda
     const [editingDeclPeriod, setEditingDeclPeriod] = React.useState<string | null>(null);
@@ -558,6 +562,47 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 </div>
             </div>
 
+            {/* Aviso: declaraciones con valor a pagar que la extensión NO envió */}
+            {(() => {
+                const porRevisar = (client.declarations || []).filter((d) => {
+                    const total = Number((d as any).totalPagar ?? (d as any).cifras?.totalPagar ?? 0);
+                    return total > 0 && !d.proof_file;
+                });
+                if (porRevisar.length === 0) return null;
+                return (
+                    <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-amber-100">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-300">
+                            ⚠ {porRevisar.length} declaración(es) con valor a pagar · revisión manual
+                        </p>
+                        <p className="mt-1 text-[11px] text-amber-100/80">
+                            La extensión no las envió (borrador guardado en el SRI):{' '}
+                            {porRevisar.map((d) => `${d.period} ($${Number((d as any).totalPagar ?? (d as any).cifras?.totalPagar ?? 0).toFixed(2)})`).join(' · ')}
+                            . Revisá y enviá a mano desde el portal.
+                        </p>
+                    </div>
+                );
+            })()}
+
+            {/* Vista simple para el cliente: el mes explicado sin jerga */}
+            <div className="flex justify-end">
+                <button
+                    type="button"
+                    onClick={() => setIsClientViewOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#C9A96E]/35 bg-[#C9A96E]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e6d3ab] hover:bg-[#C9A96E]/20 transition-colors"
+                >
+                    👤 Ver como cliente
+                </button>
+            </div>
+
+            <Modal
+                isOpen={isClientViewOpen}
+                onClose={() => setIsClientViewOpen(false)}
+                title={`Vista del cliente · ${client.name}`}
+                size="lg"
+            >
+                <ClientMonthView client={client} />
+            </Modal>
+
             {/* Cobro de anulaciones: estado, meses y total del cliente */}
             {Array.isArray(client.annulments) && client.annulments.length > 0 && (
                 <AnnulmentsBillingPanel
@@ -583,6 +628,11 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     await onUpdateClientDirect?.({ billingPlan: { ...(client.billingPlan || {}), annulmentPolicy: p } }, true);
                 }}
             />
+
+            {/* Compras del mes por proveedor (resumen que deja la extensión) */}
+            {(client.taxProfile as any)?.purchaseSummary && (
+                <PurchaseInvoicesPanel porPeriodo={(client.taxProfile as any).purchaseSummary} />
+            )}
 
             {/* Top Security Cards Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
