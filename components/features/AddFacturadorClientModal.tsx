@@ -9,6 +9,7 @@ import { Client, BillingPlan, TaxRegime } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
 import { v4 as uuidv4 } from 'uuid';
+import { buscarClaveContacto } from '../../services/sriContacts';
 
 interface AddFacturadorClientModalProps {
     isOpen: boolean;
@@ -346,8 +347,16 @@ export const AddFacturadorClientModal: React.FC<AddFacturadorClientModalProps> =
                                         placeholder="070..."
                                         value={newRuc}
                                         onChange={(e) => {
-                                            setNewRuc(e.target.value);
-                                            setUsername(e.target.value);
+                                            const ruc = e.target.value.replace(/\D/g, '').slice(0, 13);
+                                            setNewRuc(ruc);
+                                            setUsername(ruc);
+                                            // La clave puede venir de la bóveda de contactos
+                                            // (las claves importadas que no son clientes).
+                                            if (ruc.length === 13 && !newSriPassword) {
+                                                buscarClaveContacto(ruc).then((c) => {
+                                                    if (c?.sri_password) setNewSriPassword(c.sri_password);
+                                                }).catch(() => undefined);
+                                            }
                                         }}
                                         className="w-full px-3 py-2 bg-surface-lowest border border-foreground/10 rounded-xl text-on-surface font-mono text-xs outline-none focus:border-tertiary"
                                     />

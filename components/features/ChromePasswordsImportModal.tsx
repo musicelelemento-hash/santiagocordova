@@ -183,7 +183,7 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                                     checked={crearFaltantes}
                                     onChange={(e) => setCrearFaltantes(e.target.checked)}
                                 />
-                                Crear los {resumen.nuevas} RUC nuevos como cliente (nombre provisorio, para completar)
+                                Guardar los {resumen.nuevas} RUC nuevos en la bóveda de contactos (no se crean clientes)
                             </label>
                         )}
 
