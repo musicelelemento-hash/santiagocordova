@@ -95,18 +95,23 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
 
     useEffect(() => { void cargar(); }, [cargar]);
 
+    // Sólo clientes reales: los que ya declararon o tienen la frecuencia marcada.
+    // Las claves/contactos sueltos (imprenta, consultas) no se muestran nunca.
+    const clientesUtiles = useMemo(() => clients.filter((c) => (c.declarations?.length || 0) > 0
+        || String((c.taxProfile as any)?.ivaFrequency || '').toLowerCase() === 'mensual'), [clients]);
     const faltan = useMemo(() => faltanPorNotificar(clients, periodo, notifs), [clients, periodo, notifs]);
-    const conWhatsApp = useMemo(() => clients.filter((c) => telefonoDe(c).length >= 9), [clients]);
+    const conWhatsApp = useMemo(() => clientesUtiles.filter((c) => telefonoDe(c).length >= 9), [clientesUtiles]);
     const marcados = useMemo(() => clientesMarcadosParaRecordatorio(clients, canal === 'email' ? 'email' : 'whatsapp'), [clients, canal]);
 
     const filtrados = useMemo(() => {
         const q = busqueda.trim().toLowerCase();
-        const base = clients.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        const base = clientesUtiles.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
         if (!q) return base;
         return base.filter((c) => String(c.name || '').toLowerCase().includes(q) || String(c.ruc).includes(q));
-    }, [clients, busqueda]);
+    }, [clientesUtiles, busqueda]);
 
-    const seleccionados = useMemo(() => clients.filter((c) => seleccion.has(c.ruc)), [clients, seleccion]);
+
+    const seleccionados = useMemo(() => clientesUtiles.filter((c) => seleccion.has(c.ruc)), [clientesUtiles, seleccion]);
     const sinTelefono = useMemo(
         () => (canal === 'whatsapp' ? seleccionados.filter((c) => telefonoDe(c).length < 9) : []),
         [canal, seleccionados],
@@ -139,7 +144,7 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
     };
 
     const aplicarPlantilla = (t: TipoNotificacion) => {
-        const ejemplo = seleccionados[0] || clients[0];
+        const ejemplo = seleccionados[0] || clientesUtiles[0];
         if (!ejemplo) return;
         const p = plantilla(t, ejemplo, periodo);
         setTipo(t);
