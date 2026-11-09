@@ -188,7 +188,7 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                         )}
 
                         <div className="max-h-56 overflow-y-auto rounded-xl border border-white/10 bg-black/20 divide-y divide-white/5">
-                            {filas.map((f) => (
+                            {filas.slice(0, 60).map((f) => (
                                 <div key={f.ruc} className="flex items-center gap-2 px-3 py-1.5 text-[11px]">
                                     {f.estado === 'actualiza' && <RefreshCw size={12} className="text-emerald-300 shrink-0" />}
                                     {f.estado === 'nueva' && <UserPlus size={12} className="text-[#C9A96E] shrink-0" />}
@@ -196,10 +196,13 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                                     <span className="font-mono text-slate-200">{f.ruc}</span>
                                     <span className="truncate text-slate-500">{f.cliente?.name || '—'}</span>
                                     <span className={`ml-auto font-mono text-[10px] uppercase ${f.estado === 'actualiza' ? 'text-emerald-300' : f.estado === 'nueva' ? 'text-[#e6d3ab]' : 'text-slate-500'}`}>
-                                        {f.estado === 'actualiza' ? 'actualiza' : f.estado === 'nueva' ? 'nueva' : 'igual'}
+                                        {f.estado === 'actualiza' ? 'actualiza' : f.estado === 'nueva' ? '→ bóveda' : 'igual'}
                                     </span>
                                 </div>
                             ))}
+                            {filas.length > 60 && (
+                                <p className="px-3 py-2 text-[10px] text-slate-500">… y {filas.length - 60} más. Se aplican todos.</p>
+                            )}
                         </div>
                     </>
                 )}

@@ -46,3 +46,24 @@ select
 -- ── 3) Sacarlos de clients (DESPUÉS de que los números coincidan) ──────────
 -- OJO: si no se corrió el paso 1, esto pierde las claves. Verificar antes.
 -- delete from public.clients where name like 'SRI · %' and created_at is null;
+
+-- ============================================================================
+-- Candado: `clients` no acepta nombres placeholder "SRI · RUC".
+-- Aunque un import o un script lo intente, la base lo rechaza. Reversible:
+--   drop trigger if exists trg_bloquear_placeholder on public.clients;
+-- ============================================================================
+create or replace function public.bloquear_placeholder_cliente()
+returns trigger as $$
+begin
+    if new.name ~* '^SRI[[:space:]]*[-·–]?[[:space:]]*[0-9]{13}$' then
+        raise exception 'Nombre placeholder SRI · RUC no permitido en clients: %', new.name
+            using hint = 'La clave va en sri_contacts, no en clients.';
+    end if;
+    return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_bloquear_placeholder on public.clients;
+create trigger trg_bloquear_placeholder
+    before insert or update of name on public.clients
+    for each row execute function public.bloquear_placeholder_cliente();

@@ -7,6 +7,7 @@ import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
 import { SupabaseService } from '../services/supabaseClientService';
+import { esNombrePlaceholder, guardarContactos } from '../services/sriContacts';
 import { sendFullClientsMatrixToExtension } from '../services/extensionBridge';
 
 import { isPeriodBeforeClientStart } from '../services/complianceEngine';
@@ -466,6 +467,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addClient: (client) => {
+    // Nunca un "SRI · RUC": esa clave es de la bóveda de contactos, no un
+    // cliente. Así no vuelven a aparecer por una importación o un descuido.
+    if (esNombrePlaceholder(client.name)) {
+      console.warn('[CLIENTES] Nombre placeholder SRI · RUC bloqueado:', client.ruc);
+      if (client.sriPassword) {
+        void guardarContactos([{ ruc: client.ruc, sri_password: client.sriPassword }]).catch(() => undefined);
+      }
+      return;
+    }
     const currentClients = get().clients;
     // Evitar duplicados por RUC, pero si existe uno borrado, recuperarlo y actualizarlo
     const existingIndex = currentClients.findIndex(c => c.ruc === client.ruc);

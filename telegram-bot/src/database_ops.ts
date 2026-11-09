@@ -942,6 +942,10 @@ export async function createClient(data: {
     phones?: string[];
 }) {
     console.log(`🆕 Creating new client in Supabase: ${data.name} (${data.ruc})`);
+    // Nunca un placeholder "SRI · RUC": esa clave vive en la bóveda de contactos.
+    if (/^SRI\s*[-·–]\s*\d{13}$/i.test(String(data.name || '').trim())) {
+        return '❌ Ese nombre es un placeholder de la bóveda de contactos (SRI · RUC), no un cliente. Guardá la clave en sri_contacts.';
+    }
     try {
         const { data: existing } = await supabase.from('clients').select('id').eq('ruc', data.ruc).single();
         if (existing) return `⚠️ El RUC ${data.ruc} ya está registrado.`;

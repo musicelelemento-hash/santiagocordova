@@ -15,6 +15,13 @@ export interface SriContact {
 
 const soloDigitos = (ruc: string): string => String(ruc || '').replace(/\D/g, '');
 
+/**
+ * ¿Es un placeholder "SRI · RUC"? Esas filas son claves sueltas importadas,
+ * no clientes: jamás deben crearse como cliente.
+ */
+export const esNombrePlaceholder = (name: string | undefined | null): boolean =>
+    /^SRI\s*[-·–]\s*\d{13}$/i.test(String(name || '').trim());
+
 /** Clave guardada para un RUC que no es cliente. `null` si no está. */
 export async function buscarClaveContacto(ruc: string): Promise<SriContact | null> {
     const limpio = soloDigitos(ruc);
