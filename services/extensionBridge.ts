@@ -60,6 +60,88 @@ export const sendToSRIExtension = (client: Client, targetPeriod?: { year: number
   localStorage.setItem('sri_active_credentials', JSON.stringify(payload.data));
 };
 
+/**
+ * Pide a la extensión 01 que ABRA el SRI con este cliente y verifique la clave.
+ * No declara nada: `pendingAction: 'probar_clave'` entra y sale.
+ */
+export const probarAccesoCliente = (client: Client): boolean => {
+  if (!client.ruc || !client.sriPassword) {
+    console.warn('[PROBAR ACCESO] Faltan RUC o clave SRI.');
+    return false;
+  }
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_AUTOFILL_DATA',
+    data: {
+      ruc: client.ruc,
+      name: client.name || (client as any).razonSocial || 'Cliente SRI',
+      password: client.sriPassword,
+      pendingAction: 'probar_clave',
+      soloEstarAdentro: true,
+      timestamp: Date.now(),
+    },
+  };
+  window.postMessage(payload, '*');
+  try {
+    localStorage.setItem('_sri_autofill_pending', JSON.stringify(payload.data));
+    localStorage.setItem('sri_active_credentials', JSON.stringify(payload.data));
+  } catch { /* sin storage no pasa nada */ }
+  return true;
+};
+
+/**
+ * Entra al SRI con el cliente y se queda adentro: no prueba la clave, no
+ * declara, no extrae nada. Es el acceso rápido para mirar el portal.
+ */
+export const entrarAlSriSinDeclarar = (client: Client): boolean => {
+  if (!client.ruc || !client.sriPassword) return false;
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_AUTOFILL_DATA',
+    data: {
+      ruc: client.ruc,
+      name: client.name || (client as any).razonSocial || 'Cliente SRI',
+      password: client.sriPassword,
+      pendingAction: 'solo_perfil',
+      soloEstarAdentro: true,
+      timestamp: Date.now(),
+    },
+  };
+  window.postMessage(payload, '*');
+  try {
+    localStorage.setItem('_sri_autofill_pending', JSON.stringify(payload.data));
+    localStorage.setItem('sri_active_credentials', JSON.stringify(payload.data));
+  } catch { /* sin storage no pasa nada */ }
+  return true;
+};
+
+/**
+ * Espera el veredicto de la extensión: lee `sriCredencial` del cliente en
+ * Supabase hasta que cambie (la extensión lo escribe al entrar o al fallar).
+ */
+export const esperarResultadoAcceso = async (
+  ruc: string,
+  desdeMs: number,
+  timeoutMs = 60000,
+): Promise<{ ok: boolean; motivo: string } | null> => {
+  const { supabase } = await import('./supabase');
+  const limite = desdeMs + timeoutMs;
+  while (Date.now() < limite) {
+    const { data } = await supabase
+      .from('clients')
+      .select('tax_profile')
+      .eq('ruc', ruc)
+      .maybeSingle();
+    const cred = (data?.tax_profile as any)?.sriCredencial;
+    const cuando = cred?.cuando ? new Date(cred.cuando).getTime() : 0;
+    if (cred?.estado && cuando >= desdeMs - 5000) {
+      return { ok: cred.estado === 'ok', motivo: cred.motivo || cred.estado };
+    }
+    await new Promise((r) => setTimeout(r, 4000));
+  }
+  return null;
+};
+
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
   const trimmed = oldPass.trim();

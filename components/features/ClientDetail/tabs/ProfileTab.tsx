@@ -14,6 +14,7 @@ import { PaymentHistoryChart } from '../PaymentHistoryChart';
 import { ClientNotes } from '../ClientNotes';
 import { FacturadorCard } from '../FacturadorCard';
 import { useToast } from '../../../../context/ToastContext';
+import { probarAccesoCliente, esperarResultadoAcceso, entrarAlSriSinDeclarar } from '../../../../services/extensionBridge';
 import { fileToBase64 } from '../../../../services/pdfExtraction';
 import { UnifiedStorageService } from '../../../../services/unifiedStorageService';
 import { downloadStoredFile } from '../../../../services/fileService';
@@ -697,28 +698,47 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                 >
                                                     📱 Pedir por WhatsApp
                                                 </button>
-                                            ) : (
+                                            ) : (<>
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        window.postMessage({
-                                                            source: 'SC_PRO_DASHBOARD',
-                                                            type: 'SRI_AUTOFILL_DATA',
-                                                            data: {
-                                                                ruc: editedClient.ruc,
-                                                                password: editedClient.sriPassword,
-                                                                name: editedClient.name,
-                                                                pendingAction: 'probar_clave'
-                                                            }
-                                                        }, '*');
-                                                        toast.info("Verificando clave en SRI...");
+                                                    onClick={async () => {
+                                                        const desde = Date.now();
+                                                        if (!probarAccesoCliente(editedClient)) {
+                                                            toast.error('Falta la clave SRI de este cliente.');
+                                                            return;
+                                                        }
+                                                        toast.info('Abriendo el SRI con la clave de este cliente…');
                                                         window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                                        toast.info('Verificando… el resultado llega en unos segundos.');
+                                                        const res = await esperarResultadoAcceso(editedClient.ruc, desde);
+                                                        if (!res) {
+                                                            toast.info('Sin respuesta del portal todavía. Revisá la ficha en un minuto.');
+                                                        } else if (res.ok) {
+                                                            toast.success('Acceso verificado: la clave del SRI funciona.');
+                                                        } else {
+                                                            toast.error(`El SRI rechazó el acceso: ${res.motivo}`);
+                                                        }
                                                     }}
                                                     className="px-2 py-0.5 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 rounded-lg text-[10px] transition-all"
                                                 >
                                                     Probar ahora
                                                 </button>
-                                            )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!entrarAlSriSinDeclarar(editedClient)) {
+                                                            toast.error('Falta la clave SRI de este cliente.');
+                                                            return;
+                                                        }
+                                                        toast.info('Entrando al SRI con este cliente…');
+                                                        window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                                    }}
+                                                    className="px-2 py-0.5 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 rounded-lg text-[10px] transition-all"
+                                                    title="Sólo entrar al portal con este cliente: no verifica ni declara nada"
+                                                >
+                                                    Sólo entrar
+                                                </button>
+                                            </>)}
                                         </div>
 
                                         <button

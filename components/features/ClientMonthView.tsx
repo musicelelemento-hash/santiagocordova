@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, CheckCircle2, Clock3, FileDown, Sparkles } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, FileDown, Flame, Sparkles } from 'lucide-react';
 import type { Client } from '../../types';
 import { extractDeclarationCifras } from '../../utils/declarationFormatter';
+import { descargarAnexoIce } from '../../utils/iceXml';
 
 /**
- * Vista “cliente”: el mes explicado como se lo contarías a alguien que no sabe
- * de impuestos. Sin casilleros ni códigos: estado, cuánto vendió, cuánto
- * compró, cuánto le toca pagar y el comprobante a mano.
+ * Vista â€œclienteâ€: el mes explicado como se lo contarÃ­as a alguien que no sabe
+ * de impuestos. Sin casilleros ni cÃ³digos: estado, cuÃ¡nto vendiÃ³, cuÃ¡nto
+ * comprÃ³, cuÃ¡nto le toca pagar y el comprobante a mano.
  */
 
 interface Props {
@@ -33,6 +34,22 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
     const decl = declaraciones.find((d) => d.period === periodo) || null;
     const cifras = useMemo(() => extractDeclarationCifras(decl), [decl]);
 
+    // Ventas del anexo ICE (las publica la extensiÃ³n al generar el anexo).
+    const iceVentas: Record<string, any> = (client.taxProfile as any)?.ice_ventas || {};
+    const periodosIce = Object.keys(iceVentas).sort().reverse();
+    // El anexo que toca descargar es el del mes anterior (el que se declara ahora).
+    const periodoObjetivo = (() => {
+        const hoy = new Date();
+        const prev = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+        return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+    })();
+    // 1) el período elegido · 2) el que toca · 3) cero con el producto conocido.
+    const iceDelPeriodo = iceVentas[periodo]
+        || iceVentas[periodoObjetivo]
+        || (periodosIce.length
+            ? { periodo: periodoObjetivo, productos: [], ventaTotal: 0, gramosAzucar: 0, devolucionTotal: 0 }
+            : null);
+
     const ventas = cifras.ventas15 + cifras.ventas0;
     const compras = cifras.compras15 + cifras.compras5 + cifras.compras0;
     const aPagar = Number(cifras.totalPagar || 0);
@@ -44,8 +61,8 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
         return (
             <div className="p-8 text-center text-slate-300">
                 <Sparkles className="mx-auto mb-3 text-[#C9A96E]" size={28} />
-                <p className="text-sm font-bold">Todavía no hay declaraciones de este cliente.</p>
-                <p className="mt-1 text-xs text-slate-500">Cuando se declare el primer mes, acá va a aparecer explicado en simple.</p>
+                <p className="text-sm font-bold">TodavÃ­a no hay declaraciones de este cliente.</p>
+                <p className="mt-1 text-xs text-slate-500">Cuando se declare el primer mes, acÃ¡ va a aparecer explicado en simple.</p>
             </div>
         );
     }
@@ -70,7 +87,7 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
             <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#0b1c2e] to-[#051424] p-5">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Declaración de IVA</p>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">DeclaraciÃ³n de IVA</p>
                         <h3 className="font-display text-xl font-black text-white">{nombrePeriodo(periodo, true)}</h3>
                         <p className="mt-0.5 text-xs text-slate-400">{client.name}</p>
                     </div>
@@ -99,11 +116,54 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
                     </div>
                 </div>
 
+                {iceDelPeriodo && (
+                    <div className="mt-4 rounded-xl border border-[#C9A96E]/25 bg-[#C9A96E]/5 px-3 py-2.5">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                <Flame size={12} /> Ventas ICE
+                            </p>
+                            <p className="font-mono text-sm font-black text-[#e6d3ab]">{dinero(iceDelPeriodo.ventaTotal)}</p>
+                        </div>
+                        <p className="mt-1 text-[10.5px] text-slate-400">
+                            {(iceDelPeriodo.productos || []).length} producto(s) Â· gramos de azÃºcar{' '}
+                            {Number(iceDelPeriodo.gramosAzucar || 0).toFixed(2)}
+                            {Number(iceDelPeriodo.devolucionTotal || 0) > 0
+                                ? ` Â· devoluciones ${dinero(iceDelPeriodo.devolucionTotal)}`
+                                : ''}
+                        </p>
+                        {(iceDelPeriodo.productos || []).map((p: any) => (
+                            <p key={p.codProdICE} className="mt-0.5 font-mono text-[9.5px] text-slate-500">
+                                {p.codProdICE} Â· {dinero(p.ventaICE)}
+                            </p>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const per = String(iceDelPeriodo.periodo || periodo || '');
+                                const [y, m] = per.split('-').map(Number);
+                                if (!y || !m) return;
+                                void descargarAnexoIce({
+                                    ruc: client.ruc,
+                                    nombre: client.name,
+                                    anio: y,
+                                    mes: m,
+                                    productos: Array.isArray(iceDelPeriodo.productos) && iceDelPeriodo.productos.length
+                                        ? iceDelPeriodo.productos
+                                        : [{ codProdICE: '3031-053-049147-013-000750-66-593-000012' }],
+                                });
+                            }}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[#C9A96E]/35 bg-[#C9A96E]/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e6d3ab] transition-colors hover:bg-[#C9A96E]/20"
+                        >
+                            <FileDown size={12} /> Descargar XML · {nombrePeriodo(String(iceDelPeriodo.periodo || periodo), true)}
+                        </button>
+                    </div>
+                )}
+
                 <div className="mt-4 grid gap-1 text-[11px] text-slate-400 sm:grid-cols-2">
                     <p>IVA de tus ventas: <b className="font-mono text-slate-200">{dinero(cifras.montoIvaVentas)}</b></p>
                     <p>IVA de tus compras: <b className="font-mono text-slate-200">{dinero(cifras.montoIvaCompras)}</b></p>
                     <p>Retenciones de IVA: <b className="font-mono text-slate-200">{dinero(cifras.retIva)}</b></p>
-                    <p className="flex items-center gap-1"><CalendarDays size={11} /> {presentada ? 'Comprobante disponible en tu bóveda' : 'Se presenta este mes'}</p>
+                    <p className="flex items-center gap-1"><CalendarDays size={11} /> {presentada ? 'Comprobante disponible en tu bÃ³veda' : 'Se presenta este mes'}</p>
                 </div>
 
                 {comprobante && (

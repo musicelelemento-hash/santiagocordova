@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    Bell, Mail, MessageCircle, StickyNote, Send, RefreshCw, Check, X, Search,
+    Bell, Mail, MessageCircle, StickyNote, Send, RefreshCw, Check, X, Search, Copy,
     Users, Clock3, ShieldCheck, Inbox, Plus, CalendarClock, AlertCircle,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
+import { SQL_NOTIFICATIONS } from '../utils/sqlNotifications';
 import {
     type Notificacion,
     type CanalNotificacion,
@@ -250,10 +251,37 @@ const NotificationsScreen: React.FC<Props> = ({ navigate }) => {
             </div>
 
             {errorTabla && (
-                <p className="mt-3 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-200">
-                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                    No se pudo leer <code className="mx-1">notifications</code>: {errorTabla}. ¿Corriste <code className="mx-1">database/notifications.sql</code>?
-                </p>
+                <div className="mt-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3">
+                    <p className="flex items-start gap-2 text-[11px] leading-relaxed text-rose-200">
+                        <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                        <span>
+                            Falta la tabla <code className="mx-1">notifications</code>: {errorTabla}
+                        </span>
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                navigator.clipboard.writeText(SQL_NOTIFICATIONS)
+                                    .then(() => toast.success('SQL copiado. Pegalo en el SQL Editor de Supabase.'))
+                                    .catch(() => toast.error('No se pudo copiar: abrí database/notifications.sql'));
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/40 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-rose-100 hover:bg-rose-500/15"
+                        >
+                            <Copy size={11} /> Copiar SQL
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void cargar()}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5"
+                        >
+                            <RefreshCw size={11} /> Reintentar
+                        </button>
+                        <span className="text-[10px] text-rose-200/70">
+                            Supabase → SQL Editor → pegar → Run. Después, Reintentar.
+                        </span>
+                    </div>
+                </div>
             )}
 
             {/* FALTAN --------------------------------------------------------- */}
