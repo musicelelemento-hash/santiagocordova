@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { AlertTriangle, Check, FileUp, KeyRound, RefreshCw, UserPlus, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { parseCredentialsCSV } from '../../services/csv';
-import { Client, TaxRegime } from '../../types';
+import { guardarContactos } from '../../services/sriContacts';
+import { Client } from '../../types';
 
 /**
  * Importador del CSV de contraseñas de Chrome (chrome://password-manager).
@@ -105,19 +106,16 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                     updatedAt: ahora,
                 }));
 
-            const crear: Client[] = crearFaltantes
-                ? filas.filter((f) => f.estado === 'nueva').map((f) => ({
-                    id: uuidv4(),
-                    ruc: f.ruc,
-                    name: `SRI · ${f.ruc}`,
-                    sriPassword: f.clave,
-                    sriPasswordUpdatedAt: ahora,
-                    regime: TaxRegime.General,
-                    declarations: [],
-                    isActive: true,
-                    notes: 'Creado desde el CSV de contraseñas del SRI. Completar nombre y régimen.',
-                }))
-                : [];
+            // Las claves que NO son de un cliente jamás se convierten en clientes:
+            // van a la bóveda de contactos, que sólo se usa para autocompletar al
+            // crear un cliente nuevo o para que el bot responda un RUC.
+            if (crearFaltantes) {
+                const nuevas = filas.filter((f) => f.estado === 'nueva');
+                if (nuevas.length) {
+                    await guardarContactos(nuevas.map((f) => ({ ruc: f.ruc, sri_password: f.clave })));
+                }
+            }
+            const crear: Client[] = [];
 
             await onApply({ credenciales, actualizar, crear });
             onClose();

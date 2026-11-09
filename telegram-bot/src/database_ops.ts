@@ -1771,6 +1771,13 @@ export async function get_sri_credential(ruc: string): Promise<string> {
                 return `🔑 Clave SRI para RUC ${ruc}:\n\`${password}\`\n\n_Obtenido de la bóveda sincronizada de contraseñas. Baku._`;
             }
         }
+        // Respaldo: bóveda de contactos en Supabase (claves que no son clientes).
+        try {
+            const { data } = await supabase.from('sri_contacts').select('sri_password').eq('ruc', ruc).maybeSingle();
+            if (data && data.sri_password) {
+                return `🔑 Clave SRI para RUC ${ruc}:\n\`${data.sri_password}\`\n\n_Obtenido de la bóveda de contactos. Baku._`;
+            }
+        } catch (e) { /* si la tabla no existe, sigue el mensaje de abajo */ }
         return `❌ No se encontró la clave SRI para el RUC ${ruc} en la bóveda de contraseñas.`;
     } catch (error: any) {
         console.error("Error fetching SRI credential from Firebase:", error);
