@@ -92,6 +92,17 @@ const muestraBotonesIce = (client: Client, obType: string, obLabel?: string): bo
     return llevaIce(client);
 };
 
+/** Mes (de los últimos 6) cuyo anexo ICE todavía no está presentado. */
+const periodoAnexoPendiente = (client: Client): string | null => {
+    const anexos = (client.taxProfile as any)?.ice_anexos || {};
+    const hoy = new Date();
+    const meses = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth() - 1 - i, 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }).sort();
+    return meses.find((m) => !anexos[m]) || null;
+};
+
 /** ¿El anexo de ese período ya se presentó? Entonces no se ofrecen las descargas. */
 const anexoYaPresentado = (client: Client, period: string): boolean => {
     const anexos = (client.taxProfile as any)?.ice_anexos || {};
@@ -2569,6 +2580,31 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             <span>Perfil SRI</span>
                                         </button>
 
+                                        {(() => {
+                                            const mesAnexo = periodoAnexoPendiente(client);
+                                            const llevaAnexoIce = llevaIce(client) || Boolean((client.taxProfile as any)?.ice_config);
+                                            if (!llevaAnexoIce || !mesAnexo) return null;
+                                            return (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        void descargarAnexoIceZip(datosIceDeCliente(client, mesAnexo));
+                                                    }}
+                                                    onContextMenu={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        descargarAnexoIceXml(datosIceDeCliente(client, mesAnexo));
+                                                    }}
+                                                    className="py-1.5 px-2.5 rounded-xl bg-[#C9A96E]/15 border border-[#C9A96E]/30 text-[#e6d3ab] hover:text-white hover:bg-[#C9A96E]/30 transition-all flex items-center justify-center gap-1"
+                                                    title={`Anexo ICE: ZIP del mes pendiente (${mesAnexo}). Clic derecho: XML.`
+                                                    }
+                                                >
+                                                    <LucideIcons.Download size={10} />
+                                                    <span>Anexo ICE</span>
+                                                </button>
+                                            );
+                                        })()}
+
                                         {hasProof && !isPaid && (
                                             <button
                                                 onClick={() => handleSendWhatsAppNotification(client, activePeriod, mainObType, mainDecl)}
@@ -3285,20 +3321,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     >
                                                                         <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
 
-                                                                        {muestraBotonesIce(client, ob.type as string, ob.label) && !anexoYaPresentado(client, p) && (
-                                                                            <div className="flex items-center gap-0.5 mt-0.5">
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); descargarAnexoIceXml(datosIceDeCliente(client, p)); }}
-                                                                                    title="Descargar XML del anexo ICE"
-                                                                                    className="rounded px-1 py-[1px] text-[6px] font-black uppercase tracking-wide bg-white/10 hover:bg-[#C9A96E]/40 text-slate-200"
-                                                                                >XML</button>
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); void descargarAnexoIceZip(datosIceDeCliente(client, p)); }}
-                                                                                    title="Descargar ZIP del anexo ICE (AICEmmaaaa.zip)"
-                                                                                    className="rounded px-1 py-[1px] text-[6px] font-black uppercase tracking-wide bg-white/10 hover:bg-[#C9A96E]/40 text-slate-200"
-                                                                                >ZIP</button>
-                                                                            </div>
-                                                                        )}
+                                                                        
                                                                         
                                                                         {isDone ? (
                                                                             <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
