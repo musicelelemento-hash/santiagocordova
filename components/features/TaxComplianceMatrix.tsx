@@ -86,9 +86,16 @@ const datosIceDeCliente = (client: Client, period: string) => {
 
 /** ¿Mostrar las descargas del anexo ICE en esta celda? */
 const muestraBotonesIce = (client: Client, obType: string, obLabel?: string): boolean => {
-    if (obType === 'ICE') return true;
+    // Sólo el ANEXO: la declaración de ICE se hace en la web, el anexo no.
+    if (obType !== 'ANEXO' && obType !== 'ANEXO_ICE') return false;
     if (obLabel && /ice/i.test(obLabel)) return true;
-    return obType === 'ANEXO' && llevaIce(client);
+    return llevaIce(client);
+};
+
+/** ¿El anexo de ese período ya se presentó? Entonces no se ofrecen las descargas. */
+const anexoYaPresentado = (client: Client, period: string): boolean => {
+    const anexos = (client.taxProfile as any)?.ice_anexos || {};
+    return Boolean(anexos[String(period).split(':')[0]]);
 };
 
 /** ¿Este cliente lleva anexo ICE? */
@@ -3278,7 +3285,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     >
                                                                         <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
 
-                                                                        {muestraBotonesIce(client, ob.type as string, ob.label) && (
+                                                                        {muestraBotonesIce(client, ob.type as string, ob.label) && !anexoYaPresentado(client, p) && (
                                                                             <div className="flex items-center gap-0.5 mt-0.5">
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); descargarAnexoIceXml(datosIceDeCliente(client, p)); }}
@@ -4131,7 +4138,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </div>
 
                             {/* Anexo ICE: descargar el XML/ZIP del mes */}
-                            {muestraBotonesIce(client, obType as string, obLabel) && (
+                            {muestraBotonesIce(client, obType as string, obLabel) && !anexoYaPresentado(client, period) && (
                                 <div className="rounded-2xl border border-[#C9A96E]/30 bg-[#C9A96E]/5 px-4 py-3">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
                                         Anexo ICE · {periodLabel}
