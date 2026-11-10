@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, Download, ExternalLink, FileText, Flame, Settings2 } from 'lucide-react';
+import { CalendarDays, Check, Circle, Download, ExternalLink, FileText, Flame, Settings2 } from 'lucide-react';
 import type { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { useAppStore } from '../../store/useAppStore';
 import { MESES_CORTOS, descargarAnexoIceXml, descargarAnexoIceZip, type AnexoIceDatos } from '../../utils/iceXml';
 import { entrarAlSriSinDeclarar } from '../../services/extensionBridge';
 import IceConfigModal from './IceConfigModal';
@@ -32,10 +33,12 @@ const nombreLargo = (periodo: string): string => {
 
 const IceAnnexActions: React.FC<Props> = ({ client }) => {
     const { toast } = useToast();
+    const { updateClient } = useAppStore();
     const [configAbierta, setConfigAbierta] = useState(false);
 
     const iceVentas: Record<string, any> = (client.taxProfile as any)?.ice_ventas || {};
     const iceConfig = (client.taxProfile as any)?.ice_config || null;
+    const iceAnexos: Record<string, any> = (client.taxProfile as any)?.ice_anexos || {};
     const meses = useMemo(() => {
         const lista = Object.keys(iceVentas).sort().reverse();
         const objetivo = periodoAnterior();
@@ -45,6 +48,33 @@ const IceAnnexActions: React.FC<Props> = ({ client }) => {
 
     // Sin configuración y sin ventas publicadas: este cliente no lleva ICE.
     if (!iceConfig && !Object.keys(iceVentas).length) return null;
+
+    const presentado = iceAnexos[periodo] || null;
+
+    const marcar = async (valor: boolean) => {
+        try {
+            const tp = (client.taxProfile as any) || {};
+            const anexos = { ...(tp.ice_anexos || {}) };
+            if (valor) {
+                anexos[periodo] = { estado: 'presentado', cuando: new Date().toISOString() };
+            } else {
+                delete anexos[periodo];
+            }
+            await updateClient(client.id, { taxProfile: { ...tp, ice_anexos: anexos } } as any);
+            toast.success(valor ? `Anexo de ${nombreLargo(periodo)} marcado como presentado.` : 'Marca quitada.');
+        } catch (e: any) {
+            toast.error(`No se pudo guardar: ${e?.message || e}`);
+        }
+    };
+
+    // Últimos 6 meses para ver de un vistazo qué está presentado.
+    const ultimos = useMemo(() => {
+        const hoy = new Date();
+        return Array.from({ length: 6 }, (_, i) => {
+            const d = new Date(hoy.getFullYear(), hoy.getMonth() - 1 - i, 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }).reverse();
+    }, []);
 
     const datos = (): AnexoIceDatos => {
         const [anio, mes] = periodo.split('-').map(Number);
@@ -124,6 +154,42 @@ const IceAnnexActions: React.FC<Props> = ({ client }) => {
             <p className="mt-1.5 text-[10px] text-slate-500">
                 {nombreLargo(periodo)} · {iceVentas[periodo] ? `ventas ${Number(iceVentas[periodo].ventaTotal || 0).toFixed(2)}` : 'sin ventas publicadas (va en cero)'} · ZIP: <code>AICE{String(Number(periodo.split('-')[1])).padStart(2, '0')}{periodo.split('-')[0]}.zip</code>
             </p>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-white/5 pt-2">
+                <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${presentado
+                    ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-300'
+                    : 'border-amber-500/35 bg-amber-500/10 text-amber-300'}`}>
+                    <Check size={10} /> {presentado ? `Presentado ${new Date(presentado.cuando).toLocaleDateString('es-EC')}` : 'Pendiente de presentar'}
+                </span>
+                <button
+                    type="button"
+                    onClick={() => void marcar(!presentado)}
+                    className="rounded-lg border border-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-300 hover:bg-white/5"
+                >
+                    {presentado ? 'Quitar marca' : 'Marcar presentado'}
+                </button>
+
+                <div className="ml-auto flex items-center gap-1">
+                    {ultimos.map((m) => {
+                        const ok = Boolean(iceAnexos[m]);
+                        const [mm] = [Number(m.split('-')[1])];
+                        return (
+                            <button
+                                key={m}
+                                type="button"
+                                onClick={() => setPeriodo(m)}
+                                title={`${nombreLargo(m)} · ${ok ? 'presentado' : 'pendiente'}`}
+                                className={`flex h-5 w-9 items-center justify-center gap-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider transition-colors ${m === periodo
+                                    ? 'bg-[#C9A96E]/20 text-[#e6d3ab]'
+                                    : ok ? 'text-emerald-400 hover:bg-white/5' : 'text-slate-500 hover:bg-white/5'}`}
+                            >
+                                {ok ? <Check size={8} /> : <Circle size={6} />}
+                                {MESES_CORTOS[mm - 1]}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
             {configAbierta && <IceConfigModal client={client} onClose={() => setConfigAbierta(false)} />}
         </div>

@@ -7,6 +7,7 @@ import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredF
 import { signPublicStorageUrl, openStoredFileInNewTab } from '../../services/fileService';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { descargarAnexoIceXml, descargarAnexoIceZip } from '../../utils/iceXml';
 import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
 export { arePeriodsEqual };
 import { useToast } from '../../context/ToastContext';
@@ -60,6 +61,34 @@ function targetPeriodForDeclaration(type: 'mensual' | 'semestral' | 'renta'): st
     if (type === 'semestral') return `${y}-S${m <= 6 ? 1 : 2}`;
     return `${y}-${String(m).padStart(2, '0')}`;
 }
+
+/** Datos del anexo ICE de un cliente para un período (para los botones de la matriz). */
+const datosIceDeCliente = (client: Client, period: string) => {
+    const tp = (client.taxProfile as any) || {};
+    const limpio = String(period).split(':')[0];
+    const [anio, mes] = limpio.split('-').map(Number);
+    const productos = tp.ice_ventas?.[limpio]?.productos;
+    return {
+        ruc: client.ruc,
+        nombre: client.name,
+        anio,
+        mes,
+        productos: Array.isArray(productos) && productos.length
+            ? productos
+            : [{
+                codProdICE: tp.ice_config?.codProdICE || '3031-053-049147-013-000750-66-593-000012',
+                tipoIdCliente: tp.ice_config?.tipoIdCliente || 'F',
+                idCliente: tp.ice_config?.idCliente || '9999999999999',
+                tipoVentaICE: tp.ice_config?.tipoVentaICE || '1',
+            }],
+    };
+};
+
+/** ¿Este cliente lleva anexo ICE? */
+const llevaIce = (client: Client): boolean => {
+    const tp = (client.taxProfile as any) || {};
+    return Boolean(tp.ice_config) || Object.keys(tp.ice_ventas || {}).length > 0;
+};
 
 export function formatDeclarationInvoiceDescription(period: string, obType: TaxObligationType = 'IVA'): { description: string; fiscalPeriod: string } {
     const monthNames = [
@@ -3241,6 +3270,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         }}
                                                                     >
                                                                         <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
+
+                                                                        {(ob.type === 'ANEXO' || ob.type === 'ICE' || ob.type === 'ANEXO_ICE') && llevaIce(client) && (
+                                                                            <div className="flex items-center gap-0.5 mt-0.5">
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); descargarAnexoIceXml(datosIceDeCliente(client, p)); }}
+                                                                                    title="Descargar XML del anexo ICE"
+                                                                                    className="rounded px-1 py-[1px] text-[6px] font-black uppercase tracking-wide bg-white/10 hover:bg-[#C9A96E]/40 text-slate-200"
+                                                                                >XML</button>
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); void descargarAnexoIceZip(datosIceDeCliente(client, p)); }}
+                                                                                    title="Descargar ZIP del anexo ICE (AICEmmaaaa.zip)"
+                                                                                    className="rounded px-1 py-[1px] text-[6px] font-black uppercase tracking-wide bg-white/10 hover:bg-[#C9A96E]/40 text-slate-200"
+                                                                                >ZIP</button>
+                                                                            </div>
+                                                                        )}
                                                                         
                                                                         {isDone ? (
                                                                             <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
