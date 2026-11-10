@@ -187,7 +187,7 @@ export const sendRecoverProofToExtension = (client: Client, period: string) => {
     ruc: client.ruc,
     name: client.name || (client as any).razonSocial || 'Cliente SRI',
     password: client.sriPassword,
-    soloEstarAdentro: false,
+    soloEstarAdentro: true,
     mode: 'recover_proof',
     pendingAction: 'recuperar_comprobante',
     recuperarComprobante: {
@@ -199,7 +199,7 @@ export const sendRecoverProofToExtension = (client: Client, period: string) => {
     },
     timestamp: Date.now()
   };
-  const payload = { source: 'SC_PRO_DASHBOARD', type: 'SRI_ENTER_PORTAL_SESSION', data };
+  const payload = { source: 'SC_PRO_DASHBOARD', type: 'SRI_AUTOFILL_DATA', data };
   window.postMessage(payload, '*');
   window.dispatchEvent(new CustomEvent('sriEnterPortalSession', { detail: data }));
   try {
@@ -305,15 +305,16 @@ export const sendDirectLoginToExtension = (client: Client) => {
     return;
   }
 
+  // El content script de la extensión escucha `SRI_AUTOFILL_DATA`; el viejo
+  // `SRI_ENTER_PORTAL_SESSION` no lo manejaba nadie y el botón no hacía nada.
   const payload = {
     source: 'SC_PRO_DASHBOARD',
-    type: 'SRI_ENTER_PORTAL_SESSION',
+    type: 'SRI_AUTOFILL_DATA',
     data: {
       ruc: client.ruc,
       name: client.name || (client as any).razonSocial || 'Cliente SRI',
       password: client.sriPassword,
       soloEstarAdentro: true,
-      mode: 'session_only',
       pendingAction: 'solo_perfil',
       timestamp: Date.now()
     }
@@ -567,11 +568,13 @@ export const enterSriDirect = (client: Client) => {
   // 1. Envío a la extensión Nueva Luz 3.0 para sesión automática y detenerse en el perfil
   const payload = {
     source: 'SC_PRO_DASHBOARD',
-    type: 'SRI_ENTER_PORTAL_SESSION',
+    type: 'SRI_AUTOFILL_DATA',
     data: {
       ruc: client.ruc,
       name: client.tradeName || client.name,
       password: pwd,
+      soloEstarAdentro: true,
+      pendingAction: 'solo_perfil',
       timestamp: Date.now()
     }
   };
