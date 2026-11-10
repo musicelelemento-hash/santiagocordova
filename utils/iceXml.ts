@@ -75,17 +75,24 @@ export function construirAnexoIce({ ruc, nombre, anio, mes, productos }: AnexoIc
         + '</ice>';
 }
 
-/** Descarga el XML y el ZIP del anexo de un período. */
-export async function descargarAnexoIce(datos: AnexoIceDatos): Promise<void> {
-    const xml = construirAnexoIce(datos);
-    const nombreBase = `ICE-${datos.anio}-${datos.ruc} ${MESES_CORTOS[datos.mes - 1]}`;
+const nombreBaseDe = (datos: AnexoIceDatos): string =>
+    `ICE-${datos.anio}-${datos.ruc} ${MESES_CORTOS[datos.mes - 1]}`;
 
-    saveAs(new Blob([xml], { type: 'application/xml' }), `${nombreBase}.xml`);
+/** Descarga sólo el XML del anexo. */
+export function descargarAnexoIceXml(datos: AnexoIceDatos): void {
+    saveAs(new Blob([construirAnexoIce(datos)], { type: 'application/xml' }), `${nombreBaseDe(datos)}.xml`);
+}
 
+/** Descarga sólo el ZIP, con el nombre que pide el SRI (AICEmmaaaa.zip). */
+export async function descargarAnexoIceZip(datos: AnexoIceDatos): Promise<void> {
     const zip = new JSZip();
-    zip.file(`${nombreBase}.xml`, xml);
+    zip.file(`${nombreBaseDe(datos)}.xml`, construirAnexoIce(datos));
     const contenido = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-    // El DIMM pide el ZIP nombrado AICEmmaaaa (ej. AICE102026.zip).
-    const nombreAice = `AICE${String(datos.mes).padStart(2, '0')}${datos.anio}`;
-    saveAs(contenido, `${nombreAice}.zip`);
+    saveAs(contenido, `AICE${String(datos.mes).padStart(2, '0')}${datos.anio}.zip`);
+}
+
+/** Descarga el XML y el ZIP juntos. */
+export async function descargarAnexoIce(datos: AnexoIceDatos): Promise<void> {
+    descargarAnexoIceXml(datos);
+    await descargarAnexoIceZip(datos);
 }
