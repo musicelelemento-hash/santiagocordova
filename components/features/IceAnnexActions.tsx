@@ -4,7 +4,7 @@ import type { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useAppStore } from '../../store/useAppStore';
 import { MESES_CORTOS, descargarAnexoIceXml, descargarAnexoIceZip, type AnexoIceDatos } from '../../utils/iceXml';
-import { entrarAlSriSinDeclarar, subirAnexoIceAlSri } from '../../services/extensionBridge';
+import { entrarAlSriSinDeclarar, subirAnexoIceAlSri, declararIceEnCero } from '../../services/extensionBridge';
 import IceConfigModal from './IceConfigModal';
 
 /**
@@ -154,6 +154,19 @@ const IceAnnexActions: React.FC<Props> = ({ client }) => {
                     title="La extensión 01 arma el ZIP y lo sube al portal de Anexos; después lo marca presentado."
                 >
                     <UploadCloud size={12} /> Subir al SRI
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!client.sriPassword) { toast.error('Falta la clave SRI de este cliente.'); return; }
+                        if (!declararIceEnCero(client, periodo)) { toast.error('No se pudo preparar.'); return; }
+                        toast.info('Abriendo el wizard de ICE con la obligación ya elegida…');
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/35 bg-sky-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-sky-300 hover:bg-sky-500/20"
+                    title="La extensión abre el wizard y elige 3031 ICE BEBIDAS ALCOHÓLICAS. El envío lo confirmás vos."
+                >
+                    <FileText size={12} /> Declarar ICE
                 </button>
 
                 <button

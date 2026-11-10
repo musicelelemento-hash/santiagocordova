@@ -159,6 +159,23 @@ export const subirAnexoIceAlSri = (client: Client, periodo: string): boolean => 
   return true;
 };
 
+/**
+ * Pide a la extensión preparar la declaración ICE en cero: abre el wizard y
+ * elige la obligación 3031. El envío final lo confirma el usuario en el SRI.
+ */
+export const declararIceEnCero = (client: Client, periodo: string): boolean => {
+  if (!client.ruc || !client.sriPassword) return false;
+  const [anio, mes] = String(periodo).split('-').map(Number);
+  if (!anio || !mes) return false;
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_DECLARAR_ICE',
+    data: { ruc: client.ruc, nombre: client.name, password: client.sriPassword, anio, mes },
+  };
+  window.postMessage(payload, '*');
+  return true;
+};
+
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
   const trimmed = oldPass.trim();
