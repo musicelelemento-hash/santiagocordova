@@ -8,6 +8,7 @@ import { signPublicStorageUrl, openStoredFileInNewTab } from '../../services/fil
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { descargarAnexoIceXml, descargarAnexoIceZip } from '../../utils/iceXml';
+import { entrarAlSriSinDeclarar } from '../../services/extensionBridge';
 import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
 export { arePeriodsEqual };
 import { useToast } from '../../context/ToastContext';
@@ -92,16 +93,6 @@ const muestraBotonesIce = (client: Client, obType: string, obLabel?: string): bo
     return llevaIce(client);
 };
 
-/** Mes (de los últimos 6) cuyo anexo ICE todavía no está presentado. */
-const periodoAnexoPendiente = (client: Client): string | null => {
-    const anexos = (client.taxProfile as any)?.ice_anexos || {};
-    const hoy = new Date();
-    const meses = Array.from({ length: 6 }, (_, i) => {
-        const d = new Date(hoy.getFullYear(), hoy.getMonth() - 1 - i, 1);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    }).sort();
-    return meses.find((m) => !anexos[m]) || null;
-};
 
 /** ¿El anexo de ese período ya se presentó? Entonces no se ofrecen las descargas. */
 const anexoYaPresentado = (client: Client, period: string): boolean => {
@@ -1047,6 +1038,24 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         }
         return null;
     }, [periods]);
+
+    // Período del anexo ICE que falta subir: el primero cuyo ANEXO no tiene comprobante.
+    const periodoAnexoIcePendiente = (client: Client): string | null => {
+        const ordenados = [...periods].sort((a, b) => a.localeCompare(b));
+        const decls = client.declarations || [];
+        const anexos = (client.taxProfile as any)?.ice_anexos || {};
+        for (const p of ordenados) {
+            if (isPeriodBeforeClientStart(client, p)) continue;
+            const obs = getObligationsForPeriod(client, p);
+            const obAnexo = obs.find((ob) => ob.type === 'ANEXO' || ob.type === 'ANEXO_ICE');
+            if (!obAnexo) continue;
+            const esIce = /ice/i.test(obAnexo.label || '') || llevaIce(client);
+            if (!esIce) continue;
+            const hecho = Boolean(anexos[p]);
+            if (!hecho) return p;
+        }
+        return null;
+    };
 
     const getClientPendingPeriods = useCallback((client: Client): string[] => {
         const sortedPeriods = [...periods].sort((a, b) => a.localeCompare(b));
@@ -2476,34 +2485,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             {client.regime || 'Régimen General'}
                                         </span>
 
-                                        {(() => {
-                                            if (p12Days === null) {
-                                                return (
-                                                    <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-slate-800/80 text-slate-400 border border-white/5 flex items-center gap-1">
-                                                        <LucideIcons.ShieldAlert size={9} /> Sin P12
-                                                    </span>
-                                                );
-                                            }
-                                            if (p12Days <= 0) {
-                                                return (
-                                                    <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 animate-pulse">
-                                                        <LucideIcons.AlertTriangle size={9} /> P12 Vencido
-                                                    </span>
-                                                );
-                                            }
-                                            if (p12Days <= 30) {
-                                                return (
-                                                    <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                                                        <LucideIcons.Clock size={9} /> P12: {p12Days}d
-                                                    </span>
-                                                );
-                                            }
-                                            return (
-                                                <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center gap-1">
-                                                    <LucideIcons.ShieldCheck size={9} /> P12: {p12Days}d
-                                                </span>
-                                            );
-                                        })()}
+
 
                                         {/* Badge de Clave SRI Verificada / Auditoría Nueva Luz */}
                                         {(() => {
@@ -2581,27 +2563,49 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         </button>
 
                                         {(() => {
-                                            const mesAnexo = periodoAnexoPendiente(client);
-                                            const llevaAnexoIce = llevaIce(client) || Boolean((client.taxProfile as any)?.ice_config);
-                                            if (!llevaAnexoIce || !mesAnexo) return null;
+                                            const mesAnexo = periodoAnexoIcePendiente(client);
+                                            if (!mesAnexo) return null;
                                             return (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        void descargarAnexoIceZip(datosIceDeCliente(client, mesAnexo));
-                                                    }}
-                                                    onContextMenu={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        descargarAnexoIceXml(datosIceDeCliente(client, mesAnexo));
-                                                    }}
-                                                    className="py-1.5 px-2.5 rounded-xl bg-[#C9A96E]/15 border border-[#C9A96E]/30 text-[#e6d3ab] hover:text-white hover:bg-[#C9A96E]/30 transition-all flex items-center justify-center gap-1"
-                                                    title={`Anexo ICE: ZIP del mes pendiente (${mesAnexo}). Clic derecho: XML.`
-                                                    }
-                                                >
-                                                    <LucideIcons.Download size={10} />
-                                                    <span>Anexo ICE</span>
-                                                </button>
+                                                <details className="relative">
+                                                    <summary
+                                                        className="list-none cursor-pointer py-1.5 px-2.5 rounded-xl bg-[#C9A96E]/15 border border-[#C9A96E]/35 text-[#e6d3ab] hover:bg-[#C9A96E]/30 hover:text-white transition-all flex items-center justify-center gap-1"
+                                                        title={`Anexo ICE pendiente: ${mesAnexo}`}
+                                                    >
+                                                        <LucideIcons.Download size={10} />
+                                                        <span>Anexo ICE</span>
+                                                    </summary>
+                                                    <div className="absolute right-0 z-[60] mt-1 w-52 rounded-xl border border-[#C9A96E]/30 bg-[#051424] p-2 shadow-2xl">
+                                                        <p className="px-1 pb-1 text-[9px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                                            Anexo ICE · {mesAnexo}
+                                                        </p>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); void descargarAnexoIceZip(datosIceDeCliente(client, mesAnexo)); }}
+                                                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5"
+                                                        >
+                                                            <LucideIcons.Download size={11} /> ZIP para el SRI
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); descargarAnexoIceXml(datosIceDeCliente(client, mesAnexo)); }}
+                                                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5"
+                                                        >
+                                                            <LucideIcons.FileText size={11} /> XML para verificar
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!entrarAlSriSinDeclarar(client)) {
+                                                                    toast.error('Falta la clave SRI de este cliente.');
+                                                                    return;
+                                                                }
+                                                                toast.info('Abriendo el perfil del cliente en el SRI…');
+                                                                window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+                                                            }}
+                                                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5"
+                                                        >
+                                                            <LucideIcons.Globe size={11} /> Abrir portal SRI
+                                                        </button>
+                                                    </div>
+                                                </details>
                                             );
                                         })()}
 
