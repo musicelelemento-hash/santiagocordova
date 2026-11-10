@@ -1054,6 +1054,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const hecho = Boolean(anexos[p]);
             if (!hecho) return p;
         }
+        // Si no hay obligación ANEXO marcada pero el cliente lleva ICE en los
+        // datos (config o ventas), igual ofrecemos el mes que toca.
+        if (llevaIce(client)) {
+            const hoy = new Date();
+            const prev = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+            const mes = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+            if (!anexos[mes]) return mes;
+        }
         return null;
     };
 
