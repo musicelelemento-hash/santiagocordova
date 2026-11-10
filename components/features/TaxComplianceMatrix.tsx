@@ -8,7 +8,7 @@ import { signPublicStorageUrl, openStoredFileInNewTab } from '../../services/fil
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { descargarAnexoIceXml, descargarAnexoIceZip } from '../../utils/iceXml';
-import { entrarAlSriSinDeclarar } from '../../services/extensionBridge';
+import { entrarAlSriSinDeclarar, subirAnexoIceAlSri } from '../../services/extensionBridge';
 import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
 export { arePeriodsEqual };
 import { useToast } from '../../context/ToastContext';
@@ -2598,6 +2598,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         >
                                                             <LucideIcons.FileText size={11} /> XML para verificar
                                                         </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!subirAnexoIceAlSri(client, mesAnexo)) {
+                                                                    toast.error('Falta la clave SRI de este cliente.');
+                                                                    return;
+                                                                }
+                                                                toast.info('Subiendo el anexo al SRI con la extensión…');
+                                                            }}
+                                                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-white/5"
+                                                        >
+                                                            <LucideIcons.UploadCloud size={11} /> Subir al SRI
+                                                        </button>
+
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();

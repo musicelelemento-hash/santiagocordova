@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, Check, Circle, Download, ExternalLink, FileText, Flame, Settings2 } from 'lucide-react';
+import { CalendarDays, Check, Circle, Download, ExternalLink, FileText, Flame, Settings2, UploadCloud } from 'lucide-react';
 import type { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useAppStore } from '../../store/useAppStore';
 import { MESES_CORTOS, descargarAnexoIceXml, descargarAnexoIceZip, type AnexoIceDatos } from '../../utils/iceXml';
-import { entrarAlSriSinDeclarar } from '../../services/extensionBridge';
+import { entrarAlSriSinDeclarar, subirAnexoIceAlSri } from '../../services/extensionBridge';
 import IceConfigModal from './IceConfigModal';
 
 /**
@@ -142,6 +142,20 @@ const IceAnnexActions: React.FC<Props> = ({ client }) => {
                 >
                     <ExternalLink size={12} /> Abrir perfil SRI
                 </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!client.sriPassword) { toast.error('Falta la clave SRI de este cliente.'); return; }
+                        const ok = subirAnexoIceAlSri(client, periodo);
+                        if (!ok) { toast.error('No se pudo preparar la subida.'); return; }
+                        toast.info(`Subiendo el anexo de ${nombreLargo(periodo)} al SRI… la extensión lo hace sola.`);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/20"
+                    title="La extensión 01 arma el ZIP y lo sube al portal de Anexos; después lo marca presentado."
+                >
+                    <UploadCloud size={12} /> Subir al SRI
+                </button>
+
                 <button
                     type="button"
                     onClick={() => setConfigAbierta(true)}

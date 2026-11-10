@@ -142,6 +142,23 @@ export const esperarResultadoAcceso = async (
   return null;
 };
 
+/**
+ * Pide a la extensión 01 que suba el Anexo ICE: deja el pendiente, abre la
+ * pantalla de Anexos del SRI y la extensión arma el ZIP y lo sube.
+ */
+export const subirAnexoIceAlSri = (client: Client, periodo: string): boolean => {
+  if (!client.ruc || !client.sriPassword) return false;
+  const [anio, mes] = String(periodo).split('-').map(Number);
+  if (!anio || !mes) return false;
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_SUBIR_ANEXO',
+    data: { ruc: client.ruc, nombre: client.name, password: client.sriPassword, anio, mes },
+  };
+  window.postMessage(payload, '*');
+  return true;
+};
+
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
   const trimmed = oldPass.trim();
