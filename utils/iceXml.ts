@@ -85,5 +85,7 @@ export async function descargarAnexoIce(datos: AnexoIceDatos): Promise<void> {
     const zip = new JSZip();
     zip.file(`${nombreBase}.xml`, xml);
     const contenido = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-    saveAs(contenido, `${nombreBase}.zip`);
+    // El DIMM pide el ZIP nombrado AICEmmaaaa (ej. AICE102026.zip).
+    const nombreAice = `AICE${String(datos.mes).padStart(2, '0')}${datos.anio}`;
+    saveAs(contenido, `${nombreAice}.zip`);
 }

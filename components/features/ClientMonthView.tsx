@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, CheckCircle2, Clock3, FileDown, Flame, Sparkles } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, FileDown, Flame, Settings2, Sparkles } from 'lucide-react';
 import type { Client } from '../../types';
 import { extractDeclarationCifras } from '../../utils/declarationFormatter';
+import IceConfigModal from './IceConfigModal';
 import { descargarAnexoIce } from '../../utils/iceXml';
 
 /**
@@ -37,6 +38,9 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
     // Ventas del anexo ICE (las publica la extensiÃ³n al generar el anexo).
     const iceVentas: Record<string, any> = (client.taxProfile as any)?.ice_ventas || {};
     const periodosIce = Object.keys(iceVentas).sort().reverse();
+    // Lo que no cambia mes a mes: código de producto, comprador y tipo de venta.
+    const iceConfig = (client.taxProfile as any)?.ice_config || null;
+    const [configIceAbierta, setConfigIceAbierta] = useState(false);
     // El anexo que toca descargar es el del mes anterior (el que se declara ahora).
     const periodoObjetivo = (() => {
         const hoy = new Date();
@@ -149,13 +153,29 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
                                     mes: m,
                                     productos: Array.isArray(iceDelPeriodo.productos) && iceDelPeriodo.productos.length
                                         ? iceDelPeriodo.productos
-                                        : [{ codProdICE: '3031-053-049147-013-000750-66-593-000012' }],
+                                        : [
+                                            {
+                                                codProdICE: iceConfig?.codProdICE || '3031-053-049147-013-000750-66-593-000012',
+                                                tipoIdCliente: iceConfig?.tipoIdCliente || 'F',
+                                                idCliente: iceConfig?.idCliente || '9999999999999',
+                                                tipoVentaICE: iceConfig?.tipoVentaICE || '1',
+                                            },
+                                        ],
                                 });
                             }}
                             className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[#C9A96E]/35 bg-[#C9A96E]/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e6d3ab] transition-colors hover:bg-[#C9A96E]/20"
                         >
                             <FileDown size={12} /> Descargar XML · {nombrePeriodo(String(iceDelPeriodo.periodo || periodo), true)}
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setConfigIceAbierta(true)}
+                            className="mt-2 ml-2 inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition-colors hover:bg-white/5"
+                            title="Configurar el anexo ICE de este cliente (producto, comprador, tipo de venta)"
+                        >
+                            <Settings2 size={12} /> Configurar ICE
+                        </button>
+                        {configIceAbierta && <IceConfigModal client={client} onClose={() => setConfigIceAbierta(false)} />}
                     </div>
                 )}
 
