@@ -84,6 +84,13 @@ const datosIceDeCliente = (client: Client, period: string) => {
     };
 };
 
+/** ¿Mostrar las descargas del anexo ICE en esta celda? */
+const muestraBotonesIce = (client: Client, obType: string, obLabel?: string): boolean => {
+    if (obType === 'ICE') return true;
+    if (obLabel && /ice/i.test(obLabel)) return true;
+    return obType === 'ANEXO' && llevaIce(client);
+};
+
 /** ¿Este cliente lleva anexo ICE? */
 const llevaIce = (client: Client): boolean => {
     const tp = (client.taxProfile as any) || {};
@@ -3271,7 +3278,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     >
                                                                         <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
 
-                                                                        {(ob.type === 'ANEXO' || ob.type === 'ICE' || ob.type === 'ANEXO_ICE') && llevaIce(client) && (
+                                                                        {muestraBotonesIce(client, ob.type as string, ob.label) && (
                                                                             <div className="flex items-center gap-0.5 mt-0.5">
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); descargarAnexoIceXml(datosIceDeCliente(client, p)); }}
@@ -4122,6 +4129,32 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     <LucideIcons.X size={18} />
                                 </button>
                             </div>
+
+                            {/* Anexo ICE: descargar el XML/ZIP del mes */}
+                            {muestraBotonesIce(client, obType as string, obLabel) && (
+                                <div className="rounded-2xl border border-[#C9A96E]/30 bg-[#C9A96E]/5 px-4 py-3">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#C9A96E]">
+                                        Anexo ICE · {periodLabel}
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => descargarAnexoIceXml(datosIceDeCliente(client, period))}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9A96E]/40 bg-[#C9A96E]/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e6d3ab] hover:bg-[#C9A96E]/20"
+                                            title="Descargar XML del anexo (modal)"
+                                        >
+                                            <LucideIcons.FileText size={12} /> Descargar XML
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { void descargarAnexoIceZip(datosIceDeCliente(client, period)); }}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9A96E]/40 bg-[#C9A96E]/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e6d3ab] hover:bg-[#C9A96E]/20"
+                                        >
+                                            <LucideIcons.Download size={12} /> Descargar ZIP
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Alerta de Prelación Cronológica SRI */}
                             {!isOldest && olderCount > 0 ? (
