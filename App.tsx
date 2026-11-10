@@ -82,6 +82,14 @@ const ScreenLoader = () => (
 
 type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music' | 'clasica';
 
+const BUILD_BADGE = (() => {
+    try {
+        const v = (process.env as any).VITE_APP_VERSION;
+        if (!v) return null;
+        const d = new Date(v);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    } catch { return null; }
+})();
 const App: React.FC = () => {
   const {
     clients, setClients,
@@ -637,7 +645,7 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (activeScreen) {
-      case 'home': return <AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
+      case 'home': return (<><AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />{BUILD_BADGE && (<div className="fixed bottom-1 right-2 z-[9998] rounded bg-black/40 px-1.5 py-0.5 font-mono text-[8px] text-slate-500 pointer-events-none" title="Versión del build cargado">build {BUILD_BADGE}</div>)}</>);
       case 'telegram_bot': return <TelegramBotScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'clients': return (
         <ClientsScreen 
