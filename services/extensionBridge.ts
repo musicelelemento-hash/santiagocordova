@@ -176,6 +176,26 @@ export const declararIceEnCero = (client: Client, periodo: string): boolean => {
   return true;
 };
 
+/**
+ * Espera a que la extensión marque el anexo como presentado en Supabase.
+ * Devuelve la marca o null si no llegó a tiempo.
+ */
+export const esperarAnexoPresentado = async (
+  ruc: string,
+  periodo: string,
+  timeoutMs = 90000,
+): Promise<{ cuando: string } | null> => {
+  const { supabase } = await import('./supabase');
+  const limite = Date.now() + timeoutMs;
+  while (Date.now() < limite) {
+    const { data } = await supabase.from('clients').select('tax_profile').eq('ruc', ruc).maybeSingle();
+    const marca = (data?.tax_profile as any)?.ice_anexos?.[periodo];
+    if (marca) return { cuando: marca.cuando || new Date().toISOString() };
+    await new Promise((r) => setTimeout(r, 4000));
+  }
+  return null;
+};
+
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
   const trimmed = oldPass.trim();

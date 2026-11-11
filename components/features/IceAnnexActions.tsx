@@ -4,7 +4,7 @@ import type { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useAppStore } from '../../store/useAppStore';
 import { MESES_CORTOS, descargarAnexoIceXml, descargarAnexoIceZip, type AnexoIceDatos } from '../../utils/iceXml';
-import { entrarAlSriSinDeclarar, subirAnexoIceAlSri, declararIceEnCero } from '../../services/extensionBridge';
+import { entrarAlSriSinDeclarar, subirAnexoIceAlSri, declararIceEnCero, esperarAnexoPresentado } from '../../services/extensionBridge';
 import IceConfigModal from './IceConfigModal';
 
 /**
@@ -144,11 +144,14 @@ const IceAnnexActions: React.FC<Props> = ({ client }) => {
                 </button>
                 <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                         if (!client.sriPassword) { toast.error('Falta la clave SRI de este cliente.'); return; }
                         const ok = subirAnexoIceAlSri(client, periodo);
                         if (!ok) { toast.error('No se pudo preparar la subida.'); return; }
                         toast.info(`Subiendo el anexo de ${nombreLargo(periodo)} al SRI… la extensión lo hace sola.`);
+                        const res = await esperarAnexoPresentado(client.ruc, periodo);
+                        if (res) toast.success(`Anexo de ${nombreLargo(periodo)} presentado en el SRI ✅`);
+                        else toast.info('Sin confirmación todavía. Revisá la pestaña del SRI o el panel en un minuto.');
                     }}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/20"
                     title="La extensión 01 arma el ZIP y lo sube al portal de Anexos; después lo marca presentado."
