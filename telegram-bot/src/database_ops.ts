@@ -2746,54 +2746,6 @@ export async function getDevolucionesIvaList(): Promise<{ total: number; clients
     }
 }
 
-export async function getComplianceMatrixSummary(): Promise<{
-    total: number;
-    alDia: number;
-    pendientes: number;
-    semestral: number;
-    mensual: number;
-}> {
-    try {
-        const clients = await findClients('', '*, sri_declaraciones(*)');
-        const active = (clients || []).filter((c: any) => {
-            return (
-                !c.is_deleted &&
-                c.requiresDeclarations !== false &&
-                c.clientType !== 'solo_plan' &&
-                !c.isSignatureOnly
-            );
-        });
-
-        let alDiaCount = 0;
-        let semestralCount = 0;
-        let mensualCount = 0;
-
-        for (const c of active) {
-            const obs = getClientObligations(c);
-            if (obs.ivaFrequency === 'Semestral') semestralCount++;
-            if (obs.ivaFrequency === 'Mensual') mensualCount++;
-
-            const history: any[] = c.sri_declaraciones || [];
-            // Si tiene al menos una declaración marcada como realizada recientemente
-            const hasRecent = history.some((d: any) => d.isRealizada);
-            if (hasRecent) alDiaCount++;
-        }
-
-        const pendientesCount = Math.max(0, active.length - alDiaCount);
-
-        return {
-            total: active.length,
-            alDia: alDiaCount,
-            pendientes: pendientesCount,
-            semestral: semestralCount,
-            mensual: mensualCount
-        };
-    } catch (e) {
-        console.error("Error obteniendo resumen de cumplimiento:", e);
-        return { total: 0, alDia: 0, pendientes: 0, semestral: 0, mensual: 0 };
-    }
-}
-
 export function getSantiagoExecutiveCard(): string {
     return `📇 <b>TARJETA EJECUTIVA DIGITAL — SANTIAGO CÓRDOVA</b>\n\n` +
            `👤 <b>Santiago A. Córdoba Ramírez</b>\n` +

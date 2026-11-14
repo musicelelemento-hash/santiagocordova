@@ -9,13 +9,14 @@ import { timingSafeEqual } from 'crypto';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getComplianceMatrixSummary, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport, getMissingOrInvalidKeyClients, getIncompleteClients, getInternalManagementSummary, getFacturadoresSummary, getLlenadoSummary, getClientFacturadorCredentials, getRenovacionesSummary } from './database_ops';
+import { updateClientData, getDebtorClients, getDebtorClientsPaginated, getUpcomingDeadlines, getUpcomingDeadlinesStructured, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, saveStandaloneSignatureVault, getSignaturesVaultList, downloadSignatureFileBuffer, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf, calculateSriPenaltyText, getCajaChicaSummary, recordCajaChicaMovement, getDevolucionesIvaList, getSantiagoExecutiveCard, getClientPortalShareText, generateDailyOperationalReport, getMissingOrInvalidKeyClients, getIncompleteClients, getInternalManagementSummary, getFacturadoresSummary, getLlenadoSummary, getClientFacturadorCredentials, getRenovacionesSummary } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport, buildOperationalReportKeyboard } from './cron';
 import { manejarCallbackCobro, proponerCobranzaSemanal } from './cobranza_semanal';
 import { COMANDOS_MENU } from './comandos';
+import { mostrarCierre, manejarCallbackCierre } from './cierre';
 import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
@@ -902,6 +903,11 @@ bot.command('testcron', async (ctx) => {
 
 bot.command(['lunes', 'cobranza_semanal'], async (ctx) => {
     await proponerCobranzaSemanal(bot, ctx.chat.id.toString());
+});
+
+bot.command('cierre', async (ctx) => {
+    await ctx.replyWithChatAction('typing');
+    await mostrarCierre(ctx, false);
 });
 
 bot.command('comprobantes', async (ctx) => {
@@ -2396,6 +2402,7 @@ bot.on('callback_query:data', async (ctx) => {
     }
 
     if (await manejarCallbackCobro(ctx, data, chatId)) return;
+    if (await manejarCallbackCierre(ctx, data)) return;
 
     if (data.startsWith(PREFIJO_BOTON_WEB)) {
         // Un atajo del menú empieza algo nuevo: no debe caer como respuesta de un diálogo a medias.
@@ -3186,26 +3193,7 @@ bot.on('callback_query:data', async (ctx) => {
 
     // 📊 Hub Tributario: Matriz de Obligaciones
     if (data === 'baku_sri:matrix') {
-        await ctx.replyWithChatAction('typing');
-        const matrix = await getComplianceMatrixSummary();
-        let msg = `📊 <b>MATRIZ DE OBLIGACIONES TRIBUTARIAS SRI</b>\n\n`;
-        msg += `👥 <b>Clientes Activos con Obligación:</b> ${matrix.total}\n`;
-        msg += `✅ <b>Al Día con Declaraciones:</b> ${matrix.alDia} clientes\n`;
-        msg += `⚠️ <b>Con Declaraciones Pendientes:</b> ${matrix.pendientes} clientes\n\n`;
-        msg += `📅 <b>Frecuencia de Declaración:</b>\n`;
-        msg += `• <b>Semestrales (RIMPE Emprendedor):</b> ${matrix.semestral} clientes\n`;
-        msg += `• <b>Mensuales (Régimen General):</b> ${matrix.mensual} clientes\n\n`;
-        msg += `<i>Revisa el calendario de vencimientos por 9no dígito para evitar multas.</i>`;
-
-        const kb = new InlineKeyboard()
-            .text('⏰ Ver Vencimientos', 'baku_nav:deadlines').row()
-            .text('🔙 Hub Tributario', 'baku_hub:sri');
-
-        try {
-            await ctx.editMessageText(msg, { parse_mode: 'HTML', reply_markup: kb });
-            return;
-        } catch (e) {}
-        await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
+        await mostrarCierre(ctx, true);
         return;
     }
 

@@ -37,7 +37,7 @@ export const DEFAULT_CUSTOM_BUTTONS: CustomBotButton[] = [
 
 // Los comandos que Baku publica. Mantener igual que telegram-bot/src/comandos.ts.
 export const BAKU_COMMANDS = [
-    '/menu', '/cobranza', '/lunes', '/vencimientos', '/claves', '/comprobantes', '/firmas',
+    '/menu', '/cierre', '/cobranza', '/lunes', '/vencimientos', '/claves', '/comprobantes', '/firmas',
     '/gestion', '/reporte', '/resumen', '/facturar', '/facturadores', '/credenciales',
     '/llenado', '/renovaciones', '/status', '/clear',
 ];
