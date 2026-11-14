@@ -1,10 +1,11 @@
 import cron from 'node-cron';
 import { Bot, InlineKeyboard } from 'grammy';
-import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getDebtorClientsRaw, getCredentialStatus, convertMarkdownToTelegramHtml, generateDailyOperationalReport } from './database_ops';
+import { getDatabaseSummary, getUpcomingDeadlines, getCredentialStatus, convertMarkdownToTelegramHtml, generateDailyOperationalReport } from './database_ops';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
-import { searchEmails, sendEmail } from './gmail';
+import { searchEmails } from './gmail';
 import { generateAiText } from './ai';
+import { proponerCobranzaSemanal } from './cobranza_semanal';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
 
@@ -104,56 +105,13 @@ export function startCronJobs(bot: Bot) {
 
     console.log("✅ Baku Proactive CronJobs inicializado (Hora objetivo: 03:30 AM EC).");
 
-    // Lunes Financiero: Reporte de deudores cada Lunes a las 08:00 AM hora de Ecuador
+    // Lunes Financiero 08:00: Baku arma la lista de deudores y PREGUNTA. Los correos salen sólo con un botón.
     cron.schedule('0 8 * * 1', async () => {
-        console.log("⏰ Ejecutando reporte semanal de deudores (Lunes Financiero 08:00 AM)...");
+        console.log("⏰ Lunes Financiero (08:00): proponiendo la cobranza semanal...");
         const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
         const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
         try {
-            const debtors = await getDebtorClientsRaw();
-            
-            // Envío de correos automáticos a clientes con email y deuda > 0
-            let emailsSent = 0;
-            for (const debtor of debtors) {
-                if (debtor.email && debtor.clientDebt > 0) {
-                    const subject = `Recordatorio de Honorarios Pendientes - Soluciones Contables Pro`;
-                    const body = `Estimado/a ${debtor.name},\n\nEspero que se encuentre excelente.\n\nEl presente correo es un recordatorio cordial de que mantiene un saldo pendiente por servicios contables y declaraciones SRI por el valor de $${debtor.clientDebt}.\n\nPor favor, realizar el pago a la brevedad posible para mantener sus obligaciones fiscales al día y evitar recargos o multas del SRI.\n\nAtentamente,\nSoluciones Contables Pro`;
-                    try {
-                        await sendEmail(adminChatId, debtor.email, subject, body);
-                        emailsSent++;
-                    } catch (e) {
-                        console.error(`Error enviando correo de cobro a ${debtor.email}:`, e);
-                    }
-                }
-            }
-
-            const debtorReport = await getDebtorClients();
-            
-            const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es lunes por la mañana (08:00 AM) y es momento de iniciar la cobranza semanal ("Lunes Financiero"). Tu misión es presentarle un resumen ejecutivo y motivador sobre la cartera vencida por cobrar, e instarlo a iniciar gestiones de recuperación de flujo. Además, menciona que el sistema Baku ha enviado ${emailsSent} correos de cobro automáticamente.`;
-            const prompt = `
-Reporte actual de deudores de la base de datos:
----
-${debtorReport}
----
-
-Instrucciones de redacción:
-1. Comienza de forma profesional y firme (ej: "Comandante, listos para recuperar flujo de caja esta semana" o "Lunes Financiero activado").
-2. Explica de forma concisa quiénes son los principales deudores y cuánto suman los honorarios pendientes de cobrar. Incluye el nombre COMPLETO de cada deudor.
-3. Sugiere enviar recordatorios a los clientes clave que tengan deudas mayores.
-4. Recuérdale que puede pedirte: "Genera el mensaje de cobro para [nombre] por $[monto]" y tú generarás el WhatsApp listo para copiar.
-5. Mantén un formato limpio, estructurado con emojis de finanzas y negritas estratégicas.
-6. El reporte de cobranza debe ser extremadamente conciso. La longitud del reporte NO DEBE superar los 3000 caracteres.
-`;
-            const aiResponse = await generateAiText({ prompt, systemInstruction: systemPrompt });
-            const htmlResponse = convertMarkdownToTelegramHtml(aiResponse);
-
-            try {
-                await bot.api.sendMessage(adminChatId, htmlResponse, { parse_mode: 'HTML' });
-            } catch (htmlError) {
-                console.warn("⚠️ Failed to send debtor report with HTML, falling back to plain text:", htmlError);
-                await bot.api.sendMessage(adminChatId, aiResponse);
-            }
-            console.log("✅ Reporte semanal de deudores enviado a Santiago.");
+            await proponerCobranzaSemanal(bot, adminChatId);
         } catch (error) {
             console.error("❌ Error en Lunes Financiero cron:", error);
         }

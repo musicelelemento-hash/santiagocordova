@@ -119,6 +119,36 @@ de WhatsApp (§5, arriba): nunca sin que alguien lo pida en el momento.
 tenga email cargado) antes de confiar en esto para el flujo mensual.
 Gmail da 500 envíos por día, de sobra para 500 contribuyentes una vez al mes.
 
+**El cron del lunes 08:00 ya no manda correos solo** — corregido el 13-nov-2026.
+`telegram-bot/src/cron.ts` recorría los deudores con email y les enviaba el
+recordatorio de honorarios sin que nadie lo pidiera, y después un texto de IA
+le decía a Santiago cuántos «se habían enviado automáticamente». Contradecía
+la regla de arriba. Ahora `proponerCobranzaSemanal()`
+(`telegram-bot/src/cobranza_semanal.ts`) arma la lista —cuántos, cuánto, los
+cinco más grandes, cuántos no tienen correo— y pregunta con tres botones:
+«📧 Mandar a los N» · «👀 Uno por uno» (paginado, marca ✅ al que ya se le
+mandó esta semana) · «⏭️ Esta semana no». El correo al cliente es el mismo de
+antes; lo que cambió es que sale con un toque, no solo. `/lunes` dispara la
+propuesta a mano para probarla sin esperar al lunes. Sin prueba real todavía.
+
+**`EMAIL_ROUTE_TOKEN` es obligatorio desde el 13-nov-2026.** Antes, si la
+variable faltaba en Render, `POST /email/declaracion` y
+`POST /notificaciones/despachar` quedaban **abiertas**: cualquiera con la URL
+podía hacer que el Gmail del estudio mandara un correo con el destinatario, el
+asunto y el PDF que quisiera. Ahora `rutaAutorizada()` (`telegram-bot/src/index.ts`)
+responde **503** sin token en el servidor y **401** con token equivocado, y el
+arranque lo avisa en el log. **Antes de desplegar**: la variable tiene que
+estar en Render y el mismo valor en Ajustes de la extensión → «Token del
+servicio». Si no, la copia del comprobante por correo deja de salir (la
+declaración y la subida a R2 no se enteran). `GET /notificaciones/estado`
+sigue sin token a propósito: la consulta la web desde el navegador y no
+devuelve secretos.
+
+**El error interno ahora sí avisa** — mismo día. `bot.catch` respondía
+«Santiago ya fue notificado» y sólo escribía en el log. Ahora manda el detalle
+al chat del admin (qué comando o botón falló y el mensaje del error). De un
+comando va **sólo el nombre**, nunca los argumentos: pueden traer una clave.
+
 **WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
 los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta
 Business, número dedicado y plantilla aprobada. Meta cobra por mensaje y sus

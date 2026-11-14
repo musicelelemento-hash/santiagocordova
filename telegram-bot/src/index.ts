@@ -5,6 +5,7 @@ import { clearChatHistory, saveMessage } from './database';
 import { getAuthUrl, setTokenFromCode, sendEmailWithAttachment } from './gmail';
 import { despacharNotificaciones, iniciarDespachador, estadoCanales } from './dispatcher';
 import express from 'express';
+import { timingSafeEqual } from 'crypto';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
@@ -13,6 +14,7 @@ import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport, buildOperationalReportKeyboard } from './cron';
+import { manejarCallbackCobro, proponerCobranzaSemanal } from './cobranza_semanal';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
 import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
@@ -54,12 +56,34 @@ bot.use(async (ctx, next) => {
   await ctx.reply(`Lo siento, no tienes permiso para usar este bot o tu ID (${userId}) no está en la lista blanca. Por favor, avísale a Santiago.`);
 });
 
-// Error handling
-bot.catch((err) => {
+// Error handling: el detalle va SIEMPRE al chat del admin; a un tercero sólo se le dice que hubo un error.
+const ADMIN_CHAT_ID = ALLOWED_USERS[0];
+
+bot.catch(async (err) => {
   const ctx = err.ctx;
   console.error(`❌ CRITICAL ERROR while handling update ${ctx.update.update_id}:`, err.error);
-  // Optional: Notify the user if possible
-  ctx.reply("Ups, ocurrió un error interno. Santiago ya fue notificado. Baku.").catch(e => console.error("Could not send error report to user:", e));
+
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const texto = ctx.message?.text || '';
+  // De un comando va sólo el nombre: los argumentos pueden traer una clave.
+  const origen = ctx.callbackQuery?.data ? `botón ${ctx.callbackQuery.data}`
+    : texto.startsWith('/') ? texto.split(/\s+/)[0]
+    : (Object.keys(ctx.update).find(k => k !== 'update_id') || 'update');
+  const motivo = err.error instanceof Error ? err.error.message : String(err.error);
+  const chatDelError = ctx.chat?.id?.toString() || '';
+  const esAdmin = !chatDelError || chatDelError === ADMIN_CHAT_ID;
+
+  let detalle = `⚠️ <b>Error interno</b> en <code>${esc(origen)}</code>\n<code>${esc(motivo.slice(0, 300))}</code>`;
+  if (!esAdmin) detalle += `\nChat: <code>${esc(chatDelError)}</code>`;
+
+  const avisado = await bot.api.sendMessage(ADMIN_CHAT_ID, detalle, { parse_mode: 'HTML' })
+    .then(() => true)
+    .catch(e => { console.error("Could not notify admin:", e); return false; });
+
+  if (!esAdmin) {
+    await ctx.reply(`Ups, ocurrió un error interno.${avisado ? ' Santiago ya fue notificado.' : ''} Baku.`)
+      .catch(e => console.error("Could not send error report to user:", e));
+  }
 });
 
 // ═════════════════════════════════════════════════════════════════
@@ -872,6 +896,10 @@ bot.command('status', async (ctx) => {
 bot.command('testcron', async (ctx) => {
     await ctx.reply('⏳ Forzando la generación del reporte proactivo matutino. Por favor espera...');
     await triggerProactiveReport(bot, ctx.chat.id.toString());
+});
+
+bot.command(['lunes', 'cobranza_semanal'], async (ctx) => {
+    await proponerCobranzaSemanal(bot, ctx.chat.id.toString());
 });
 
 bot.command('reporte', async (ctx) => {
@@ -2358,6 +2386,8 @@ bot.on('callback_query:data', async (ctx) => {
         try { await ctx.editMessageText('❌ Operación cancelada. Baku.'); } catch(e) {}
         return;
     }
+
+    if (await manejarCallbackCobro(ctx, data, chatId)) return;
 
     if (data.startsWith('baku_prof_edit:')) {
         const parts = data.split(':');
@@ -3899,6 +3929,23 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// Las rutas que mandan correo exigen el token SIEMPRE. Sin EMAIL_ROUTE_TOKEN en el
+// servidor no quedan abiertas: responden 503 hasta que se configure.
+function rutaAutorizada(req: express.Request, res: express.Response): boolean {
+    const esperado = String(process.env.EMAIL_ROUTE_TOKEN || '');
+    if (!esperado) {
+        res.status(503).json({ ok: false, error: 'falta EMAIL_ROUTE_TOKEN en el servidor' });
+        return false;
+    }
+    const recibido = Buffer.from(String(req.headers.authorization || ''));
+    const correcto = Buffer.from(`Bearer ${esperado}`);
+    if (recibido.length !== correcto.length || !timingSafeEqual(recibido, correcto)) {
+        res.status(401).json({ ok: false, error: 'no autorizado' });
+        return false;
+    }
+    return true;
+}
+
 // Despacho manual de la bandeja de notificaciones (para probar o forzar).
 // Estado de los canales para la pantalla de Ajustes (sin secretos).
 app.get('/notificaciones/estado', async (_req, res) => {
@@ -3910,9 +3957,7 @@ app.get('/notificaciones/estado', async (_req, res) => {
 });
 
 app.post('/notificaciones/despachar', async (req, res) => {
-    const esperado = String(process.env.EMAIL_ROUTE_TOKEN || '');
-    const recibido = String(req.headers.authorization || '');
-    if (esperado && recibido !== `Bearer ${esperado}`) return res.status(401).json({ ok: false });
+    if (!rutaAutorizada(req, res)) return;
     try {
         const r = await despacharNotificaciones();
         return res.json({ ok: true, ...r });
@@ -3926,11 +3971,7 @@ app.post('/notificaciones/despachar', async (req, res) => {
 // autorizado para este bot (mismo chatId de siempre).
 app.post('/email/declaracion', async (req, res) => {
     try {
-        const esperado = String(process.env.EMAIL_ROUTE_TOKEN || '');
-        const recibido = String(req.headers.authorization || '');
-        if (esperado && recibido !== `Bearer ${esperado}`) {
-            return res.status(401).json({ ok: false, error: 'no autorizado' });
-        }
+        if (!rutaAutorizada(req, res)) return;
 
         const cuerpo: any = req.body || {};
         const to = String(cuerpo.to || '').trim();
@@ -3969,6 +4010,9 @@ app.post('/email/declaracion', async (req, res) => {
 // Start Express HTTP Server (prevents Render "No open ports detected" shutdown)
 app.listen(PORT, () => {
     console.log(`🌐 Web server listening on port ${PORT} for Render health checks.`);
+    if (!process.env.EMAIL_ROUTE_TOKEN) {
+        console.warn('⚠️ EMAIL_ROUTE_TOKEN no está definido: /email/declaracion y /notificaciones/despachar responden 503 hasta configurarlo.');
+    }
 });
 
 // Bandeja de notificaciones: cada minuto toma pendientes y programadas vencidas.
@@ -4015,6 +4059,26 @@ async function launchBot() {
         await bot.api.deleteWebhook({ drop_pending_updates: false });
         const me = await bot.api.getMe();
         console.log(`🤖 Bot @${me.username} (ID: ${me.id}) autenticado con éxito.`);
+
+        // Autocompletado al tipear "/". Quedan afuera a propósito los de configuración y claves.
+        await bot.api.setMyCommands([
+            { command: 'menu', description: 'Menú principal' },
+            { command: 'cobranza', description: 'Deudores y cartera pendiente' },
+            { command: 'lunes', description: 'Proponer la cobranza semanal por correo' },
+            { command: 'vencimientos', description: 'Próximos vencimientos SRI' },
+            { command: 'claves', description: 'Claves SRI faltantes o inválidas' },
+            { command: 'firmas', description: 'Bóveda de firmas .p12' },
+            { command: 'gestion', description: 'Gestión interna y alertas' },
+            { command: 'reporte', description: 'Reporte operativo del día' },
+            { command: 'resumen', description: 'Resumen de la base de datos' },
+            { command: 'facturar', description: 'Emitir factura SRI' },
+            { command: 'facturadores', description: 'Software de facturación de clientes' },
+            { command: 'credenciales', description: 'Credenciales de facturadores' },
+            { command: 'llenado', description: 'Llenado de facturas' },
+            { command: 'renovaciones', description: 'Renovaciones de planes' },
+            { command: 'status', description: 'Estado del bot' },
+            { command: 'clear', description: 'Borrar la memoria del chat' },
+        ]).catch(e => console.warn('⚠️ No se pudieron registrar los comandos en Telegram:', e?.message));
         
         await bot.start({
             onStart: (botInfo) => {
