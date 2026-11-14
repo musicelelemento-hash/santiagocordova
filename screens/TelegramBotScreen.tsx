@@ -10,6 +10,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 import { auditAndOptimizeBotResponse } from '../services/geminiService';
+import { cargarBotonesBaku, guardarBotonesBaku, motivoDeSupabase } from '../services/botWebConfig';
 
 interface TelegramBotScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -28,12 +29,24 @@ export interface CustomBotButton {
 
 export const DEFAULT_CUSTOM_BUTTONS: CustomBotButton[] = [
     { id: 'btn_1', label: '🔑 Resolver Clave', action: '/claves', category: 'Accesos', isActive: true },
-    { id: 'btn_2', label: '📱 WhatsApp Cobro', action: 'generar_cobro', category: 'Cobranzas', isActive: true },
+    { id: 'btn_2', label: '💰 Deudores & Cobro', action: '/cobranza', category: 'Cobranzas', isActive: true },
     { id: 'btn_3', label: '📊 Resumen Financiero', action: '/reporte', category: 'Gestión', isActive: true },
     { id: 'btn_4', label: '📅 Vencimientos SRI', action: '/vencimientos', category: 'Tributario', isActive: true },
     { id: 'btn_5', label: '🧾 Bajar Comprobantes', action: '/comprobantes', category: 'Tributario', isActive: true },
-    { id: 'btn_6', label: '⚡ Probar Claves SRI', action: '/probar_claves', category: 'Accesos', isActive: true },
 ];
+
+// Los comandos que Baku publica. Mantener igual que telegram-bot/src/comandos.ts.
+export const BAKU_COMMANDS = [
+    '/menu', '/cobranza', '/lunes', '/vencimientos', '/claves', '/comprobantes', '/firmas',
+    '/gestion', '/reporte', '/resumen', '/facturar', '/facturadores', '/credenciales',
+    '/llenado', '/renovaciones', '/status', '/clear',
+];
+
+/** Un comando (empieza con "/") que Baku no tiene. Un pedido en palabras nunca es desconocido. */
+const accionDesconocida = (action: string): boolean => {
+    const a = action.trim();
+    return a.startsWith('/') && !BAKU_COMMANDS.includes(a.split(/\s+/)[0].toLowerCase());
+};
 
 export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, theme = 'dark' }) => {
     const { clients, tasks = [], updateClient } = useAppStore();
@@ -74,6 +87,43 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
     const [newBtnAction, setNewBtnAction] = useState('');
     const [newBtnCategory, setNewBtnCategory] = useState<'Tributario' | 'Cobranzas' | 'Gestión' | 'Accesos' | 'Personalizado'>('Tributario');
     const [showAddBtnModal, setShowAddBtnModal] = useState(false);
+
+    // Los botones viven en Supabase (bot_web_config): es de donde los lee Baku.
+    // localStorage queda sólo como copia para pintar al instante.
+    const [syncEstado, setSyncEstado] = useState<{ tipo: 'cargando' | 'ok' | 'local'; detalle?: string }>({ tipo: 'cargando' });
+
+    useEffect(() => {
+        let vivo = true;
+        (async () => {
+            try {
+                const remotos = await cargarBotonesBaku<CustomBotButton>();
+                if (remotos) {
+                    if (!vivo) return;
+                    setCustomButtons(remotos);
+                    localStorage.setItem('baku_custom_buttons', JSON.stringify(remotos));
+                } else {
+                    await guardarBotonesBaku(customButtons);
+                }
+                if (vivo) setSyncEstado({ tipo: 'ok' });
+            } catch (e) {
+                if (vivo) setSyncEstado({ tipo: 'local', detalle: motivoDeSupabase(e) });
+            }
+        })();
+        return () => { vivo = false; };
+    }, []);
+
+    const persistButtons = async (updated: CustomBotButton[]) => {
+        localStorage.setItem('baku_custom_buttons', JSON.stringify(updated));
+        setCustomButtons(updated);
+        try {
+            await guardarBotonesBaku(updated);
+            setSyncEstado({ tipo: 'ok' });
+        } catch (e) {
+            const detalle = motivoDeSupabase(e);
+            setSyncEstado({ tipo: 'local', detalle });
+            toast.warning(`Guardado sólo en este navegador: Baku no lo ve. ${detalle}`);
+        }
+    };
 
     // Active clients
     const activeClients = useMemo(() => {
@@ -297,6 +347,10 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             toast.warning('Ingresa el texto del botón y su comando o acción');
             return;
         }
+        if (accionDesconocida(newBtnAction)) {
+            toast.warning(`Baku no tiene el comando ${newBtnAction.trim().split(/\s+/)[0]}. Elegí uno de la lista o escribí el pedido en palabras, sin la barra.`);
+            return;
+        }
         const newBtn: CustomBotButton = {
             id: `btn_${Date.now()}`,
             label: newBtnLabel.trim(),
@@ -305,8 +359,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             isActive: true
         };
         const updated = [...customButtons, newBtn];
-        setCustomButtons(updated);
-        localStorage.setItem('baku_custom_buttons', JSON.stringify(updated));
+        persistButtons(updated);
         setNewBtnLabel('');
         setNewBtnAction('');
         setShowAddBtnModal(false);
@@ -315,15 +368,13 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
 
     const handleDeleteCustomButton = (id: string) => {
         const updated = customButtons.filter(b => b.id !== id);
-        setCustomButtons(updated);
-        localStorage.setItem('baku_custom_buttons', JSON.stringify(updated));
+        persistButtons(updated);
         toast.info('Botón eliminado');
     };
 
     const handleToggleCustomButton = (id: string) => {
         const updated = customButtons.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b);
-        setCustomButtons(updated);
-        localStorage.setItem('baku_custom_buttons', JSON.stringify(updated));
+        persistButtons(updated);
     };
 
     const handleExecuteSimulatedButton = (btn: { label: string; action: string }) => {
@@ -1371,8 +1422,15 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                     Personalizador de Funciones &amp; Botones Rápidos
                                 </h3>
                                 <p className="text-xs text-slate-400 max-w-2xl mt-0.5 leading-relaxed">
-                                    Agrega nuevos botones de acción o comandos interactivos para que aparezcan en Telegram o en las respuestas de Baku con solo 1 toque.
+                                    Los botones activos aparecen al final de <span className="font-mono text-cyan-300">/menu</span> en Telegram (hasta 6). Un comando lo ejecuta; un texto sin barra se lo pide a Baku como si lo escribieras.
                                 </p>
+                                <div className={`mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium ${
+                                    syncEstado.tipo === 'ok' ? 'text-emerald-400' : syncEstado.tipo === 'local' ? 'text-amber-300' : 'text-slate-500'
+                                }`}>
+                                    {syncEstado.tipo === 'cargando' && (<><RefreshCw size={12} className="animate-spin" /> Leyendo lo que tiene Baku…</>)}
+                                    {syncEstado.tipo === 'ok' && (<><CheckCircle2 size={12} /> Sincronizado con Baku</>)}
+                                    {syncEstado.tipo === 'local' && (<><AlertTriangle size={12} className="shrink-0" /> Sólo en este navegador, Baku no los ve. {syncEstado.detalle}</>)}
+                                </div>
                             </div>
 
                             <button
@@ -1407,9 +1465,16 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                             type="text"
                                             value={newBtnAction}
                                             onChange={(e) => setNewBtnAction(e.target.value)}
-                                            placeholder="Ej: /facturar o /clave"
+                                            list="baku-commands"
+                                            placeholder="Ej: /cobranza o deudores de más de $50"
                                             className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono"
                                         />
+                                        <datalist id="baku-commands">
+                                            {BAKU_COMMANDS.map(c => <option key={c} value={c} />)}
+                                        </datalist>
+                                        {accionDesconocida(newBtnAction) && (
+                                            <p className="text-[10px] text-amber-300">Baku no tiene ese comando. Elegí uno de la lista o escribilo en palabras, sin la barra.</p>
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[11px] font-semibold text-slate-400">Categoría:</label>
@@ -1465,6 +1530,11 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                             <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
                                                 {btn.category}
                                             </span>
+                                            {accionDesconocida(btn.action) && (
+                                                <span className="px-1.5 rounded bg-amber-500/15 text-amber-300 shrink-0" title="Baku no tiene este comando: el botón no va a funcionar en Telegram">
+                                                    ⚠ no existe en Baku
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 

@@ -149,6 +149,34 @@ devuelve secretos.
 al chat del admin (qué comando o botón falló y el mensaje del error). De un
 comando va **sólo el nombre**, nunca los argumentos: pueden traer una clave.
 
+**Los botones personalizados de la web ya llegan a Baku** — mismo día. El
+editor de `screens/TelegramBotScreen.tsx` los guardaba sólo en `localStorage`
+y el bot nunca los leía; tres de los seis por defecto apuntaban a comandos que
+no existían. Ahora:
+
+- Viven en la tabla **`bot_web_config`** (`database/bot_web_config.sql`, fila
+  `custom_buttons`). **No en `bot_settings`**: ahí el bot guarda los tokens
+  OAuth de Gmail y esa tabla no se le abre al navegador. La web escribe con
+  sesión iniciada (política `authenticated`); el bot lee con la service key.
+- Los activos (hasta 6) salen al final de `/menu`
+  (`telegram-bot/src/botones_web.ts`). Una acción con `/` ejecuta ese comando;
+  un texto sin barra se le pide a Baku **como si Santiago lo hubiera escrito**
+  (mismo camino que un mensaje: atajos directos, diálogos, agente).
+- Sólo valen los comandos de `telegram-bot/src/comandos.ts` — la misma lista
+  que se publica en Telegram con `setMyCommands`. La web tiene su copia
+  (`BAKU_COMMANDS`) para autocompletar y avisar antes de guardar un botón
+  muerto. **Son dos listas a mano**: `npm test` dentro de `telegram-bot/` falla
+  si se separan.
+- Si la tabla no existe o Supabase no deja guardar, la pantalla lo dice («Sólo
+  en este navegador, Baku no los ve») con qué hacer, y el menú del bot sale
+  igual, sin botones extra. Nunca un silencio.
+- De paso `/comprobantes` pasó a ser un comando real (abre el mismo diálogo
+  que el botón «Comprobantes» del hub).
+
+`npm test` (16 comprobaciones, verdes el 13-nov-2026) usa grammY real con un
+bot desechable, sin red. **Falta**: correr el SQL en Supabase y verlo en
+Telegram y en la pantalla con sesión iniciada.
+
 **WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
 los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta
 Business, número dedicado y plantilla aprobada. Meta cobra por mensaje y sus

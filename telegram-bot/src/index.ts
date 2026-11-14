@@ -15,6 +15,8 @@ import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport, buildOperationalReportKeyboard } from './cron';
 import { manejarCallbackCobro, proponerCobranzaSemanal } from './cobranza_semanal';
+import { COMANDOS_MENU } from './comandos';
+import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
 import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
@@ -108,7 +110,7 @@ export function buildMainMenuText(): string {
 
 export async function showMainMenu(ctx: any, isEdit: boolean = false) {
     const text = buildMainMenuText();
-    const kb = buildMainMenuKeyboard();
+    const kb = agregarBotonesWeb(buildMainMenuKeyboard(), await botonesActivos());
     if (isEdit) {
         try {
             await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
@@ -900,6 +902,12 @@ bot.command('testcron', async (ctx) => {
 
 bot.command(['lunes', 'cobranza_semanal'], async (ctx) => {
     await proponerCobranzaSemanal(bot, ctx.chat.id.toString());
+});
+
+bot.command('comprobantes', async (ctx) => {
+    const chatId = ctx.chat.id.toString();
+    pendingDialogs.set(chatId, { type: 'browse_proofs', chatId, step: 'ask_client_name', data: {} });
+    await ctx.reply('📄 ¿De qué cliente deseas consultar comprobantes de declaración? (Escribe el nombre o RUC):');
 });
 
 bot.command('reporte', async (ctx) => {
@@ -2388,6 +2396,13 @@ bot.on('callback_query:data', async (ctx) => {
     }
 
     if (await manejarCallbackCobro(ctx, data, chatId)) return;
+
+    if (data.startsWith(PREFIJO_BOTON_WEB)) {
+        // Un atajo del menú empieza algo nuevo: no debe caer como respuesta de un diálogo a medias.
+        pendingDialogs.delete(chatId);
+        await ejecutarBotonWeb(bot, ctx, data.slice(PREFIJO_BOTON_WEB.length));
+        return;
+    }
 
     if (data.startsWith('baku_prof_edit:')) {
         const parts = data.split(':');
@@ -4060,25 +4075,9 @@ async function launchBot() {
         const me = await bot.api.getMe();
         console.log(`🤖 Bot @${me.username} (ID: ${me.id}) autenticado con éxito.`);
 
-        // Autocompletado al tipear "/". Quedan afuera a propósito los de configuración y claves.
-        await bot.api.setMyCommands([
-            { command: 'menu', description: 'Menú principal' },
-            { command: 'cobranza', description: 'Deudores y cartera pendiente' },
-            { command: 'lunes', description: 'Proponer la cobranza semanal por correo' },
-            { command: 'vencimientos', description: 'Próximos vencimientos SRI' },
-            { command: 'claves', description: 'Claves SRI faltantes o inválidas' },
-            { command: 'firmas', description: 'Bóveda de firmas .p12' },
-            { command: 'gestion', description: 'Gestión interna y alertas' },
-            { command: 'reporte', description: 'Reporte operativo del día' },
-            { command: 'resumen', description: 'Resumen de la base de datos' },
-            { command: 'facturar', description: 'Emitir factura SRI' },
-            { command: 'facturadores', description: 'Software de facturación de clientes' },
-            { command: 'credenciales', description: 'Credenciales de facturadores' },
-            { command: 'llenado', description: 'Llenado de facturas' },
-            { command: 'renovaciones', description: 'Renovaciones de planes' },
-            { command: 'status', description: 'Estado del bot' },
-            { command: 'clear', description: 'Borrar la memoria del chat' },
-        ]).catch(e => console.warn('⚠️ No se pudieron registrar los comandos en Telegram:', e?.message));
+        // Autocompletado al tipear "/".
+        await bot.api.setMyCommands(COMANDOS_MENU)
+            .catch(e => console.warn('⚠️ No se pudieron registrar los comandos en Telegram:', e?.message));
         
         await bot.start({
             onStart: (botInfo) => {
