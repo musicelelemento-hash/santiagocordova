@@ -5,6 +5,7 @@ import { DocumentTimeline } from '../DocumentTimeline';
 import { DeclarationHistoryTable } from '../DeclarationHistoryTable';
 import IceAnnexActions from '../../IceAnnexActions';
 import CompanyAnnexActions from '../../CompanyAnnexActions';
+import MonthlyCircle from '../../MonthlyCircle';
 
 interface HistoryTabProps {
     client: Client;
@@ -64,6 +65,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+            <MonthlyCircle client={editedClient || client} />
             <CompanyAnnexActions client={editedClient || client} />
             <IceAnnexActions client={editedClient || client} />
 
