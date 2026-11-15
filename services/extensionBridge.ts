@@ -196,6 +196,20 @@ export const esperarAnexoPresentado = async (
   return null;
 };
 
+/**
+ * Abre el módulo de Anexos del SRI en el anexo indicado (ATS, APS o ADI).
+ * La extensión abre la pestaña y, si hace falta, entra con las credenciales.
+ */
+export const abrirAnexoSri = (client: Client, tipo: 'ATS' | 'APS' | 'ADI'): boolean => {
+  if (!client.ruc) return false;
+  window.postMessage({
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_ABRIR_ANEXO',
+    data: { ruc: client.ruc, nombre: client.name, password: client.sriPassword, tipo },
+  }, '*');
+  return true;
+};
+
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
   const trimmed = oldPass.trim();

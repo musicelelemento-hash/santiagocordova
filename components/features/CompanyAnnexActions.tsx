@@ -6,6 +6,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
 import { esRucSociedad, getRebeficsDueDate, getIncomeTaxSociedadesDueDate, getAdiDueDate } from '../../services/sri';
 import { apsDesdeCliente, descargarAps } from '../../utils/apsXml';
+import { abrirAnexoSri } from '../../services/extensionBridge';
 import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
 import { SupplierCatalogService } from '../../services/supplierCatalogService';
 import CompanyInfoModal from './CompanyInfoModal';
@@ -146,6 +147,18 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                 <button type="button" onClick={() => void generarAts()} className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/35 bg-sky-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-sky-300 hover:bg-sky-500/20">
                     <FileSpreadsheet size={12} /> Generar ATS
                 </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!abrirAnexoSri(client, 'ATS')) { toast.error('No se pudo abrir Anexos.'); return; }
+                        toast.info('Abriendo Anexos del SRI (ATS) en una pestaña nueva…');
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5"
+                    title="Abre Anexos → Envío y consulta en el SRI con el anexo correcto (codOperativo)"
+                >
+                    <Building2 size={12} /> Abrir Anexos SRI
+                </button>
+
                 <button type="button" onClick={() => setEditar(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5">
                     <Settings2 size={12} /> Editar socios
                 </button>
