@@ -4,7 +4,9 @@ import type { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { SupplierCatalogService } from '../../services/supplierCatalogService';
 import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
-import { abrirAnexoSri } from '../../services/extensionBridge';
+import { abrirAnexoSri, entrarAlSriSinDeclarar } from '../../services/extensionBridge';
+import { useAppStore } from '../../store/useAppStore';
+import { DeclarationStatus } from '../../types';
 import { esRucSociedad } from '../../services/sri';
 
 /**
@@ -31,6 +33,9 @@ const nombrePeriodo = (p: string): string => {
 
 const MonthlyCircle: React.FC<Props> = ({ client }) => {
     const { toast } = useToast();
+    const { updateClient } = useAppStore();
+    const [registrando, setRegistrando] = useState(false);
+    const [atsGenerado, setAtsGenerado] = useState(false);
     const ahora = new Date();
     const anterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
     const periodoInicial = `${anterior.getFullYear()}-${String(anterior.getMonth() + 1).padStart(2, '0')}`;
@@ -46,17 +51,24 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
         (d) => (d.period === periodo || d.period === `${periodo}:IVA`) && (!d.type || d.type === 'IVA'),
     );
 
-    const acuse = useMemo(() => {
-        try {
-            const crudo = localStorage.getItem('sc_anexo_ultimo');
-            if (!crudo) return null;
-            const a = JSON.parse(crudo);
-            const texto = `${a?.nombre || ''} ${a?.mensaje || ''}`;
-            const mm = periodo.split('-')[1];
-            const anio = periodo.split('-')[0];
-            return new RegExp(`${anio}[-_/]?${mm}|${mm}[-_/]?${anio}`).test(texto) ? a : null;
-        } catch { return null; }
+    const [acuse, setAcuse] = useState<any>(null);
+    React.useEffect(() => {
+        const leer = () => {
+            try {
+                const crudo = localStorage.getItem('sc_anexo_ultimo');
+                if (!crudo) return;
+                const a = JSON.parse(crudo);
+                const texto = `${a?.nombre || ''} ${a?.mensaje || ''}`;
+                const [anio, mm] = periodo.split('-');
+                if (new RegExp(`${anio}[-_/]?${mm}|${mm}[-_/]?${anio}`).test(texto)) setAcuse(a);
+            } catch { /* sin acuse */ }
+        };
+        leer();
+        const timer = setInterval(leer, 4000);
+        return () => clearInterval(timer);
     }, [periodo]);
+
+
 
     const generar = async () => {
         if (!facturas.length) {
@@ -71,11 +83,37 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
                 return;
             }
             await descargarAts(datos);
+            setAtsGenerado(true);
             toast.success(`ATS de ${nombrePeriodo(periodo)} generado (XML + ZIP).`);
         } catch (e: any) {
             toast.error(`No se pudo generar: ${e?.message || e}`);
         } finally {
             setGenerando(false);
+        }
+    };
+
+    const registrarAts = async () => {
+        if (!acuse) return;
+        setRegistrando(true);
+        try {
+            const declaraciones = client.declarations || [];
+            const sinEse = declaraciones.filter((d) => !(d.type === 'ATS' && d.period === periodo));
+            const nueva = {
+                period: periodo,
+                type: 'ATS',
+                status: DeclarationStatus.Enviada,
+                updatedAt: new Date().toISOString(),
+                declaredAt: new Date().toISOString().slice(0, 10),
+                amount: 0,
+                transactionId: acuse.acuse || undefined,
+                is_paid: false,
+            } as any;
+            await updateClient(client.id, { declarations: [...sinEse, nueva] });
+            toast.success('ATS de ' + nombrePeriodo(periodo) + ' registrado como presentado.');
+        } catch (e: any) {
+            toast.error('No se pudo registrar: ' + (e?.message || e));
+        } finally {
+            setRegistrando(false);
         }
     };
 
@@ -99,14 +137,14 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
                 : 'El formulario llega con las VENTAS prellenadas desde Facturación Electrónica: confirmá y revisá notas de crédito.',
             hecho: !!declaracionIva,
             icono: Calculator,
-            accion: declaracionIva ? null : () => { if (!abrirAnexoSri(client, 'ATS')) toast.error('No se pudo abrir el SRI.'); },
-            boton: declaracionIva ? '' : 'Abrir SRI',
+            accion: declaracionIva ? null : () => { if (!entrarAlSriSinDeclarar(client)) { toast.error('Falta la clave SRI del cliente.'); return; } toast.info('Entrando al SRI: andá a Declaraciones → IVA y confirmá el 104.'); },
+            boton: declaracionIva ? '' : 'Entrar al SRI',
         },
         {
             numero: 3,
             titulo: 'Generar el ATS con lo declarado',
             detalle: 'Usa las mismas compras del paso 1. El IVA de ventas ya fue confirmado en el paso 2.',
-            hecho: !!acuse,
+            hecho: atsGenerado || !!acuse,
             icono: FileSpreadsheet,
             accion: () => void generar(),
             boton: generando ? 'Generando…' : 'Generar ATS',
@@ -128,8 +166,8 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
                 : 'Al subirlo, la extensión guarda el mensaje y el acuse del portal.',
             hecho: !!acuse,
             icono: CheckCircle2,
-            accion: null,
-            boton: '',
+            accion: acuse ? () => void registrarAts() : null,
+            boton: acuse ? (registrando ? 'Guardando…' : 'Marcar presentado') : '',
         },
     ];
 

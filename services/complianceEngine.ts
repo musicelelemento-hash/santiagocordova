@@ -436,10 +436,12 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
     
     // RENTA (período anual puro: "2025", "2024", etc.)
     if (isYearPeriod) {
-        const needsRenta = client.taxProfile?.requiresAnnualRenta ||
+        // La sociedad declara con el 1021; no se agrega además la "Renta Anual"
+        // genérica (eran dos tiles para la misma obligación).
+        const needsRenta = (client.taxProfile?.requiresAnnualRenta ||
             client.regime === TaxRegime.RimpeEmprendedor ||
             client.regime === TaxRegime.RimpeNegocioPopular ||
-            client.regime === TaxRegime.General;
+            client.regime === TaxRegime.General) && !esSociedadParaObligaciones(client);
         if (needsRenta) {
             obligations.push({ type: 'RENTA', label: 'Renta Anual' });
         }

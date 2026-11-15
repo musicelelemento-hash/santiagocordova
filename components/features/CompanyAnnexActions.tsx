@@ -23,6 +23,7 @@ interface Props {
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 const fmt = (f: Date): string => `${f.getDate()} de ${MESES[f.getMonth()]}`;
+const fmtConAnio = (f: Date): string => `${f.getDate()} de ${MESES[f.getMonth()]} de ${f.getFullYear()}`;
 
 const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const { updateClient } = useAppStore();
@@ -220,7 +221,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                         <div key={ob.tipo} className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
                             <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] ${hecho ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>{hecho ? '✓' : '•'}</span>
                             <span className="text-[10px] font-semibold text-slate-200">{ob.nombre}</span>
-                            <span className="font-mono text-[9px] text-slate-500">vence {fmt(ob.vence)}</span>
+                            <span className="font-mono text-[9px] text-slate-500">vence {fmtConAnio(ob.vence)}</span>
                             {!hecho && (
                                 <input
                                     value={cep[ob.tipo] || ''}
