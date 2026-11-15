@@ -86,6 +86,27 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
     const phoneMatch = textOnly.match(/(?:CELULAR|TELEFONO|TELF)[^0-9]*(\d{9,10})/);
     const validPhone = phoneMatch ? phoneMatch[1] : (textOnly.match(/\b09\d{8}\b/) ? textOnly.match(/\b09\d{8}\b/)![0] : '');
 
+    // --- 5. RÉGIMEN & OBLIGACIONES (Bóveda de Obligaciones) ---
+    // Se leen del bloque «Obligaciones tributarias» del certificado de RUC.
+    const requiereRentaAnual = /\bIMPUESTO A LA RENTA\b|\bDECLARACION DE RENTA\b|\bDECLARACI[ÓO]N DE RENTA\b/.test(textOnly);
+    const requiereAnexoGastos = /GASTOS PERSONALES/.test(textOnly);
+    const tieneDevolucionRentaRefund = /DEVOLUCI[ÓO]N (DE )?(IMPUESTO A LA )?RENTA/.test(textOnly);
+    const tieneDevolucionIvaTerceraEdad = /DEVOLUCI[ÓO]N (DE )?IVA/.test(textOnly)
+        && /TERCERA EDAD|ADULTO MAYOR|DISCAPACIDAD/.test(textOnly);
+    const esSociedadRuc = ruc.length === 13 && ruc[2] === '9';
+    const esSociedad = esSociedadRuc
+        || /\bSOCIEDADES\b|\bS\.?A\.?S\.?\b|\bCOMPANY\b|\bC[IÍ]A\.? ?LTDA\b/.test(textOnly);
+    const obligacionesDetectadas: string[] = [];
+    if (/DECLARACION DE IVA|DECLARACI[ÓO]N DE IVA/.test(textOnly)) obligacionesDetectadas.push('IVA');
+    if (requiereRentaAnual) obligacionesDetectadas.push('RENTA');
+    if (requiereAnexoGastos) obligacionesDetectadas.push('ANEXO_GASTOS');
+    if (tieneDevolucionRentaRefund) obligacionesDetectadas.push('DEVOLUCION_RENTA');
+    if (tieneDevolucionIvaTerceraEdad) obligacionesDetectadas.push('DEVOLUCION_IVA_3RA_EDAD');
+    if (/REBEFICS|BENEFICIARIOS FINALES/.test(textOnly)) obligacionesDetectadas.push('REBEFICS');
+    if (/ANEXO DE DIVIDENDOS|\bADI\b/.test(textOnly)) obligacionesDetectadas.push('ADI');
+    if (/ANEXO TRANSACCIONAL|\bATS\b/.test(textOnly)) obligacionesDetectadas.push('ATS');
+    if (/1021/.test(textOnly)) obligacionesDetectadas.push('1021');
+
     // --- 5. RÉGIMEN & OBLIGACIONES ---
     let regimen = TaxRegime.General;
     if (textOnly.includes("NEGOCIO POPULAR")) regimen = TaxRegime.RimpeNegocioPopular;
@@ -106,6 +127,12 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
       regimen: regimen,
       obligaciones_tributarias: textOnly.includes("SEMESTRAL") ? "semestral" : "mensual",
       lista_obligaciones: listaObligaciones,
+      obligaciones_detectadas: obligacionesDetectadas,
+      requiere_renta_anual: requiereRentaAnual,
+      requiere_anexo_gastos: requiereAnexoGastos,
+      tiene_devolucion_renta: tieneDevolucionRentaRefund,
+      tiene_devolucion_iva_tercera_edad: tieneDevolucionIvaTerceraEdad,
+      es_sociedad: esSociedad,
       actividad_economica: textOnly.match(/ACTIVIDADES ECONÓMICAS\s*([^:]+?)(?=\s*(?:ESTABLECIMIENTOS|OBLIGACIONES|$))/)?.[1]?.trim() || '',
       es_artesano: textOnly.includes("ARTESANO") && !textOnly.includes("NO REGISTRA"),
       cantidad_establecimientos: parseInt(textOnly.match(/ESTABLECIMIENTOS\s*ABIERTOS\s*(\d+)/)?.[1] || '1'),

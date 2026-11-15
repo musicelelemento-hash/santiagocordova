@@ -85,6 +85,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         initialData?.requiresDeclarations ?? (initialData?.clientType === 'solo_plan' ? false : true)
     );
     const [requiresAnexosGastos, setRequiresAnexosGastos] = useState(initialTaxProfile.requiresAnexosGastos);
+    const [esSociedadDetectada, setEsSociedadDetectada] = useState<boolean>(false);
     const [hasActiveDevolucionIva, setHasActiveDevolucionIva] = useState(initialTaxProfile.hasActiveDevolucionIva);
     const [requiresIce, setRequiresIce] = useState(initialData?.taxProfile?.requiresIce ?? false);
     const [requiresAnexoPvp, setRequiresAnexoPvp] = useState(initialData?.taxProfile?.requiresAnexoPvp ?? false);
@@ -315,6 +316,21 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             setAnnualFee(exists ? (exists.fee_structure?.annual ?? 10).toString() : "10");
             // VIP status already set above based on existence; no override needed
 
+            // 🧾 Bóveda de Obligaciones: se marca con lo que dice el certificado.
+            if (extracted.es_sociedad) setEsSociedadDetectada(true);
+            if (extracted.requiere_anexo_gastos) setRequiresAnexosGastos(true);
+            if (extracted.requiere_renta_anual) setRequiresAnnualRenta(true);
+            if (extracted.tiene_devolucion_renta) setClientData(prev => ({ ...prev, hasRentaRefund: true }));
+            if (extracted.tiene_devolucion_iva_tercera_edad) setClientData(prev => ({ ...prev, hasElderlyDevolucionIva: true }));
+            const detectadas = extracted.obligaciones_detectadas || [];
+            if (detectadas.length) {
+                setModalFeedback({
+                    message: `Perfil tributario autoconfigurado. Obligaciones detectadas: ${detectadas.join(', ')}.`
+                        + (extracted.es_sociedad ? ' RUC de SOCIEDAD: además lleva 1021, REBEFICS, ADI y ATS.' : ''),
+                    type: 'success',
+                });
+            }
+
             if (!exists) {
                 if (extracted.regimen === TaxRegime.RimpeNegocioPopular) {
                     setIvaFrequency('Ninguno');
@@ -392,12 +408,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             clientStartPeriod: resolvedStartPeriod,
             signatureExpirationDate: clientData.signatureExpirationDate,
             isCourtesy,
+        entity_type: esSociedadDetectada ? 'sociedad' : 'natural',
             taxProfile: {
                 ivaFrequency: finalIvaFrequency,
                 requiresAnnualRenta: finalRequiresAnnualRenta,
                 requiresAnexosGastos,
-                hasActiveDevolucionIva,
-                hasActiveElderlyDevolucionIva: clientData.taxProfile?.hasActiveElderlyDevolucionIva ?? false,
+                hasActiveDevolucionIva: hasActiveDevolucionIva || !!clientData.hasRentaRefund,
+                hasActiveElderlyDevolucionIva: (clientData.taxProfile?.hasActiveElderlyDevolucionIva ?? false) || !!clientData.hasElderlyDevolucionIva,
                 requiresIce,
                 requiresAnexoPvp
             },

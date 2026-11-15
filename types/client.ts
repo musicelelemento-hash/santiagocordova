@@ -336,4 +336,11 @@ export interface SriExtractionResult {
     cantidad_establecimientos: number;
     // New flag indicating if the PDF is a RUC certificate
     isCertificate?: boolean;
+    /** Obligaciones detectadas en el bloque «Obligaciones tributarias» del RUC. */
+    obligaciones_detectadas?: string[];
+    requiere_renta_anual?: boolean;
+    requiere_anexo_gastos?: boolean;
+    tiene_devolucion_renta?: boolean;
+    tiene_devolucion_iva_tercera_edad?: boolean;
+    es_sociedad?: boolean;
 }
