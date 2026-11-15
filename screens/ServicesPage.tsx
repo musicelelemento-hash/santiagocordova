@@ -121,10 +121,18 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Las cuentas internas (admin/soporte) NO deben verse precargadas en el
+    // formulario de pedidos: su correo se colaba como si fuera el del cliente.
+    const esCuentaInterna = (email?: string) =>
+        /^(admin|soporte|declaraciones|sistema)@santiagocordova\.com$/i.test(String(email || '').trim());
+
     useEffect(() => {
-        if (currentUser) {
+        if (currentUser && !esCuentaInterna(currentUser.email)) {
             setClientName(currentUser.name);
             setClientEmail(currentUser.email);
+        } else {
+            // Si había quedado el correo interno cargado, se limpia.
+            setClientEmail(prev => (esCuentaInterna(prev) ? '' : prev));
         }
     }, [currentUser]);
 
