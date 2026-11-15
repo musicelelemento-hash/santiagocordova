@@ -171,6 +171,17 @@ export const validateSriPassword = (password: string): { isValid: boolean, crite
 };
 
 
+/**
+ * ¿El RUC es de una sociedad (persona jurídica)?
+ * En Ecuador el 3.er dígito del RUC identifica la naturaleza:
+ *   9 = persona jurídica / sociedad · 6 = entidad pública.
+ */
+export const esRucSociedad = (ruc: string | undefined | null): boolean => {
+  const limpio = String(ruc || '').replace(/\D/g, '');
+  if (limpio.length !== 13) return false;
+  return limpio[2] === '9';
+};
+
 export const getNinthDigit = (ruc: string): number => {
     if (ruc.length < 9) return -1;
     return parseInt(ruc[8], 10);

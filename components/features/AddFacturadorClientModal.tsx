@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
 import { v4 as uuidv4 } from 'uuid';
 import { buscarClaveContacto } from '../../services/sriContacts';
+import { esRucSociedad } from '../../services/sri';
 
 interface AddFacturadorClientModalProps {
     isOpen: boolean;
@@ -339,6 +340,11 @@ export const AddFacturadorClientModal: React.FC<AddFacturadorClientModalProps> =
                                         className="w-full px-3 py-2 bg-surface-lowest border border-foreground/10 rounded-xl text-on-surface text-xs uppercase outline-none focus:border-tertiary"
                                     />
                                 </div>
+                                {esRucSociedad(newRuc) && (
+                                    <p className="mb-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200">
+                                        RUC de sociedad: además del IVA mensual lleva <b>1021 Renta</b>, <b>REBEFICS</b> (febrero), <b>ADI</b> (mayo) y <b>ATS</b> mensual.
+                                    </p>
+                                )}
                                 <div>
                                     <label className="text-[10px] font-bold text-on-surface-variant uppercase">RUC / Cédula *</label>
                                     <input
