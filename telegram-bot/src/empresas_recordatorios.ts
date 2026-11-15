@@ -54,11 +54,14 @@ export async function revisarObligacionesAnualesEmpresas(): Promise<string | nul
         const hitos: Array<{ nombre: string; fecha: Date | null }> = [];
 
         // REBEFICS: 28 días desde la constitución si es nueva; si no, febrero.
+        // La regla de «28 días desde la constitución» es solo para la PRIMERA
+        // presentación; después va al calendario de febrero del año siguiente.
         const constitucion = company.constitutionDate ? new Date(company.constitutionDate) : null;
         let fechaRebefics: Date | null = null;
         if (constitucion && !Number.isNaN(constitucion.getTime())) {
-            fechaRebefics = new Date(constitucion);
-            fechaRebefics.setDate(fechaRebefics.getDate() + 28);
+            const primera = new Date(constitucion);
+            primera.setDate(primera.getDate() + 28);
+            fechaRebefics = primera.getTime() >= Date.now() ? primera : new Date(anio + 1, 1, dia);
         } else {
             fechaRebefics = new Date(anio, 1, dia);
         }

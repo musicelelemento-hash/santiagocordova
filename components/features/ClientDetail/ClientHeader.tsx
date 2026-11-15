@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX, Key, Tag, Edit2, Zap, CheckCircle2 } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue, isSriPasswordUpdated, formatPeriodForDisplay } from '../../../services/sri';
+import { esRucSociedad } from '../../../services/sri';
+import CompanyBadge from '../../ui/CompanyBadge';
 import { useAppStore } from '../../../store/useAppStore';
 import { useToast } from '../../../context/ToastContext';
 import { openClientInNewWindow } from '../../../utils/windowManager';

@@ -830,13 +830,21 @@ const diaPorNovenoDigito = (ruc: string, base = 10): number => {
     return base + (d - 1) * 2;
 };
 
-/** REBEFICS: febrero (10–28) según 9.º dígito; sociedad nueva: 28 días después. */
+/**
+ * REBEFICS: 10–28 de febrero según 9.º dígito. La excepción de «28 días desde
+ * la constitución» aplica SOLO a la primera presentación; después vuelve al
+ * calendario normal de febrero (la del año indicado).
+ */
 export const getRebeficsDueDate = (client: Pick<Client, 'ruc' | 'taxProfile'>, year: number): Date => {
     const constitucion = client.taxProfile?.company?.constitutionDate;
     if (constitucion) {
-        const d = new Date(constitucion);
-        d.setDate(d.getDate() + 28);
-        return d;
+        const primera = new Date(constitucion);
+        primera.setDate(primera.getDate() + 28);
+        const hoy = new Date();
+        if (primera.getTime() >= hoy.getTime()) return primera;
+        // Ya pasó la primera: la del ejercicio se presenta en febrero del año siguiente.
+        const anioPresentacion = year + 1 <= hoy.getFullYear() ? year + 1 : year + 1;
+        return new Date(anioPresentacion, 1, diaPorNovenoDigito(client.ruc));
     }
     return new Date(year, 1, diaPorNovenoDigito(client.ruc));
 };

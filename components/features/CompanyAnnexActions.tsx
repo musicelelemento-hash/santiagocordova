@@ -47,9 +47,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
             { tipo: 'REBEFICS', nombre: 'REBEFICS (APS)', vence: getRebeficsDueDate(client, anio) },
             { tipo: '1021', nombre: '1021 Renta Sociedades', vence: getIncomeTaxSociedadesDueDate(client, anio) },
         ];
-        if (company.distribuyoDividendos === true) {
-            lista.push({ tipo: 'ADI', nombre: 'ADI Dividendos', vence: getAdiDueDate(client, anio) });
-        }
+        lista.push({ tipo: 'ADI', nombre: 'ADI Dividendos', vence: getAdiDueDate(client, anio) });
         return lista;
     }, [client, anio, company.distribuyoDividendos]);
 

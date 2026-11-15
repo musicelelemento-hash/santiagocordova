@@ -3,6 +3,8 @@ import React, { memo } from 'react';
 import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime, Declaration, InternalStatus } from '../../types';
 import { sendToSRIExtension } from '../../services/extensionBridge';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat, getWhatsAppUrl, isSriPasswordUpdated } from '../../services/sri';
+import { esRucSociedad } from '../../services/sri';
+import CompanyBadge from '../ui/CompanyBadge';
 import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
@@ -183,6 +185,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             <h3 className="font-display font-black text-lg sm:text-xl truncate text-slate-900 dark:text-white tracking-tight group-hover/card:text-[#00A896] transition-colors" title={client.name}>
                                 {client.name}
                             </h3>
+                            {esRucSociedad(client.ruc) && <CompanyBadge compacto />}
                             <button
                                 type="button"
                                 onClick={(e) => {

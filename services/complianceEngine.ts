@@ -453,10 +453,9 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
         if (esSociedadParaObligaciones(client)) {
             obligations.push({ type: '1021', label: 'Renta Sociedades' });
             obligations.push({ type: 'REBEFICS', label: 'REBEFICS' });
-            const company = client.taxProfile?.company;
-            if (company && (company as any).distribuyoDividendos === true) {
-                obligations.push({ type: 'ADI', label: 'Anexo Dividendos' });
-            }
+            // El propio certificado de RUC lista el ADI como obligación de la
+            // sociedad: se muestra siempre y se registra con o sin movimiento.
+            obligations.push({ type: 'ADI', label: 'Anexo Dividendos' });
         }
         return obligations;
     }
