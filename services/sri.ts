@@ -836,17 +836,16 @@ const diaPorNovenoDigito = (ruc: string, base = 10): number => {
  * calendario normal de febrero (la del año indicado).
  */
 export const getRebeficsDueDate = (client: Pick<Client, 'ruc' | 'taxProfile'>, year: number): Date => {
+    const hoy = new Date();
     const constitucion = client.taxProfile?.company?.constitutionDate;
     if (constitucion) {
         const primera = new Date(constitucion);
         primera.setDate(primera.getDate() + 28);
-        const hoy = new Date();
         if (primera.getTime() >= hoy.getTime()) return primera;
-        // Ya pasó la primera: la del ejercicio se presenta en febrero del año siguiente.
-        const anioPresentacion = year + 1 <= hoy.getFullYear() ? year + 1 : year + 1;
-        return new Date(anioPresentacion, 1, diaPorNovenoDigito(client.ruc));
     }
-    return new Date(year, 1, diaPorNovenoDigito(client.ruc));
+    // Próximo febrero desde hoy (si ya pasó el de este año, el del próximo).
+    const base = (hoy.getMonth() <= 1) ? hoy.getFullYear() : hoy.getFullYear() + 1;
+    return new Date(base, 1, diaPorNovenoDigito(client.ruc));
 };
 
 /** Renta sociedades (1021): abril 10–28 (11 si es contribuyente especial). */

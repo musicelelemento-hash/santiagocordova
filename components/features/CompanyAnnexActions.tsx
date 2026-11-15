@@ -49,10 +49,10 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
 
     const anuales = useMemo(() => {
         const lista: Array<{ tipo: 'REBEFICS' | '1021' | 'ADI'; nombre: string; vence: Date }> = [
-            { tipo: 'REBEFICS', nombre: 'REBEFICS (APS)', vence: getRebeficsDueDate(client, anio) },
-            { tipo: '1021', nombre: '1021 Renta Sociedades', vence: getIncomeTaxSociedadesDueDate(client, anio) },
+            { tipo: 'REBEFICS', nombre: 'REBEFICS (APS)', vence: getRebeficsDueDate(client, anio + 1) },
+            { tipo: '1021', nombre: '1021 Renta Sociedades', vence: getIncomeTaxSociedadesDueDate(client, anio + 1) },
         ];
-        lista.push({ tipo: 'ADI', nombre: 'ADI Dividendos', vence: getAdiDueDate(client, anio) });
+        lista.push({ tipo: 'ADI', nombre: 'ADI Dividendos', vence: getAdiDueDate(client, anio + 1) });
         return lista;
     }, [client, anio, company.distribuyoDividendos]);
 
