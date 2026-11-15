@@ -6,6 +6,7 @@ import { supabase } from './supabase';
 import { searchEmails } from './gmail';
 import { generateAiText } from './ai';
 import { proponerCobranzaSemanal } from './cobranza_semanal';
+import { revisarObligacionesAnualesEmpresas } from './empresas_recordatorios';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
 
@@ -166,4 +167,19 @@ export function startCronJobs(bot: Bot) {
     });
 
     console.log("✅ Baku Elite CronJobs inicializados: 03:30 AM (Reporte), 08:00 AM Lunes (Financiero), 09:00 AM Viernes (Credenciales), 00:00 AM (Backup).");
+    // 🏢 Obligaciones anuales de sociedades: todos los días 08:30
+    cron.schedule('30 8 * * *', async () => {
+    console.log('⏰ Revisando obligaciones anuales de sociedades (08:30)...');
+    const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
+    const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
+    try {
+    const mensaje = await revisarObligacionesAnualesEmpresas();
+    if (!mensaje) return;
+    await bot.api.sendMessage(adminChatId, convertMarkdownToTelegramHtml(mensaje));
+    } catch (error) {
+    console.error('❌ Error en recordatorios de sociedades:', error);
+    }
+    }, {
+    timezone: "America/Guayaquil"
+    });
 }

@@ -319,7 +319,7 @@ Una sociedad se tiene que poder gestionar desde las tres, con la misma informaci
 | Herramienta `get_company_obligations(ruc)` | ✅ |
 | Responde: 5 obligaciones, días de vencimiento por 9.º dígito y advertencia de “en cero” | ✅ |
 | Crear empresa con socios desde el bot | ⏳ siguiente |
-| Recordatorios automáticos anuales (REBEFICS, 1021, ADI) | ⏳ siguiente |
+| Recordatorios automáticos anuales (REBEFICS, 1021, ADI) — cron diario 08:30 | ✅ |
 
 Ejemplo de respuesta del bot:
 
