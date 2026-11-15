@@ -185,16 +185,17 @@ export function atsDesdeCompras(
 
     for (const inv of invoices || []) {
         const rucProv = String(inv.rucEmisor || '').replace(/\D/g, '');
-        const autorizacion = opciones?.claveDeAcceso?.(inv) || '';
+        const autorizacion = opciones?.claveDeAcceso?.(inv) || inv.claveAcceso || '';
         if (!autorizacion) faltantes.push(`Factura ${inv.secuencial || inv.numero || inv.id} de ${inv.razonSocial}: falta la clave de acceso.`);
         const tarifa = Number(inv.tarifaIva ?? 15);
         const conCredito = inv.tieneCreditoTributario !== false;
         const base = Number(inv.valorSinImpuestos || 0);
         const iva = Number(inv.iva || 0);
         const tipo = inv.tipoComprobante === 'nota_credito' ? '04' : inv.tipoComprobante === 'liquidacion' ? '03' : '01';
-        const sec = String(inv.secuencial || dos(inv.numero || 0)).replace(/\D/g, '').padStart(9, '0');
-        const estab = sec.length >= 9 ? sec.slice(0, 3) : '001';
-        const ptoEmi = sec.length >= 9 ? sec.slice(3, 6) : '001';
+        const serie = String(inv.secuencial || '').replace(/\D/g, '');
+        const sec = serie.length >= 9 ? serie : String(inv.secuencial || dos(inv.numero || 0)).replace(/\D/g, '').padStart(9, '0');
+        const estab = inv.establecimiento || (sec.length >= 9 ? sec.slice(0, 3) : '001');
+        const ptoEmi = inv.puntoEmision || (sec.length >= 9 ? sec.slice(3, 6) : '001');
         const secuencial = sec.length >= 9 ? sec.slice(6) : sec;
         const sueldo = tarifa === 5
             ? { baseNoGraIva: '0', baseImponible: '0', baseImpGrav: '0', baseImpExe: '0', ivaComp: '0' }

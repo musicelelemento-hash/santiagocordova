@@ -41,6 +41,10 @@ export interface PurchaseInvoiceItem {
     tieneCreditoTributario: boolean; // true -> 500/510, false -> 502/512
     tarifaIva?: number;              // 15, 5, 0
     tipoComprobante?: 'factura' | 'nota_credito' | 'liquidacion';
+    /** Clave de acceso / autorización del comprobante (49 dígitos) — la usa el ATS. */
+    claveAcceso?: string;
+    establecimiento?: string;
+    puntoEmision?: string;
     esManual?: boolean;
 }
 
