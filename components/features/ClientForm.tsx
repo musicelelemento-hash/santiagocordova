@@ -318,6 +318,28 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
             // 🧾 Bóveda de Obligaciones: se marca con lo que dice el certificado.
             if (extracted.es_sociedad) setEsSociedadDetectada(true);
+            // 🏢 Datos societarios del certificado: constitución, representantes y actividad.
+            if (extracted.es_sociedad) {
+                setClientData(prev => {
+                    const tp: any = (prev as any).taxProfile || {};
+                    return {
+                        ...prev,
+                        entity_type: 'sociedad',
+                        taxProfile: {
+                            ...tp,
+                            company: {
+                                ...(tp.company || {}),
+                                tipoSociedad: tp.company?.tipoSociedad || '01',
+                                constitutionDate: extracted.fecha_constitucion || tp.company?.constitutionDate,
+                                legalRepresentative: (extracted.representantes_legales || []).join(' · ') || tp.company?.legalRepresentative,
+                                keepsAccounting: extracted.obligado_contabilidad ?? tp.company?.keepsAccounting,
+                                specialTaxpayer: extracted.contribuyente_especial ?? tp.company?.specialTaxpayer,
+                                economicActivities: extracted.actividades_economicas?.length ? extracted.actividades_economicas : tp.company?.economicActivities,
+                            },
+                        },
+                    };
+                });
+            }
             if (extracted.requiere_anexo_gastos) setRequiresAnexosGastos(true);
             if (extracted.requiere_renta_anual) setRequiresAnnualRenta(true);
             if (extracted.tiene_devolucion_renta) setClientData(prev => ({ ...prev, hasRentaRefund: true }));
@@ -416,8 +438,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 hasActiveDevolucionIva: hasActiveDevolucionIva || !!clientData.hasRentaRefund,
                 hasActiveElderlyDevolucionIva: (clientData.taxProfile?.hasActiveElderlyDevolucionIva ?? false) || !!clientData.hasElderlyDevolucionIva,
                 requiresIce,
-                requiresAnexoPvp
+                requiresAnexoPvp,
+                company: (clientData as any)?.taxProfile?.company
             },
+            // Datos societarios que se cargaron con el PDF (si es sociedad).
             fee_structure: {
                 monthly: finalIvaFrequency === 'Mensual' ? mFee : (clientData.fee_structure?.monthly ?? 5),
                 semestral: finalIvaFrequency === 'Semestral' ? mFee : (clientData.fee_structure?.semestral ?? 10),

@@ -96,6 +96,19 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
     const esSociedadRuc = ruc.length === 13 && ruc[2] === '9';
     const esSociedad = esSociedadRuc
         || /\bSOCIEDADES\b|\bS\.?A\.?S\.?\b|\bCOMPANY\b|\bC[IÍ]A\.? ?LTDA\b/.test(textOnly);
+    // --- 5b. DATOS SOCIETARIOS (solo si el certificado es de una sociedad) ---
+    const fechaConstitucion = (textOnly.match(/(\d{2}\/\d{2}\/\d{4})\s*FECHA DE CONSTITUCI[ÓO]N/)
+        || textOnly.match(/FECHA DE CONSTITUCI[ÓO]N\s*:?\s*(\d{2}\/\d{2}\/\d{4})/) || [])[1] || '';
+    const representantesRaw = (textOnly.match(/REPRESENTANTE LEGAL\s*([\s\S]{0,200}?)\s*ESTADO\b/) || [])[1] || '';
+    const representantesLegales = representantesRaw.split('•').map((s) => s.trim()).filter(Boolean);
+    const obligadoContabilidad = /CONTABILIDAD[\s\S]{0,170}?\bSI\b/.test(textOnly);
+    const esContribuyenteEspecial = /CONTRIBUYENTE ESPECIAL[\s\S]{0,90}?\bSI\b/.test(textOnly);
+    const esAgenteRetencion = /AGENTE DE RETENCI[ÓO]N[\s\S]{0,90}?\bSI\b/.test(textOnly);
+    const actividadesEconomicas = [...textOnly.matchAll(/([A-Z]\d{6})\s*-\s*([\s\S]{0,120}?)(?=\s*(?:[A-Z]\d{6}|•|ESTABLECIMIENTOS|OBLIGACIONES|$))/g)]
+        .map((m) => m[1] + ' - ' + m[2].replace(/•/g, '').replace(/\s+/g, ' ').trim())
+        .filter((x) => x.length > 10)
+        .slice(0, 6);
+
     const obligacionesDetectadas: string[] = [];
     if (/DECLARACION DE IVA|DECLARACI[ÓO]N DE IVA/.test(textOnly)) obligacionesDetectadas.push('IVA');
     if (requiereRentaAnual) obligacionesDetectadas.push('RENTA');
@@ -133,6 +146,12 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
       tiene_devolucion_renta: tieneDevolucionRentaRefund,
       tiene_devolucion_iva_tercera_edad: tieneDevolucionIvaTerceraEdad,
       es_sociedad: esSociedad,
+      fecha_constitucion: fechaConstitucion || undefined,
+      representantes_legales: representantesLegales,
+      obligado_contabilidad: obligadoContabilidad,
+      contribuyente_especial: esContribuyenteEspecial,
+      agente_retencion: esAgenteRetencion,
+      actividades_economicas: actividadesEconomicas,
       actividad_economica: textOnly.match(/ACTIVIDADES ECONÓMICAS\s*([^:]+?)(?=\s*(?:ESTABLECIMIENTOS|OBLIGACIONES|$))/)?.[1]?.trim() || '',
       es_artesano: textOnly.includes("ARTESANO") && !textOnly.includes("NO REGISTRA"),
       cantidad_establecimientos: parseInt(textOnly.match(/ESTABLECIMIENTOS\s*ABIERTOS\s*(\d+)/)?.[1] || '1'),

@@ -343,4 +343,10 @@ export interface SriExtractionResult {
     tiene_devolucion_renta?: boolean;
     tiene_devolucion_iva_tercera_edad?: boolean;
     es_sociedad?: boolean;
+    fecha_constitucion?: string;
+    representantes_legales?: string[];
+    obligado_contabilidad?: boolean;
+    contribuyente_especial?: boolean;
+    agente_retencion?: boolean;
+    actividades_economicas?: string[];
 }
