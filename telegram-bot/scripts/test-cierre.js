@@ -92,6 +92,18 @@ const clientes = [
     ver('lista de pendientes: vencimiento y motivo', lp.includes('vence 10 🔴') && lp.includes('🛑 saldo a pagar') && lp.includes('vence 28'), lp);
     ver('lista a verificar explica qué hacer', m.textoLista(cierre, 'verificar', 1).texto.includes('no hay comprobante que pruebe la declaración'));
 
+    // Formas reales que aparecieron en la base (13-nov-2026).
+    const extra = m.clasificarCierre([
+        C('0700000010020', 'ICE SUELTO', { declaration_history: [{ period: '2026-10:ICE', status: 'Pagada', is_paid: true, proof_file: pdf }] }),
+        C('0700000010021', 'COMPLETADO', { sri_declaraciones: [D('2026-10', { status: 'completado' })] }),
+        C('0700000010022', 'SEM 1S', { regime: 'Rimpe Emprendedor', sri_declaraciones: [D('2026-1S', { status: 'Enviada', proof_file: pdf })] }),
+        C('0700000010023', 'SEM JUNIO', { regime: 'Rimpe Emprendedor', sri_declaraciones: [D('2026-06', { status: 'Pagada', is_paid: true, proof_file: pdf })] }),
+    ], hoy);
+    const qx = (nombre) => (extra.filas.find(f => f.name === nombre) || {}).cuadrante;
+    ver('un ICE del mismo mes no es el IVA', qx('ICE SUELTO') === 'pendiente', qx('ICE SUELTO'));
+    ver("'completado' de la extensión cuenta como enviada", qx('COMPLETADO') === 'cobrar', qx('COMPLETADO'));
+    ver('semestre escrito 2026-1S o 2026-06', qx('SEM 1S') === 'cobrar' && qx('SEM JUNIO') === 'ok', [qx('SEM 1S'), qx('SEM JUNIO')]);
+
     const muchos = Array.from({ length: 20 }, (_, i) => C(`07000000${i % 10}0${String(100 + i)}`, `Z${i}`));
     const cm = m.clasificarCierre(muchos, hoy);
     const pag = m.textoLista(cm, 'pendiente', 99);

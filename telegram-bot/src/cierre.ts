@@ -67,8 +67,17 @@ function tieneComprobante(d: any): boolean {
 
 function esDelPeriodo(d: any, periodo: string, semestral: boolean): boolean {
     if (!d || (d.type && d.type !== 'IVA')) return false;
-    const p = String(d.period || '').split(':')[0].trim();
+    const p = String(d.period || '').trim();
+    // '2026-10:ICE' o ':ANEXO' son otras obligaciones del mismo mes, no el IVA.
+    if (p.includes(':')) return false;
     return semestral ? arePeriodsEqual(p, periodo) : p === periodo;
+}
+
+/** Sólo las declaraciones que pueden ser del período activo: lo mismo que acepta esDelPeriodo, pedido a la base. */
+function filtroDePeriodos(mensual: string, semestral: string): string {
+    const [anio, s] = semestral.split('-S');
+    return [mensual, semestral, `${anio}-${s}S`, `${anio}-${s === '1' ? '06' : '12'}`]
+        .map(p => `period.eq.${p}`).join(',');
 }
 
 export function clasificarCierre(clients: any[], hoy: Date): Cierre {
@@ -81,8 +90,7 @@ export function clasificarCierre(clients: any[], hoy: Date): Cierre {
     for (const c of clients || []) {
         if (!c || c.is_deleted === true || c.is_active === false) continue;
         const tp = c.tax_profile || {};
-        if (tp.requiresDeclarations === false || tp.clientType === 'solo_plan'
-            || tp.isSignatureOnly === true || c.requires_declarations === false) continue;
+        if (tp.requiresDeclarations === false || tp.clientType === 'solo_plan' || tp.isSignatureOnly === true) continue;
 
         const regime = String(c.regime || 'Régimen General').trim();
         const esPopular = regime.toLowerCase().includes('popular');
@@ -91,14 +99,13 @@ export function clasificarCierre(clients: any[], hoy: Date): Cierre {
 
         const esSemestral = frecuencia === 'Semestral';
         const periodo = esSemestral ? semestral : mensual;
-        const inicio = tp.clientStartPeriod || c.client_start_period || '';
-        if (isPeriodBeforeClientStart(inicio, periodo)) { noAplica++; continue; }
+        if (isPeriodBeforeClientStart(tp.clientStartPeriod || '', periodo)) { noAplica++; continue; }
 
         const todas = [...(c.sri_declaraciones || []), ...(Array.isArray(c.declaration_history) ? c.declaration_history : [])];
         const delPeriodo = todas.filter(d => esDelPeriodo(d, periodo, esSemestral));
 
         const comprobante = delPeriodo.some(tieneComprobante);
-        const enviada = delPeriodo.some(d => d.status === 'Enviada' || d.status === 'Realizada' || d.isRealizada === true);
+        const enviada = delPeriodo.some(d => d.status === 'Enviada' || d.status === 'Realizada' || d.status === 'completado' || d.isRealizada === true);
         const cobrado = delPeriodo.some(d => d.is_paid === true || d.status === 'Pagada');
         const aviso = delPeriodo.map(d => FRENOS[String(d.status)]).find(Boolean);
 
@@ -217,10 +224,30 @@ function hoyEnEcuador(): Date {
     return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
 }
 
-export async function cargarCierre(): Promise<Cierre> {
-    const { data, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('is_deleted', false);
+// Columnas justas y sólo las declaraciones del período: traer todo (`*`) son 16 MB y 9 s
+// por los PDF embebidos de otros años. El historial del cliente sí hace falta entero:
+// para muchos semestrales el comprobante del período está sólo ahí.
+const COLUMNAS = 'ruc, name, regime, tax_profile, fee_structure, is_active, declaration_history, '
+    + 'sri_declaraciones(type, period, status, is_paid, proof_file)';
+const VIGENCIA_MS = 60_000;
+let cache: { cierre: Cierre; cuando: number } | null = null;
+
+/** `fresco: false` reutiliza el último cierre (hasta un minuto): es lo que usan las listas al paginar. */
+export async function cargarCierre(fresco: boolean = true): Promise<Cierre> {
+    if (!fresco && cache && Date.now() - cache.cuando < VIGENCIA_MS) return cache.cierre;
+
+    const hoy = hoyEnEcuador();
+    const { mensual, semestral } = periodosActivos(hoy);
+    const { data, error } = await supabase
+        .from('clients')
+        .select(COLUMNAS)
+        .eq('is_deleted', false)
+        .or(filtroDePeriodos(mensual, semestral), { foreignTable: 'sri_declaraciones' });
     if (error) throw error;
-    return clasificarCierre(data || [], hoyEnEcuador());
+
+    const cierre = clasificarCierre(data || [], hoy);
+    cache = { cierre, cuando: Date.now() };
+    return cierre;
 }
 
 async function pintar(ctx: any, texto: string, kb: InlineKeyboard, editar: boolean): Promise<void> {
@@ -237,6 +264,7 @@ async function pintar(ctx: any, texto: string, kb: InlineKeyboard, editar: boole
 
 export async function mostrarCierre(ctx: any, editar: boolean = false): Promise<void> {
     try {
+        try { await ctx.replyWithChatAction('typing'); } catch (e) {}
         const cierre = await cargarCierre();
         await pintar(ctx, textoResumen(cierre), tecladoResumen(cierre), editar);
     } catch (e: any) {
@@ -247,7 +275,7 @@ export async function mostrarCierre(ctx: any, editar: boolean = false): Promise<
 
 async function mostrarLista(ctx: any, q: Cuadrante, pagina: number): Promise<void> {
     try {
-        const cierre = await cargarCierre();
+        const cierre = await cargarCierre(false);
         const { texto, items, pagina: p, paginas } = textoLista(cierre, q, pagina);
 
         const kb = new InlineKeyboard();

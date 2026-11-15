@@ -174,8 +174,64 @@ no existían. Ahora:
   que el botón «Comprobantes» del hub).
 
 `npm test` (16 comprobaciones, verdes el 13-nov-2026) usa grammY real con un
-bot desechable, sin red. **Falta**: correr el SQL en Supabase y verlo en
-Telegram y en la pantalla con sesión iniciada.
+bot desechable, sin red. El SQL ya está corrido (la tabla responde). **Falta**
+verlo en Telegram y en la pantalla con sesión iniciada.
+
+**`/cierre` — el cruce honorarios × SRI del período** — mismo día,
+`telegram-bot/src/cierre.ts`. Cuatro cuadrantes para el período activo (el mes
+anterior; para semestrales, el semestre vigente), cada uno con su lista
+paginada:
+
+| Cuadrante | Criterio |
+| :--- | :--- |
+| ✅ Al día | tiene comprobante **y** está cobrado |
+| 💰 Declarado sin cobrar | declarado (estado o comprobante) y sin cobrar — un botón por cliente abre el cobro |
+| ⚠️ Cobrado sin comprobante | figura cobrado, pero no hay comprobante que pruebe la declaración |
+| ⏳ Sin declarar ni cobrar | los vencidos primero, por día del noveno dígito |
+
+El botón «📊 Matriz de Obligaciones» del hub tributario ahora abre esto: la
+matriz vieja (`getComplianceMatrixSummary`, borrada) contaba «al día» a
+cualquiera que alguna vez hubiera subido un PDF por el bot.
+
+Tres cosas que salieron de correrlo contra la base real, y que el banco
+(`scripts/test-cierre.js`, 31 comprobaciones) deja fijadas:
+
+- **El comprobante del período puede estar sólo en `clients.declaration_history`**
+  y no en `sri_declaraciones.proof_file`: pasaba en 56 de 113 clientes. Las
+  dos fuentes **no son espejo**; quien pregunte «¿hay comprobante?» tiene que
+  mirar las dos.
+- **Traer `*` son 16 MB y 9 s** por los PDF embebidos. `/cierre` pide columnas
+  justas y sólo las declaraciones del período (~2 s) y guarda el resultado un
+  minuto para paginar. Las otras vistas del bot siguen con `*`.
+- Hay períodos con sufijo (`2026-10:ICE`, `:ANEXO`) que **no son el IVA**, y
+  un estado `completado` que la extensión dejó en 4 filas y sí significa
+  enviada.
+
+Primera corrida real (13-nov-2026, período 2026-10): 113 con obligación ·
+65 al día · 45 declarados sin cobrar ($237) · 2 cobrados sin comprobante ·
+1 sin declarar, vencido.
+
+### Propuesta · El estado `Pagada` no distingue «cobrado» de «declarado»
+
+**Quién la propone**: Claude · 13-nov-2026
+**Qué se vio**: `DeclarationStatus` es una escalera (Pendiente → Enviada →
+Pagada) y todo el sistema lee `Pagada` como «declarada»
+(`NotificationBell.tsx:32`, `ClientDetailView.tsx:265`, los reportes del bot).
+Pero `Pagada` se pone **al cobrar**, haya o no declaración: la web crea la
+fila ya en `Pagada` al cobrar un período sin fila (`ClientsScreen.tsx:843`,
+`CobranzaScreen.tsx:558`) y `markPaymentAsPaid()` del bot la sube a `Pagada`
+aunque estuviera en `Pendiente` cuando se le pasa el período a mano. En la
+base, 1.077 de 1.218 filas están en `Pagada`. Un cliente que pagó por
+adelantado queda, para todas las pantallas, como declarado.
+**Qué se propone**: que cobrar marque `is_paid` y **no toque `status`** salvo
+que la fila ya esté enviada. Primero en el bot (un `if` en
+`markPaymentAsPaid`), después en las dos pantallas de la web.
+**Qué cuesta / qué rompe**: toca el registro de cobros, que no tiene pruebas.
+Hay pantallas de la web que suponen cobrado ⇒ `Pagada`; habría que revisar
+cada una. No sé cuántas filas históricas están hoy en ese estado falso:
+`/cierre` muestra 2 en el período activo, no mira los anteriores.
+**Estado**: propuesta. Mientras tanto `/cierre` ya no confía en el estado:
+a un cobrado sólo lo da por declarado si hay comprobante.
 
 **WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
 los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta

@@ -906,7 +906,6 @@ bot.command(['lunes', 'cobranza_semanal'], async (ctx) => {
 });
 
 bot.command('cierre', async (ctx) => {
-    await ctx.replyWithChatAction('typing');
     await mostrarCierre(ctx, false);
 });
 
