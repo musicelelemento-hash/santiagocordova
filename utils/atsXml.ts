@@ -177,7 +177,7 @@ export function atsDesdeCompras(
     client: { ruc: string; name: string },
     periodo: string,
     invoices: PurchaseInvoiceItem[] | undefined,
-    opciones?: { claveDeAcceso?: (inv: PurchaseInvoiceItem) => string | undefined },
+    opciones?: { claveDeAcceso?: (inv: PurchaseInvoiceItem) => string | undefined; ventasBase?: number; serie?: string },
 ): { datos: AtsDatos; faltantes: string[] } {
     const [anio, mes] = periodo.split('-').map(Number);
     const faltantes: string[] = [];
@@ -237,10 +237,10 @@ export function atsDesdeCompras(
                 Anio: anio || new Date().getFullYear(),
                 Mes: mes || 1,
                 numEstabRuc: '001',
-                totalVentas: '0.00',
+                totalVentas: Number(opciones?.ventasBase || 0).toFixed(2),
             },
             compras,
-            ventasEstablecimiento: [{ codEstab: '001', ventasEstab: '0', ivaComp: '0' }],
+            ventasEstablecimiento: [{ codEstab: '001', ventasEstab: Number(opciones?.ventasBase || 0).toFixed(2), ivaComp: '0' }],
         },
         faltantes,
     };

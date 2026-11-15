@@ -51,6 +51,13 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
         (d) => (d.period === periodo || d.period === `${periodo}:IVA`) && (!d.type || d.type === 'IVA'),
     );
 
+    // Ventas confirmadas en el 104: la extensión las deja en metadata del comprobante.
+    const ventasDeclaradas = useMemo(() => {
+        const meta: any = (declaracionIva as any)?.proof_file?.metadata || (declaracionIva as any) || {};
+        const total = Number(meta.ventas15 || 0) + Number(meta.ventas5 || 0) + Number(meta.ventas8 || 0) + Number(meta.ventas0 || 0);
+        return Number.isFinite(total) ? total : 0;
+    }, [declaracionIva]);
+
     const [acuse, setAcuse] = useState<any>(null);
     React.useEffect(() => {
         const leer = () => {
@@ -77,7 +84,7 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
         }
         setGenerando(true);
         try {
-            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas);
+            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase: ventasDeclaradas });
             if (faltantes.length) {
                 toast.error(`Faltan ${faltantes.length} datos (clave de acceso).`);
                 return;
@@ -143,7 +150,7 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
         {
             numero: 3,
             titulo: 'Generar el ATS con lo declarado',
-            detalle: 'Usa las mismas compras del paso 1. El IVA de ventas ya fue confirmado en el paso 2.',
+            detalle: ventasDeclaradas > 0 ? `Compras del paso 1 + ventas declaradas en el 104: ${ventasDeclaradas.toFixed(2)}.` : 'Compras del paso 1. Declará el IVA (paso 2) para incluir las ventas en el ATS.',
             hecho: atsGenerado || !!acuse,
             icono: FileSpreadsheet,
             accion: () => void generar(),
