@@ -16,7 +16,7 @@ import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport, buildOperationalReportKeyboard } from './cron';
 import { manejarCallbackCobro, proponerCobranzaSemanal } from './cobranza_semanal';
 import { COMANDOS_MENU } from './comandos';
-import { mostrarCierre, manejarCallbackCierre } from './cierre';
+import { mostrarCierre, manejarCallbackCierre, limpiarCacheCierre } from './cierre';
 import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
@@ -1631,8 +1631,37 @@ export async function startPaymentFlowForClient(chatId: string, client: any, ctx
     const isEmprendedor = regime === 'Rimpe Emprendedor';
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
-    const history = client.sri_declaraciones || [];
-    const unpaid = history.filter((d: any) => !d.is_paid && d.status !== 'Pendiente');
+    const declTable = Array.isArray(client.sri_declaraciones) ? client.sri_declaraciones : [];
+    const declHist = Array.isArray(client.declaration_history) ? client.declaration_history : [];
+    const allDecl = [...declTable, ...declHist];
+
+    const tieneComprobanteLocal = (d: any) => {
+        const pf = d?.proof_file;
+        if (typeof pf === 'string') return pf.length > 0;
+        if (pf && (pf.url || (typeof pf.content === 'string' && pf.content.length > 50))) return true;
+        return !!(d?.pdfUrl || d?.pdf_url || d?.proofFile);
+    };
+
+    const esEnviada = (d: any) => d.status === 'Enviada' || d.status === 'Realizada' || d.status === 'completado' || d.isRealizada === true || tieneComprobanteLocal(d);
+
+    const vistos = new Set<string>();
+    const unpaid: { type: string; period: string }[] = [];
+    allDecl.forEach((d: any) => {
+        const tipo = (d.type || 'IVA').toUpperCase();
+        const p = d.period || '';
+        const clave = `${tipo}:${p}`;
+        if (vistos.has(clave)) return;
+        vistos.add(clave);
+        if (!d.is_paid && d.status !== 'Pagada' && esEnviada(d)) {
+            unpaid.push({ type: tipo, period: p });
+        }
+    });
+
+    // Calcular período mensual activo anterior por si no tiene filas aún
+    const now = new Date();
+    const prevMonthPeriod = now.getMonth() === 0
+        ? `${now.getFullYear() - 1}-12`
+        : `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
     
     let pendingMsg = "";
     if (unpaid.length > 0) {
@@ -1656,10 +1685,12 @@ export async function startPaymentFlowForClient(chatId: string, client: any, ctx
             kb.text(`${d.type} ${d.period}`, `baku_pay:${client.ruc}:${d.type}:${d.period}`).row();
         });
         if (unpaid.length > 1) {
-            // Se usa ALL_TYPES para simplificar en backend, pero se mandará como 'IVA' al LLM y él resolverá.
-            // O mejor: mandar 'HONORARIOS' y procesará todos si 'todos' es periodo.
             kb.text(`💸 Pagar TODOS los ${unpaid.length} meses`, `baku_pay:${client.ruc}:HONORARIOS:todos`).row();
         }
+    }
+    // Si el mes anterior no está en la lista de impagos, ofrecer botón directo para comodidad
+    if (!unpaid.some(u => u.period === prevMonthPeriod)) {
+        kb.text(`⚡ Pagar IVA ${prevMonthPeriod} (Mes anterior)`, `baku_pay:${client.ruc}:IVA:${prevMonthPeriod}`).row();
     }
     kb.text(`❌ Cancelar`, `baku_cancel`);
 
@@ -2535,6 +2566,7 @@ bot.on('callback_query:data', async (ctx) => {
 
         pendingDialogs.delete(chatId);
         const result = await markPaymentAsPaid(ruc, type, period);
+        limpiarCacheCierre();
         await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
         await saveMessage(chatId, 'user', `Marcar pago de ${type} (${period}) para cliente ${ruc}`);
         await saveMessage(chatId, 'assistant', result);

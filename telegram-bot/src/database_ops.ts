@@ -345,7 +345,7 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select('id, ruc, name, trade_name, email, phones, phone, regime, tax_profile, fee_structure, is_active, declaration_history, requires_declarations, sri_declaraciones(type, period, status, is_paid, proof_file)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -367,8 +367,34 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
             const isEmprendedor = regime === 'Rimpe Emprendedor';
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
-            const unpaidIva = c.sri_declaraciones?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
-            const unpaidRenta = c.sri_declaraciones?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const declTable = Array.isArray(c.sri_declaraciones) ? c.sri_declaraciones : [];
+            const declHist = Array.isArray(c.declaration_history) ? c.declaration_history : [];
+            const allDecl = [...declTable, ...declHist];
+
+            const tieneComprobanteLocal = (d: any) => {
+                const pf = d?.proof_file;
+                if (typeof pf === 'string') return pf.length > 0;
+                if (pf && (pf.url || (typeof pf.content === 'string' && pf.content.length > 50))) return true;
+                return !!(d?.pdfUrl || d?.pdf_url || d?.proofFile);
+            };
+
+            const esEnviada = (d: any) => d.status === 'Enviada' || d.status === 'Realizada' || d.status === 'completado' || d.isRealizada === true || tieneComprobanteLocal(d);
+
+            const vistos = new Set<string>();
+            const unpaidIva: any[] = [];
+            const unpaidRenta: any[] = [];
+
+            allDecl.forEach((d: any) => {
+                const tipo = (d.type || 'IVA').toUpperCase();
+                const clave = `${tipo}:${d.period || ''}`;
+                if (vistos.has(clave)) return;
+                vistos.add(clave);
+
+                if (!d.is_paid && d.status !== 'Pagada' && esEnviada(d)) {
+                    if (tipo === 'IVA') unpaidIva.push(d);
+                    else if (tipo === 'RENTA') unpaidRenta.push(d);
+                }
+            });
             
             const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
                            : ivaFreq === 'Semestral' ? 'semestral' 
@@ -991,22 +1017,31 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
         const client = matches[0];
 
         if (type === 'RENTA') {
-            // Find current period renta
             const periodToMark = period || new Date().getFullYear().toString();
             let history = [...(client.sri_declaraciones || [])];
-            let found = false;
+            let targetIdx = history.findIndex((d: any) => d.type === 'RENTA' && d.period === periodToMark);
             
-            for (let d of history) {
-                if (d.type === 'RENTA' && d.period === periodToMark) {
-                    d.is_paid = true;
-                    d.paidAt = new Date().toISOString();
-                    d.paid_at = d.paidAt;
-                    d.status = 'Pagada';
-                    found = true;
-                    break;
+            if (targetIdx === -1) {
+                history.push({
+                    client_id: client.id,
+                    type: 'RENTA',
+                    period: periodToMark,
+                    is_paid: true,
+                    paidAt: new Date().toISOString(),
+                    paid_at: new Date().toISOString(),
+                    status: 'Pendiente'
+                });
+                targetIdx = history.length - 1;
+            } else {
+                const actual = history[targetIdx];
+                actual.is_paid = true;
+                actual.paidAt = new Date().toISOString();
+                actual.paid_at = actual.paidAt;
+                const estaDeclarada = actual.status === 'Enviada' || actual.status === 'Realizada' || actual.status === 'completado' || actual.status === 'Pagada' || !!actual.proof_file;
+                if (estaDeclarada) {
+                    actual.status = 'Pagada';
                 }
             }
-            if (!found) return `No se encontró una declaración de RENTA para el periodo ${periodToMark}.`;
             
             const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
             if (updErr) throw updErr;
@@ -1018,14 +1053,17 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             let history = [...(client.sri_declaraciones || [])];
             
             if (period === 'todos') {
-                const unpaid = history.filter(d => d.type === type && !d.is_paid && d.status !== 'Pendiente');
+                const unpaid = history.filter(d => (d.type === type || (type === 'HONORARIOS' && d.type === 'IVA')) && !d.is_paid);
                 if (unpaid.length === 0) return `No hay pagos pendientes de ${type} para ${client.name}.`;
                 
                 unpaid.forEach(d => {
                     d.is_paid = true;
                     d.paidAt = new Date().toISOString();
                     d.paid_at = d.paidAt;
-                    d.status = 'Pagada';
+                    const estaDeclarada = d.status === 'Enviada' || d.status === 'Realizada' || d.status === 'completado' || d.status === 'Pagada' || !!d.proof_file;
+                    if (estaDeclarada) {
+                        d.status = 'Pagada';
+                    }
                 });
                 
                 const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
@@ -1037,11 +1075,28 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             let targetIdx = -1;
             
             if (period) {
-                targetIdx = history.findIndex(d => d.type === type && d.period === period);
+                targetIdx = history.findIndex(d => (d.type === type || (type === 'HONORARIOS' && d.type === 'IVA')) && (d.period === period || arePeriodsEqual(d.period, period)));
+                if (targetIdx === -1) {
+                    const histList = Array.isArray(client.declaration_history) ? client.declaration_history : [];
+                    const inHist = histList.find((d: any) => (d.type === type || d.type === 'IVA' || !d.type) && (d.period === period || arePeriodsEqual(d.period, period)));
+                    const yaDeclarado = inHist && (inHist.status === 'Enviada' || inHist.status === 'Realizada' || inHist.status === 'completado' || inHist.proof_file || inHist.pdfUrl);
+
+                    history.push({
+                        client_id: client.id,
+                        type: type === 'HONORARIOS' ? 'IVA' : type,
+                        period: period,
+                        is_paid: true,
+                        paidAt: new Date().toISOString(),
+                        paid_at: new Date().toISOString(),
+                        status: yaDeclarado ? 'Pagada' : 'Pendiente',
+                        proof_file: inHist?.proof_file || (inHist?.pdfUrl ? { url: inHist.pdfUrl } : null)
+                    });
+                    targetIdx = history.length - 1;
+                }
             } else {
                 // Mark oldest unpaid
                 const oldest = history
-                    .filter((d: any) => d.type === type && !d.is_paid && d.status !== 'Pendiente')
+                    .filter((d: any) => (d.type === type || (type === 'HONORARIOS' && d.type === 'IVA')) && !d.is_paid)
                     .sort((a: any, b: any) => a.period.localeCompare(b.period))[0];
                 if (oldest) {
                     targetIdx = history.indexOf(oldest);
@@ -1050,10 +1105,14 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             
             if (targetIdx === -1) return `No hay pagos pendientes de ${type} para ${client.name}.`;
             
-            history[targetIdx].is_paid = true;
-            history[targetIdx].paidAt = new Date().toISOString();
-            history[targetIdx].paid_at = history[targetIdx].paidAt;
-            history[targetIdx].status = 'Pagada';
+            const actual = history[targetIdx];
+            actual.is_paid = true;
+            actual.paidAt = new Date().toISOString();
+            actual.paid_at = actual.paidAt;
+            const estaDeclarada = actual.status === 'Enviada' || actual.status === 'Realizada' || actual.status === 'completado' || actual.status === 'Pagada' || !!actual.proof_file;
+            if (estaDeclarada) {
+                actual.status = 'Pagada';
+            }
             
             const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
             if (updErr) throw updErr;
@@ -1094,8 +1153,8 @@ export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | '
                 d.is_paid = false;
                 d.paidAt = undefined;
                 d.paid_at = null;
-                if (d.proof_file) d.status = 'Enviada';
-                else d.status = 'Enviada'; // Default to enviada if reverting payment
+                const estaDeclarada = d.status === 'Realizada' || d.status === 'completado' || !!d.proof_file;
+                d.status = estaDeclarada ? 'Enviada' : 'Pendiente';
                 found = true;
             }
         }

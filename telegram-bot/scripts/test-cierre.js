@@ -115,6 +115,16 @@ const clientes = [
 
     ver('un botón ajeno no es del cierre', (await m.manejarCallbackCierre({}, 'baku_otro:x')) === false);
 
+    ver('limpiarCacheCierre es una función exportada', typeof m.limpiarCacheCierre === 'function');
+    m.limpiarCacheCierre();
+
+    const mockCtx = {
+        editMessageText: async () => {},
+        reply: async () => {},
+        replyWithChatAction: async () => {}
+    };
+    ver('un callback baku_cierre:resumen devuelve true', (await m.manejarCallbackCierre(mockCtx, 'baku_cierre:resumen')) === true);
+
     console.log(mal ? `${mal} fallaron` : 'todo verde');
     process.exit(mal ? 1 : 0);
 })().catch(e => { console.error('REVENTÓ:', e); process.exit(2); });

@@ -1,6 +1,6 @@
 import { InlineKeyboard } from 'grammy';
 import { supabase } from './supabase';
-import { arePeriodsEqual, isPeriodBeforeClientStart } from './database_ops';
+import { arePeriodsEqual, isPeriodBeforeClientStart, markPaymentAsPaid } from './database_ops';
 
 // /cierre — el cruce honorarios × SRI del período activo.
 //
@@ -232,6 +232,11 @@ const COLUMNAS = 'ruc, name, regime, tax_profile, fee_structure, is_active, decl
 const VIGENCIA_MS = 60_000;
 let cache: { cierre: Cierre; cuando: number } | null = null;
 
+/** Invalida la caché del cierre para que la próxima lectura traiga datos frescos de Supabase. */
+export function limpiarCacheCierre(): void {
+    cache = null;
+}
+
 /** `fresco: false` reutiliza el último cierre (hasta un minuto): es lo que usan las listas al paginar. */
 export async function cargarCierre(fresco: boolean = true): Promise<Cierre> {
     if (!fresco && cache && Date.now() - cache.cuando < VIGENCIA_MS) return cache.cierre;
@@ -281,10 +286,27 @@ async function mostrarLista(ctx: any, q: Cuadrante, pagina: number): Promise<voi
         const kb = new InlineKeyboard();
         if (q === 'cobrar') {
             items.forEach(f => {
+                const corto = f.name.length > 20 ? f.name.slice(0, 18) + '…' : f.name;
+                kb.text(`💵 ${corto} (${usd(f.honorario)})`, `${PREFIJO}pay:${f.ruc}:${f.periodo}:${p}`).row();
+            });
+        } else if (q === 'pendiente') {
+            items.forEach(f => {
                 const corto = f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name;
-                kb.text(`💵 ${corto} (${usd(f.honorario)})`, `baku_hub_pay:${f.ruc}`).row();
+                const icono = f.vencido ? '🔴' : '👤';
+                kb.text(`${icono} ${corto}`, `baku_sel:${f.ruc}`).row();
+            });
+        } else if (q === 'verificar') {
+            items.forEach(f => {
+                const corto = f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name;
+                kb.text(`📄 ${corto}`, `baku_hub_proofs:${f.ruc}`).row();
+            });
+        } else if (q === 'ok') {
+            items.forEach(f => {
+                const corto = f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name;
+                kb.text(`👤 ${corto}`, `baku_sel:${f.ruc}`).row();
             });
         }
+
         const nav = [];
         if (p > 1) nav.push(InlineKeyboard.text('◀ Anterior', `${PREFIJO}ver:${q}:${p - 1}`));
         if (p < paginas) nav.push(InlineKeyboard.text('Siguiente ▶', `${PREFIJO}ver:${q}:${p + 1}`));
@@ -299,13 +321,79 @@ async function mostrarLista(ctx: any, q: Cuadrante, pagina: number): Promise<voi
     }
 }
 
+async function mostrarConfirmacionCobro(ctx: any, ruc: string, periodo: string, pagina: number): Promise<void> {
+    try {
+        const cierre = await cargarCierre(false);
+        const f = cierre.filas.find(x => x.ruc === ruc);
+        const nombre = f?.name || ruc;
+        const monto = f?.honorario ?? 5;
+
+        let msg = `💵 <b>CONFIRMAR COBRO · ${esc(periodo)}</b>\n\n`;
+        msg += `👤 <b>Cliente:</b> ${esc(nombre)}\n`;
+        msg += `🆔 <b>RUC:</b> <code>${esc(ruc)}</code>\n`;
+        msg += `📅 <b>Período:</b> <code>${esc(periodo)}</code>\n`;
+        msg += `💰 <b>Honorario:</b> <b>${usd(monto)}</b>\n`;
+        if (f?.sinComprobante) {
+            msg += `\n⚠️ <i>Nota: La declaración figura enviada pero sin comprobante PDF guardado.</i>\n`;
+        }
+        msg += `\n¿Registrar el cobro de este período en Supabase?`;
+
+        const kb = new InlineKeyboard()
+            .text(`✅ Confirmar Pago (${usd(monto)})`, `${PREFIJO}conf:${ruc}:${periodo}:${pagina}`).row()
+            .text('👤 Ver Expediente 360°', `baku_sel:${ruc}`).row()
+            .text('🔙 Volver a la Lista', `${PREFIJO}ver:cobrar:${pagina}`);
+
+        await pintar(ctx, msg, kb, true);
+    } catch (e: any) {
+        console.error('Error en mostrarConfirmacionCobro:', e);
+        await ctx.reply(`❌ Error al preparar cobro: ${e?.message || e}`);
+    }
+}
+
+async function ejecutarConfirmacionPago(ctx: any, ruc: string, periodo: string, pagina: number): Promise<void> {
+    try {
+        try { await ctx.replyWithChatAction('typing'); } catch (e) {}
+        const res = await markPaymentAsPaid(ruc, 'IVA', periodo);
+        limpiarCacheCierre();
+
+        const kb = new InlineKeyboard()
+            .text('📋 Volver a Por Cobrar', `${PREFIJO}ver:cobrar:${pagina}`).row()
+            .text('📊 Resumen Cierre', `${PREFIJO}resumen`);
+
+        await ctx.reply(`✅ <b>Cobro registrado en Supabase</b>\n\n${esc(res)}`, {
+            parse_mode: 'HTML',
+            reply_markup: kb
+        });
+    } catch (e: any) {
+        console.error('Error al registrar cobro desde cierre:', e);
+        await ctx.reply(`❌ No pude registrar el cobro: ${e?.message || e}`);
+    }
+}
+
 /** Devuelve true si el callback era del cierre y ya se atendió. */
 export async function manejarCallbackCierre(ctx: any, data: string): Promise<boolean> {
     if (!data.startsWith(PREFIJO)) return false;
-    const [accion, q, pagina] = data.slice(PREFIJO.length).split(':');
+    const partes = data.slice(PREFIJO.length).split(':');
+    const accion = partes[0];
 
-    if (accion === 'ver' && (q === 'ok' || q === 'cobrar' || q === 'verificar' || q === 'pendiente')) {
-        await mostrarLista(ctx, q, parseInt(pagina, 10) || 1);
+    if (accion === 'ver') {
+        const q = partes[1] as Cuadrante;
+        const pagina = parseInt(partes[2], 10) || 1;
+        if (q === 'ok' || q === 'cobrar' || q === 'verificar' || q === 'pendiente') {
+            await mostrarLista(ctx, q, pagina);
+            return true;
+        }
+    } else if (accion === 'pay') {
+        const ruc = partes[1];
+        const periodo = partes[2];
+        const pagina = parseInt(partes[3], 10) || 1;
+        await mostrarConfirmacionCobro(ctx, ruc, periodo, pagina);
+        return true;
+    } else if (accion === 'conf') {
+        const ruc = partes[1];
+        const periodo = partes[2];
+        const pagina = parseInt(partes[3], 10) || 1;
+        await ejecutarConfirmacionPago(ctx, ruc, periodo, pagina);
         return true;
     }
     await mostrarCierre(ctx, true);

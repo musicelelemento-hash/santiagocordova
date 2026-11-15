@@ -230,8 +230,7 @@ que la fila ya esté enviada. Primero en el bot (un `if` en
 Hay pantallas de la web que suponen cobrado ⇒ `Pagada`; habría que revisar
 cada una. No sé cuántas filas históricas están hoy en ese estado falso:
 `/cierre` muestra 2 en el período activo, no mira los anteriores.
-**Estado**: propuesta. Mientras tanto `/cierre` ya no confía en el estado:
-a un cobrado sólo lo da por declarado si hay comprobante.
+**Estado**: implementada en el bot el 15-nov-2026. Al registrar un pago (`markPaymentAsPaid`), se marca `is_paid = true` y no se sube a `Pagada` si la declaración está `Pendiente` (evita que un pago adelantado figure engañosamente como presentado ante el SRI). Si la fila no existía para ese período, se crea con el estado real consultando también `declaration_history`. En `/cierre` se agregaron acciones interactivas completas: cobro con confirmación en 1 toque (`baku_cierre:pay` y `conf`), acceso directo al expediente 360° para pendientes (`baku_sel`) y consulta de comprobantes para verificaciones (`baku_hub_proofs`).
 
 **WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
 los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta
