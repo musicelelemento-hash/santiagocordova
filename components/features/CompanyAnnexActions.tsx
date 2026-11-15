@@ -34,6 +34,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const [periodoAts, setPeriodoAts] = useState(periodoInicial);
     const [cep, setCep] = useState<Record<string, string>>({});
     const [guardando, setGuardando] = useState<string | null>(null);
+    const [resumenMes, setResumenMes] = useState<any>(null);
     const [textoVenc, setTextoVenc] = useState('');
 
     if (!esRucSociedad(client.ruc)) return null;
@@ -65,6 +66,16 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
         } catch (e: any) {
             toast.error(`No se pudo generar: ${e?.message || e}`);
         }
+    };
+
+    const verResumenMes = () => {
+        const audit = SupplierCatalogService.getClientPurchases(client, periodoAts);
+        const s = audit?.summary;
+        if (!s || !s.totalFacturas) {
+            toast.error(`No hay compras registradas para ${periodoAts}.`);
+            return;
+        }
+        setResumenMes({ periodo: periodoAts, ...s });
     };
 
     const generarAts = async () => {
@@ -230,6 +241,30 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                     );
                 })}
             </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-2.5">
+                <button type="button" onClick={verResumenMes} className="rounded-lg border border-white/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5">
+                    Ver resumen del mes (base del 104)
+                </button>
+                <span className="text-[9px] text-slate-500">Los casilleros del IVA salen de los mismos comprobantes que el ATS.</span>
+            </div>
+            {resumenMes && (
+                <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-xl border border-white/10 bg-black/25 p-2.5 sm:grid-cols-4">
+                    {[
+                        { k: '500/510/520', v: `${resumenMes.base15ConCredito.toFixed(2)} / ${resumenMes.iva15ConCredito.toFixed(2)}`, label: '15% con crédito' },
+                        { k: '502/512/522', v: `${resumenMes.base15SinCredito.toFixed(2)} / ${resumenMes.iva15SinCredito.toFixed(2)}`, label: '15% sin crédito' },
+                        { k: '540/550/560', v: `${resumenMes.base5.toFixed(2)} / ${resumenMes.iva5.toFixed(2)}`, label: '5%' },
+                        { k: '507/517', v: resumenMes.base0.toFixed(2), label: '0%' },
+                        { k: '509', v: resumenMes.totalBase.toFixed(2), label: 'Total base' },
+                        { k: '529', v: resumenMes.totalIva.toFixed(2), label: 'Total IVA' },
+                    ].map((x) => (
+                        <div key={x.k} className="rounded-lg border border-white/5 bg-black/20 px-2 py-1">
+                            <p className="font-mono text-[8px] text-slate-500">{x.k} · {x.label}</p>
+                            <p className="font-mono text-[10px] font-bold text-slate-100">{x.v}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="mt-3 border-t border-white/10 pt-2.5">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Vencimientos informados por el SRI</p>
