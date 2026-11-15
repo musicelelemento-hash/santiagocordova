@@ -54,6 +54,7 @@ interface ProfileTabProps {
 
 // ── Badge de régimen con su descripción ─────────────────────────
 const RegimeInfoPanel = ({ client }: { client: Client }) => {
+    const esSociedad = client.entity_type === 'sociedad' || String(client.ruc || '').replace(/\D/g, '')[2] === '9';
     const isNegocioPopular = client.regime === TaxRegime.RimpeNegocioPopular;
     const isEmprendedor = client.regime === TaxRegime.RimpeEmprendedor;
     const isGeneral = client.regime === TaxRegime.General;
@@ -80,8 +81,12 @@ const RegimeInfoPanel = ({ client }: { client: Client }) => {
         <div className={`flex items-start gap-4 px-5 py-4 rounded-2xl border border-slate-100 dark:border-white/10 ${chipCls} bg-opacity-50`}>
             <div className="mt-0.5 flex-shrink-0">{icon}</div>
             <div>
-                <p className="text-xs font-bold">{title}</p>
-                <p className="text-[11px] opacity-75 mt-0.5 leading-relaxed">{description}</p>
+                <p className="text-xs font-bold">
+            {esSociedad ? 'Sociedad' : 'Persona natural'} · {title}
+        </p>
+                <p className="text-[11px] opacity-75 mt-0.5 leading-relaxed">
+            {esSociedad ? 'Obligaciones: IVA mensual, ATS mensual, 1021 Renta, REBEFICS y ADI (anuales).' : description}
+        </p>
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Client, TaxRegime, DeclarationStatus, StoredFile } from '../../types';
-import { validateIdentifier, validateSriPassword, getPeriod } from '../../services/sri';
+import { esRucSociedad, validateIdentifier, validateSriPassword, getPeriod } from '../../services/sri';
 import { isPeriodBeforeClientStart } from '../../services/complianceEngine';
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { UnifiedStorageService } from '../../services/unifiedStorageService';
@@ -527,6 +527,16 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 />
                             </div>
                         </div>
+                {clientData.ruc && clientData.ruc.replace(/\D/g, '').length === 13 && (
+                    <div className="mt-1.5 ml-1 flex items-center gap-1.5">
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-slate-500">Tipo de contribuyente</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${(esRucSociedad(clientData.ruc) || esSociedadDetectada)
+                            ? 'border-[#C9A96E]/45 bg-[#C9A96E]/10 text-[#C9A96E]'
+                            : 'border-slate-400/30 bg-slate-500/10 text-slate-300'}`}>
+                            {(esRucSociedad(clientData.ruc) || esSociedadDetectada) ? 'Sociedad (S.A.S. / Cía.)' : 'Persona natural'}
+                        </span>
+                    </div>
+                )}
 
                         <div className="relative">
                             <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest ml-1">Titular / Razón Social</label>
