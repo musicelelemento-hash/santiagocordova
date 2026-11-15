@@ -408,6 +408,13 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
  * Returns the expected obligations for a specific period (month or semester)
  * This is used mainly for the Matrix view to know what to display for historical cells.
  */
+/** ¿Es una sociedad? Por tipo explícito o por el 3.er dígito del RUC (9). */
+const esSociedadParaObligaciones = (client: Client): boolean => {
+    if (client.entity_type === 'sociedad') return true;
+    const ruc = String(client.ruc || '').replace(/\D/g, '');
+    return ruc.length === 13 && ruc[2] === '9';
+};
+
 export const getObligationsForPeriod = (client: Client, period: string): Array<{ type: TaxObligationType, label: string }> => {
     // Check if period is before the client's start date
     const floors = getClientFloors(client);
@@ -442,6 +449,15 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
         if (client.taxProfile?.requiresAnexoPvp) {
             obligations.push({ type: 'PVP', label: 'Anexo PVP' });
         }
+        // ── Sociedades: obligaciones anuales propias ──────────────────
+        if (esSociedadParaObligaciones(client)) {
+            obligations.push({ type: '1021', label: 'Renta Sociedades' });
+            obligations.push({ type: 'REBEFICS', label: 'REBEFICS' });
+            const company = client.taxProfile?.company;
+            if (company && (company as any).distribuyoDividendos === true) {
+                obligations.push({ type: 'ADI', label: 'Anexo Dividendos' });
+            }
+        }
         return obligations;
     }
     
@@ -455,6 +471,11 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
         }
     }
     
+    // ATS mensual: obligatorio para sociedades y obligados a llevar contabilidad
+    if (!isSemester && esSociedadParaObligaciones(client)) {
+        obligations.push({ type: 'ATS', label: 'ATS Mensual' });
+    }
+
     // ICE (Always monthly if required)
     if (!isSemester && client.taxProfile?.requiresIce) {
         obligations.push({ type: 'ICE', label: 'ICE Mensual' });

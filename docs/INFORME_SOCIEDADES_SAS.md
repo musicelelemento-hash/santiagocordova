@@ -284,3 +284,55 @@ vencimiento de REBEFICS.
 - Almeida Guzmán & Asociados — [Calendario REBEFICS 2026](https://almeidaguzman.com/sri-reporte-de-beneficiarios-finales-y-de-composicion-societaria-rebefics-2/)
 - JEZL Auditores — [Anexo Transaccional Simplificado (ATS)](https://www.jezl-auditores.com/tributario/80-anexo-transaccional-simplificado-ats)
 - ERB — [Obligaciones de abril 2026 (Renta Sociedades)](https://erb.com.ec/obligaciones-tributarias-societarias-y-laborales-para-el-mes-de-abril-2026/)
+---
+
+## 11 · Adaptación a las 3 superficies (web · extensión · bot)
+
+Una sociedad se tiene que poder gestionar desde las tres, con la misma información.
+
+### 11.1 · Web (hecho)
+
+| Pieza | Estado |
+|---|---|
+| Detección automática por RUC (`esRucSociedad`, 3.er dígito = 9) | ✅ |
+| Aviso en el alta de cliente (1021, REBEFICS, ADI, ATS) | ✅ |
+| Tipos: `entity_type`, `CompanyProfile`, accionistas y beneficiarios | ✅ |
+| Obligaciones en la matriz: 1021, REBEFICS, ATS (mensual) y ADI si reparte | ✅ |
+| Vencimientos: abril (1021), febrero o +28 días (REBEFICS), mayo (ADI), mensual (ATS) | ✅ |
+| Generador APS/REBEFICS (XML+ZIP) validado byte a byte | ✅ |
+| Mapa de casilleros del IVA 104 | ✅ |
+| Formulario de empresa con socios (UI) | ⏳ siguiente |
+
+### 11.2 · Extensión 01 (hecho)
+
+| Pieza | Estado |
+|---|---|
+| Badge **S.A.S.** en la tarjeta del cliente (RUC con 3.er dígito 9) | ✅ |
+| Lote mensual de IVA: la sociedad entra igual que cualquier mensual | ✅ (ya funcionaba) |
+| Anexo ICE / APS por ZIP y subida al SRI | ✅ (mismo patrón, reutilizable para ATS/APS) |
+| Banner HUD de cliente sociedad | ⏳ siguiente |
+
+### 11.3 · Bot (hecho)
+
+| Pieza | Estado |
+|---|---|
+| Herramienta `get_company_obligations(ruc)` | ✅ |
+| Responde: 5 obligaciones, días de vencimiento por 9.º dígito y advertencia de “en cero” | ✅ |
+| Crear empresa con socios desde el bot | ⏳ siguiente |
+| Recordatorios automáticos anuales (REBEFICS, 1021, ADI) | ⏳ siguiente |
+
+Ejemplo de respuesta del bot:
+
+```
+🏢 SOCIEDAD · VIMARBO COMPANY S.A.S. · RUC 0791844669001
+Régimen: Régimen General
+
+Obligaciones:
+  • IVA (2011): mensual · vence el día 16 del mes siguiente
+  • ATS: mensual · vence el día 16 del mes siguiente (XML + ZIP)
+  • 1021 Renta Sociedades: anual · abril, día 16
+  • REBEFICS (APS): anual · febrero, día 16 (o 28 días tras la constitución)
+  • ADI Dividendos: anual · mayo, día 16 (solo si reparte utilidades)
+
+En cero: IVA, ATS y 1021 se pueden presentar sin valores; REBEFICS siempre se presenta.
+```

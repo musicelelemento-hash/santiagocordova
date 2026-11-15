@@ -3647,3 +3647,37 @@ export async function getRenovacionesSummary(): Promise<{
 
 
 
+
+/**
+ * Obligaciones de una SOCIEDAD (S.A.S. incluida): IVA mensual, ATS mensual,
+ * 1021 Renta anual, REBEFICS anual y ADI anual. Días de vencimiento por 9.º dígito.
+ */
+export async function getCompanyObligations(ruc: string): Promise<string> {
+    const limpio = String(ruc || '').replace(/\D/g, '');
+    if (limpio.length !== 13) return '❌ Necesito el RUC de 13 dígitos de la empresa.';
+    const esSociedad = limpio[2] === '9';
+    const { data, error } = await supabase.from('clients').select('ruc,name,regime,tax_profile').eq('ruc', limpio).limit(1);
+    if (error) return `❌ No pude leer la ficha: ${error.message}`;
+    const c: any = (data && data[0]) || null;
+    const nombre = c?.name || 'Empresa';
+    const d9 = Number(limpio[8]);
+    const dia = d9 === 0 ? 28 : 10 + (d9 - 1) * 2;
+    const lineas = [
+        `IVA (2011): mensual · vence el día ${dia} del mes siguiente`,
+        `ATS: mensual · vence el día ${dia} del mes siguiente (XML + ZIP)`,
+        `1021 Renta Sociedades: anual · abril, día ${dia}`,
+        `REBEFICS (APS): anual · febrero, día ${dia} (o 28 días tras la constitución)`,
+        `ADI Dividendos: anual · mayo, día ${dia} (solo si reparte utilidades)`,
+    ].map((l) => '  • ' + l).join('\n');
+    return [
+        `${esSociedad ? '🏢 SOCIEDAD' : '👤 Persona natural'} · ${nombre} · RUC ${limpio}`,
+        c?.regime ? `Régimen: ${c.regime}` : '',
+        '',
+        'Obligaciones:',
+        lineas,
+        '',
+        esSociedad
+            ? 'En cero: IVA, ATS y 1021 se pueden presentar sin valores; REBEFICS siempre se presenta.'
+            : 'Esta ficha no tiene RUC de sociedad (el 3.er dígito no es 9).',
+    ].filter(Boolean).join('\n');
+}

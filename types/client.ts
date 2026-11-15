@@ -21,7 +21,7 @@ export enum TaxRegime {
     RimpeEmprendedor = 'RIMPE Emprendedor',
 }
 
-export type TaxObligationType = 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO' | 'DEVOLUCION' | 'ANEXO_ICE' | 'ANEXO_PVP' | 'ANEXO_GASTOS';
+export type TaxObligationType = '1021' | 'REBEFICS' | 'ADI' | 'ATS' | 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO' | 'DEVOLUCION' | 'ANEXO_ICE' | 'ANEXO_PVP' | 'ANEXO_GASTOS';
 
 // ClientCategory removed - all logic now relies on Regime and TaxProfile
 
@@ -145,6 +145,24 @@ export interface SriCredencialEstado {
     marcado_por?: string;
 }
 
+export interface CompanyPartner {
+    tipoIdentificacion: string;      // C = cédula, R = RUC, P = pasaporte
+    numeroIdentificacion: string;
+    nombres: string;
+    porcentaje: number;
+    esBeneficiarioFinal: boolean;
+    tipoRelacionadoSociedad?: string;
+    fechaNacimiento?: string;
+    paisResidenciaFiscal?: string;
+}
+
+export interface CompanyProfile {
+    tipoSociedad?: string;            // '01' S.A.S., etc.
+    constitutionDate?: string;
+    accionistas?: CompanyPartner[];
+    beneficiarios?: CompanyPartner[];
+}
+
 export interface TaxProfile {
     ivaFrequency: IvaFrequency;
     requiresAnnualRenta: boolean;
@@ -157,6 +175,7 @@ export interface TaxProfile {
     alias?: string;
     quickNote?: string;
     economicActivity?: string;
+    company?: CompanyProfile;
 }
 
 export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito' | 'combo_declaracion_facturas' | 'lote_semestral';
@@ -233,6 +252,7 @@ export interface Client {
     declarations?: Declaration[];
     isDeleted?: boolean;
     isActive?: boolean;
+    entity_type?: 'natural' | 'sociedad';
     taxProfile?: TaxProfile;
     customServiceFee?: number;
     fee_structure?: ClientFeeStructure;

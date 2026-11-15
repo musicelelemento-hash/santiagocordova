@@ -823,3 +823,36 @@ export const validateSriClaveAcceso = (clave: string): SriClaveValidationResult 
     };
 };
 
+/** Día del mes según el 9.º dígito del RUC (10,12,…,28). */
+const diaPorNovenoDigito = (ruc: string, base = 10): number => {
+    const d = getNinthDigit(String(ruc || ''));
+    if (d === 0) return base + 18;
+    return base + (d - 1) * 2;
+};
+
+/** REBEFICS: febrero (10–28) según 9.º dígito; sociedad nueva: 28 días después. */
+export const getRebeficsDueDate = (client: Pick<Client, 'ruc' | 'taxProfile'>, year: number): Date => {
+    const constitucion = client.taxProfile?.company?.constitutionDate;
+    if (constitucion) {
+        const d = new Date(constitucion);
+        d.setDate(d.getDate() + 28);
+        return d;
+    }
+    return new Date(year, 1, diaPorNovenoDigito(client.ruc));
+};
+
+/** Renta sociedades (1021): abril 10–28 (11 si es contribuyente especial). */
+export const getIncomeTaxSociedadesDueDate = (client: Pick<Client, 'ruc' | 'taxProfile'>, year: number): Date => {
+    const especial = (client.taxProfile as any)?.specialTaxpayer === true;
+    return new Date(year, 3, especial ? 11 : diaPorNovenoDigito(client.ruc));
+};
+
+/** ADI (Anexo de Dividendos): mayo 10–28 según 9.º dígito. */
+export const getAdiDueDate = (client: Pick<Client, 'ruc'>, year: number): Date =>
+    new Date(year, 4, diaPorNovenoDigito(client.ruc));
+
+/** ATS: mismo calendario mensual que el IVA (10–28 del mes siguiente). */
+export const getAtsDueDate = (client: Pick<Client, 'ruc'>, referenceDate: Date = new Date()): Date => {
+    const mesSiguiente = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 1);
+    return new Date(mesSiguiente.getFullYear(), mesSiguiente.getMonth(), diaPorNovenoDigito(client.ruc));
+};
