@@ -859,8 +859,11 @@ export const getIncomeTaxSociedadesDueDate = (client: Pick<Client, 'ruc' | 'taxP
 export const getAdiDueDate = (client: Pick<Client, 'ruc'>, year: number): Date =>
     new Date(year, 4, diaPorNovenoDigito(client.ruc));
 
-/** ATS: mismo calendario mensual que el IVA (10–28 del mes siguiente). */
+/**
+ * ATS: el plazo es el mes SUBSIGUIENTE al período (un mes más que el IVA).
+ * Ej.: ATS de septiembre se presenta en noviembre, día del 9.º dígito.
+ */
 export const getAtsDueDate = (client: Pick<Client, 'ruc'>, referenceDate: Date = new Date()): Date => {
-    const mesSiguiente = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 1);
-    return new Date(mesSiguiente.getFullYear(), mesSiguiente.getMonth(), diaPorNovenoDigito(client.ruc));
+    const mesSubsiguiente = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 2, 1);
+    return new Date(mesSubsiguiente.getFullYear(), mesSubsiguiente.getMonth(), diaPorNovenoDigito(client.ruc));
 };

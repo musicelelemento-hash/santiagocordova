@@ -34,6 +34,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const [periodoAts, setPeriodoAts] = useState(periodoInicial);
     const [cep, setCep] = useState<Record<string, string>>({});
     const [guardando, setGuardando] = useState<string | null>(null);
+    const [textoVenc, setTextoVenc] = useState('');
 
     if (!esRucSociedad(client.ruc)) return null;
 
@@ -42,6 +43,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const suma = socios.reduce((s, p) => s + (Number(p.porcentaje) || 0), 0);
     const anio = ahora.getFullYear();
     const declaraciones = client.declarations || [];
+    const vencimientos: Array<{ concepto: string; vence: string }> = Array.isArray(company.vencimientos) ? company.vencimientos : [];
 
     const anuales = useMemo(() => {
         const lista: Array<{ tipo: 'REBEFICS' | '1021' | 'ADI'; nombre: string; vence: Date }> = [
@@ -117,6 +119,35 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
             toast.success(`${tipo} ${anio} registrado como presentado.`);
         } catch (e: any) {
             toast.error(`No se pudo registrar: ${e?.message || e}`);
+        } finally {
+            setGuardando(null);
+        }
+    };
+
+    const guardarVencimientos = async () => {
+        const lineas = (textoVenc || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const nuevos: Array<{ concepto: string; vence: string }> = [];
+        for (const linea of lineas) {
+            const f = linea.match(/(\d{2}\/\d{2}\/\d{4})/);
+            if (!f) continue;
+            const concepto = linea.slice(0, f.index).replace(/[-–·|]+\s*$/, '').trim();
+            if (!concepto) continue;
+            nuevos.push({ concepto: concepto.slice(0, 120), vence: f[1] });
+        }
+        if (!nuevos.length) {
+            toast.error('No encontré fechas dd/mm/aaaa en el texto.');
+            return;
+        }
+        setGuardando('vencimientos');
+        try {
+            const tp = (client.taxProfile as any) || {};
+            await updateClient(client.id, {
+                taxProfile: { ...tp, company: { ...(tp.company || {}), vencimientos: nuevos } },
+            } as any);
+            toast.success(`${nuevos.length} vencimientos guardados.`);
+            setTextoVenc('');
+        } catch (e: any) {
+            toast.error(`No se pudo guardar: ${e?.message || e}`);
         } finally {
             setGuardando(null);
         }
@@ -198,6 +229,42 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                         </div>
                     );
                 })}
+            </div>
+
+            <div className="mt-3 border-t border-white/10 pt-2.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Vencimientos informados por el SRI</p>
+                {vencimientos.length === 0 && (
+                    <p className="mt-1 text-[10px] text-slate-500">Pegá abajo lo que muestra el SRI (con fecha dd/mm/aaaa) y guardalo.</p>
+                )}
+                <div className="mt-1 space-y-1">
+                    {vencimientos.map((v, i) => {
+                        const m = v.vence.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                        let vencido = false;
+                        if (m) {
+                            const fecha = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+                            vencido = fecha.getTime() < new Date().setHours(0, 0, 0, 0);
+                        }
+                        return (
+                            <div key={i} className={`flex items-center gap-2 rounded-lg border px-2 py-1 ${vencido ? 'border-rose-500/35 bg-rose-500/10' : 'border-emerald-500/25 bg-emerald-500/5'}`}>
+                                <span className={`text-[9px] font-bold uppercase ${vencido ? 'text-rose-300' : 'text-emerald-300'}`}>{vencido ? 'Vencido' : 'Próximo'}</span>
+                                <span className="truncate text-[10px] text-slate-200">{v.concepto}</span>
+                                <span className="ml-auto font-mono text-[9px] text-slate-400">{v.vence}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="mt-1.5 flex items-start gap-1.5">
+                    <textarea
+                        value={textoVenc}
+                        onChange={(e) => setTextoVenc(e.target.value)}
+                        placeholder={'Pegá del SRI, por ejemplo:\nANEXO TRANSACCIONAL SIMPLIFICADO - SEPTIEMBRE 2026 - 20/11/2026\n2011 DECLARACION DE IVA - OCTUBRE 2026 - 23/11/2026'}
+                        rows={2}
+                        className="min-h-[46px] w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-[10px] text-slate-100 outline-none"
+                    />
+                    <button type="button" disabled={guardando === 'vencimientos'} onClick={() => void guardarVencimientos()} className="shrink-0 rounded-lg border border-[#C9A96E]/35 px-2 py-1 text-[9px] font-bold uppercase text-[#C9A96E] hover:bg-[#C9A96E]/10">
+                        {guardando === 'vencimientos' ? '…' : 'Guardar'}
+                    </button>
+                </div>
             </div>
 
             <p className="mt-1.5 text-[10px] text-slate-500">
