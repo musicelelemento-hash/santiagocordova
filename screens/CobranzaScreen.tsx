@@ -76,6 +76,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
     // Adelanto Modal States
     const [isAdelantoModalOpen, setIsAdelantoModalOpen] = useState(false);
+  const [accionesCobranza, setAccionesCobranza] = useState(false);
     const [selectedClientForAdelanto, setSelectedClientForAdelanto] = useState<Client | null>(null);
     const [adelantoClientSearch, setAdelantoClientSearch] = useState('');
     const [adelantoType, setAdelantoType] = useState<'periods' | 'credit'>('periods');
@@ -2259,7 +2260,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             setSelectedAdelantoPeriods([]);
                             setIsAdelantoModalOpen(true);
                         }}
-                        className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
+                        className="max-sm:hidden flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
                         title="Registrar un pago por adelantado mensual, semestral o anual para un cliente"
                     >
                         <LucideIcons.Sparkles size={14} className="text-amber-300" />
@@ -2268,7 +2269,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                     <button 
                         onClick={() => setIsSyncMatrixModalOpen(true)}
-                        className={`flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border cursor-pointer w-full sm:w-auto
+                        className={`max-sm:hidden flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border cursor-pointer w-full sm:w-auto
                             ${matrixSyncCandidates.totalDeclarations > 0
                                 ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-yellow-600/20 hover:from-amber-500/30 hover:to-yellow-600/30 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/10 active:scale-95'
                                 : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'}`}
@@ -2296,6 +2297,40 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <span>LIQUIDAR SELECCIÓN ({selectedItems.size})</span>
                     </button>
                 </div>
+              {/* Celular: acciones secundarias en un menú */}
+              <div className="relative w-full sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setAccionesCobranza((v) => !v)}
+                  aria-expanded={accionesCobranza}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-300"
+                >
+                  {accionesCobranza ? "▲ Ocultar acciones" : "▼ Más acciones de cobranza"}
+                </button>
+                {accionesCobranza && (
+                  <div id="accionesCobranzaPanel" className="absolute left-0 right-0 z-30 mt-2 grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-[#0b1326] p-2 shadow-2xl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedClientForAdelanto(null);
+                        setSelectedAdelantoPeriods([]);
+                        setIsAdelantoModalOpen(true);
+                        setAccionesCobranza(false);
+                      }}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/10"
+                    >
+                      ➕ Registrar adelanto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setIsSyncMatrixModalOpen(true); setAccionesCobranza(false); }}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/10"
+                    >
+                      📋 Declarado sin cobrar ({matrixSyncCandidates.totalDeclarations})
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* CAMPAIGN CONTEXT BANNER */}
@@ -2362,7 +2397,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
             {/* ZENITH FINANCIAL STRIP - 3 Executive KPI Cards (Stitch Obsidian Luxury & Clean Light) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 font-mono">
-                <div className="p-5 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-rose-500/15 text-rose-500 dark:text-rose-400 rounded-2xl border border-rose-500/30">
                             <LucideIcons.AlertTriangle size={20} />
@@ -2379,7 +2414,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)]">
                             <LucideIcons.CheckCircle size={20} />
@@ -2396,7 +2431,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl border border-[#2B6AFF]/30">
                             <LucideIcons.Activity size={20} />
@@ -2418,7 +2453,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             </div>
 
             {/* TACTICAL FILTERS & SEARCH (Stitch Clean Light & Dark Elite) */}
-            <div className="p-3 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-xl backdrop-blur-2xl flex flex-col lg:flex-row gap-3 items-center font-mono">
+            <div className="p-2 sm:p-3 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-xl backdrop-blur-2xl flex flex-col lg:flex-row gap-3 items-center font-mono">
                 <div className="flex p-1 bg-slate-100 dark:bg-[#0b1326] rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-slate-200 dark:border-white/10">
                     {[
                         { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-rose-500 dark:text-rose-400' },
