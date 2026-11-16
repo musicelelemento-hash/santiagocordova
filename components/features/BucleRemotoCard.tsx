@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MonitorSmartphone, Play, RefreshCw, XCircle } from 'lucide-react';
+import { MonitorSmartphone, Play, RefreshCw, RotateCcw, XCircle } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import {
     BucleRemotoJob,
@@ -7,6 +7,8 @@ import {
     cancelarTrabajoBucle,
     crearTrabajoBucle,
     listarTrabajosBucle,
+    reencolarTrabajoBucle,
+    trabajoSinSenal,
 } from '../../services/bucleRemoto';
 
 interface Props {
@@ -64,6 +66,16 @@ export const BucleRemotoCard: React.FC<Props> = ({ periodo, clientes, etiquetaPe
             toast.error(e?.message || 'No se pudo encolar el trabajo.');
         } finally {
             setEnviando(false);
+        }
+    };
+
+    const reencolar = async (id: string) => {
+        try {
+            await reencolarTrabajoBucle(id);
+            await refrescar();
+            toast.info('Trabajo devuelto a la cola.');
+        } catch (e: any) {
+            toast.error(e?.message || e);
         }
     };
 
@@ -143,6 +155,16 @@ export const BucleRemotoCard: React.FC<Props> = ({ periodo, clientes, etiquetaPe
                                         <span className="font-mono text-[8.5px] text-slate-500">
                                             {new Date(j.created_at).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}
                                         </span>
+                                    )}
+                                    {trabajoSinSenal(j) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => void reencolar(j.id)}
+                                            className="ml-auto inline-flex items-center gap-1 rounded border border-amber-500/40 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-amber-500 hover:bg-amber-500/10"
+                                            title="El runner dejó de dar señal: devolverlo a la cola"
+                                        >
+                                            <RotateCcw size={10} /> sin señal · re-encolar
+                                        </button>
                                     )}
                                     {(j.estado === 'pendiente' || j.estado === 'corriendo') && (
                                         <button

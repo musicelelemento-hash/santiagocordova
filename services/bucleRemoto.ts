@@ -23,6 +23,7 @@ export interface BucleRemotoJob {
     created_at?: string;
     started_at?: string | null;
     finished_at?: string | null;
+    heartbeat_at?: string | null;
 }
 
 const TABLA = 'bucle_remoto';
@@ -69,6 +70,35 @@ export async function listarTrabajosBucle(limit = 6): Promise<BucleRemotoJob[]> 
         throw new Error(error.message);
     }
     return (data || []) as BucleRemotoJob[];
+}
+
+/** Minutos sin señal para considerar muerto un trabajo en curso. */
+export const MINUTOS_SIN_SENAL = 6;
+
+/** ¿El runner dejó de dar señal? (heartbeat viejo o inexistente). */
+export function trabajoSinSenal(job: BucleRemotoJob, ahora = Date.now()): boolean {
+    if (!job || job.estado !== 'corriendo') return false;
+    const ultimo = new Date(job.heartbeat_at || job.started_at || job.created_at || 0).getTime();
+    if (!Number.isFinite(ultimo) || ultimo <= 0) return false;
+    return ahora - ultimo > MINUTOS_SIN_SENAL * 60 * 1000;
+}
+
+/** Devuelve un trabajo muerto a la cola para que otro runner (o el mismo) lo tome. */
+export async function reencolarTrabajoBucle(id: string): Promise<void> {
+    const { error } = await supabase
+        .from(TABLA)
+        .update({
+            estado: 'pendiente',
+            runner_id: null,
+            started_at: null,
+            heartbeat_at: null,
+            mensaje: 'Re-encolado: el runner no dio señal',
+        })
+        .eq('id', id);
+    if (error) {
+        const falta = /function|does not exist/i.test(error.message || '');
+        throw new Error(falta ? error.message : error.message);
+    }
 }
 
 export async function cancelarTrabajoBucle(id: string): Promise<void> {

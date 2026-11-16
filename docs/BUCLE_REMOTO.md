@@ -131,3 +131,81 @@ Permiso nuevo en el manifest: **`alarms`**.
 | Varios runners | Siguiente: `claim` atómico (`update ... where estado='pendiente'`) |
 | Notificación al celular | Siguiente: push/WhatsApp al `hecho` (ya existe el bot) |
 | Claves | El runner necesita el dashboard abierto una vez; siguiente: cache cifrada por runner |
+
+---
+
+## 8 · Claim atómico + heartbeat (multi-runner)
+
+### 8.1 · SQL extra (correr después del de la sección 2)
+
+```sql
+-- Señal de vida del runner
+alter table public.bucle_remoto add column if not exists heartbeat_at timestamptz;
+
+-- Claim ATÓMICO: un trabajo lo toma UN solo runner, aunque haya varios mirando.
+-- `for update skip locked` evita que dos runners se lleven el mismo trabajo.
+create or replace function public.claim_bucle_remoto(p_runner_id text)
+returns setof public.bucle_remoto
+language sql
+security definer
+as $$
+  with elegido as (
+    select id
+      from public.bucle_remoto
+     where estado = 'pendiente'
+       and (runner_id is null or runner_id = p_runner_id)
+     order by created_at asc
+     limit 1
+     for update skip locked
+  )
+  update public.bucle_remoto b
+     set estado = 'corriendo',
+         runner_id = p_runner_id,
+         started_at = now(),
+         heartbeat_at = now(),
+         mensaje = null
+    from elegido e
+   where b.id = e.id
+  returning b.*;
+$$;
+
+-- Re-encolar trabajos muertos: corriendo sin señal hace más de N minutos.
+create or replace function public.reencolar_bucle_remoto(p_minutos int default 10)
+returns int
+language sql
+security definer
+as $$
+  with viejos as (
+    update public.bucle_remoto
+       set estado = 'pendiente',
+           runner_id = null,
+           started_at = null,
+           heartbeat_at = null,
+           mensaje = 'Re-encolado: el runner no dio señal'
+     where estado = 'corriendo'
+       and coalesce(heartbeat_at, started_at, created_at) < now() - (p_minutos || ' minutes')::interval
+    returning 1
+  )
+  select count(*)::int from viejos;
+$$;
+
+grant execute on function public.claim_bucle_remoto(text) to anon, authenticated;
+grant execute on function public.reencolar_bucle_remoto(int) to anon, authenticated;
+```
+
+### 8.2 · Cómo queda el ciclo
+
+1. **Varios runners**: cada uno llama `claim_bucle_remoto(su_id)`; el `skip locked`
+   garantiza que no se dupliquen.
+2. **Heartbeat**: mientras corre, el runner manda `heartbeat_at` y `progreso` cada 30 s.
+3. **Runner caído**: la web ve “sin señal” pasado ~6 min y ofrece **Re-encolar**;
+   también se puede programar el `reencolar_bucle_remoto(10)` en pg_cron:
+
+```sql
+-- Si tenés pg_cron habilitado (Database → Extensions)
+select cron.schedule('reencolar-bucle-remoto', '*/10 * * * *',
+                     $$select public.reencolar_bucle_remoto(10)$$);
+```
+
+4. **Fallback**: si la función `claim_bucle_remoto` no existe todavía, la extensión
+   usa el camino viejo (select + patch). No rompe nada.
