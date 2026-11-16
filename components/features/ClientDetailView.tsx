@@ -18,7 +18,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
-import { sendToSRIExtension } from '../../services/extensionBridge';
+import { sendToSRIExtension, entrarAlSriSinDeclarar } from '../../services/extensionBridge';
 import { v4 as uuidv4 } from 'uuid';
 
 import { arePeriodsEqual } from './TaxComplianceMatrix';
@@ -882,31 +882,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     };
 
     const handleOpenSRI = () => {
-        try {
-            const credentialsPayload = {
-                ruc: client.ruc,
-                password: client.sriPassword || '',
-                name: client.name,
-                timestamp: Date.now()
-            };
-            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
-
-            if (client.sriPassword) {
-                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
-            } else {
-                navigator.clipboard.writeText(client.ruc);
-            }
-        } catch (err) {
-            console.error("Error setting active SRI credentials:", err);
+        // 🔑 Entrar al portal CON este cliente y quedarse en el perfil.
+        // Antes llamaba a `sendToSRIExtension` (flujo de DECLARAR): el globo
+        // terminaba extrayendo comprobantes y armando el formulario.
+        if (!entrarAlSriSinDeclarar(client)) {
+            toast.error('Falta la clave SRI de este cliente.');
+            return;
         }
-
-        sendToSRIExtension(client);
-
-        toast.success(
-            `🔑 Credenciales de ${client.name} enviadas a la extensión SRI. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
-        );
-
-        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
+        toast.success(`Entrando al SRI como ${client.name}…`);
     };
 
     const handleOpenSRIAnulacion = () => {

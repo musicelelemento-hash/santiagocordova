@@ -526,13 +526,16 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 )}
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(editedClient.ruc || '');
-                                            toast.info("RUC copiado al portapapeles");
-                                            window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
-                                        }}
+                    onClick={() => {
+                        // Entra con el cliente en vez de solo abrir la portada.
+                        if (!entrarAlSriSinDeclarar(editedClient)) {
+                            toast.error('Falta la clave SRI de este cliente.');
+                            return;
+                        }
+                        toast.success(`Entrando al SRI como ${editedClient.name}…`);
+                    }}
                                         className="p-1.5 hover:bg-[#2B6AFF]/20 rounded-lg text-slate-400 hover:text-[#2B6AFF] transition-all active:scale-90 cursor-pointer"
-                                        title="Abrir SRI en Línea (Copia RUC)"
+                                        title="Entrar al SRI con este cliente"
                                     >
                                         <Globe size={13} />
                                     </button>
