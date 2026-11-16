@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import {
   Home, Users, LayoutGrid, Kanban, Box, KeyRound, ShoppingBag,
   FileSpreadsheet, Key, Coins, Wallet, BarChart, FileText, CheckCircle,
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
   Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check,
   UserPlus, Pin, Bot, Activity,
-  Bell,
-} from 'lucide-react';
+  Bell, ExternalLink } from 'lucide-react';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
@@ -26,7 +25,7 @@ import { sendFullClientsMatrixToExtension } from './services/extensionBridge';
 import { recordScreenVisit, getMostUsedScreens, getDefaultStartScreen, setDefaultStartScreen } from './services/usageStatsService';
 import type { Session } from '@supabase/supabase-js';
 
-// Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
+// Pantallas internas vÃ¡lidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
 const VALID_SCREENS: Screen[] = ['notificaciones', 'home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
 
 // Lazy-loaded heavy modules & admin screens
@@ -45,12 +44,13 @@ const ServicesPage = React.lazy(() => import('./screens/ServicesPage').then(m =>
 const ClientPortalScreen = React.lazy(() => import('./screens/ClientPortalScreen').then(m => ({ default: m.ClientPortalScreen })));
 const MusicPage = React.lazy(() => import('./screens/MusicPage').then(m => ({ default: m.MusicPage })));
 const LandingLujoPage = React.lazy(() => import('./screens/LandingLujoPage').then(m => ({ default: m.LandingLujoPage })));
-// `/clasica` is a fallback safety net, not the homepage, so it's lazy like every other screen —
+// `/clasica` is a fallback safety net, not the homepage, so it's lazy like every other screen â€”
 // previously it was imported eagerly at the top of this file, which meant its whole bundle
 // (gsap + ScrollTrigger, the CinematicIntro 3D hero, Lenis smooth-scroll) shipped in the *main*
 // entry chunk and ran on every route, including this new `/` homepage: gsap's ScrollTrigger
 // ticker was found running a background requestAnimationFrame loop on `/` even though nothing
 // on the Lujo page uses gsap at all. Fixing the import fixes that idle background work and
+import { entrarAlSriSinDeclarar } from './services/extensionBridge';
 // trims real weight off the homepage's initial bundle.
 const LandingPage = React.lazy(() => import('./screens/LandingPage').then(m => ({ default: m.LandingPage })));
 const AuditLogScreen = React.lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
@@ -75,7 +75,7 @@ const ClientDetailView = React.lazy(() => import('./components/features/ClientDe
 const ScreenLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[300px] w-full py-16">
     <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-3" />
-    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Cargando módulo...</span>
+    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Cargando mÃ³dulo...</span>
   </div>
 );
 
@@ -108,11 +108,11 @@ const App: React.FC = () => {
 
   const [appState, setAppState] = useState<AppState>(() => {
     const path = window.location.pathname;
-    // Prioridad Absoluta: El acceso al raíz (/) siempre muestra la página pública
+    // Prioridad Absoluta: El acceso al raÃ­z (/) siempre muestra la pÃ¡gina pÃºblica
     if (path === '/' || path === '' || path === '/index.html') return 'landing';
 
-    // Las rutas privadas arrancan en 'login'; la sesión real se restaura
-    // de forma asíncrona en el effect de autenticación.
+    // Las rutas privadas arrancan en 'login'; la sesiÃ³n real se restaura
+    // de forma asÃ­ncrona en el effect de autenticaciÃ³n.
     if (path === '/admin' || path === '/dashboard' || path === '/login') return 'login';
     if (path === '/services') return 'services';
     if (path === '/musica' || path === '/music') return 'music';
@@ -121,7 +121,7 @@ const App: React.FC = () => {
     return 'landing';
   });
 
-  // ── Sesión real de Supabase Auth (reemplaza el flag falso de localStorage) ──
+  // â”€â”€ SesiÃ³n real de Supabase Auth (reemplaza el flag falso de localStorage) â”€â”€
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -169,7 +169,7 @@ const App: React.FC = () => {
     }
   }, [appState, activeScreen]);
 
-  // Manejar navegación atrás/adelante del navegador
+  // Manejar navegaciÃ³n atrÃ¡s/adelante del navegador
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const path = window.location.pathname;
@@ -364,7 +364,7 @@ const App: React.FC = () => {
   const [cloudStatus, setCloudStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline'>('idle');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Carga inicial desde IndexedDB (vía Store) + Firebase Sync
+  // Carga inicial desde IndexedDB (vÃ­a Store) + Firebase Sync
   useEffect(() => {
     if (!isStoreLoaded) {
       loadFromDB();
@@ -380,23 +380,23 @@ const App: React.FC = () => {
   }, [isStoreLoaded, syncFromFirebase]);
 
   // Firebase + IndexedDB son ahora el Storage Principal.
-  // Sheets funcionará como Respaldo de Emergencia (Doble Nube).
+  // Sheets funcionarÃ¡ como Respaldo de Emergencia (Doble Nube).
   useEffect(() => {
     const checkAndRestore = async () => {
       if ((appState === 'dashboard' || appState === 'client_portal') && !isDataLoaded && isStoreLoaded) {
-        setIsDataLoaded(true); // Bloqueo inmediato para evitar re-ejecución
+        setIsDataLoaded(true); // Bloqueo inmediato para evitar re-ejecuciÃ³n
 
-        // Si no hay nada o solo está el demo, intentamos el respaldo de Sheets
+        // Si no hay nada o solo estÃ¡ el demo, intentamos el respaldo de Sheets
         const isActuallyEmpty = clients.length === 0 || (clients.length === 1 && clients[0].ruc === '0702706813001');
 
         if (isActuallyEmpty) {
-          console.log("🛠️ Capa Doble Nube: Intentando recuperación automática...");
+          console.log("ðŸ› ï¸ Capa Doble Nube: Intentando recuperaciÃ³n automÃ¡tica...");
           setCloudStatus('loading');
           try {
             await syncFromSheets();
             setCloudStatus('idle');
           } catch (e) {
-            console.warn("⚠️ Capa Doble Nube failed:", e);
+            console.warn("âš ï¸ Capa Doble Nube failed:", e);
             setCloudStatus('offline');
           }
         } else {
@@ -407,7 +407,7 @@ const App: React.FC = () => {
     checkAndRestore();
   }, [appState, isStoreLoaded, isDataLoaded]);
 
-  // Sincronización a la nube (Refactorizada para permitir manual)
+  // SincronizaciÃ³n a la nube (Refactorizada para permitir manual)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
 
@@ -417,7 +417,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('open-sales-modal', handleOpenSales);
   }, []);
 
-  // Escuchar actualizaciones automáticas enviadas desde la Extensión de Chrome (SRI & Ecuafact)
+  // Escuchar actualizaciones automÃ¡ticas enviadas desde la ExtensiÃ³n de Chrome (SRI & Ecuafact)
   useEffect(() => {
     const handleExtensionSyncMessage = (event: MessageEvent) => {
       if (event.data && event.data.source === 'SC_PRO_EXTENSION' && event.data.type === 'SRI_PASSWORD_UPDATED_SYNC') {
@@ -440,7 +440,7 @@ const App: React.FC = () => {
             facturadorConfig: updatedFacturador
           });
 
-          console.log(`🎉 [Extension Auto-Sync] Cliente ${targetClient.name} actualizado con nueva clave SRI/Ecuafact.`);
+          console.log(`ðŸŽ‰ [Extension Auto-Sync] Cliente ${targetClient.name} actualizado con nueva clave SRI/Ecuafact.`);
         }
       }
 
@@ -451,7 +451,7 @@ const App: React.FC = () => {
         const cleanRuc = ruc.replace(/\D/g, '');
         const targetClient = clients.find(c => c.ruc.replace(/\D/g, '') === cleanRuc);
         if (targetClient) {
-          // Derivar el período por defecto del mes anterior (evita hardcodear un mes concreto)
+          // Derivar el perÃ­odo por defecto del mes anterior (evita hardcodear un mes concreto)
           const now = new Date();
           const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
           const defaultPeriod = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
@@ -462,7 +462,7 @@ const App: React.FC = () => {
             period: targetPeriod,
             type: 'IVA',
             status: DeclarationStatus.Enviada,
-            is_paid: false, // Queda PENDIENTE el pago por petición explícita del usuario
+            is_paid: false, // Queda PENDIENTE el pago por peticiÃ³n explÃ­cita del usuario
             declaredAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             proof_file: pdf ? {
@@ -477,7 +477,7 @@ const App: React.FC = () => {
           const updatedHistory = [newDecl, ...existingHistory.filter(d => d.period !== targetPeriod)];
           updateClient(targetClient.id, { declarations: updatedHistory });
 
-          console.log(`🏆 [Extension Auto-Sync] Declaración de ${targetClient.name} (${targetPeriod}) registrada automáticamente como ENVIADA (PENDIENTE DE PAGO).`);
+          console.log(`ðŸ† [Extension Auto-Sync] DeclaraciÃ³n de ${targetClient.name} (${targetPeriod}) registrada automÃ¡ticamente como ENVIADA (PENDIENTE DE PAGO).`);
         }
       }
     };
@@ -486,7 +486,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('message', handleExtensionSyncMessage);
   }, [clients, updateClient]);
 
-  // Transmitir Matriz Completa a la Extensión de Chrome y localStorage
+  // Transmitir Matriz Completa a la ExtensiÃ³n de Chrome y localStorage
   useEffect(() => {
     if (clients && clients.length > 0) {
       try {
@@ -505,9 +505,9 @@ const App: React.FC = () => {
   const saveData = async () => {
     if (cloudStatus === 'loading') return;
 
-    // PROTECCIÓN: No sobreescribir la nube si no hay clientes cargados (evita borrar el respaldo accidentalmente)
+    // PROTECCIÃ“N: No sobreescribir la nube si no hay clientes cargados (evita borrar el respaldo accidentalmente)
     if (clients.length === 0) {
-      console.warn("Sincronización cancelada: No hay clientes para guardar.");
+      console.warn("SincronizaciÃ³n cancelada: No hay clientes para guardar.");
       return;
     }
 
@@ -528,7 +528,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Sincronización automática a la nube (Solo si hay datos para proteger el respaldo)
+  // SincronizaciÃ³n automÃ¡tica a la nube (Solo si hay datos para proteger el respaldo)
   useEffect(() => {
     if (appState !== 'dashboard' || !isDataLoaded || cloudStatus === 'loading' || clients.length === 0) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -540,7 +540,7 @@ const App: React.FC = () => {
 
   // El indicador de sync refleja los DOS caminos de guardado: el respaldo de
   // Sheets (estado local de App) y las escrituras a Supabase (store). Si la
-  // nube rechazó un guardado, se ve en rojo con el motivo real en el tooltip.
+  // nube rechazÃ³ un guardado, se ve en rojo con el motivo real en el tooltip.
   const syncStatusForUi: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline' =
     cloudStatus === 'loading' || cloudStatus === 'saving' ? cloudStatus
       : cloudStatus === 'error' || storeCloudStatus === 'error' ? 'error'
@@ -575,18 +575,18 @@ const App: React.FC = () => {
   };
 
   const navigate = (screen: Screen, options: any = {}) => {
-    // 'services' es una página pública de nivel superior, no un módulo del dashboard.
-    // Desde el menú interno se abre el catálogo; con sesión activa se vuelve al panel vía "Administración".
+    // 'services' es una pÃ¡gina pÃºblica de nivel superior, no un mÃ³dulo del dashboard.
+    // Desde el menÃº interno se abre el catÃ¡logo; con sesiÃ³n activa se vuelve al panel vÃ­a "AdministraciÃ³n".
     if (screen === 'services') {
       setAppState('services');
       return;
     }
 
-    // Si estamos navegando a un cliente específico desde otra pantalla, guardamos la actual como "previous"
+    // Si estamos navegando a un cliente especÃ­fico desde otra pantalla, guardamos la actual como "previous"
     if (options.clientIdToView && activeScreen !== screen) {
       setPreviousScreen(activeScreen);
     } else if (!options.clientIdToView) {
-      // Si es una navegación normal de menú, limpiamos el historial de "atrás" específico
+      // Si es una navegaciÃ³n normal de menÃº, limpiamos el historial de "atrÃ¡s" especÃ­fico
       setPreviousScreen(null);
     }
 
@@ -634,7 +634,7 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = (role: 'admin' | 'client', clientData?: Client) => {
     if (role === 'admin') {
-      // La sesión real ya quedó establecida por Supabase Auth (onAuthStateChange)
+      // La sesiÃ³n real ya quedÃ³ establecida por Supabase Auth (onAuthStateChange)
       setAppState('dashboard');
       setShowSplash(true);
     } else if (role === 'client' && clientData) {
@@ -645,7 +645,7 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (activeScreen) {
-      case 'home': return (<><AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />{BUILD_BADGE && (<div className="fixed bottom-1 right-2 z-[9998] rounded bg-black/40 px-1.5 py-0.5 font-mono text-[8px] text-slate-500 pointer-events-none" title="Versión del build cargado">build {BUILD_BADGE}</div>)}</>);
+      case 'home': return (<><AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />{BUILD_BADGE && (<div className="fixed bottom-1 right-2 z-[9998] rounded bg-black/40 px-1.5 py-0.5 font-mono text-[8px] text-slate-500 pointer-events-none" title="VersiÃ³n del build cargado">build {BUILD_BADGE}</div>)}</>);
       case 'telegram_bot': return <TelegramBotScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'clients': return (
         <ClientsScreen 
@@ -725,7 +725,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Badge real de mora: total de períodos vencidos sin declarar/pagar entre clientes activos
+  // Badge real de mora: total de perÃ­odos vencidos sin declarar/pagar entre clientes activos
   const pendingDeclarationsCount = useMemo(() => {
     return clients
       .filter(c => !c.isDeleted && (c.isActive ?? true))
@@ -734,17 +734,17 @@ const App: React.FC = () => {
 
   const navItems = ([
     { screen: 'home', icon: Home, label: 'Dashboard' },
-    { screen: 'telegram_bot', icon: Bot, label: 'Bot Telegram & Gestión' },
+    { screen: 'telegram_bot', icon: Bot, label: 'Bot Telegram & GestiÃ³n' },
     { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: pendingDeclarationsCount },
     { screen: 'bucle', icon: Activity, label: 'Bucle Mensual' },
     { screen: 'clients', icon: Users, label: 'Directorio Clientes' },
-    { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
+    { screen: 'firmas', icon: KeyRound, label: 'Firmas ElectrÃ³nicas' },
     { screen: 'crm_pipeline', icon: Kanban, label: 'CRM Embudo' },
     { screen: '3d-studio', icon: Box, label: 'Studio 3D Alpha3D' },
     { screen: 'facturadores', icon: ShoppingBag, label: 'Facturadores & Llenado' },
     { screen: 'cotizaciones', icon: FileSpreadsheet, label: 'Cotizaciones' },
     { screen: 'licencias', icon: Key, label: 'Licencias SaaS' },
-    { screen: 'refinanciacion', icon: Coins, label: 'Refinanciación' },
+    { screen: 'refinanciacion', icon: Coins, label: 'RefinanciaciÃ³n' },
     { screen: 'caja_chica', icon: Wallet, label: 'Caja Chica TPV' },
     { screen: 'notificaciones', icon: Bell, label: 'Notificaciones' },
     { screen: 'cobranza', icon: BarChart, label: 'Cobranza' },
@@ -755,9 +755,9 @@ const App: React.FC = () => {
     { screen: 'web_orders', icon: ShoppingCart, label: 'Tienda' },
     { screen: 'services', icon: Globe, label: 'Servicios' },
     { screen: 'settings', icon: Settings, label: 'Ajustes' },
-    { screen: 'audit_log', icon: History, label: 'Auditoría' },
-    { screen: 'migracion_zifact', icon: ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
-    { screen: 'landing', icon: Globe, label: 'Sitio Público' },
+    { screen: 'audit_log', icon: History, label: 'AuditorÃ­a' },
+    { screen: 'migracion_zifact', icon: ArrowRightLeft, label: 'MigraciÃ³n Zifact', onClick: () => navigate('migracion_zifact') },
+    { screen: 'landing', icon: Globe, label: 'Sitio PÃºblico' },
   ] as any[]);
 
   if (appState === 'services') return (
@@ -788,9 +788,9 @@ const App: React.FC = () => {
       />
     </Suspense>
   );
-  // Página clásica (pre-2026): se mantiene intacta como red de seguridad en /clasica,
-  // con las mismas herramientas de negocio (validador RUC/cédula, simulador RIMPE,
-  // calculadora de multas, calendario RUC, FAQ) que ya tenía en producción.
+  // PÃ¡gina clÃ¡sica (pre-2026): se mantiene intacta como red de seguridad en /clasica,
+  // con las mismas herramientas de negocio (validador RUC/cÃ©dula, simulador RIMPE,
+  // calculadora de multas, calendario RUC, FAQ) que ya tenÃ­a en producciÃ³n.
   if (appState === 'clasica') return (
     <Suspense fallback={<ScreenLoader />}>
       <LandingPage
@@ -817,7 +817,7 @@ const App: React.FC = () => {
         serviceFees={serviceFees}
         onUpdateClient={(updatedClient) => {
           setLoggedClient(updatedClient);
-          // Persistir el cambio a la nube además de actualizar el estado local
+          // Persistir el cambio a la nube ademÃ¡s de actualizar el estado local
           updateClient(updatedClient.id, updatedClient);
         }}
       />
@@ -829,7 +829,7 @@ const App: React.FC = () => {
     </Suspense>
   );
 
-  // ── Modo Ventana Independiente (Pop-out Window para expediente de cliente) ──
+  // â”€â”€ Modo Ventana Independiente (Pop-out Window para expediente de cliente) â”€â”€
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const isStandaloneClient = searchParams?.get('standalone') === 'true';
   const standaloneClientId = searchParams?.get('clientId') || searchParams?.get('clientIdToView');
@@ -851,7 +851,7 @@ const App: React.FC = () => {
               />
             ) : isStoreLoaded ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <p className="text-sm font-bold text-slate-400 mb-4">No se encontró el expediente solicitado o fue eliminado.</p>
+                <p className="text-sm font-bold text-slate-400 mb-4">No se encontrÃ³ el expediente solicitado o fue eliminado.</p>
                 <button
                   onClick={() => window.close()}
                   className="px-4 py-2 bg-[#00A896] text-white font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer"
@@ -899,12 +899,12 @@ const App: React.FC = () => {
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
 
-        {/* Mobile Header Único (menú + título + acciones) */}
+        {/* Mobile Header Ãšnico (menÃº + tÃ­tulo + acciones) */}
         <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-4 py-2.5 glass-zen border-b border-white/20 shadow-xl no-print">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={() => setIsMobileDrawerOpen(true)}
-              aria-label="Abrir menú de módulos"
+              aria-label="Abrir menÃº de mÃ³dulos"
               className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-[#00A896]/40 transition-all active:scale-95"
             >
               <Menu size={18} />
@@ -920,7 +920,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setIsUploadModalOpen(true)} aria-label="Gestión inmediata" className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:scale-110 active:scale-95 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+            <button onClick={() => setIsUploadModalOpen(true)} aria-label="GestiÃ³n inmediata" className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:scale-110 active:scale-95 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.15)]">
               <Zap size={14} className="fill-current" />
             </button>
             <div className="scale-75 origin-right">
@@ -954,7 +954,7 @@ const App: React.FC = () => {
                     ? 'bg-amber-500/15 text-amber-500 border-amber-500/30 font-bold shadow-sm'
                     : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-slate-200 border-transparent hover:border-slate-200 dark:hover:border-white/10'
                 }`}
-                title={defaultStartScreen === activeScreen ? 'Pantalla de inicio predeterminada actual' : 'Fijar esta pantalla como inicio automático'}
+                title={defaultStartScreen === activeScreen ? 'Pantalla de inicio predeterminada actual' : 'Fijar esta pantalla como inicio automÃ¡tico'}
               >
                 <Pin size={12} className={defaultStartScreen === activeScreen ? 'fill-amber-500 text-amber-500 rotate-45' : ''} />
                 <span className="hidden lg:inline text-[10px]">
@@ -977,6 +977,14 @@ const App: React.FC = () => {
                         setIsGlobalDropdownOpen(true);
                     }}
                     onFocus={() => setIsGlobalDropdownOpen(true)}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (globalSearchQuery.trim() && globalSearchResults.length) handleSelectClient(globalSearchResults[0]);
+                    return;
+                }
+                if (e.key === 'Escape') { setIsGlobalDropdownOpen(false); return; }
+            }}
                     className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/10 rounded-2xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896] transition-all font-mono tracking-wider"
                 />
             {globalSearchQuery ? (
@@ -1047,7 +1055,7 @@ const App: React.FC = () => {
                                                 {copiedRucHeader === c.ruc ? (
                                                     <>
                                                         <Check size={11} className="text-emerald-400" />
-                                                        <span>¡COPIADO!</span>
+                                                        <span>Â¡COPIADO!</span>
                                                     </>
                                                 ) : (
                                                     <>
@@ -1055,6 +1063,22 @@ const App: React.FC = () => {
                                                         <span>COPIAR</span>
                                                     </>
                                                 )}
+                                            </span>
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
+                                                data-entrar-sri
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (entrarAlSriSinDeclarar(c)) {
+                                                        setIsGlobalDropdownOpen(false); setGlobalSearchQuery('');
+                                                    }
+                                                }}
+                                                className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold border flex items-center gap-1 cursor-pointer bg-[#00A896]/10 text-[#00A896] border-[#00A896]/30 hover:bg-[#00A896]/20"
+                                                title="Entrar al SRI con este cliente (solo perfil)"
+                                            >
+                                                <ExternalLink size={11} />
+                                                <span>ENTRAR</span>
                                             </span>
                                             <ArrowRight size={12} className="text-slate-400 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
                                         </div>
@@ -1070,7 +1094,7 @@ const App: React.FC = () => {
                         <div className="flex flex-col divide-y divide-slate-200 dark:divide-white/5 bg-slate-50/50 dark:bg-slate-900/50">
                             {recentClients.length > 0 && (
                                 <div className="p-4 space-y-2">
-                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1.5 block">Búsquedas Recientes</span>
+                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1.5 block">BÃºsquedas Recientes</span>
                                     <div className="grid grid-cols-1 gap-1">
                                         {recentClients.map((c) => (
                                             <button
@@ -1124,7 +1148,7 @@ const App: React.FC = () => {
                             )}
                             <div className="p-4 space-y-3">
                                 <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/5">
-                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Guía de Búsqueda Rápida</span>
+                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">GuÃ­a de BÃºsqueda RÃ¡pida</span>
                                     <button 
                                         onClick={() => {
                                             setGlobalSearchQuery('r:');
@@ -1137,9 +1161,9 @@ const App: React.FC = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
-                                        { tag: 'r: rimpe', desc: 'Régimen RIMPE' },
+                                        { tag: 'r: rimpe', desc: 'RÃ©gimen RIMPE' },
                                         { tag: 'v: vencido', desc: 'Vencidos / Deuda' },
-                                        { tag: 'd: 9', desc: '9no Dígito del RUC' },
+                                        { tag: 'd: 9', desc: '9no DÃ­gito del RUC' },
                                         { tag: 'Ctrl + K', desc: 'Comandos Pro', isKbd: true }
                                     ].map((item, idx) => (
                                         <button
@@ -1251,15 +1275,15 @@ const App: React.FC = () => {
             )}
           </main>
         </div>
-        <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Cerrar Sesión">
+        <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Cerrar SesiÃ³n">
           <div className="text-center p-4">
-            <h4 className="text-lg font-bold mb-6">¿Desea salir del panel?</h4>
+            <h4 className="text-lg font-bold mb-6">Â¿Desea salir del panel?</h4>
             <div className="flex space-x-3">
               <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">Cancelar</button>
               <button onClick={() => toggleTheme()} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-sky-500 transition-all border border-slate-200 dark:border-slate-700 shadow-sm">
                 {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
               </button>
-              <button onClick={handleLogoutConfirm} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Sí, Salir</button>
+              <button onClick={handleLogoutConfirm} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold">SÃ­, Salir</button>
             </div>
           </div>
         </Modal>
