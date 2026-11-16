@@ -104,6 +104,29 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
         }
     };
 
+    // 📦 Paquete SCVS: qué documentos del expediente anual ya están listos.
+    const scvsDocs: any = (client.taxProfile as any)?.scvs?.documentos || {};
+    const paqueteScvs = [
+        { key: 'nomina', nombre: 'Nómina de socios (febrero)', vence: new Date(anio + 1, 2, 0) },
+        { key: 'eeff', nombre: 'Estados financieros firmados', vence: new Date(anio + 1, 3, 30) },
+        { key: 'actas', nombre: 'Actas de junta (antes 31-marzo)', vence: new Date(anio + 1, 3, 30) },
+        { key: 'form101', nombre: 'Copia del Formulario 101', vence: new Date(anio + 1, 3, 30) },
+    ];
+    const scvsListos = paqueteScvs.filter((d) => !!(scvsDocs[d.key] && scvsDocs[d.key].subido)).length;
+    const scvsPct = Math.round((scvsListos / paqueteScvs.length) * 100);
+    const marcarDocScvs = async (key: string) => {
+        const tp: any = (client.taxProfile as any) || {};
+        const docs = { ...(tp.scvs?.documentos || {}) };
+        const actual = !!(docs[key] && docs[key].subido);
+        docs[key] = { subido: !actual, cuando: new Date().toISOString(), origen: 'manual' };
+        try {
+            await updateClient(client.id, { taxProfile: { ...tp, scvs: { ...(tp.scvs || {}), documentos: docs } } } as any);
+            toast.success(actual ? 'Documento quitado del paquete SCVS.' : 'Documento marcado como listo.');
+        } catch (e: any) {
+            toast.error(`No se pudo guardar: ${e?.message || e}`);
+        }
+    };
+
     const registrar = async (tipo: 'REBEFICS' | '1021' | 'ADI' | 'SCVS_EEFF' | 'SCVS_SOCIOS' | 'SCVS_ACTAS') => {
         const periodo = String(anio);
         const yaEsta = declaraciones.some((d) => d.type === tipo && d.period === periodo);
@@ -246,6 +269,35 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                         </div>
                     );
                 })}
+            </div>
+
+            {/* 📦 Paquete SCVS: checklist del expediente anual */}
+            <div className="mt-3 rounded-xl border border-[#C9A96E]/25 bg-[#C9A96E]/[0.05] px-2.5 py-2">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#e6d3ab]">Paquete SCVS · {anio}</p>
+                    <span className="font-mono text-[9px] text-slate-400">{scvsListos}/{paqueteScvs.length} listos</span>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/40">
+                    <i className="block h-full rounded-full bg-gradient-to-r from-[#00A896] to-[#C9A96E] transition-all" style={{ width: `${scvsPct}%` }} />
+                </div>
+                <div className="mt-2 space-y-1">
+                    {paqueteScvs.map((d) => {
+                        const listo = !!(scvsDocs[d.key] && scvsDocs[d.key].subido);
+                        return (
+                            <button
+                                key={d.key}
+                                type="button"
+                                onClick={() => void marcarDocScvs(d.key)}
+                                className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left transition-colors ${listo ? "border-emerald-500/30 bg-emerald-500/10" : "border-white/10 bg-black/20 hover:bg-white/5"}`}
+                                title={listo ? "Tocá para quitarlo" : "Tocá cuando lo tengas listo"}
+                            >
+                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] ${listo ? "bg-emerald-500/25 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>{listo ? "✓" : "!"}</span>
+                                <span className={`flex-1 text-[10px] ${listo ? "text-slate-300" : "text-slate-200"}`}>{d.nombre}</span>
+                                <span className="font-mono text-[9px] text-slate-500">{d.vence.toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}</span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             <div className="mt-2">

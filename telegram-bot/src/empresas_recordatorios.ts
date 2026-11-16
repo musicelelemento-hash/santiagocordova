@@ -51,7 +51,7 @@ export async function revisarObligacionesAnualesEmpresas(): Promise<string | nul
         const tp: any = c.tax_profile || {};
         const company: any = tp.company || {};
         const dia = diaVencimiento(c.ruc);
-        const hitos: Array<{ nombre: string; fecha: Date | null }> = [];
+        const hitos: Array<{ nombre: string; fecha: Date | null; nota?: string }> = [];
 
         // REBEFICS: 28 días desde la constitución si es nueva; si no, febrero.
         // La regla de «28 días desde la constitución» es solo para la PRIMERA
@@ -71,12 +71,31 @@ export async function revisarObligacionesAnualesEmpresas(): Promise<string | nul
             hitos.push({ nombre: 'ADI Dividendos', fecha: new Date(anio, 4, dia) });
         }
 
+        // ── Superintendencia de Compañías (SCVS) ──────────────────────
+        // Paquete anual: nómina (febrero) y EEFF + actas + copia del 101 (abril).
+        // Se omiten los documentos que la ficha ya marca como subidos.
+        const scvsDocs: any = (tp.scvs && tp.scvs.documentos) || {};
+        const finFebrero = new Date(anio, 2, 0);
+        const treintaAbril = new Date(anio, 3, 30);
+        if (!(scvsDocs.nomina && scvsDocs.nomina.subido)) {
+            hitos.push({ nombre: 'SCVS · Nómina de socios', fecha: finFebrero, nota: 'portal SCVS · notariada si hay socio extranjero' });
+        }
+        if (!(scvsDocs.eeff && scvsDocs.eeff.subido)) {
+            hitos.push({ nombre: 'SCVS · Estados financieros', fecha: treintaAbril, nota: 'firmados por representante legal y contador' });
+        }
+        if (!(scvsDocs.actas && scvsDocs.actas.subido)) {
+            hitos.push({ nombre: 'SCVS · Actas de junta', fecha: treintaAbril, nota: 'junta ordinaria antes del 31-marzo' });
+        }
+        if (!(scvsDocs.form101 && scvsDocs.form101.subido)) {
+            hitos.push({ nombre: 'SCVS · Copia del 101', fecha: treintaAbril, nota: 'adjuntar al paquete anual' });
+        }
+
         for (const h of hitos) {
             if (!h.fecha) continue;
             const dias = diasHasta(h.fecha);
             if (dias > 45) continue;
             const estado = dias < 0 ? `⚠️ vencida hace ${Math.abs(dias)} día(s)` : dias === 0 ? '⏰ vence HOY' : `faltan ${dias} día(s)`;
-            lineas.push(`• *${c.name}* (${c.ruc}) — ${h.nombre}: ${fmt(h.fecha)} · ${estado}`);
+            lineas.push(`• *${c.name}* (${c.ruc}) — ${h.nombre}: ${fmt(h.fecha)} · ${estado}${h.nota ? `\n   _${h.nota}_` : ''}`);
         }
     }
 
@@ -88,5 +107,6 @@ export async function revisarObligacionesAnualesEmpresas(): Promise<string | nul
         ...lineas,
         '',
         '_Las anuales no dependen del mes: REBEFICS SIEMPRE se presenta (no admite “en cero”); 1021 y ADI pueden ir sin valores._',
+        '_SCVS: se presenta en el portal de la Superintendencia (no hay API); el paquete vence el 30 de abril._',
     ].join('\n');
 }
