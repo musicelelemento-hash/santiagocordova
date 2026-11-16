@@ -127,9 +127,10 @@ export async function showSriHub(ctx: any, isEdit: boolean = false) {
     const kb = new InlineKeyboard()
         .text('⏰ Vencimientos & Calendario', 'baku_nav:deadlines')
         .text('🧮 Calculadora Multas SRI', 'baku_sri:calculator').row()
-        .text('📊 Matriz de Obligaciones', 'baku_sri:matrix')
-        .text('👴 Devolución IVA 3ra Edad', 'baku_sri:devoluciones').row()
-        .text('🔑 Consultar Claves SRI', 'baku_nav:sri_keys')
+        .text('📊 Cierre del Período Activo', 'baku_cierre:resumen')
+        .text('📊 Matriz de Obligaciones', 'baku_sri:matrix').row()
+        .text('👴 Devolución IVA 3ra Edad', 'baku_sri:devoluciones')
+        .text('🔑 Consultar Claves SRI', 'baku_nav:sri_keys').row()
         .text('🔙 Menú Principal', 'baku_nav:home');
 
     if (isEdit) {
@@ -145,8 +146,7 @@ export async function showFinancesHub(ctx: any, isEdit: boolean = false) {
     const text = `💰 <b>CENTRO DE MANDO FINANCIERO & CAJA CHICA</b>\n\n` +
                  `Gestión de liquidez, control diario de caja, cobro de honorarios y mora de clientes:`;
     const kb = new InlineKeyboard()
-        .text('💵 Saldo & Arqueo de Caja', 'baku_caja:balance')
-        .text('➕ Registrar Movimiento', 'baku_caja:record').row()
+        .text('📊 Cierre del Período Activo', 'baku_cierre:resumen').row()
         .text('💳 Cobro Rápido Honorarios', 'baku_nav:pay_quick')
         .text('📋 Deudores & Mora', 'baku_page_debt:1').row()
         .text('🔙 Menú Principal', 'baku_nav:home');
@@ -2917,6 +2917,10 @@ bot.on('callback_query:data', async (ctx) => {
             msg += `📁 <b>Estado Archivo:</b> ${hasP12 ? '✅ Guardado en Bóveda (' + c.signature_file.name + ')' : '❌ No subido'}\n\n`;
             msg += `<i>Para actualizar la firma, simplemente adjunta el archivo .p12 o .pfx directamente en el chat.</i>`;
             await ctx.reply(convertMarkdownToTelegramHtml(msg), { parse_mode: 'HTML' });
+            const p12BackKb = new InlineKeyboard()
+                .text('🔙 Volver al Expediente', `baku_sel_direct:${ruc}`)
+                .text('🔙 Menú Principal', 'baku_nav:home');
+            await ctx.reply('👆 Acciones del expediente:', { reply_markup: p12BackKb });
         }
         return;
     }
@@ -2934,6 +2938,10 @@ bot.on('callback_query:data', async (ctx) => {
             msg += `<b>Mensaje listo para enviar por WhatsApp:</b>\n`;
             msg += `<code>Estimado(a) ${c.name}, le compartimos el enlace seguro a su Portal de Cliente para consultar su información tributaria y comprobantes: ${portalUrl}</code>`;
             await ctx.reply(convertMarkdownToTelegramHtml(msg), { parse_mode: 'HTML' });
+            const p12BackKb = new InlineKeyboard()
+                .text('🔙 Volver al Expediente', `baku_sel_direct:${ruc}`)
+                .text('🔙 Menú Principal', 'baku_nav:home');
+            await ctx.reply('👆 Acciones del expediente:', { reply_markup: p12BackKb });
         }
         return;
     }

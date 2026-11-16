@@ -19,6 +19,7 @@ import { fileToBase64 } from '../../../../services/pdfExtraction';
 import { UnifiedStorageService } from '../../../../services/unifiedStorageService';
 import { downloadStoredFile } from '../../../../services/fileService';
 import { SupplierCatalogService } from '../../../../services/supplierCatalogService';
+import SriCredentialAlert from '../../SriCredentialAlert';
 
 interface ProfileTabProps {
     client: Client;
@@ -376,7 +377,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             </span>
                         </div>
 
-                        {/* Ficha de Régimen y Frecuencia */}
+                        {/* Credencial rechazada / cuenta bloqueada: cómo resolverla */}
+            <SriCredentialAlert client={editedClient} />
+
+            {/* Ficha de Régimen y Frecuencia */}
                         <RegimeInfoPanel client={editedClient} />
 
                         {/* Notificaciones y Trámites Especiales */}
