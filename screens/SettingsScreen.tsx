@@ -664,7 +664,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">• Protocolo Santiago Córdova</span>
                             </div>
-                            <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight font-display">
+                            <h1 className="text-2xl sm:text-5xl font-black text-white leading-tight sm:leading-none tracking-tight font-display">
                                 CONFIGURACIÓN & <span className="bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">SISTEMA</span>
                             </h1>
                             <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium max-w-2xl">
@@ -676,7 +676,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             </div>
 
             {/* ── SETTINGS NAVIGATION PILLS ── */}
-            <div className="flex justify-start sm:justify-center px-4 sm:px-0 overflow-x-auto no-scrollbar font-mono z-10 relative mb-2">
+            <div className="sticky top-14 z-20 -mx-4 flex justify-start overflow-x-auto no-scrollbar bg-[#051424]/95 px-4 py-2 font-mono backdrop-blur-xl sm:static sm:mx-0 sm:justify-center sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none relative mb-2">
                 <div className="inline-flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10 gap-1 shrink-0">
                     {[
                         { id: 'all', label: 'General / Todo', icon: SettingsIcon },
@@ -710,7 +710,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             <div className="space-y-8 px-4 sm:px-0">
                 {/* --- MÓDULO: FLUJO DE TRABAJO, INICIO AUTOMÁTICO & MÉTRICAS --- */}
                 {(settingsTab === 'all' || settingsTab === 'flow') && (
-                    <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden group">
+                    <div className="p-4 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden group">
                         <div className="relative z-10 font-mono">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl text-amber-400">
@@ -838,7 +838,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     <>
                         <SriExtensionsStore />
 
-                        <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden group">
+                        <div className="p-4 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden group">
                             <div className="relative z-10 font-mono">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="p-3.5 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896]">
@@ -920,7 +920,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                 {/* --- MÓDULO: ARQUITECTURA DE HONORARIOS --- */}
                 {(settingsTab === 'all' || settingsTab === 'fees') && (
-                    <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden font-mono">
+                    <div className="p-4 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden font-mono">
                         <div className="relative z-10">
                             <div className="flex justify-between items-center mb-6">
                                 {/* Herramientas del estudio: dos entregables que ya
@@ -1113,7 +1113,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 {/* --- MÓDULO: RECORDATORIOS DE COBRANZA (WHATSAPP) --- */}
                 {(settingsTab === 'all' || settingsTab === 'reminders') && (
                     <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden font-mono">
-                        <div className="p-6 sm:p-8 border-b border-white/10 bg-[#0b1326]/50">
+                        <div className="p-4 sm:p-8 border-b border-white/10 bg-[#0b1326]/50">
                             <div className="flex items-center justify-between flex-wrap gap-4">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3.5 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896]">
@@ -1142,7 +1142,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             </div>
                         </div>
 
-                        <div className={`p-6 sm:p-8 space-y-6 ${!(localReminderConfig?.isEnabled ?? true) ? 'opacity-40 pointer-events-none' : ''}`}>
+                        <div className={`p-4 sm:p-8 space-y-6 ${!(localReminderConfig?.isEnabled ?? true) ? 'opacity-40 pointer-events-none' : ''}`}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
@@ -1220,7 +1220,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                 {(settingsTab === 'all' || settingsTab === 'backup') && (
                     <div className="space-y-8 font-mono">
                         {/* 1. BÓVEDA DE CONTRASEÑAS SRI & CARGA NAVEGADOR */}
-                        <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-amber-500/20 border-t-amber-500/40 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+                        <div className="p-4 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-amber-500/20 border-t-amber-500/40 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl text-amber-400 shrink-0">
@@ -1299,7 +1299,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                         </div>
 
                         {/* 2. GESTIÓN DE EXPEDIENTES & RESPALDOS GENERALES */}
-                        <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+                        <div className="p-4 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3.5 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896] shrink-0">
                                     <Database size={24} />
