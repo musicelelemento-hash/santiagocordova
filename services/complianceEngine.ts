@@ -458,6 +458,12 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
             // El propio certificado de RUC lista el ADI como obligación de la
             // sociedad: se muestra siempre y se registra con o sin movimiento.
             obligations.push({ type: 'ADI', label: 'Anexo Dividendos' });
+            // ── Superintendencia de Compañías (SCVS) ──────────────
+            // Sociedades: nómina de socios (fin de febrero) y paquete anual
+            // (estados financieros + actas) hasta el 30 de abril.
+            obligations.push({ type: 'SCVS_SOCIOS', label: 'SCVS · Nómina de socios' });
+            obligations.push({ type: 'SCVS_EEFF', label: 'SCVS · Estados financieros' });
+            obligations.push({ type: 'SCVS_ACTAS', label: 'SCVS · Actas de junta' });
         }
         return obligations;
     }

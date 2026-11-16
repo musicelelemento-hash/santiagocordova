@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Building2, CheckCircle2, Download, FileSpreadsheet, Settings2, Users } from 'lucide-react';
+import { Building2, CheckCircle2, Download, ExternalLink, FileSpreadsheet, Settings2, Users } from 'lucide-react';
 import type { Client } from '../../types';
 import { DeclarationStatus } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
@@ -48,11 +48,16 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const vencimientos: Array<{ concepto: string; vence: string }> = Array.isArray(company.vencimientos) ? company.vencimientos : [];
 
     const anuales = useMemo(() => {
-        const lista: Array<{ tipo: 'REBEFICS' | '1021' | 'ADI'; nombre: string; vence: Date }> = [
+        const lista: Array<{ tipo: 'REBEFICS' | '1021' | 'ADI' | 'SCVS_EEFF' | 'SCVS_SOCIOS' | 'SCVS_ACTAS'; nombre: string; vence: Date }> = [
             { tipo: 'REBEFICS', nombre: 'REBEFICS (APS)', vence: getRebeficsDueDate(client, anio + 1) },
             { tipo: '1021', nombre: '1021 Renta Sociedades', vence: getIncomeTaxSociedadesDueDate(client, anio + 1) },
         ];
         lista.push({ tipo: 'ADI', nombre: 'ADI Dividendos', vence: getAdiDueDate(client, anio + 1) });
+        // Superintendencia de Compañías (SCVS)
+        const finFebrero = new Date(anio + 1, 2, 0); // último día de febrero
+        lista.push({ tipo: 'SCVS_SOCIOS', nombre: 'SCVS · Nómina de socios', vence: finFebrero });
+        lista.push({ tipo: 'SCVS_EEFF', nombre: 'SCVS · Estados financieros', vence: new Date(anio + 1, 3, 30) });
+        lista.push({ tipo: 'SCVS_ACTAS', nombre: 'SCVS · Actas de junta', vence: new Date(anio + 1, 3, 30) });
         return lista;
     }, [client, anio, company.distribuyoDividendos]);
 
@@ -99,7 +104,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
         }
     };
 
-    const registrar = async (tipo: 'REBEFICS' | '1021' | 'ADI') => {
+    const registrar = async (tipo: 'REBEFICS' | '1021' | 'ADI' | 'SCVS_EEFF' | 'SCVS_SOCIOS' | 'SCVS_ACTAS') => {
         const periodo = String(anio);
         const yaEsta = declaraciones.some((d) => d.type === tipo && d.period === periodo);
         if (yaEsta) {
@@ -243,6 +248,16 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                 })}
             </div>
 
+            <div className="mt-2">
+                <a
+                    href="https://iib.supercias.gob.ec/portaltramites/portal.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#C9A96E]/40 bg-[#C9A96E]/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[#e6d3ab] hover:bg-[#C9A96E]/20"
+                >
+                    <ExternalLink size={10} /> Abrir Superintendencia de Compañías
+                </a>
+            </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-2.5">
                 <button type="button" onClick={verResumenMes} className="rounded-lg border border-white/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-200 hover:bg-white/5">
                     Ver resumen del mes (base del 104)

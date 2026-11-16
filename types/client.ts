@@ -21,7 +21,7 @@ export enum TaxRegime {
     RimpeEmprendedor = 'RIMPE Emprendedor',
 }
 
-export type TaxObligationType = '1021' | 'REBEFICS' | 'ADI' | 'ATS' | 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO' | 'DEVOLUCION' | 'ANEXO_ICE' | 'ANEXO_PVP' | 'ANEXO_GASTOS';
+export type TaxObligationType = '1021' | 'REBEFICS' | 'ADI' | 'ATS' | 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO' | 'DEVOLUCION' | 'ANEXO_ICE' | 'ANEXO_PVP' | 'ANEXO_GASTOS' | 'SCVS_EEFF' | 'SCVS_SOCIOS' | 'SCVS_ACTAS';
 
 // ClientCategory removed - all logic now relies on Regime and TaxProfile
 
