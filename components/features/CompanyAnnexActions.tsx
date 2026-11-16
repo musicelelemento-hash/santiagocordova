@@ -10,6 +10,7 @@ import { abrirAnexoSri } from '../../services/extensionBridge';
 import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
 import { SupplierCatalogService } from '../../services/supplierCatalogService';
 import CompanyInfoModal from './CompanyInfoModal';
+import { supabase } from '../../services/supabase';
 
 /**
  * Panel de una SOCIEDAD dentro de Declaraciones: descargar REBEFICS (APS) y ATS,
@@ -35,6 +36,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const [periodoAts, setPeriodoAts] = useState(periodoInicial);
     const [cep, setCep] = useState<Record<string, string>>({});
     const [guardando, setGuardando] = useState<string | null>(null);
+    const [subiendoDoc, setSubiendoDoc] = useState<string | null>(null);
     const [resumenMes, setResumenMes] = useState<any>(null);
     const [textoVenc, setTextoVenc] = useState('');
 
@@ -124,6 +126,29 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
             toast.success(actual ? 'Documento quitado del paquete SCVS.' : 'Documento marcado como listo.');
         } catch (e: any) {
             toast.error(`No se pudo guardar: ${e?.message || e}`);
+        }
+    };
+
+    /** Sube un PDF del paquete SCVS al bucket privado y lo deja vinculado. */
+    const subirDocScvs = async (key: string, file: File) => {
+        if (!file) return;
+        setSubiendoDoc(key);
+        try {
+            const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+            const path = `scvs/${client.ruc}/${anio}/${key}-${Date.now()}.${ext}`;
+            const { error } = await supabase.storage.from('clients-vault').upload(path, file, { upsert: true, contentType: file.type || 'application/pdf' });
+            if (error) throw new Error(error.message);
+            let url = '';
+            try { const { data } = await supabase.storage.from('clients-vault').createSignedUrl(path, 60 * 60 * 24 * 365); url = data?.signedUrl || ''; } catch { /* sin link */ }
+            const tp: any = (client.taxProfile as any) || {};
+            const docs = { ...(tp.scvs?.documentos || {}) };
+            docs[key] = { subido: true, cuando: new Date().toISOString(), nombre: file.name, r2Key: path, url, origen: 'upload' };
+            await updateClient(client.id, { taxProfile: { ...tp, scvs: { ...(tp.scvs || {}), documentos: docs } } } as any);
+            toast.success(`${file.name} subido al paquete SCVS.`);
+        } catch (e: any) {
+            toast.error(`No se pudo subir: ${e?.message || e}`);
+        } finally {
+            setSubiendoDoc(null);
         }
     };
 
@@ -283,22 +308,55 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
                 <div className="mt-2 space-y-1">
                     {paqueteScvs.map((d) => {
                         const listo = !!(scvsDocs[d.key] && scvsDocs[d.key].subido);
+                        const subiendo = subiendoDoc === d.key;
                         return (
-                            <button
+                            <div
                                 key={d.key}
-                                type="button"
-                                onClick={() => void marcarDocScvs(d.key)}
-                                className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left transition-colors ${listo ? "border-emerald-500/30 bg-emerald-500/10" : "border-white/10 bg-black/20 hover:bg-white/5"}`}
-                                title={listo ? "Tocá para quitarlo" : "Tocá cuando lo tengas listo"}
+                                className={`flex items-center gap-1 rounded-lg border px-1 transition-colors ${listo ? "border-emerald-500/30 bg-emerald-500/10" : "border-white/10 bg-black/20"}`}
                             >
-                                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] ${listo ? "bg-emerald-500/25 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>{listo ? "✓" : "!"}</span>
-                                <span className={`flex-1 text-[10px] ${listo ? "text-slate-300" : "text-slate-200"}`}>{d.nombre}</span>
-                                <span className="font-mono text-[9px] text-slate-500">{d.vence.toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void marcarDocScvs(d.key)}
+                                    className="flex flex-1 items-center gap-2 px-1 py-1 text-left"
+                                    title={listo ? "Tocá para quitarlo" : "Tocá cuando lo tengas listo"}
+                                >
+                                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] ${listo ? "bg-emerald-500/25 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>{listo ? "✓" : "!"}</span>
+                                    <span className={`flex-1 text-[10px] ${listo ? "text-slate-300" : "text-slate-200"}`}>{d.nombre}</span>
+                                    <span className="font-mono text-[9px] text-slate-500">{d.vence.toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}</span>
+                                </button>
+                                <label
+                                    className="cursor-pointer rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                                    title="Subir el PDF de este documento (bucket privado)"
+                                >
+                                    {subiendo ? "…" : "📎"}
+                                    <input
+                                        type="file"
+                                        accept=".pdf,image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) void subirDocScvs(d.key, f);
+                                            e.target.value = "";
+                                        }}
+                                    />
+                                </label>
+                            </div>
                         );
                     })}
                 </div>
             </div>
+
+            {/* 🔍 Umbral de auditoría externa (SCVS) */}
+            <p className="mt-2 text-[9px] text-slate-500">
+                {(() => {
+                    const activos = Number((company as any).assetsTotal || 0);
+                    if (!activos) return "Auditoría externa: cargá los activos en “Editar socios” para saber si la SCVS la exige.";
+                    const umbral = 642020;
+                    return activos > umbral
+                        ? `Auditoría externa: SÍ requerida (activos USD ${activos.toLocaleString("es-EC")} > USD 642.020).`
+                        : `Auditoría externa: no requerida (activos USD ${activos.toLocaleString("es-EC")} ≤ USD 642.020).`;
+                })()}
+            </p>
 
             <div className="mt-2">
                 <a

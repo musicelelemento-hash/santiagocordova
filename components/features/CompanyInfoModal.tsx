@@ -43,6 +43,7 @@ const CompanyInfoModal: React.FC<Props> = ({ client, onClose }) => {
     const [tipoSociedad, setTipoSociedad] = useState<string>(company.tipoSociedad || '01');
     const [constitutionDate, setConstitutionDate] = useState<string>(company.constitutionDate || '');
     const [distribuyo, setDistribuyo] = useState<boolean>(company.distribuyoDividendos === true);
+    const [activos, setActivos] = useState<string>(company.assetsTotal ? String(company.assetsTotal) : '');
     const [personas, setPersonas] = useState<Persona[]>(
         Array.isArray(company.accionistas) && company.accionistas.length ? company.accionistas : [vacia()],
     );
@@ -126,6 +127,17 @@ const CompanyInfoModal: React.FC<Props> = ({ client, onClose }) => {
                         <input type="date" value={constitutionDate} onChange={(e) => setConstitutionDate(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-2 py-2 text-[11px] text-slate-100 outline-none" />
                     </div>
                     <label className="flex items-end gap-2 pb-2 text-[10px] text-slate-300">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Activos totales (USD, umbral de auditoría SCVS)
+                        <input
+                            type="number"
+                            min="0"
+                            value={activos}
+                            onChange={(e) => setActivos(e.target.value)}
+                            placeholder="Ej. 450000"
+                            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-slate-100 outline-none focus:border-[#C9A96E]/50"
+                        />
+                    </label>
                         <input type="checkbox" checked={distribuyo} onChange={(e) => setDistribuyo(e.target.checked)} className="h-3.5 w-3.5 accent-[#C9A96E]" />
                         Reparte dividendos (activa ADI)
                     </label>
