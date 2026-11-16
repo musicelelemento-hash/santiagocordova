@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, X } from 'lucide-react';
+import InstallAppButton from './InstallAppButton';
 import { Screen } from '../../types';
 import { NAV_GROUPS } from './Sidebar';
 
@@ -174,7 +175,8 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose, nav
                 </nav>
 
                 {/* Footer */}
-                <div className="shrink-0 border-t border-white/10 bg-[#0b1326]/85 px-4 py-3">
+                <div className="shrink-0 space-y-2 border-t border-white/10 bg-[#0b1326]/85 px-4 py-3">
+                    <InstallAppButton />
                     <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">Santiago Córdova PRO</span>
                 </div>
             </aside>

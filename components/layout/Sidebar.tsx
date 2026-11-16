@@ -1,4 +1,5 @@
 import React from 'react';
+import InstallAppButton from './InstallAppButton';
 import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, ArrowRightLeft, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { Screen, Theme } from '../../types';
 import { SystemPulse } from './SystemPulse';

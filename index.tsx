@@ -20,3 +20,12 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// PWA: service worker (instalable + arranque rápido). Sólo en producción y sin romper el dev.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            /* si falla, la app funciona igual */
+        });
+    });
+}
