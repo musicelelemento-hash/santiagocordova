@@ -58,7 +58,23 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
         return Number.isFinite(total) ? total : 0;
     }, [declaracionIva]);
 
-    const [acuse, setAcuse] = useState<any>(null);
+    /** Ventas capturadas del formulario 104 por la extensión (con IVA y sin IVA).
+ *  Sirven aunque la cuenta esté bloqueada y no se haya podido declarar. */
+const ventasCapturadas = useMemo(() => {
+    const v: any = (client.taxProfile as any)?.ventasPorPeriodo?.[periodo] || null;
+    if (!v) return null;
+    const conIva = Number(v.conIva) || 0;
+    const sinIva = Number(v.sinIva) || 0;
+    const base5 = Number(v.base5) || 0;
+    const base8 = Number(v.base8) || 0;
+    const total = Number(v.total) || (conIva + sinIva + base5 + base8);
+    return { conIva, sinIva, base5, base8, total, cuando: v.cuando as string | undefined };
+}, [client, periodo]);
+
+/** Base de ventas para el ATS: la declarada manda; si no hay, la capturada. */
+const ventasBaseEfectiva = ventasDeclaradas > 0 ? ventasDeclaradas : (ventasCapturadas?.total || 0);
+
+const [acuse, setAcuse] = useState<any>(null);
     React.useEffect(() => {
         const leer = () => {
             try {
@@ -84,7 +100,7 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
         }
         setGenerando(true);
         try {
-            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase: ventasDeclaradas });
+            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase: ventasBaseEfectiva });
             if (faltantes.length) {
                 toast.error(`Faltan ${faltantes.length} datos (clave de acceso).`);
                 return;
@@ -141,7 +157,9 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
             titulo: 'Declarar el IVA (104)',
             detalle: declaracionIva
                 ? `Declarada${declaracionIva.transactionId ? ` · CEP ${declaracionIva.transactionId}` : ''}. Las ventas confirmadas ya quedaron en la declaración.`
-                : 'El formulario llega con las VENTAS prellenadas desde Facturación Electrónica: confirmá y revisá notas de crédito.',
+                : (ventasCapturadas
+            ? `Formulario 104 prellenado · ventas con IVA ${ventasCapturadas.conIva.toFixed(2)} · sin IVA ${ventasCapturadas.sinIva.toFixed(2)}${ventasCapturadas.base5 || ventasCapturadas.base8 ? ` · 5% ${ventasCapturadas.base5.toFixed(2)} · 8% ${ventasCapturadas.base8.toFixed(2)}` : ''}.`
+            : 'El formulario llega con las VENTAS prellenadas desde Facturación Electrónica: confirmá y revisá notas de crédito.'),
             hecho: !!declaracionIva,
             icono: Calculator,
             accion: declaracionIva ? null : () => { if (!entrarAlSriSinDeclarar(client)) { toast.error('Falta la clave SRI del cliente.'); return; } toast.info('Entrando al SRI: andá a Declaraciones → IVA y confirmá el 104.'); },
