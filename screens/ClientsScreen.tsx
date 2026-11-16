@@ -224,6 +224,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [filterOption, setFilterOption] = useState<'active' | 'inactive' | 'all'>('active');
     const [isComboModalOpen, setIsComboModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'cards' | 'list' | 'analytics'>(() => (sessionStorage.getItem('clients_view_mode') as any) || 'list');
+  const [accionesMobile, setAccionesMobile] = useState(false);
     const [selectedDigitFilter, setSelectedDigitFilter] = useState<string | null>(null);
     const [quickFilter, setQuickFilter] = useState<QuickFilterKey>(null);
     const receiptFileInputRef = useRef<HTMLInputElement>(null);
@@ -1475,7 +1476,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         </div>
                         <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] opacity-40 sm:block hidden font-premium">• PROTOCOLO ZENITH</span>
                     </div>
-                    <h2 className="text-4xl sm:text-6xl font-premium font-extrabold text-on-surface leading-[1.05] tracking-tighter mb-4">
+                    <h2 className="text-[2.1rem] leading-tight sm:text-6xl font-premium font-extrabold text-on-surface leading-[1.05] tracking-tighter mb-3 sm:mb-4">
                         Directorio <span className="text-primary italic font-light">Tributario</span>
                     </h2>
                     <div className="flex items-center gap-4 text-on-surface-variant text-[10px] font-bold uppercase tracking-[0.2em] font-premium">
@@ -1493,7 +1494,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         whileTap={{ scale: 0.98 }}
                         onClick={handleExportCSV}
                         title="Exportar directorio visible a CSV"
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface hover:text-emerald-500 font-bold text-[11px] uppercase tracking-wider border border-outline-variant hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all shadow-sm font-premium"
+                        className="max-sm:hidden flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface hover:text-emerald-500 font-bold text-[11px] uppercase tracking-wider border border-outline-variant hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all shadow-sm font-premium"
                     >
                         <FileSpreadsheet size={16} className="text-emerald-500" />
                         <span>CSV Excel</span>
@@ -1504,7 +1505,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         whileTap={{ scale: 0.98 }}
                         onClick={handleCopyRucs}
                         title="Copiar todos los RUCs filtrados al portapapeles"
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface hover:text-sky-500 font-bold text-[11px] uppercase tracking-wider border border-outline-variant hover:border-sky-500/30 hover:bg-sky-500/5 transition-all shadow-sm font-premium"
+                        className="max-sm:hidden flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface hover:text-sky-500 font-bold text-[11px] uppercase tracking-wider border border-outline-variant hover:border-sky-500/30 hover:bg-sky-500/5 transition-all shadow-sm font-premium"
                     >
                         <Copy size={16} className="text-sky-500" />
                         <span>Copiar RUCs</span>
@@ -1514,7 +1515,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setIsGlobalUploadOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium cursor-pointer"
+                        className="max-sm:hidden flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium cursor-pointer"
                     >
                         <UploadCloud size={16} className="text-[#00A896]" />
                         SUBIR PDFs / RUCs
@@ -1525,7 +1526,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setIsClavesOpen(true)}
                         title="Ver y cambiar las claves del SRI, e importar el CSV de contraseñas de Chrome"
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium cursor-pointer"
+                        className="max-sm:hidden flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium cursor-pointer"
                     >
                         <KeyRound size={16} className="text-amber-400" />
                         CLAVES SRI
@@ -1541,6 +1542,25 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         <PlusCircle size={16} strokeWidth={2.5} />
                         NUEVO CLIENTE
                     </motion.button>
+                  {/* Celular: las acciones secundarias van detrás de "Acciones" */}
+                  <div className="relative w-full sm:hidden">
+                      <button
+                          type="button"
+                          onClick={() => setAccionesMobile((v) => !v)}
+                          aria-expanded={accionesMobile}
+                          className="flex w-full items-center justify-center gap-2 rounded-[1.2rem] border border-slate-200/80 bg-surface-low px-5 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-slate-600 dark:border-white/10 dark:text-slate-300"
+                      >
+                          <Filter size={15} /> Acciones {accionesMobile ? "▲" : "▼"}
+                      </button>
+                      {accionesMobile && (
+                          <div id="accionesMobilePanel" className="absolute left-0 right-0 z-30 mt-2 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-[#0b1326]">
+                              <button onClick={handleExportCSV} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"><FileSpreadsheet size={14} className="text-emerald-500" /> CSV</button>
+                              <button onClick={handleCopyRucs} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"><Copy size={14} className="text-sky-500" /> RUCs</button>
+                              <button onClick={() => setIsGlobalUploadOpen(true)} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"><UploadCloud size={14} className="text-[#00A896]" /> Subir</button>
+                              <button onClick={() => setIsClavesOpen(true)} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"><KeyRound size={14} className="text-amber-400" /> Claves</button>
+                          </div>
+                      )}
+                  </div>
                 </div>
             </motion.div>
 
@@ -1577,7 +1597,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 {/* BUSCADOR INTEGRADO Y FILTROS UNIFICADOS DE CLIENTES */}
                 <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 w-full xl:w-auto overflow-x-auto no-scrollbar">
                     {/* Buscador Rápido de Directorio con Atajo Ctrl+K */}
-                    <div className="relative flex items-center min-w-[260px] sm:min-w-[320px]">
+                    <div className="relative flex w-full items-center sm:w-auto sm:min-w-[320px]">
                         <Search size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
                         <input
                             ref={searchInputRef}
