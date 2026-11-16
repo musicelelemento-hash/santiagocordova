@@ -692,4 +692,19 @@ export const enterFacturadorDirect = (client: Client) => {
   return { success: true, provider: 'default' as const, username: user, hasPassword: !!pwd };
 };
 
-
+/**
+ * Publica el RESUMEN DEL MES hacia la extensión (popup) para que la línea de
+ * estado use los MISMOS números que la web, no los de su caché.
+ */
+export const publicarEstadoMes = (estado: {
+    periodo: string;
+    pendientes: number;
+    conComprobante: number;
+    errores: number;
+    atsPendientes?: number;
+    total?: number;
+}) => {
+    try {
+        window.postMessage({ source: 'SC_PRO_DASHBOARD', type: 'SRI_ESTADO_MES', data: { ...estado, cuando: Date.now() } }, '*');
+    } catch { /* sin bridge no pasa nada */ }
+};

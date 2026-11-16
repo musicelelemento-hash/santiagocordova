@@ -19,6 +19,7 @@ import { Modal } from './components/ui/Modal';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
+import { getClientIvaFrequency } from './services/sri';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
 import { authService } from './services/authService';
 import { sendFullClientsMatrixToExtension } from './services/extensionBridge';
@@ -50,7 +51,7 @@ const LandingLujoPage = React.lazy(() => import('./screens/LandingLujoPage').the
 // entry chunk and ran on every route, including this new `/` homepage: gsap's ScrollTrigger
 // ticker was found running a background requestAnimationFrame loop on `/` even though nothing
 // on the Lujo page uses gsap at all. Fixing the import fixes that idle background work and
-import { entrarAlSriSinDeclarar } from './services/extensionBridge';
+import { entrarAlSriSinDeclarar, publicarEstadoMes } from './services/extensionBridge';
 // trims real weight off the homepage's initial bundle.
 const LandingPage = React.lazy(() => import('./screens/LandingPage').then(m => ({ default: m.LandingPage })));
 const AuditLogScreen = React.lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
@@ -106,7 +107,46 @@ const App: React.FC = () => {
     cloudErrorMessage,
   } = useAppStore();
 
-  const [appState, setAppState] = useState<AppState>(() => {
+  // 📅 Publicar el resumen del mes a la extensión (la línea del popup usa estos números).
+useEffect(() => {
+    if (!Array.isArray(clients) || clients.length === 0) return;
+    const t = setTimeout(() => {
+        try {
+            const rawMes = Number(localStorage.getItem('selected_period_month') || '');
+            const rawAnio = Number(localStorage.getItem('selected_period_year') || '');
+            const ref = new Date();
+            const y = Number.isFinite(rawAnio) && rawAnio > 2000 ? rawAnio : (ref.getMonth() === 0 ? ref.getFullYear() - 1 : ref.getFullYear());
+            const m0 = Number.isFinite(rawMes) && rawMes >= 0 && rawMes <= 11 ? rawMes : (ref.getMonth() === 0 ? 11 : ref.getMonth() - 1);
+            const periodo = `${y}-${String(m0 + 1).padStart(2, '0')}`;
+            const mensuales = clients.filter((c: any) => {
+                if (!c || c.isDeleted || c.isActive === false) return false;
+                if (c.clientType === 'solo_plan' || c.requiresDeclarations === false) return false;
+                try { return getClientIvaFrequency(c) === 'Mensual'; } catch { return false; }
+            });
+            const delPeriodo = (c: any) => (Array.isArray(c.declarations) ? c.declarations : [])
+                .filter((d: any) => String((d && d.period) || '').split(':')[0].trim() === periodo);
+            const conComp = mensuales.filter((c: any) => delPeriodo(c).some((d: any) => {
+                const pf: any = d && d.proof_file;
+                return !!(pf && (pf.url || pf.name || pf.bucketPath));
+            })).length;
+            const enviado = ['Enviada', 'Pagada', 'enviada', 'pagada', 'completado'];
+            const pendientes = mensuales.filter((c: any) => {
+                const ds = delPeriodo(c);
+                const tieneProof = ds.some((d: any) => { const pf: any = d && d.proof_file; return !!(pf && (pf.url || pf.name || pf.bucketPath)); });
+                const tieneEnviada = ds.some((d: any) => enviado.includes(String((d && d.status) || '')));
+                return !tieneProof && !tieneEnviada;
+            }).length;
+            const errores = mensuales.filter((c: any) => {
+                const est = (c.taxProfile && c.taxProfile.sriCredencial && c.taxProfile.sriCredencial.estado) || '';
+                return !!est && est !== 'ok';
+            }).length;
+            publicarEstadoMes({ periodo, pendientes, conComprobante: conComp, errores, total: mensuales.length });
+        } catch { /* el resumen no debe romper la app */ }
+    }, 900);
+    return () => clearTimeout(t);
+}, [clients]);
+
+const [appState, setAppState] = useState<AppState>(() => {
     const path = window.location.pathname;
     // Prioridad Absoluta: El acceso al raÃ­z (/) siempre muestra la pÃ¡gina pÃºblica
     if (path === '/' || path === '' || path === '/index.html') return 'landing';
