@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Client } from '../types';
 import { hapticAudio } from '../services/hapticAudioService';
-import { sendToSRIExtension } from '../services/extensionBridge';
+import { sendToSRIExtension, entrarAlSriSinDeclarar } from '../services/extensionBridge';
 
 interface CommandPaletteProps {
     isOpen: boolean;
@@ -115,7 +115,25 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             return [...navs, ...actions, ...cls, ...sriCls];
         }
 
-        const navigationResults = ALL_NAV_ITEMS.filter(item => {
+        // Lo mismo que arriba, pero para lo que el usuario BUSCÓ: abrir el expediente
+    // o entrar al SRI sin pasar por la lista de clientes.
+    const sriSearchResults = clients
+        .filter((c) => {
+            if (c.isDeleted) return false;
+            const full = `${c.name} ${c.ruc} ${c.tradeName || ''}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            return terms.every((t) => full.includes(t));
+        })
+        .slice(0, 8)
+        .map((c) => ({
+            id: `sri-search-${c.id}`,
+            type: 'sri',
+            label: `Entrar al SRI · ${c.name}`,
+            subLabel: `${c.ruc} · ${c.sriPassword ? 'clave lista' : 'sin clave'}` + (c.taxProfile?.sriCredencial?.estado && c.taxProfile.sriCredencial.estado !== 'ok' ? ' · credencial con problema' : ''),
+            client: c,
+            icon: <LogIn size={18} className="text-[#00A896]" />,
+        }));
+
+    const navigationResults = ALL_NAV_ITEMS.filter(item => {
             const labelNorm = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             const screenNorm = item.screen.toLowerCase();
             return terms.every(t => labelNorm.includes(t) || screenNorm.includes(t));
@@ -160,7 +178,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             icon: <LogIn size={18} className="text-[#00A896]" />,
         }));
 
-        return [...navigationResults, ...actionResults, ...clientResults, ...sriResults];
+        return [...navigationResults, ...actionResults, ...clientResults, ...sriSearchResults, ...sriResults];
     }, [searchTerm, clients]);
 
     useEffect(() => {
@@ -194,20 +212,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
      */
     const entrarAlSri = (client: Client) => {
         if (!client?.ruc) return;
-        try {
-            localStorage.setItem('sri_active_credentials', JSON.stringify({
-                ruc: client.ruc,
-                password: client.sriPassword || '',
-                name: client.name,
-                timestamp: Date.now(),
-            }));
-            if (client.sriPassword) {
-                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
-            } else {
-                navigator.clipboard.writeText(client.ruc);
-            }
-        } catch { /* sin portapapeles */ }
-        sendToSRIExtension(client);
+        // 🔑 Un solo camino: entra al portal y se queda en el perfil.
+        // Antes esto llamaba a `sendToSRIExtension` (flujo de DECLARAR) y copiaba
+        // la clave al portapapeles: dos cosas que no corresponden a "entrar a mirar".
+        entrarAlSriSinDeclarar(client);
         onClose();
     };
 
