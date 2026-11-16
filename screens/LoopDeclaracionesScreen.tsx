@@ -10,6 +10,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { DeclarationDossier } from '../components/features/DeclarationDossier';
+import { BucleRemotoCard } from '../components/features/BucleRemotoCard';
 import {
   sendBatchDeclarationToExtension,
   sendLoopControlToExtension,
