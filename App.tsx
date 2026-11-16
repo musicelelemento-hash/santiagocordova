@@ -201,7 +201,7 @@ const [appState, setAppState] = useState<AppState>(() => {
     const defaultScreen = getDefaultStartScreen();
     return defaultScreen && VALID_SCREENS.includes(defaultScreen) ? defaultScreen : 'declaraciones';
   });
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage<boolean>('sc_sidebar_collapsed', false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Sincronizar appState con la URL del navegador
@@ -396,6 +396,17 @@ const [appState, setAppState] = useState<AppState>(() => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isGlobalNewClientOpen, setIsGlobalNewClientOpen] = useState(false);
   const [defaultStartScreen, setDefaultStartScreenState] = useState<Screen>(() => getDefaultStartScreen());
+
+  // 📱 Tablet: el sidebar completo (264 px) come demasiado ancho; arranca como riel.
+  const __autoRielHecho = React.useRef(false);
+  React.useEffect(() => {
+    if (__autoRielHecho.current) return;
+    __autoRielHecho.current = true;
+    try {
+      if (window.innerWidth < 1180 && window.innerWidth >= 768) setIsSidebarCollapsed(true);
+    } catch { /* sin window no pasa nada */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (appState === 'dashboard' && activeScreen) {
@@ -1306,7 +1317,7 @@ const [appState, setAppState] = useState<AppState>(() => {
             </div>
           </header>
 
-          <main className="flex-grow px-4 pt-20 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
+          <main className="flex-grow px-4 pt-20 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
               <div key={activeScreen} className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700">
                 <Suspense fallback={<ScreenLoader />}>
@@ -1319,6 +1330,7 @@ const [appState, setAppState] = useState<AppState>(() => {
                 <MobileNavBar
                   navItems={navItems}
                   activeScreen={activeScreen}
+                  onOpenMenu={() => setIsMobileDrawerOpen(true)}
                   onNavigate={(s) => {
                     if (s === 'landing' as any) setAppState('landing');
                     else navigate(s as Screen);

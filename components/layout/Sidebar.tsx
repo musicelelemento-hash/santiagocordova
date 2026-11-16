@@ -119,6 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                     onClick={() => onNavigate(screen)}
                     title={isCollapsed ? label : undefined}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`
                         group relative flex items-center rounded-2xl transition-all duration-300
                         ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-3.5 py-2.5 gap-3 w-full'}
