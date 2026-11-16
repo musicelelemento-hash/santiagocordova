@@ -702,6 +702,7 @@ export const publicarEstadoMes = (estado: {
     conComprobante: number;
     errores: number;
     atsPendientes?: number;
+    atsDetalle?: Array<{ ruc: string; name: string; periodo: string }>;
     total?: number;
 }) => {
     try {

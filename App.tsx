@@ -140,7 +140,20 @@ useEffect(() => {
                 const est = (c.taxProfile && c.taxProfile.sriCredencial && c.taxProfile.sriCredencial.estado) || '';
                 return !!est && est !== 'ok';
             }).length;
-            publicarEstadoMes({ periodo, pendientes, conComprobante: conComp, errores, total: mensuales.length });
+            // 🧾 ATS pendientes: sociedades con IVA declarado del período que
+            // todavía no tienen el ATS de ese mes (ni declaración ni anexo subido).
+            const esSoc = (c: any) => String((c && c.ruc) || '').replace(/\D/g, '')[2] === '9';
+            const atsDetalle = mensuales
+                .filter((c: any) => esSoc(c))
+                .filter((c: any) => {
+                    const ds = delPeriodo(c);
+                    const tieneIva = ds.some((d: any) => String((d && d.type) || 'IVA') === 'IVA');
+                    const tieneAts = ds.some((d: any) => String((d && d.type) || '') === 'ATS');
+                    const anexos = (c.taxProfile && c.taxProfile.anexos) || {};
+                    return tieneIva && !tieneAts && !anexos[periodo];
+                })
+                .map((c: any) => ({ ruc: String(c.ruc), name: String(c.name || ''), periodo }));
+            publicarEstadoMes({ periodo, pendientes, conComprobante: conComp, errores, atsPendientes: atsDetalle.length, atsDetalle, total: mensuales.length });
         } catch { /* el resumen no debe romper la app */ }
     }, 900);
     return () => clearTimeout(t);
