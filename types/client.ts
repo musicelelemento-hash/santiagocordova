@@ -215,7 +215,9 @@ export interface TaxProfile {
      * - `auto` (por defecto): sociedad u obligado a contabilidad → Sí, el resto → No
      * - `si` / `no`: forzado por el contador
      */
-    firmaContadorModo?: 'auto' | 'si' | 'no';
+    firmaContadorModo?: 'auto' | 'si' | 'no' | 'pendiente';
+    /** Declaración presentada que espera la firma del contador. */
+    firmaContadorPendiente?: { periodo?: string; cuando?: string; estado?: string };
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;

@@ -204,11 +204,12 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                         <span className="text-[9px] font-mono text-slate-400">ENCUESTA_FINAL_SRI</span>
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {([['auto', 'Auto'], ['si', 'Sí'], ['no', 'No']] as const).map(([valor, etiqueta]) => {
+                        {([['auto', 'Auto'], ['si', 'Sí'], ['no', 'No'], ['pendiente', 'Pendiente']] as const).map(([valor, etiqueta]) => {
                           const modoActual = editedClient.taxProfile?.firmaContadorModo
                             || (editedClient.taxProfile?.requiereFirmaContador === true ? 'si' : editedClient.taxProfile?.requiereFirmaContador === false ? 'no' : 'auto');
                           const activo = modoActual === valor;
-                          const tono = valor === 'no' ? 'border-rose-400 bg-rose-500/10 text-rose-500'
+                          const tono = valor === 'pendiente' ? 'border-sky-400 bg-sky-500/10 text-sky-400'
+        : valor === 'no' ? 'border-rose-400 bg-rose-500/10 text-rose-500'
                             : valor === 'si' ? 'border-[#00A896] bg-[#00A896]/10 text-[#00A896]'
                             : 'border-[#C9A96E] bg-[#C9A96E]/10 text-[#C9A96E]';
                           return (
@@ -226,6 +227,7 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                       </div>
                       <p className="mt-2 text-[9px] leading-relaxed text-slate-400">
                         <b>Auto</b>: sociedad u obligado a llevar contabilidad → <b>Sí</b>; el resto → <b>No</b>.
+            <b>Pendiente</b>: contesta <b>Sí</b> y deja la declaración marcada como <b>pendiente de firma del contador</b> (avisa en la ficha y en la extensión).
                         Aplica aunque las ventas sean <b>0</b>: la obligación nace de ser sociedad, no del monto.
                         Si en una SAS respondés <b>No</b>, el SRI acepta el envío, pero la declaración queda
                         <b>sin firma de contador</b> y puede ser observada después.
