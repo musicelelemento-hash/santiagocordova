@@ -89,6 +89,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const [hasActiveDevolucionIva, setHasActiveDevolucionIva] = useState(initialTaxProfile.hasActiveDevolucionIva);
     const [requiresIce, setRequiresIce] = useState(initialData?.taxProfile?.requiresIce ?? false);
     const [requiresAnexoPvp, setRequiresAnexoPvp] = useState(initialData?.taxProfile?.requiresAnexoPvp ?? false);
+    const [requiresAts, setRequiresAts] = useState<boolean | undefined>(initialData?.taxProfile?.requiresAts);
 
     // "Al día desde": first billing period for this client (YYYY-MM for monthly, YYYY-S1/S2 for semestral)
     // Default = current month so new clients start fresh without backlog
@@ -345,6 +346,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             if (extracted.tiene_devolucion_renta) setClientData(prev => ({ ...prev, hasRentaRefund: true }));
             if (extracted.tiene_devolucion_iva_tercera_edad) setClientData(prev => ({ ...prev, hasElderlyDevolucionIva: true }));
             const detectadas = extracted.obligaciones_detectadas || [];
+        // ATS: el certificado de RUC lo dice entre las obligaciones; si es
+        // sociedad o lleva contabilidad, se asume (editable después).
+        const textoObligaciones = detectadas.join(' ').toLowerCase();
+        if ((extracted as any).es_sociedad || (extracted as any).obligado_contabilidad || /(^|\s)ats(\s|$)|transaccional/.test(textoObligaciones)) {
+            setRequiresAts(true);
+        }
             if (detectadas.length) {
                 setModalFeedback({
                     message: `Perfil tributario autoconfigurado. Obligaciones detectadas: ${detectadas.join(', ')}.`

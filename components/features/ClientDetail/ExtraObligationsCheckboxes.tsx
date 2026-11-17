@@ -174,6 +174,26 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                             <span className="text-[9px] font-mono text-slate-400 mt-0.5">CONTROL_PRECIOS_VENTA</span>
                         </div>
                     </label>
+
+                    {/* ATS Checkbox */}
+                    <label className="group flex items-center p-6 rounded-2xl border cursor-pointer transition-all duration-500 relative overflow-hidden border-slate-200/80 bg-white/60 dark:bg-white/[0.02]">
+                      <div className="relative flex items-center justify-center mr-6 z-10">
+                        <input
+                          type="checkbox"
+                          disabled={disabled}
+                          checked={editedClient.taxProfile?.requiresAts ?? (String(editedClient.ruc || '')[2] === '9')}
+                          onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiresAts: e.target.checked } })}
+                          className="h-6 w-6 appearance-none border border-slate-300 rounded-lg checked:bg-slate-900 checked:border-transparent transition-all cursor-pointer shadow-inner"
+                        />
+                        {(editedClient.taxProfile?.requiresAts ?? (String(editedClient.ruc || '')[2] === '9')) && <LucideIcons.Check size={14} className="absolute text-[#00A896] pointer-events-none" strokeWidth={4} />}
+                      </div>
+                      <div className="flex flex-col z-10">
+                        <span className={`text-[11px] font-mono font-bold uppercase tracking-widest ${editedClient.taxProfile?.requiresAts ? 'text-slate-900' : 'text-slate-500'}`}>
+                          ATS Mensual
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-400 mt-0.5">ANEXO_TRANSACCIONAL</span>
+                      </div>
+                    </label>
                 </div>
             </div>
         </div>

@@ -171,6 +171,11 @@ export interface TaxProfile {
     hasActiveElderlyDevolucionIva: boolean;
     requiresIce: boolean;
     requiresAnexoPvp: boolean;
+    /**
+     * ¿El RUC lo obliga a presentar el ATS mensual?
+     * `undefined` = se deduce (sociedad / obligado a llevar contabilidad).
+     */
+    requiresAts?: boolean;
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;

@@ -1,5 +1,5 @@
 import { Client, Declaration, DeclarationStatus, TaxRegime, TaxObligationType, InternalStatus } from '../types';
-import { getPeriod, getDueDateForPeriod, getNinthDigit, getDaysUntilDue, requiresIva, getClientIvaFrequency } from './sri';
+import { clienteRequiereAts, getPeriod, getDueDateForPeriod, getNinthDigit, getDaysUntilDue, requiresIva, getClientIvaFrequency } from './sri';
 import { SRI_DUE_DATES } from '../constants';
 import { subMonths, format, getYear } from 'date-fns';
 import { isCourtesyClient } from './clientService';

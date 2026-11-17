@@ -866,3 +866,19 @@ export const getAtsDueDate = (client: Pick<Client, 'ruc'>, referenceDate: Date =
     const mesSubsiguiente = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 2, 1);
     return new Date(mesSubsiguiente.getFullYear(), mesSubsiguiente.getMonth(), diaPorNovenoDigito(client.ruc));
 };
+
+/**
+ * ¿Este cliente presenta ATS mensual?
+ *
+ * La regla cambió de "toda sociedad" a un flag editable: hay clientes que
+ * el RUC no obliga (o que el SRI se lo quitó) y el círculo mensual no debe
+ * pedirles 5 pasos cuando son 2.
+ */
+export const clienteRequiereAts = (client: Pick<Client, 'ruc' | 'taxProfile'>): boolean => {
+    const tp: any = (client as any)?.taxProfile || {};
+    if (tp.requiresAts === true) return true;
+    if (tp.requiresAts === false) return false;
+    const ruc = String((client as any)?.ruc || '').replace(/\D/g, '');
+    const esSociedad = ruc.length === 13 && ruc[2] === '9';
+    return esSociedad || tp.company?.keepsAccounting === true || tp.obligadoContabilidad === true;
+};

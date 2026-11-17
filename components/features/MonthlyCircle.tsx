@@ -7,7 +7,7 @@ import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
 import { abrirAnexoSri, entrarAlSriSinDeclarar } from '../../services/extensionBridge';
 import { useAppStore } from '../../store/useAppStore';
 import { DeclarationStatus } from '../../types';
-import { esRucSociedad } from '../../services/sri';
+import { clienteRequiereAts, esRucSociedad } from '../../services/sri';
 
 /**
  * CÍRCULO MENSUAL — el orden que importa.
@@ -43,6 +43,8 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
     const [generando, setGenerando] = useState(false);
 
     const sociedad = esRucSociedad(client.ruc);
+    // ATS sólo si su RUC/obligaciones lo exigen (editable en la ficha).
+    const requiereAts = clienteRequiereAts(client);
     const compras = useMemo(() => SupplierCatalogService.getClientPurchases(client, periodo), [client, periodo]);
     const facturas = compras?.invoices || [];
 
@@ -140,7 +142,7 @@ const [acuse, setAcuse] = useState<any>(null);
         }
     };
 
-    const pasos = [
+    const pasosBase = [
         {
             numero: 1,
             titulo: 'Extraer comprobantes del mes',
@@ -196,6 +198,21 @@ const [acuse, setAcuse] = useState<any>(null);
         },
     ];
 
+    // Sin ATS: el mes son dos pasos (comprobantes + IVA) y su comprobante.
+    const pasos = (requiereAts ? pasosBase : [
+        pasosBase[0],
+        pasosBase[1],
+        {
+            numero: 0,
+            titulo: 'Comprobante del IVA guardado',
+            detalle: declaracionIva ? 'Queda en la bóveda del cliente.' : 'La extensión lo guarda al enviar el IVA.',
+            hecho: !!declaracionIva,
+            icono: CheckCircle2,
+            accion: null,
+            boton: '',
+        },
+    ]).map((p, i) => ({ ...p, numero: i + 1 }));
+
     const hechos = pasos.filter((p) => p.hecho).length;
 
     return (
@@ -205,7 +222,7 @@ const [acuse, setAcuse] = useState<any>(null);
                     <Building2 size={13} /> Círculo mensual · {nombrePeriodo(periodo)}
                 </p>
                 <div className="flex items-center gap-2">
-                    <span className="font-mono text-[9px] text-slate-400">{hechos}/5 pasos</span>
+                    <span className="font-mono text-[9px] text-slate-400">{hechos}/{pasos.length} pasos</span>
                     <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="rounded-lg border border-white/15 bg-black/30 px-2 py-1 font-mono text-[10px] text-slate-100 outline-none">
                         {Array.from({ length: 12 }).map((_, i) => {
                             const d = new Date(ahora.getFullYear(), ahora.getMonth() - i - 1, 1);
@@ -217,7 +234,11 @@ const [acuse, setAcuse] = useState<any>(null);
             </div>
 
             <p className="mt-1 text-[10px] text-slate-500">
-                Orden correcto: <b className="text-slate-300">IVA primero</b> (ahí se confirman las ventas y retenciones), después el ATS con las compras y las ventas ya declaradas.
+                {requiereAts ? (
+                <>Orden correcto: <b className="text-slate-300">IVA primero</b> (ahí se confirman las ventas y retenciones), después el ATS con las compras y las ventas ya declaradas.</>
+            ) : (
+                <>Este cliente <b className="text-slate-300">no presenta ATS</b> según sus obligaciones: el mes se cierra con el IVA y su comprobante. Si el SRI se lo agrega, activalo en la ficha → Obligaciones.</>
+            )}
             </p>
 
             <div className="mt-2 space-y-1">
@@ -247,7 +268,13 @@ const [acuse, setAcuse] = useState<any>(null);
 
             {sociedad && (
                 <p className="mt-1.5 text-[9px] text-slate-500">
-                    Sociedad: suma <b className="text-slate-300">ATS + IVA mensual</b> y las anuales (REBEFICS/1021/ADI) en su panel.
+                    {client.taxProfile?.requiresIce && (
+            <p className="mt-1.5 text-[9px] text-amber-500/90">
+                También presenta <b>ICE</b>: el formulario y el anexo se manejan desde la herramienta de ICE en el SRI.
+            </p>
+        )}
+
+        {requiereAts ? (<>Sociedad: suma <b className="text-slate-300">ATS + IVA mensual</b> y las anuales (REBEFICS/1021/ADI) en su panel.</>) : (<>Sin ATS activo. Podés activarlo en la ficha → Obligaciones si el SRI lo exige.</>)}
                 </p>
             )}
         </div>
