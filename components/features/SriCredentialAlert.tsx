@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, ExternalLink, KeyRound, ShieldAlert } from 'lucide-react';
 import type { Client } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
+import { publicarCredencialActualizada } from '../../services/extensionBridge';
 import { useToast } from '../../context/ToastContext';
 
 /** Portal oficial del SRI para generar o recuperar la clave. */
@@ -58,7 +59,8 @@ const SriCredentialAlert: React.FC<{ client: Client }> = ({ client }) => {
                     },
                 },
             } as any);
-            toast.success('Clave actualizada. La alerta se limpió: el bucle puede volver a intentar.');
+            publicarCredencialActualizada({ ...client, sriPassword: clave } as any);
+            toast.success('Clave actualizada. La extensión ya la recibió: el bucle puede volver a intentar.');
             setNueva('');
             setAbierto(false);
         } catch (e: any) {

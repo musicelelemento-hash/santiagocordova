@@ -709,3 +709,29 @@ export const publicarEstadoMes = (estado: {
         window.postMessage({ source: 'SC_PRO_DASHBOARD', type: 'SRI_ESTADO_MES', data: { ...estado, cuando: Date.now() } }, '*');
     } catch { /* sin bridge no pasa nada */ }
 };
+
+/**
+ * Avisa a la extensión que la clave de UN cliente cambió.
+ *
+ * Sin esto, la caché del popup seguía con la clave vieja (la del bloqueo)
+ * aunque en Supabase ya estuviera la nueva, y el cliente no aparecía para
+ * correr. El bridge actualiza la caché y limpia las marcas de error.
+ */
+export const publicarCredencialActualizada = (client: Client) => {
+    if (!client?.ruc) return false;
+    try {
+        window.postMessage({
+            source: 'SC_PRO_DASHBOARD',
+            type: 'SRI_CLIENT_UPDATED',
+            data: {
+                ruc: client.ruc,
+                name: client.name || '',
+                password: client.sriPassword || '',
+                taxProfile: (client as any).taxProfile || null,
+            },
+        }, '*');
+        return true;
+    } catch {
+        return false;
+    }
+};
