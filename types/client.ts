@@ -210,6 +210,12 @@ export interface TaxProfile {
      * Por defecto se responde **No**; se marca acá para los clientes que sí.
      */
     requiereFirmaContador?: boolean;
+    /**
+     * Cómo responder «¿Requiere firma de contador?» al final de la declaración:
+     * - `auto` (por defecto): sociedad u obligado a contabilidad → Sí, el resto → No
+     * - `si` / `no`: forzado por el contador
+     */
+    firmaContadorModo?: 'auto' | 'si' | 'no';
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;

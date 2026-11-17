@@ -195,25 +195,40 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                       </div>
                     </label>
 
-                    {/* Firma de contador (encuesta del SRI al final) */}
-                    <label className="group flex items-center p-6 rounded-2xl border cursor-pointer transition-all duration-500 relative overflow-hidden border-slate-200/80 bg-white/60 dark:bg-white/[0.02]">
-                      <div className="relative flex items-center justify-center mr-6 z-10">
-                        <input
-                          type="checkbox"
-                          disabled={disabled}
-                          checked={editedClient.taxProfile?.requiereFirmaContador || false}
-                          onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiereFirmaContador: e.target.checked } })}
-                          className="h-6 w-6 appearance-none border border-slate-300 rounded-lg checked:bg-slate-900 checked:border-transparent transition-all cursor-pointer shadow-inner"
-                        />
-                        {editedClient.taxProfile?.requiereFirmaContador && <LucideIcons.Check size={14} className="absolute text-[#C9A96E] pointer-events-none" strokeWidth={4} />}
-                      </div>
-                      <div className="flex flex-col z-10">
-                        <span className={`text-[11px] font-mono font-bold uppercase tracking-widest ${editedClient.taxProfile?.requiereFirmaContador ? 'text-slate-900' : 'text-slate-500'}`}>
+                    {/* Firma de contador (encuesta final del SRI) */}
+                    <div className="p-6 rounded-2xl border border-slate-200/80 bg-white/60 dark:bg-white/[0.02]">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-900 dark:text-slate-200">
                           Firma de contador
                         </span>
-                        <span className="text-[9px] font-mono text-slate-400 mt-0.5">ENCUESTA_FINAL_SRI</span>
+                        <span className="text-[9px] font-mono text-slate-400">ENCUESTA_FINAL_SRI</span>
                       </div>
-                    </label>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {([['auto', 'Auto'], ['si', 'Sí'], ['no', 'No']] as const).map(([valor, etiqueta]) => {
+                          const modoActual = editedClient.taxProfile?.firmaContadorModo
+                            || (editedClient.taxProfile?.requiereFirmaContador === true ? 'si' : editedClient.taxProfile?.requiereFirmaContador === false ? 'no' : 'auto');
+                          const activo = modoActual === valor;
+                          const tono = valor === 'no' ? 'border-rose-400 bg-rose-500/10 text-rose-500'
+                            : valor === 'si' ? 'border-[#00A896] bg-[#00A896]/10 text-[#00A896]'
+                            : 'border-[#C9A96E] bg-[#C9A96E]/10 text-[#C9A96E]';
+                          return (
+                            <button
+                              key={valor}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), firmaContadorModo: valor } })}
+                              className={`rounded-xl border px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all ${activo ? tono : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                            >
+                              {etiqueta}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="mt-2 text-[9px] leading-relaxed text-slate-400">
+                        <b>Auto</b>: sociedad u obligado a llevar contabilidad → <b>Sí</b>; el resto → <b>No</b>.
+                        En una SAS lo correcto es <b>Sí</b> (la declaración la firma un contador).
+                      </p>
+                    </div>
                 </div>
             </div>
         </div>
