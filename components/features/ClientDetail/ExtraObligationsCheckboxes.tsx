@@ -194,6 +194,26 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                         <span className="text-[9px] font-mono text-slate-400 mt-0.5">ANEXO_TRANSACCIONAL</span>
                       </div>
                     </label>
+
+                    {/* Firma de contador (encuesta del SRI al final) */}
+                    <label className="group flex items-center p-6 rounded-2xl border cursor-pointer transition-all duration-500 relative overflow-hidden border-slate-200/80 bg-white/60 dark:bg-white/[0.02]">
+                      <div className="relative flex items-center justify-center mr-6 z-10">
+                        <input
+                          type="checkbox"
+                          disabled={disabled}
+                          checked={editedClient.taxProfile?.requiereFirmaContador || false}
+                          onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiereFirmaContador: e.target.checked } })}
+                          className="h-6 w-6 appearance-none border border-slate-300 rounded-lg checked:bg-slate-900 checked:border-transparent transition-all cursor-pointer shadow-inner"
+                        />
+                        {editedClient.taxProfile?.requiereFirmaContador && <LucideIcons.Check size={14} className="absolute text-[#C9A96E] pointer-events-none" strokeWidth={4} />}
+                      </div>
+                      <div className="flex flex-col z-10">
+                        <span className={`text-[11px] font-mono font-bold uppercase tracking-widest ${editedClient.taxProfile?.requiereFirmaContador ? 'text-slate-900' : 'text-slate-500'}`}>
+                          Firma de contador
+                        </span>
+                        <span className="text-[9px] font-mono text-slate-400 mt-0.5">ENCUESTA_FINAL_SRI</span>
+                      </div>
+                    </label>
                 </div>
             </div>
         </div>

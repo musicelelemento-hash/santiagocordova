@@ -176,6 +176,11 @@ export interface TaxProfile {
      * `undefined` = se deduce (sociedad / obligado a llevar contabilidad).
      */
     requiresAts?: boolean;
+    /**
+     * El SRI pregunta al final si la declaración «requiere firma de contador».
+     * Por defecto se responde **No**; se marca acá para los clientes que sí.
+     */
+    requiereFirmaContador?: boolean;
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;
