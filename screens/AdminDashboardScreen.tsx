@@ -1976,6 +1976,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div className="relative">
                                         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                                         <input
+                                            autoComplete="off" data-lpignore="true" data-1p-ignore
                                             type="text"
                                             value={despachoSearch}
                                             onChange={(e) => setDespachoSearch(e.target.value)}
@@ -3250,6 +3251,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         <div className="relative flex-1">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                             <input
+                                autoComplete="off" data-lpignore="true" data-1p-ignore
                                 type="text"
                                 value={preFlightSearch}
                                 onChange={e => setPreFlightSearch(e.target.value)}

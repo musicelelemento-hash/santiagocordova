@@ -478,6 +478,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                     <div className="relative min-w-[220px] sm:w-72">
                         <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                         <input
+                            autoComplete="off" data-lpignore="true" data-1p-ignore
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -1037,6 +1038,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 <div className="relative flex items-center">
                     <Search size={14} className="absolute left-3 text-on-surface-variant" />
                     <input
+                        autoComplete="off" data-lpignore="true" data-1p-ignore
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
