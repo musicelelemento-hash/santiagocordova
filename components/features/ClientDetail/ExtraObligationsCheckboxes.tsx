@@ -226,7 +226,9 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                       </div>
                       <p className="mt-2 text-[9px] leading-relaxed text-slate-400">
                         <b>Auto</b>: sociedad u obligado a llevar contabilidad → <b>Sí</b>; el resto → <b>No</b>.
-                        En una SAS lo correcto es <b>Sí</b> (la declaración la firma un contador).
+                        Aplica aunque las ventas sean <b>0</b>: la obligación nace de ser sociedad, no del monto.
+                        Si en una SAS respondés <b>No</b>, el SRI acepta el envío, pero la declaración queda
+                        <b>sin firma de contador</b> y puede ser observada después.
                       </p>
                     </div>
                 </div>
