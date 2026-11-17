@@ -152,6 +152,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const { clients, serviceFees, updateClient } = useAppStore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'factura' | 'retencion' | 'nota_credito' | 'nota_debito' | 'guia' | 'liquidacion' | 'historial' | 'validador' | 'configuracion' | 'firma'>('dashboard');
+    const [accionesFactura, setAccionesFactura] = useState(false);
   const [isFacturacionOpen, setIsFacturacionOpen] = useState(true);
   const [isHerramientasOpen, setIsHerramientasOpen] = useState(true);
   const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState(false);
@@ -2361,7 +2362,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       <div className="space-y-6 animate-in fade-in duration-300 font-sans">
         
         {/* Welcome Banner Card (Stitch Obsidian Luxury) */}
-        <div className="p-6 sm:p-8 rounded-[2.5rem] bg-gradient-to-br from-white via-slate-50 to-blue-50/40 dark:from-[#051424]/95 dark:via-[#051424]/90 dark:to-[#0B2149]/80 border border-slate-200/90 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
+        <div className="p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] bg-gradient-to-br from-white via-slate-50 to-blue-50/40 dark:from-[#051424]/95 dark:via-[#051424]/90 dark:to-[#0B2149]/80 border border-slate-200/90 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#2B6AFF]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#00A896]/10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
           
@@ -2383,7 +2384,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsDevolucionModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-rose-500/20 active:scale-95 border border-white/10 cursor-pointer"
+              className="max-sm:hidden flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-rose-500/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <HeartHandshake size={14} />
               <span>Devolución IVA</span>
@@ -2391,7 +2392,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsBatchModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 active:scale-95 border border-white/10 cursor-pointer"
+              className="max-sm:hidden flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <Zap size={14} />
               <span>Facturación Masiva</span>
@@ -2399,7 +2400,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsPosModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/20 active:scale-95 border border-white/10 cursor-pointer"
+              className="max-sm:hidden flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <Store size={14} />
               <span>Caja POS</span>
@@ -2407,7 +2408,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsSalesModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
+              className="max-sm:hidden flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <ShoppingBag size={14} />
               <span>Venta de Planes</span>
@@ -2420,6 +2421,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <Plus size={14} />
               <span>Nueva Factura</span>
             </button>
+            {/* Celular: acciones secundarias en un menú */}
+            <div className="relative w-full sm:hidden">
+              <button
+                type="button"
+                onClick={() => setAccionesFactura((v) => !v)}
+                aria-expanded={accionesFactura}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-300"
+              >
+                {accionesFactura ? '▲ Ocultar acciones' : '▼ Más acciones de facturación'}
+              </button>
+              {accionesFactura && (
+                <div id="accionesFacturaPanel" className="absolute left-0 right-0 z-30 mt-2 grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-[#0b1326] p-2 shadow-2xl">
+                  <button type="button" onClick={() => { setIsDevolucionModalOpen(true); setAccionesFactura(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-rose-300 hover:bg-rose-500/10">💸 Devolución IVA</button>
+                  <button type="button" onClick={() => { setIsBatchModalOpen(true); setAccionesFactura(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 hover:bg-indigo-500/10">⚡ Facturación masiva</button>
+                  <button type="button" onClick={() => { setIsPosModalOpen(true); setAccionesFactura(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 hover:bg-emerald-500/10">🏪 Caja POS</button>
+                  <button type="button" onClick={() => { setIsSalesModalOpen(true); setAccionesFactura(false); }} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/10">🛍 Venta de planes</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2427,7 +2447,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-[#00A896]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-[#00A896]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-[#00A896] transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Total Facturado</span>
@@ -2444,7 +2464,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-[#2B6AFF]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-[#2B6AFF]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-[#2B6AFF] transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Facturas Emitidas</span>
@@ -2461,7 +2481,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-indigo-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-indigo-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-indigo-400 transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Retenciones</span>
@@ -2478,7 +2498,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-amber-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-amber-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-400 transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Total Comprobantes</span>
@@ -2599,7 +2619,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className="lg:col-span-4 space-y-4 font-mono">
             
             {/* Connection widget */}
-            <div className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
+            <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
               <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Servidor API SRI</span>
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-2xl border ${
@@ -2619,7 +2639,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             {/* Signature expiry warning */}
-            <div className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
+            <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
               <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Vigencia Firma Electrónica (.p12)</span>
               {p12FileBase64 ? (
                 (() => {
@@ -2691,7 +2711,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             {/* Protocolo de Conectividad & Enlaces widget */}
-            <div className="p-5 rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3.5">
+            <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3.5">
               <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Guía & Portales SRI</span>
               
               {/* Quick links */}
