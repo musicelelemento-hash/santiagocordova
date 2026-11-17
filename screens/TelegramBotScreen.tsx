@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
     Bot, Send, Key, KeyRound, CheckCircle2, Copy, ExternalLink,
     RefreshCw, Search, Eye, EyeOff, Save, Sparkles, Layers,
     Terminal, Users, AlertCircle, FileText, Check, AlertTriangle,
     Wand2, MessageSquare, Gauge, Plus, Trash2, Sliders, Smartphone,
     ArrowRight, Play, CheckCircle, Flame, ThumbsUp, Zap, HelpCircle,
-    SlidersHorizontal, Edit3
+    SlidersHorizontal, Edit3, X
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
@@ -54,6 +54,22 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
 
     const [activeTab, setActiveTab] = useState<TabType>('claves');
     const [searchTerm, setSearchTerm] = useState('');
+    // 🚫 Chrome/gestores de contraseñas rellenaban este buscador con el correo
+    // del admin (autofill) y el filtro no encontraba nada. Se fuerza a vacío.
+    const busquedaRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        const limpiar = () => {
+            const el = busquedaRef.current;
+            if (el && /@/.test(el.value)) {
+                el.value = '';
+                setSearchTerm('');
+            }
+        };
+        limpiar();
+        const t1 = window.setTimeout(limpiar, 350);
+        const t2 = window.setTimeout(limpiar, 1200);
+        return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+    }, []);
     const [filterKeyStatus, setFilterKeyStatus] = useState<'all' | 'missing' | 'short' | 'ok'>('missing');
     const [editingPasswords, setEditingPasswords] = useState<{ [id: string]: string }>({});
     const [showPassword, setShowPassword] = useState<{ [id: string]: boolean }>({});
@@ -621,12 +637,32 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                         <div className="relative flex-1">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input
-                                type="text"
+                                ref={busquedaRef}
+                                type="search"
+                                name="buscar-cliente-telegram"
+                                autoComplete="off"
+                                autoCorrect="off"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                inputMode="search"
+                                data-lpignore="true"
+                                data-1p-ignore
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 placeholder="Buscar por nombre o RUC (ej: Murillo, 2026071315102)..."
-                                className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 transition-all"
+                                className="w-full pl-10 pr-10 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 transition-all"
                             />
+                            {searchTerm && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setSearchTerm(''); busquedaRef.current?.focus(); }}
+                                    aria-label="Limpiar búsqueda"
+                                    title="Limpiar búsqueda"
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+                                >
+                                    <X size={13} />
+                                </button>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2">
