@@ -3,7 +3,7 @@ import {
   Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarClock, CheckCircle2,
   CircleDot, Clock, Eye, Gauge, Info, LayoutGrid, Maximize2, Minimize2,
   Pause, Play, Search, ShieldAlert, Sparkles, Square, Timer, TrendingUp,
-  Wifi, WifiOff, X
+  Wifi, WifiOff, X, KeyRound
 } from 'lucide-react';
 import type { Client, Screen } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -11,8 +11,10 @@ import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { DeclarationDossier } from '../components/features/DeclarationDossier';
 import { BucleRemotoCard } from '../components/features/BucleRemotoCard';
+import { asegurarClaveCliente, guardarClaveCliente, hidratarClavesFaltantes } from '../services/sriPasswords';
 import {
   sendBatchDeclarationToExtension,
+  publicarCredencialActualizada,
   sendLoopControlToExtension,
   enterSriDirect
 } from '../services/extensionBridge';
@@ -222,7 +224,23 @@ const FilaCliente: React.FC<{
 // ── Pantalla ─────────────────────────────────────────────────────────────────
 
 export const LoopDeclaracionesScreen: React.FC<LoopDeclaracionesScreenProps> = ({ navigate }) => {
-  const { clients } = useAppStore();
+  const { clients, updateClient } = useAppStore();
+
+  // 🔑 Clave pedida en el momento cuando el cliente no la tiene en el navegador.
+  const [clavePendiente, setClavePendiente] = useState<{ cliente: Client; loop: LoopClient } | null>(null);
+  const [claveInput, setClaveInput] = useState('');
+  const [guardandoClave, setGuardandoClave] = useState(false);
+
+  // Si la nube tiene la clave y el navegador no, se recupera sola.
+  useEffect(() => {
+    if (!Array.isArray(clients) || clients.length === 0) return;
+    const faltan = clients.filter((c) => c && c.ruc && !String(c.sriPassword || '').trim()).length;
+    if (!faltan) return;
+    void hidratarClavesFaltantes(clients, updateClient).then((n) => {
+      if (n > 0) toast.success(`Se recuperaron ${n} clave(s) SRI desde la nube.`);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clients.length]);
   const { toast } = useToast();
 
   const [modo, setModo] = useState<ModoVista>(() =>
@@ -364,9 +382,31 @@ export const LoopDeclaracionesScreen: React.FC<LoopDeclaracionesScreenProps> = (
   // Mantiene el ref apuntando a la versión fresca (ver comentario del ref).
   cerrarRef.current = cerrarCorrida;
 
-  const arrancarBucle = useCallback((soloEste?: LoopClient) => {
-    const cola = soloEste ? [soloEste.cliente] : colaParaDeclarar(resumen);
+  const arrancarBucle = useCallback(async (soloEste?: LoopClient) => {
+    let cola = soloEste ? [soloEste.cliente] : colaParaDeclarar(resumen);
+
+    // Un solo cliente sin clave: se busca en la nube o se pide acá mismo.
+    if (soloEste) {
+      const { clave, desdeNube } = await asegurarClaveCliente(soloEste.cliente);
+      if (!clave) {
+        setClaveInput('');
+        setClavePendiente({ cliente: soloEste.cliente, loop: soloEste });
+        return;
+      }
+      if (desdeNube || clave !== soloEste.cliente.sriPassword) {
+        try { await updateClient(soloEste.cliente.id, { sriPassword: clave }); } catch { /* optimista */ }
+        cola = [{ ...soloEste.cliente, sriPassword: clave }];
+      }
+    }
+
     if (cola.length === 0) {
+      if (resumen.sinClave.length > 0) {
+        const primero = resumen.sinClave[0];
+        setClaveInput('');
+        setClavePendiente({ cliente: primero.cliente, loop: primero });
+        toast.info(`${resumen.sinClave.length} cliente(s) sin clave. Cargá la de ${primero.name} y seguimos.`);
+        return;
+      }
       toast.info('No hay clientes por declarar en este período.');
       return;
     }
@@ -385,7 +425,28 @@ export const LoopDeclaracionesScreen: React.FC<LoopDeclaracionesScreenProps> = (
         ? `Bucle enviado para ${soloEste.name}.`
         : `Bucle enviado: ${cola.length} cliente${cola.length === 1 ? '' : 's'} de ${periodoLegible(periodo)}.`
     );
-  }, [resumen, periodo, toast]);
+  }, [resumen, periodo, toast, updateClient]);
+
+  // 🔑 Guarda la clave pedida y sigue con el bucle, sin salir de la pantalla.
+  const guardarYCorrer = useCallback(async () => {
+    if (!clavePendiente) return;
+    const { cliente, loop } = clavePendiente;
+    setGuardandoClave(true);
+    try {
+      const res = await guardarClaveCliente(cliente, claveInput.trim(), updateClient, { origen: 'manual' });
+      if (!res.ok) {
+        toast.error(res.motivo || res.aviso || 'No se pudo guardar la clave.');
+        return;
+      }
+      try { publicarCredencialActualizada({ ...cliente, sriPassword: claveInput.trim() } as any); } catch { /* opcional */ }
+      toast.success(res.enNube ? 'Clave guardada y confirmada en la nube.' : 'Clave guardada en este navegador (la nube no la confirmó).');
+      setClavePendiente(null);
+      setClaveInput('');
+      await arrancarBucle(loop);
+    } finally {
+      setGuardandoClave(false);
+    }
+  }, [clavePendiente, claveInput, updateClient, toast, arrancarBucle]);
 
   const controlar = (accion: 'pausar' | 'detener' | 'reanudar') => {
     sendLoopControlToExtension(accion);
@@ -848,6 +909,38 @@ export const LoopDeclaracionesScreen: React.FC<LoopDeclaracionesScreenProps> = (
   // ── Modo cockpit ──
   return (
     <div className="px-4 md:px-8 py-6 flex flex-col gap-4">
+      {clavePendiente && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-white/15 bg-[#0b1326] p-5 text-slate-200 shadow-2xl">
+            <p className="flex items-center gap-2 font-display text-sm font-bold text-white">
+              <KeyRound size={15} className="text-[#C9A96E]" /> Clave SRI · {clavePendiente.cliente.name}
+            </p>
+            <p className="mt-1 text-[10px] text-slate-500">
+              No estaba guardada en este navegador. Se guarda y se corre el bucle de {periodoLegible(periodo)}.
+            </p>
+            <input
+              autoFocus
+              type="password"
+              value={claveInput}
+              onChange={(e) => setClaveInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void guardarYCorrer(); }}
+              placeholder="Clave SRI"
+              className="mt-3 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-slate-100 outline-none focus:border-[#00A896]/50"
+            />
+            <div className="mt-3 flex items-center gap-2">
+              <button type="button" onClick={() => void guardarYCorrer()} disabled={guardandoClave || claveInput.trim().length < 4}
+                className="flex-1 rounded-xl bg-[#00A896] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-950 disabled:opacity-50">
+                {guardandoClave ? 'Guardando…' : 'Guardar y correr'}
+              </button>
+              <button type="button"
+                onClick={() => { setClavePendiente(null); setClaveInput(''); }}
+                className="rounded-xl border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {encabezado}
 
       <div className="flex items-center justify-between gap-3 flex-wrap">

@@ -3,6 +3,7 @@ import { AlertTriangle, ExternalLink, KeyRound, ShieldAlert } from 'lucide-react
 import type { Client } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { publicarCredencialActualizada } from '../../services/extensionBridge';
+import { guardarClaveCliente } from '../../services/sriPasswords';
 import { useToast } from '../../context/ToastContext';
 
 /** Portal oficial del SRI para generar o recuperar la clave. */
@@ -47,20 +48,13 @@ const SriCredentialAlert: React.FC<{ client: Client }> = ({ client }) => {
         }
         setGuardando(true);
         try {
-            const tp: any = (client.taxProfile as any) || {};
-            await updateClient(client.id, {
-                sriPassword: clave,
-                taxProfile: {
-                    ...tp,
-                    sriCredencial: {
-                        estado: 'ok',
-                        motivo: 'Clave actualizada manualmente por el usuario',
-                        cuando: new Date().toISOString(),
-                    },
-                },
-            } as any);
+            const res = await guardarClaveCliente(client, clave, updateClient, { origen: 'manual' });
+            if (!res.ok) {
+                toast.error(res.motivo || res.aviso || 'No se pudo guardar la clave.');
+                return;
+            }
             publicarCredencialActualizada({ ...client, sriPassword: clave } as any);
-            toast.success('Clave actualizada. La extensión ya la recibió: el bucle puede volver a intentar.');
+            toast.success(res.enNube ? 'Clave guardada y confirmada en la nube. La extensión ya la recibió.' : 'Clave guardada en este navegador (la nube no la confirmó).');
             setNueva('');
             setAbierto(false);
         } catch (e: any) {

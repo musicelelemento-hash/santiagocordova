@@ -77,6 +77,7 @@ const importBrowserPasswordsToClients = (
 };
 
 import ChromePasswordsImportModal from '../components/features/ChromePasswordsImportModal';
+import { hashClave } from '../services/sriPasswords';
 import { sendFullClientsMatrixToExtension } from '../services/extensionBridge';
 import { useToast } from '../context/ToastContext';
 import { useAppStore } from '../store/useAppStore';
@@ -1319,14 +1320,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                 if (setSriCredentials) {
                     setSriCredentials(prev => ({ ...prev, ...credenciales }));
                 }
-                const cambios = new Map(actualizar.map(c => [c.id, c]));
+                // 🧠 Reglas de choque: un CSV viejo NO pisa una clave ya verificada.
+                const cuando = new Date().toISOString();
+                let conflictos = 0;
+                const aplicar: any[] = [];
+                for (const c of actualizar) {
+                    const previo = clients.find((x) => x.id === c.id);
+                    const cred: any = (previo?.taxProfile as any)?.sriCredencial || {};
+                    if (cred.estado === 'ok' && cred.ultimo_ingreso && c.sriPassword && previo?.sriPassword && c.sriPassword !== previo.sriPassword) {
+                        conflictos++;
+                        continue; // gana la que ya entró al SRI
+                    }
+                    if (c.sriPassword) {
+                        const tp: any = (c.taxProfile as any) || {};
+                        const historial = [...(Array.isArray(cred.historial) ? cred.historial : []), { hash: hashClave(c.sriPassword), origen: 'csv', cuando, verificado: false }].slice(-10);
+                        aplicar.push({
+                            ...c,
+                            taxProfile: { ...tp, sriCredencial: { ...cred, claveActualizadaEn: cuando, origenClave: 'csv', hashClave: hashClave(c.sriPassword), historial } },
+                        });
+                    } else {
+                        aplicar.push(c);
+                    }
+                }
+                const cambios = new Map(aplicar.map(c => [c.id, c]));
                 const lista = clients.map(c => cambios.get(c.id) || c);
                 const final = [...lista, ...crear];
                 setClients(final);
-                if (actualizar.length > 0) {
+                let nubeOk = true;
+                if (aplicar.length > 0) {
                     try {
-                        await db.bulkUpdate('sc_pro_clients', actualizar);
-                    } catch (e) {
+                        await db.bulkUpdate('sc_pro_clients', aplicar);
+                    } catch (e: any) {
+                        nubeOk = false;
                         console.warn("No se pudo sincronizar la clave en Supabase:", e);
                     }
                 }
@@ -1339,7 +1364,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                 } catch (e) {
                     console.warn("La extensión no está disponible para recibir la matriz:", e);
                 }
-                toast.success(`Claves del SRI: ${Object.keys(credenciales).length} detectadas · ${actualizar.length} actualizados · ${crear.length} nuevos`);
+                toast.success(`Claves SRI: ${Object.keys(credenciales).length} detectadas · ${aplicar.length} actualizados · ${crear.length} nuevos` + (conflictos > 0 ? ` · ${conflictos} conservados (ya verificados)` : ''));
+                if (!nubeOk) toast.error('Se aplicaron en este navegador, pero Supabase no confirmó el guardado.');
             }}
         />
         <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
