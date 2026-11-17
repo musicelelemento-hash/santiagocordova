@@ -374,7 +374,7 @@ export const CotizacionesScreen: React.FC<CotizacionesScreenProps> = ({ navigate
             <div className="flex flex-col md:flex-row items-center gap-4 justify-between">
                 <div className="relative w-full md:max-w-md">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-                    <input
+                    <input autoComplete="off" data-lpignore="true" data-1p-ignore
                         type="text"
                         placeholder="Buscar por cliente, RUC o secuencial..."
                         value={searchTerm}

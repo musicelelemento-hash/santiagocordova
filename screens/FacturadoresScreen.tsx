@@ -1226,7 +1226,7 @@ RUC: ${client.ruc}
                 <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-surface-low p-4 rounded-[2rem] border border-foreground/10 backdrop-blur-2xl shadow-xl font-mono">
                     <div className="relative w-full lg:max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-                        <input
+                        <input autoComplete="off" data-lpignore="true" data-1p-ignore
                             type="text"
                             placeholder="BUSCAR CLIENTE, RUC O SOFTWARE..."
                             value={searchTerm}

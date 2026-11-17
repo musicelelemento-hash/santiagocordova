@@ -87,7 +87,7 @@ export const AuditLogScreen: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-8">
                     <div className="md:col-span-8 relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant group-focus-within:text-tertiary transition-colors" />
-                        <input
+                        <input autoComplete="off" data-lpignore="true" data-1p-ignore
                             type="text"
                             placeholder="Buscar en el historial táctico..."
                             value={search}

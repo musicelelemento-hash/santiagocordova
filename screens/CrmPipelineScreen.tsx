@@ -242,7 +242,7 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
             {/* ── BARRA BÚSQUEDA ── */}
             <div className="relative max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-                <input
+                <input autoComplete="off" data-lpignore="true" data-1p-ignore
                     type="text"
                     placeholder="Buscar por prospecto, RUC o teléfono..."
                     value={searchTerm}

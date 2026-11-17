@@ -3923,7 +3923,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <div className="space-y-2">
                                 <div className="relative">
                                     <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
+                                    <input autoComplete="off" data-lpignore="true" data-1p-ignore
                                         type="text"
                                         placeholder="Buscar por Nombre o RUC..."
                                         value={adelantoClientSearch}

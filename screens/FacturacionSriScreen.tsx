@@ -4741,7 +4741,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               {/* Search */}
               <div className="relative group w-full sm:w-64">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={14} />
-                <input
+                <input autoComplete="off" data-lpignore="true" data-1p-ignore
                   type="text"
                   placeholder="Buscar RUC, nombre o clave..."
                   value={searchTerm}
