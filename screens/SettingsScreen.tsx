@@ -1316,24 +1316,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             isOpen={isPasswordImportOpen}
             onClose={() => setIsPasswordImportOpen(false)}
             clients={clients}
-            onApply={async ({ credenciales, actualizar, crear }) => {
+            onApply={async ({ credenciales, actualizar, crear, forzar }) => {
                 if (setSriCredentials) {
                     setSriCredentials(prev => ({ ...prev, ...credenciales }));
                 }
-                // 🧠 Reglas de choque: un CSV viejo NO pisa una clave ya verificada.
+                // 🧠 Reglas de choque: un CSV viejo NO pisa una clave ya verificada…
+                // …salvo que el usuario haya marcado «Forzar clave del CSV» en el
+                // modal. Esa decisión se audita en el historial con `forzado: true`.
                 const cuando = new Date().toISOString();
                 let conflictos = 0;
+                let forzados = 0;
                 const aplicar: any[] = [];
                 for (const c of actualizar) {
                     const previo = clients.find((x) => x.id === c.id);
                     const cred: any = (previo?.taxProfile as any)?.sriCredencial || {};
-                    if (cred.estado === 'ok' && cred.ultimo_ingreso && c.sriPassword && previo?.sriPassword && c.sriPassword !== previo.sriPassword) {
+                    const chocaConVerificada = cred.estado === 'ok' && Boolean(cred.ultimo_ingreso) && Boolean(c.sriPassword) && Boolean(previo?.sriPassword) && c.sriPassword !== previo?.sriPassword;
+                    if (chocaConVerificada && !forzar) {
                         conflictos++;
                         continue; // gana la que ya entró al SRI
                     }
                     if (c.sriPassword) {
                         const tp: any = (c.taxProfile as any) || {};
-                        const historial = [...(Array.isArray(cred.historial) ? cred.historial : []), { hash: hashClave(c.sriPassword), origen: 'csv', cuando, verificado: false }].slice(-10);
+                        const entradaHistorial: any = { hash: hashClave(c.sriPassword), origen: 'csv', cuando, verificado: false };
+                        if (chocaConVerificada && forzar) {
+                            // El usuario forzó explícitamente el CSV: queda auditado
+                            // que esta entrada pisó una clave ya verificada.
+                            entradaHistorial.forzado = true;
+                            forzados++;
+                        }
+                        const historial = [...(Array.isArray(cred.historial) ? cred.historial : []), entradaHistorial].slice(-10);
                         aplicar.push({
                             ...c,
                             taxProfile: { ...tp, sriCredencial: { ...cred, claveActualizadaEn: cuando, origenClave: 'csv', hashClave: hashClave(c.sriPassword), historial } },
@@ -1364,7 +1375,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                 } catch (e) {
                     console.warn("La extensión no está disponible para recibir la matriz:", e);
                 }
-                toast.success(`Claves SRI: ${Object.keys(credenciales).length} detectadas · ${aplicar.length} actualizados · ${crear.length} nuevos` + (conflictos > 0 ? ` · ${conflictos} conservados (ya verificados)` : ''));
+                toast.success(`Claves SRI: ${Object.keys(credenciales).length} detectadas · ${aplicar.length} actualizados · ${crear.length} nuevos` + (conflictos > 0 ? ` · ${conflictos} conservados (ya verificados)` : '') + (forzados > 0 ? ` · ${forzados} forzados (el CSV pisó la verificada)` : ''));
+                if (forzados > 0) toast.warning(`Se sobrescribieron ${forzados} clave(s) ya verificadas: la decisión quedó auditada en el historial de cada cliente.`);
                 if (!nubeOk) toast.error('Se aplicaron en este navegador, pero Supabase no confirmó el guardado.');
             }}
         />

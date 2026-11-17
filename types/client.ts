@@ -133,9 +133,30 @@ export interface FinancialItem {
 }
 
 /**
+ * Entrada del historial de la clave SRI: sólo se guarda el hash, nunca la clave
+ * en claro. Sirve para auditar quién/cuándo cambió la credencial.
+ */
+export interface SriCredencialHistorialEntry {
+    hash: string;
+    origen: 'manual' | 'csv' | 'sistema';
+    cuando: string; // ISO
+    /** La extensión todavía no confirmó que esta clave entre al SRI. */
+    verificado: boolean;
+    /**
+     * true cuando el usuario eligió «Forzar clave del CSV» y esa clave pisó
+     * una que ya había entrado OK al SRI (decisión explícita y auditada).
+     */
+    forzado?: boolean;
+}
+
+/**
  * Estado de la clave del SRI, escrito por la extensión Nueva Luz cuando el
  * portal la rechaza. Sirve para ver desde la ficha que ese cliente no se puede
  * declarar hasta arreglar la credencial. Nunca contiene la clave en sí.
+ *
+ * También guarda la auditoría de la clave: cuándo se actualizó por última vez,
+ * de dónde salió y el historial de hashes (los escribe `guardarClaveCliente`
+ * y el importador de CSV de Settings).
  */
 export interface SriCredencialEstado {
     estado: 'ok' | 'incorrecta' | 'caducada' | 'bloqueada';
@@ -143,6 +164,14 @@ export interface SriCredencialEstado {
     cuando?: string;      // ISO
     ultimo_ingreso?: string; // ISO
     marcado_por?: string;
+    /** ISO de la última vez que se guardó/cambió la clave en el sistema. */
+    claveActualizadaEn?: string;
+    /** De dónde salió la clave actual. */
+    origenClave?: 'manual' | 'csv' | 'sistema';
+    /** Huella FNV-1a de la clave actual (nunca la clave en claro). */
+    hashClave?: string;
+    /** Últimas entradas del historial (sólo hashes, tope de 10). */
+    historial?: SriCredencialHistorialEntry[];
 }
 
 export interface CompanyPartner {

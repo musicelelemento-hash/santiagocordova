@@ -21,7 +21,11 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     clients: Client[];
-    onApply: (plan: { credenciales: Record<string, string>; actualizar: Client[]; crear: Client[] }) => Promise<void> | void;
+    /**
+     * `forzar` viaja dentro del plan y lo decide el usuario acá mismo: cuando es
+     * true, las claves del CSV sobrescriben las que ya estaban verificadas.
+     */
+    onApply: (plan: { credenciales: Record<string, string>; actualizar: Client[]; crear: Client[]; forzar?: boolean }) => Promise<void> | void;
 }
 
 interface Fila {
@@ -29,6 +33,8 @@ interface Fila {
     clave: string;
     estado: 'actualiza' | 'igual' | 'nueva';
     cliente?: Client;
+    /** El CSV trae otra clave y la del cliente ya entró OK al SRI (choque). */
+    conflicto?: boolean;
 }
 
 const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients, onApply }) => {
@@ -36,6 +42,9 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
     const [nombreArchivo, setNombreArchivo] = useState('');
     const [credenciales, setCredenciales] = useState<Record<string, string> | null>(null);
     const [crearFaltantes, setCrearFaltantes] = useState(true);
+    // Decisión explícita y visible antes de aplicar: el CSV puede pisar la
+    // clave ya verificada. Por defecto NO se fuerza (gana la verificada).
+    const [forzarVerificada, setForzarVerificada] = useState(false);
     const [aplicando, setAplicando] = useState(false);
     const [error, setError] = useState('');
 
@@ -52,7 +61,13 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
             .map(([ruc, clave]) => {
                 const cliente = porRuc.get(ruc);
                 if (!cliente) return { ruc, clave, estado: 'nueva' as const };
-                if (cliente.sriPassword !== clave) return { ruc, clave, estado: 'actualiza' as const, cliente };
+                if (cliente.sriPassword !== clave) {
+                    // Choque: el CSV trae otra clave y la del cliente ya entró OK
+                    // al SRI. Sin «forzar», el handler conserva la verificada.
+                    const cred = cliente.taxProfile?.sriCredencial;
+                    const conflicto = cred?.estado === 'ok' && Boolean(cred.ultimo_ingreso);
+                    return { ruc, clave, estado: 'actualiza' as const, cliente, conflicto };
+                }
                 return { ruc, clave, estado: 'igual' as const, cliente };
             })
             .sort((a, b) => {
@@ -66,6 +81,7 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
         actualizan: filas.filter((f) => f.estado === 'actualiza').length,
         nuevas: filas.filter((f) => f.estado === 'nueva').length,
         iguales: filas.filter((f) => f.estado === 'igual').length,
+        conflictos: filas.filter((f) => f.conflicto).length,
     }), [filas]);
 
     const leerArchivo = (file: File) => {
@@ -88,6 +104,7 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
             }
             setNombreArchivo(file.name);
             setCredenciales(validas);
+            setForzarVerificada(false);
         };
         reader.readAsText(file);
     };
@@ -117,7 +134,8 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
             }
             const crear: Client[] = [];
 
-            await onApply({ credenciales, actualizar, crear });
+            await onApply({ credenciales, actualizar, crear, forzar: forzarVerificada });
+            setForzarVerificada(false);
             onClose();
         } finally {
             setAplicando(false);
@@ -175,6 +193,34 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                             {chip('ya iguales', resumen.iguales, 'border-white/10 bg-white/5 text-slate-400')}
                         </div>
 
+                        {resumen.conflictos > 0 && (
+                            <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-3 py-2.5">
+                                <p className="flex items-start gap-2 text-[11px] text-amber-100">
+                                    <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" />
+                                    <span>
+                                        <b>{resumen.conflictos}</b> clave(s) del CSV chocan con una clave ya <b>verificada</b> por la extensión.
+                                        Por defecto se conserva la verificada y el CSV no la pisa.
+                                    </span>
+                                </p>
+                                <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-amber-500/25 bg-black/25 px-3 py-2 text-[11px] text-amber-100">
+                                    <input
+                                        type="checkbox"
+                                        className="mt-0.5 h-4 w-4 shrink-0 accent-[#C9A96E]"
+                                        checked={forzarVerificada}
+                                        onChange={(e) => setForzarVerificada(e.target.checked)}
+                                    />
+                                    <span>
+                                        <b>Forzar clave del CSV</b> (sobrescribir la verificada)
+                                        <span className="mt-0.5 block text-[10px] font-normal text-amber-200/85">
+                                            {forzarVerificada
+                                                ? `Vas a sobrescribir ${resumen.conflictos} clave(s) ya verificada(s). La decisión queda auditada en el historial del cliente como «forzado».`
+                                                : 'Marcado: el CSV gana aunque la clave ya haya entrado OK al SRI. Desmarcado: se conservan las verificadas.'}
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        )}
+
                         {resumen.nuevas > 0 && (
                             <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-slate-300">
                                 <input
@@ -195,8 +241,8 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                                     {f.estado === 'igual' && <Check size={12} className="text-slate-500 shrink-0" />}
                                     <span className="font-mono text-slate-200">{f.ruc}</span>
                                     <span className="truncate text-slate-500">{f.cliente?.name || '—'}</span>
-                                    <span className={`ml-auto font-mono text-[10px] uppercase ${f.estado === 'actualiza' ? 'text-emerald-300' : f.estado === 'nueva' ? 'text-[#e6d3ab]' : 'text-slate-500'}`}>
-                                        {f.estado === 'actualiza' ? 'actualiza' : f.estado === 'nueva' ? '→ bóveda' : 'igual'}
+                                    <span className={`ml-auto font-mono text-[10px] uppercase ${f.estado === 'actualiza' ? (forzarVerificada && f.conflicto ? 'text-[#C9A96E]' : 'text-emerald-300') : f.estado === 'nueva' ? 'text-[#e6d3ab]' : 'text-slate-500'}`}>
+                                        {f.estado === 'actualiza' ? (forzarVerificada && f.conflicto ? 'forzada' : 'actualiza') : f.estado === 'nueva' ? '→ bóveda' : 'igual'}
                                     </span>
                                 </div>
                             ))}
@@ -219,10 +265,12 @@ const ChromePasswordsImportModal: React.FC<Props> = ({ isOpen, onClose, clients,
                         type="button"
                         disabled={!credenciales || aplicando}
                         onClick={aplicar}
-                        className="flex items-center gap-1.5 rounded-xl bg-[#00A896] px-4 py-2 text-[11px] font-black uppercase tracking-wider text-slate-950 disabled:opacity-40"
+                        className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-wider text-slate-950 transition-colors disabled:opacity-40 ${
+                            forzarVerificada && resumen.conflictos > 0 ? 'bg-[#C9A96E] hover:bg-[#d8bb85]' : 'bg-[#00A896] hover:bg-[#00bfa9]'
+                        }`}
                     >
                         <KeyRound size={13} />
-                        {aplicando ? 'Aplicando…' : 'Aplicar cambios'}
+                        {aplicando ? 'Aplicando…' : forzarVerificada && resumen.conflictos > 0 ? 'Forzar y aplicar' : 'Aplicar cambios'}
                     </button>
                 </div>
             </div>

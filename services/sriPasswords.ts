@@ -88,7 +88,10 @@ export async function guardarClaveCliente(
 
     const tp: any = (client as any).taxProfile || {};
     const cred: any = tp.sriCredencial || {};
-    if (!opts.forzar && opts.origen === 'csv' && cred.estado === 'ok' && cred.ultimo_ingreso) {
+    // «Verificada» = la extensión ya entró OK al SRI con esta clave. Un CSV
+    // viejo no la pisa salvo que el usuario lo fuerce explícitamente.
+    const yaVerificada = cred.estado === 'ok' && Boolean(cred.ultimo_ingreso);
+    if (!opts.forzar && opts.origen === 'csv' && yaVerificada) {
         return {
             ok: false,
             enNube: false,
@@ -99,7 +102,15 @@ export async function guardarClaveCliente(
     const cuando = new Date().toISOString();
     const historial = [
         ...(Array.isArray(cred.historial) ? cred.historial : []),
-        { hash: hashClave(limpia), origen: opts.origen || 'manual', cuando, verificado: false },
+        {
+            hash: hashClave(limpia),
+            origen: opts.origen || 'manual',
+            cuando,
+            verificado: false,
+            // Sólo se audita como «forzado» el choque real: el CSV pisó una
+            // clave que ya había entrado OK al SRI por decisión del usuario.
+            ...(opts.forzar && opts.origen === 'csv' && yaVerificada ? { forzado: true } : {}),
+        },
     ].slice(-10);
     const sriCredencial = {
         ...cred,
