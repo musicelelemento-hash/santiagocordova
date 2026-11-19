@@ -112,13 +112,21 @@ export async function guardarClaveCliente(
             ...(opts.forzar && opts.origen === 'csv' && yaVerificada ? { forzado: true } : {}),
         },
     ].slice(-10);
+    // Guardar una clave NUEVA borra los bloqueos/rechazos viejos: si no,
+    // el popup y el bucle siguen viendo «bloqueada» y no dejan entrar.
     const sriCredencial = {
         ...cred,
+        estado: 'ok',
+        motivo: 'Clave actualizada (se limpian bloqueos y rechazos previos)',
         claveActualizadaEn: cuando,
         origenClave: opts.origen || 'manual',
         hashClave: hashClave(limpia),
         historial,
     };
+    delete (sriCredencial as any).intentos;
+    delete (sriCredencial as any).bloqueadaHasta;
+    delete (sriCredencial as any).rechazada;
+    delete (sriCredencial as any).ultimo_error;
 
     try {
         await update(client.id, { sriPassword: limpia, taxProfile: { ...tp, sriCredencial } } as any);
