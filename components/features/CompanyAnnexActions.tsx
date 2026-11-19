@@ -89,10 +89,8 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
     const generarAts = async () => {
         const audit = SupplierCatalogService.getClientPurchases(client, periodoAts);
         const facturas = audit?.invoices || [];
-        if (!facturas.length) {
-            toast.error(`No hay compras registradas para ${periodoAts}. Extraelas primero desde la extensión.`);
-            return;
-        }
+        // Sin compras no se bloquea: el ATS de un mes en cero va con <compras> vacío.
+        const sinCompras = facturas.length === 0;
         const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodoAts, facturas);
         if (faltantes.length) {
             toast.error(`Faltan ${faltantes.length} datos (clave de acceso). Completa los comprobantes antes de presentar el ATS.`);
@@ -100,7 +98,7 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
         }
         try {
             await descargarAts(datos);
-            toast.success(`ATS de ${periodoAts} descargado (XML + ZIP).`);
+            toast.success(sinCompras ? `ATS de ${periodoAts} descargado SIN compras (mes en cero).` : `ATS de ${periodoAts} descargado (XML + ZIP).`);
         } catch (e: any) {
             toast.error(`No se pudo generar el ATS: ${e?.message || e}`);
         }

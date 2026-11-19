@@ -96,13 +96,14 @@ const [acuse, setAcuse] = useState<any>(null);
 
 
     const generar = async () => {
-        if (!facturas.length) {
-            toast.error(`No hay compras de ${nombrePeriodo(periodo)}. Extraelas primero desde el SRI.`);
-            return;
-        }
+        // Sin compras NO se bloquea: un mes en cero lleva el ATS con <compras> vacío.
+        const sinCompras = facturas.length === 0;
         setGenerando(true);
         try {
             const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase: ventasBaseEfectiva });
+            if (sinCompras) {
+                toast.info(`ATS de ${nombrePeriodo(periodo)} sin compras registradas (mes en cero).`);
+            }
             if (faltantes.length) {
                 toast.error(`Faltan ${faltantes.length} datos (clave de acceso).`);
                 return;
