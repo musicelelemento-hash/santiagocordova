@@ -5,7 +5,7 @@ import { searchEmails, sendEmail, getUnreadEmails, sendEmailWithAttachment } fro
 import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, getCompanyObligations, downloadClientProofFile, setPrimaryPhone, setSignatureInfo, getMonthlyCollectionReport, prepareProofEmailForClient } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getGeminiApiKey, MODELS } from './ai';
+import { getGeminiApiKey, MODELS, modelosGemini, avisarErrorGemini } from './ai';
 import { pendingDialogs, bot, startPaymentFlowForClient, startDeclarationFlowForClient } from './index';
 import { InputFile } from 'grammy';
 import * as path from 'path';
@@ -333,7 +333,7 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
         console.log(`🌐 Performing live SRI web search for: ${query}`);
         try {
             const response = await openRouterClient.chat.completions.create({
-                model: 'perplexity/llama-3-sonar-small-32k-online',
+                model: MODELS.perplexitySearch,
                 messages: [{ role: 'user', content: `Busca información actualizada del SRI de Ecuador sobre: ${query}. Responde de forma técnica y concisa para un contador.` }],
                 max_tokens: 1024
             });
@@ -821,13 +821,14 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
 
         let response;
         let lastError = "";
-        // --- 1. TRY DIRECT GOOGLE GEMINI 2.0 VIA OFFICIAL SDK (Fast, robust tool calling, 100% free) ---
+        // --- 1. GEMINI VIGENTE VIA SDK OFICIAL (el modelo se resuelve contra la API: ver modelosGemini) ---
         if (GEMINI_API_KEY) {
             try {
-                console.log("📡 Attempting Primary (Direct Google Gemini 2.0 Flash SDK)...");
+                const { principal } = await modelosGemini();
+                console.log(`📡 Attempting Primary (Gemini ${principal} SDK)...`);
                 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
                 const model = genAI.getGenerativeModel({
-                    model: MODELS.geminiPrimary,
+                    model: principal,
                     systemInstruction: SYSTEM_PROMPT + memoryContext,
                     tools: convertToolsToGoogleSDK(toolDefinitions)
                 });
@@ -871,14 +872,15 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
                 console.log(`✅ Direct Gemini SDK Success`);
             } catch (error: any) {
                 console.error('⚠️ Direct Gemini SDK Error:', error.message);
+                avisarErrorGemini(String(error.message));
                 lastError = `DirectGeminiSDK: ${error.message}`;
             }
         }
 
-        // --- 2. TRY OPENROUTER GEMINI 2.0 (Fallback if direct fails or key not set) ---
+        // --- 2. OPENROUTER GEMINI (si el directo falla o no hay key) ---
         if (!response) {
             try {
-                console.log("📡 Attempting Secondary (Gemini 2.0 Flash via OpenRouter)...");
+                console.log(`📡 Attempting Secondary (${MODELS.openRouterGemini} via OpenRouter)...`);
                 response = await openRouterClient.chat.completions.create({
                     messages: cleanMessages(messages, 15000, 20000) as any,
                     model: MODELS.openRouterGemini,
@@ -941,13 +943,14 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         }
 
         if (!response) {
-            // --- 5. GOOGLE SDK (Gemini 1.5 Flash last resort) ---
+            // --- 5. GEMINI DE RESPALDO, SIN HERRAMIENTAS (último recurso) ---
             if (GEMINI_API_KEY) {
                 try {
-                    console.log("📡 Attempting Google SDK (Gemini 1.5 Flash)...");
+                    const { respaldo } = await modelosGemini();
+                    console.log(`📡 Attempting Google SDK (${respaldo}, sin herramientas)...`);
                     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
                     const model = genAI.getGenerativeModel({
-                        model: MODELS.geminiFallbackSDK,
+                        model: respaldo,
                         systemInstruction: SYSTEM_PROMPT
                     });
                     const conversationContext = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');

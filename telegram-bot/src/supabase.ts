@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as path from 'path';
 import * as fs from 'fs';
+import { crearFetchConReintentos } from './reintentos';
 require('dotenv').config();
 
 // Intento de fallback automático si falta en telegram-bot/.env pero existe en la app web
@@ -35,5 +36,8 @@ if (!supabaseUrl || !supabaseKey) {
     supabaseKey = supabaseKey || 'placeholder-key';
 }
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+// Reintenta los cortes momentáneos de Supabase (522 y similares): ver reintentos.ts.
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey, {
+    global: { fetch: crearFetchConReintentos(fetch) },
+});
 

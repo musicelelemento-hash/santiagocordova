@@ -4094,9 +4094,29 @@ try {
     console.error('⚠️ Error starting cron jobs:', cronErr);
 }
 
-// Start Telegram Bot Long Polling with Auto-Recovery
-async function launchBot() {
-    console.log('🚀 Iniciando Telegram Bot (Baku)...');
+// Arranque del long polling con recuperación.
+//
+// En cada despliegue Render levanta la instancia nueva antes de apagar la vieja:
+// durante unos segundos las dos piden getUpdates y Telegram responde 409 a una.
+// Antes nadie reintentaba: si el 409 le tocaba a la NUEVA, Baku quedaba mudo
+// hasta el próximo reinicio. Ahora la vieja se detiene ordenadamente con SIGTERM
+// y la nueva reintenta el 409 con espera creciente.
+let apagando = false;
+const REINTENTOS_409 = [5, 10, 20, 30, 60, 60, 60]; // segundos (~4 min en total)
+
+async function apagarOrdenado(senal: string) {
+    if (apagando) return;
+    apagando = true;
+    console.log(`👋 ${senal} recibido: deteniendo Baku ordenadamente…`);
+    try { await bot.stop(); } catch { /* ya estaba detenido */ }
+    process.exit(0);
+}
+process.once('SIGTERM', () => { void apagarOrdenado('SIGTERM'); });
+process.once('SIGINT', () => { void apagarOrdenado('SIGINT'); });
+
+async function launchBot(intento = 0): Promise<void> {
+    if (apagando) return;
+    console.log(intento ? `🚀 Reintentando iniciar Baku (intento ${intento + 1})…` : '🚀 Iniciando Telegram Bot (Baku)...');
     try {
         // Elimina posibles webhooks previos que causan conflictos 409
         await bot.api.deleteWebhook({ drop_pending_updates: false });
@@ -4106,20 +4126,30 @@ async function launchBot() {
         // Autocompletado al tipear "/".
         await bot.api.setMyCommands(COMANDOS_MENU)
             .catch(e => console.warn('⚠️ No se pudieron registrar los comandos en Telegram:', e?.message));
-        
+
         await bot.start({
             onStart: (botInfo) => {
                 console.log(`✅ ¡Bot @${botInfo.username} en línea y listo para recibir mensajes!`);
             }
         });
     } catch (err: any) {
-        console.error('❌ Error crítico al iniciar Telegram bot:', err.message);
-        if (err.message.includes('401')) {
+        if (apagando) return; // el 409 de la instancia que se está apagando no es un error
+        const msg = String(err?.message || err);
+        if (msg.includes('401')) {
             console.error('🔑 ERROR 401: El TELEGRAM_BOT_TOKEN es inválido o no está configurado.');
-        } else if (err.message.includes('409')) {
-            console.error('⚠️ ERROR 409: Hay otra instancia del bot ejecutándose simultáneamente o un webhook activo.');
+            return;
+        }
+        const espera = REINTENTOS_409[intento];
+        if (msg.includes('409') && espera !== undefined) {
+            console.warn(`⏳ 409: otra instancia todavía está conectada (normal durante un despliegue). Reintento en ${espera}s.`);
+            setTimeout(() => { void launchBot(intento + 1); }, espera * 1000);
+            return;
+        }
+        console.error('❌ Error crítico al iniciar Telegram bot:', msg);
+        if (msg.includes('409')) {
+            console.error('⚠️ ERROR 409 persistente: hay otra instancia del bot o un webhook activo fuera de Render.');
         }
     }
 }
 
-launchBot();
+void launchBot();
