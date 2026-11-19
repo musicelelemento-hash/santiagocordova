@@ -3,7 +3,9 @@ import React, { memo } from 'react';
 import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime, Declaration, InternalStatus } from '../../types';
 import { sendToSRIExtension } from '../../services/extensionBridge';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat, getWhatsAppUrl, isSriPasswordUpdated } from '../../services/sri';
-import { esRucSociedad } from '../../services/sri';
+import { esRucSociedad, clienteRequiereAts } from '../../services/sri';
+import { descargarAtsDeCliente } from '../../services/atsService';
+import { useToast } from '../../context/ToastContext';
 import CompanyBadge from '../ui/CompanyBadge';
 import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
@@ -31,11 +33,16 @@ interface ClientCardProps {
 
 export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false, isCobrosView = false, onNavigate, onEditClient }) => {
     const [copied, setCopied] = React.useState(false);
+    const { toast } = useToast();
     const [copiedPass, setCopiedPass] = React.useState(false);
     const [enviandoSri, setEnviandoSri] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
     const today = new Date();
+    const periodoAts = (() => { const d = new Date(today.getFullYear(), today.getMonth() - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+    const requierAts = esRucSociedad(client.ruc) && clienteRequiereAts(client);
+    const tieneAts = (client.declarations || []).some((d) => d.period === periodoAts && d.type === 'ATS' && (!!d.proof_file || d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada));
+    const atsPendiente = requierAts && !tieneAts;
     const compliance = getClientCompliance(client, today, frequency);
     const currentPeriod = customPeriod || getPeriod(client, today, frequency);
     const activeDecl = (client.declarations ?? []).find(d => d.period === currentPeriod);
@@ -597,6 +604,27 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                     {activeDecl?.proof_file ? <LucideIcons.FileCheck size={16} /> : <LucideIcons.UploadCloud size={16} />}
                                     <span className="hidden sm:inline ml-1.5">{activeDecl?.proof_file ? 'VER COMP.' : 'SUBIR PDF'}</span>
                                 </button>
+
+                                {atsPendiente && (
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const res = await descargarAtsDeCliente(client, periodoAts);
+                                            if (res.ok) {
+                                                toast.success(res.facturas ? `ATS ${periodoAts} descargado (XML + ZIP).` : `ATS ${periodoAts} descargado SIN compras (mes en cero).`);
+                                            } else if (res.faltantes.length) {
+                                                toast.error(`Faltan ${res.faltantes.length} claves de acceso para el ATS.`);
+                                            } else {
+                                                toast.error(`No se pudo armar el ATS: ${res.error || 'error'}`);
+                                            }
+                                        }}
+                                        className="flex items-center justify-center h-10 w-12 sm:w-auto sm:px-4 rounded-xl border transition-all font-mono font-bold text-[10px] uppercase tracking-wider bg-cyan-500/10 text-cyan-300 border-cyan-400/35 hover:bg-cyan-500/20 active:scale-95 cursor-pointer"
+                                        title="ATS pendiente: descarga el ZIP del anexo para subir en Anexos. Esto NO es un comprobante de declaración."
+                                    >
+                                        <LucideIcons.FileSpreadsheet size={16} />
+                                        <span className="hidden sm:inline ml-1.5">ATS PEND.</span>
+                                    </button>
+                                )}
                             </div>
                         )
                     )}

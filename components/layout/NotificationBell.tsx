@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bell, AlertTriangle, Radio } from 'lucide-react';
 import { Task, Client, Screen, DeclarationStatus } from '../../types';
-import { getPeriod, getDueDateForPeriod } from '../../services/sri';
-import { isPast, isToday, isTomorrow, format } from 'date-fns';
+import { getPeriod, getDueDateForPeriod, esRucSociedad, clienteRequiereAts } from '../../services/sri';
+import { isPast, isToday, isTomorrow, format, subMonths } from 'date-fns';
 
 interface NotificationBellProps {
     clients: Client[];
