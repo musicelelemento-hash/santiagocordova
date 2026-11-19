@@ -15,19 +15,88 @@ export function getGeminiApiKey(): string | null {
     return (key && !key.includes('dummy')) ? key : null;
 }
 
-/** Nombres de modelo consistentes para toda la cascada. */
+/**
+ * Nombres de modelo de la cascada.
+ *
+ * Gemini NO va escrito a mano: Google retira modelos (gemini-2.0-flash y
+ * gemini-1.5-flash ya responden 404) y el bot quedaba fallando en el primer
+ * intento de cada mensaje. Se resuelve con modelosGemini(), que pregunta a la
+ * API qué modelos existen. Los demás proveedores sí van fijos.
+ */
 export const MODELS = {
-    geminiPrimary: 'gemini-2.0-flash',
-    geminiFallbackSDK: 'gemini-1.5-flash',
-    openRouterGemini: 'google/gemini-2.0-flash-001',
+    openRouterGemini: 'google/gemini-2.5-flash',
     openRouterGemini25: 'google/gemini-2.5-flash',
     groqLlama: 'llama-3.3-70b-versatile',
-    groqLlamaSpecdec: 'llama-3.3-70b-specdec',
-    groqMixtral: 'mixtral-8x7b-32768',
+    groqLlamaSpecdec: 'llama-3.3-70b-versatile', // el specdec fue retirado por Groq
+    groqMixtral: 'llama-3.1-8b-instant',         // mixtral-8x7b fue retirado por Groq
     freeLlama: 'meta-llama/llama-3.3-70b-instruct:free',
     freeMistral: 'mistralai/mistral-7b-instruct:free',
     freeGemma: 'google/gemma-3-27b-it:free',
+    perplexitySearch: 'perplexity/sonar',
 };
+
+/** Orden de preferencia cuando la API los ofrece. Lo que no esté, se salta. */
+const PREFERENCIA_GEMINI = [
+    'gemini-2.5-flash',
+    'gemini-flash-latest',
+    'gemini-2.5-flash-lite',
+    'gemini-flash-lite-latest',
+];
+const POR_DEFECTO = { principal: 'gemini-2.5-flash', respaldo: 'gemini-2.5-flash-lite' };
+const REINTENTO_MS = 10 * 60 * 1000;
+
+let cacheModelos: { valor: { principal: string; respaldo: string }; hasta: number } | null = null;
+
+/** Versión numérica de un nombre tipo gemini-3.1-flash (para ordenar los no listados). */
+const version = (n: string) => Number((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || 0);
+
+/**
+ * Modelos Gemini vigentes: { principal, respaldo }. Se consulta la lista de la
+ * API una vez y se guarda; si la consulta falla, se usan los por defecto y se
+ * reintenta en 10 min. GEMINI_MODEL (Render) fuerza el principal.
+ */
+export async function modelosGemini(): Promise<{ principal: string; respaldo: string }> {
+    if (cacheModelos && Date.now() < cacheModelos.hasta) return cacheModelos.valor;
+    const key = getGeminiApiKey();
+    const forzado = (process.env.GEMINI_MODEL || '').trim();
+    let valor = { ...POR_DEFECTO, ...(forzado ? { principal: forzado } : {}) };
+    let hasta = Date.now() + REINTENTO_MS;
+    if (key) {
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${key}`);
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const data: any = await r.json();
+            const disponibles: string[] = (data.models || [])
+                .filter((m: any) => (m.supportedGenerationMethods || []).includes('generateContent'))
+                .map((m: any) => String(m.name || '').replace(/^models\//, ''));
+            const flash = disponibles
+                .filter((n) => /^gemini-[\d.]+-flash(-lite)?$/.test(n))
+                .sort((a, b) => version(b) - version(a) || a.length - b.length);
+            const candidatos = [
+                ...(forzado && disponibles.includes(forzado) ? [forzado] : []),
+                ...PREFERENCIA_GEMINI.filter((n) => disponibles.includes(n)),
+                ...flash,
+            ].filter((n, i, arr) => arr.indexOf(n) === i);
+            if (candidatos.length) {
+                valor = { principal: candidatos[0], respaldo: candidatos[1] || candidatos[0] };
+                hasta = Date.now() + 12 * 60 * 60 * 1000; // la lista cambia poco
+            }
+            if (forzado && !disponibles.includes(forzado)) {
+                console.warn(`⚠️ [AI] GEMINI_MODEL=${forzado} no está disponible; se usa ${valor.principal}.`);
+            }
+            console.log(`🧠 [AI] Gemini vigente: ${valor.principal} (respaldo ${valor.respaldo}).`);
+        } catch (e: any) {
+            console.warn(`⚠️ [AI] No se pudo listar modelos de Gemini (${e.message}); se usa ${valor.principal}.`);
+        }
+    }
+    cacheModelos = { valor, hasta };
+    return valor;
+}
+
+/** Si un modelo respondió 404 (retirado), se vuelve a consultar la lista en la próxima llamada. */
+export function avisarErrorGemini(mensaje: string): void {
+    if (/404|not found|is not supported/i.test(mensaje)) cacheModelos = null;
+}
 
 interface GenerateAiTextOpts {
     prompt: string;
@@ -55,7 +124,7 @@ export async function generateAiText({ prompt, systemInstruction, maxTokens = 15
         try {
             const genAI = new GoogleGenerativeAI(geminiKey);
             const model = genAI.getGenerativeModel({
-                model: MODELS.geminiPrimary,
+                model: (await modelosGemini()).principal,
                 ...(SYSTEM_INSTRUCTION ? { systemInstruction: SYSTEM_INSTRUCTION } : {}),
             });
             const result = await model.generateContent(prompt);
@@ -63,6 +132,7 @@ export async function generateAiText({ prompt, systemInstruction, maxTokens = 15
             if (text) return text;
         } catch (e: any) {
             console.error('⚠️ [AI] Gemini SDK falló:', e.message);
+            avisarErrorGemini(String(e.message));
         }
     }
 
