@@ -45,7 +45,7 @@ const CACHE_SEGUNDOS = 6 * 60 * 60; // el padrón cambia poco; evita golpear al 
 
 const ORIGENES = [
   /^https:\/\/([a-z0-9-]+\.)*santiagocordova\.com$/,
-  /^https:\/\/gestiones-tributarias-pro[a-z0-9-]*\.vercel\.app$/,
+  /^https:\/\/gestiones-tributarias-[a-z0-9-]*santiagos-projects-f4184cd4\.vercel\.app$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
 
