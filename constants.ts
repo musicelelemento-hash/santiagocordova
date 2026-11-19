@@ -20,8 +20,8 @@ export const SRI_DUE_DATES: { [key: number]: number } = {
 };
 
 // Months for annual income tax declarations (0-indexed)
-export const SRI_RENTA_GENERAL_MARCH = 2; // March (Régimen General y RIMPE Emprendedor)
-export const SRI_RENTA_NP_MAY = 4;        // May (RIMPE Negocio Popular)
+export const SRI_RENTA_GENERAL_MARCH = 2; // Marzo: personas naturales del Régimen General
+export const SRI_RENTA_RIMPE_MAY = 4;     // Mayo: personas naturales RIMPE (Negocio Popular y Emprendedor)
 
 export const INITIAL_SERVICE_FEES = {
     ivaMensual: 15,

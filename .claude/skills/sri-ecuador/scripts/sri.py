@@ -5,6 +5,9 @@ Uso:
   sri.py vence  RUC PERIODO [--regimen general|emprendedor|popular|sociedad] [--especial]
   sri.py ruc    IDENTIFICACION        (valida RUC de 13 o cédula de 10)
   sri.py clave  CLAVE_DE_49_DIGITOS   (valida y desarma una clave de acceso)
+  sri.py rimpe  INGRESOS_BRUTOS_ANUALES  (cuota/impuesto RIMPE con la tabla oficial)
+
+  vence acepta --feriados 2026-12-25,2027-01-01 para trasladar también por feriado.
 
 PERIODO: 2026-10 (mes) · 2026-S1 / 2026-S2 (semestre) · 2025 (renta anual)
          · ats:2026-09 · 1021:2025 · adi:2025 · rebefics:2026 · anexo:2025 · pvp:2025
@@ -85,9 +88,9 @@ def vencimiento(ruc, periodo, regimen, especial=False):
         y = int(resto)
         if regimen == "sociedad":
             return fecha(y + 1, 4, 11 if especial else dia), "Renta sociedades (1021): abril"
-        if regimen == "popular":
-            return fecha(y + 1, 5, dia), "Renta RIMPE Negocio Popular (102A): mayo"
-        return fecha(y + 1, 3, dia), "Renta anual (102 / 102A): marzo"
+        if regimen in ("popular", "emprendedor"):
+            return fecha(y + 1, 5, dia), "Renta persona natural RIMPE: mayo (SRI, Boletín 026-2026)"
+        return fecha(y + 1, 3, dia), "Renta persona natural Régimen General (102): marzo"
     raise SystemExit(f"No entiendo el período «{periodo}».")
 
 
@@ -126,6 +129,40 @@ def validar_identificacion(idn):
     return False, f"Tercer dígito {t} no válido para un {'RUC' if len(c) == 13 else 'cédula'}."
 
 
+def trasladar(f, feriados):
+    """Regla del SRI: fin de semana o feriado -> siguiente día hábil; si eso cae
+    en el mes siguiente, se adelanta al último día hábil del mes."""
+    habil = lambda d: d.weekday() < 5 and d not in feriados
+    if habil(f):
+        return f, None
+    g = f
+    while not habil(g):
+        g += dt.timedelta(days=1)
+    if g.month == f.month:
+        return g, "trasladado al siguiente día hábil"
+    g = f
+    while not habil(g):
+        g -= dt.timedelta(days=1)
+    return g, "adelantado al último día hábil del mes (el traslado caía en el mes siguiente)"
+
+
+NP_TABLA = [(2500, 0), (5000, 5), (10000, 15), (15000, 35), (20000, 60)]
+EMP_TABLA = [(20000, 50000, 60.0, 0.01), (50000, 75000, 360.0, 0.0125), (75000, 100000, 672.5, 0.015),
+             (100000, 200000, 1047.5, 0.0175), (200000, 300000, 2797.5, 0.02)]
+
+
+def impuesto_rimpe(ingresos):
+    if ingresos <= 20000:
+        for tope, cuota in NP_TABLA:
+            if ingresos <= tope:
+                return "RIMPE Negocio Popular", float(cuota), "cuota anual por tabla (desde 2024)"
+    for desde, hasta, base, pct in EMP_TABLA:
+        if ingresos <= hasta:
+            return ("RIMPE Emprendedor", round(base + (ingresos - desde) * pct, 2),
+                    f"{base:,.2f} + {pct*100:.2f} % sobre el excedente de {desde:,.0f}")
+    return "Fuera del RIMPE", None, "ingresos > USD 300.000: Régimen General"
+
+
 TIPOS = {"01": "Factura", "03": "Liquidación de compra", "04": "Nota de crédito",
          "05": "Nota de débito", "06": "Guía de remisión", "07": "Comprobante de retención"}
 
@@ -160,6 +197,9 @@ def main():
     v.add_argument("periodo")
     v.add_argument("--regimen", choices=["general", "emprendedor", "popular", "sociedad"])
     v.add_argument("--especial", action="store_true", help="contribuyente especial (1021 el día 11)")
+    v.add_argument("--feriados", default="", help="fechas AAAA-MM-DD separadas por coma")
+    q = sub.add_parser("rimpe")
+    q.add_argument("ingresos", type=float)
     r = sub.add_parser("ruc")
     r.add_argument("identificacion")
     k = sub.add_parser("clave")
@@ -168,12 +208,19 @@ def main():
 
     if a.cmd == "vence":
         regimen = a.regimen or ("sociedad" if es_sociedad(a.ruc) else "general")
-        f, regla = vencimiento(a.ruc, a.periodo, regimen, a.especial)
+        base, regla = vencimiento(a.ruc, a.periodo, regimen, a.especial)
+        feriados = {dt.date.fromisoformat(x.strip()) for x in a.feriados.split(",") if x.strip()}
+        f, nota = trasladar(base, feriados)
         print(f"Vence: {DIAS[f.weekday()]} {f.day} de {MESES[f.month]} de {f.year}  ({f.isoformat()})")
         print(f"Regla: {regla} · día por 9.º dígito ({solo_digitos(a.ruc)[8]}) · régimen {regimen}")
-        if f.weekday() >= 5:
-            print("AVISO: cae en fin de semana. El código no lo corre; por norma general "
-                  "pasa al siguiente día hábil. Verifica también feriados.")
+        if nota:
+            print(f"Fecha nominal {DIAS[base.weekday()]} {base.isoformat()}: {nota}. "
+                  "La matriz del sistema todavía muestra la fecha nominal.")
+        if not feriados:
+            print("Feriados no considerados: pasa --feriados si alguno cae cerca de la fecha.")
+    elif a.cmd == "rimpe":
+        reg, imp, det = impuesto_rimpe(a.ingresos)
+        print(f"{reg}: " + (f"USD {imp:,.2f}" if imp is not None else "no aplica") + f"  ({det})")
     elif a.cmd == "ruc":
         ok, msg = validar_identificacion(a.identificacion)
         print(("VÁLIDO: " if ok else "INVÁLIDO: ") + msg)

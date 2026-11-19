@@ -1,27 +1,37 @@
 ---
 name: sri-ecuador
-description: Normativa tributaria ecuatoriana (SRI) tal como la aplica el estudio Soluciones Contables Pro — vencimientos por 9.º dígito del RUC, RIMPE Negocio Popular y Emprendedor, Régimen General, sociedades, IVA mensual/semestral, Renta anual (102, 102A, 1021), ATS, anexos, REBEFICS, ADI, ICE, SCVS, validación de RUC/cédula y de clave de acceso de 49 dígitos, y los estados de declaración del sistema. Úsala siempre que la conversación toque impuestos de Ecuador, el SRI, fechas de declaración, «cuándo vence», «qué tiene que declarar», regímenes RIMPE, formularios 104/102/102A/1021, multas e intereses, retenciones, comprobantes electrónicos, o el código de cálculo tributario de este repo (services/sri.ts, services/complianceEngine.ts, utils/taxTools.ts), aunque el usuario no diga «SRI».
+description: Normativa tributaria VIGENTE de Ecuador (SRI) verificada en fuentes oficiales, más las reglas del estudio Soluciones Contables Pro — vencimientos por 9.º dígito del RUC con traslado por fin de semana y feriado, RIMPE Negocio Popular y Emprendedor (tablas oficiales), Régimen General, sociedades, IVA 15 % mensual/semestral, Renta anual (102, 102A, 1021) y en qué mes la declara cada régimen, ATS, anexos, REBEFICS, ADI, ICE, SCVS, multas del Art. 100 e interés de mora, validación de RUC/cédula y clave de acceso de 49 dígitos, y los estados de declaración del sistema. Úsala siempre que la conversación toque impuestos de Ecuador, el SRI, «cuándo vence», «qué tiene que declarar», «cuánto paga», RIMPE, RISE, microempresas, formularios 104/102/102A/1021, multas, retenciones, comprobantes electrónicos, o el código tributario de este repo (services/sri.ts, services/complianceEngine.ts, utils/taxTools.ts, telegram-bot), aunque el usuario no diga «SRI».
 ---
 
-# SRI Ecuador — reglas del estudio
+# SRI Ecuador — normativa vigente y reglas del estudio
 
-Esta skill existe para que las respuestas sobre impuestos ecuatorianos salgan de
-**las reglas que el sistema del estudio ya implementa**, no de lo que recuerde
-un modelo. Un contador le reenvía la respuesta a un contribuyente: una fecha
-equivocada es una multa real.
+Un contador le reenvía la respuesta a un contribuyente: una fecha o un monto
+equivocado es una multa real o un cliente perdido. Esta skill existe para que
+las respuestas salgan de **fuentes oficiales verificadas** y del **código del
+estudio**, no de la memoria de un modelo, que mezcla años y regímenes.
 
 ## Cómo usarla
 
-1. **Para fechas y validaciones, corre el script** en vez de calcular a mano:
-   `python scripts/sri.py --help`. Hace vencimientos por período, valida RUC,
-   cédula y clave de acceso. Es la misma lógica que `services/sri.ts`.
-2. Para la tabla completa de obligaciones y plazos, lee
-   `references/calendario.md`.
-3. Si la pregunta es sobre **el código** (un bug en la matriz, un estado raro),
-   lee `references/sistema.md`: explica cómo el sistema decide «declarado»,
-   «cobrado» y los períodos.
+1. **Fechas y validaciones: corre el script**, no calcules a mano.
+   `python scripts/sri.py vence RUC PERIODO --regimen ...` ya aplica el
+   traslado por fin de semana y, con `--feriados`, por feriado.
+   `python scripts/sri.py --help` muestra todo.
+2. **Montos, tablas, multas, plazos legales** → `references/normativa-2026.md`.
+   Cada dato tiene su fuente. Lo que no esté ahí, no lo inventes: dilo.
+3. **Calendario completo de obligaciones** → `references/calendario.md`.
+4. **Preguntas sobre el código** (matriz, cobranza, bot, estados) →
+   `references/sistema.md`.
 
-## Reglas centrales (resumen)
+## Antes de responder, ubica el período
+
+La norma depende del ejercicio. Mezclar años es el error más común:
+- **RISE** y **régimen de microempresas** están derogados. Si alguien los
+  nombra, aclara que hoy es RIMPE, salvo que la consulta sea de un período viejo.
+- Negocio Popular pagó **USD 60 fijos** sólo en 2022 y 2023. Desde 2024 es una
+  tabla de 0 a 60 según ingresos.
+- El IVA fue 12 % hasta marzo de 2024; desde abril de 2024 es **15 %**.
+
+## Reglas centrales
 
 **Día de vencimiento = 9.º dígito del RUC o cédula**
 
@@ -29,44 +39,43 @@ equivocada es una multa real.
 |---|---|---|---|---|---|---|---|---|---|---|
 | Día | 10 | 12 | 14 | 16 | 18 | 20 | 22 | 24 | 26 | 28 |
 
-Ejemplo: RUC `0702345671001` → 9.º dígito `7` → vence el **22**.
+Si cae sábado, domingo o feriado, pasa al **siguiente día hábil**. Si ese
+traslado lo llevaría al mes siguiente, se **adelanta al último día hábil** del
+mes de vencimiento.
 
 **Qué declara cada régimen**
 
 | Régimen | IVA | Renta anual |
 |---|---|---|
-| RIMPE Negocio Popular | No declara IVA | Formulario 102A, en **mayo** |
-| RIMPE Emprendedor | **Semestral** (salvo que opte por mensual) | 102A, en **marzo** |
-| Régimen General (persona natural) | **Mensual** (formulario 104) | 102, en **marzo** |
-| Sociedad (3.er dígito del RUC = 9) | Mensual + ATS mensual | 1021, en **abril** (+ REBEFICS, ADI, SCVS) |
+| RIMPE Negocio Popular (≤ USD 20.000) | No declara | Cuota por tabla · **mayo** |
+| RIMPE Emprendedor, persona natural (≤ USD 300.000) | **Semestral** (puede ir mensual) | Tabla RIMPE · **mayo** |
+| Régimen General, persona natural | **Mensual** (104) | 102 · **marzo** |
+| Sociedad (3.er dígito del RUC = 9), incluida RIMPE | Mensual + ATS | 1021 · **abril** (+ REBEFICS, ADI, SCVS) |
 
 **Período → mes en que se declara**
-- Mensual: el mes **siguiente** (IVA de octubre → noviembre).
-- Semestral: S1 (ene–jun) → **julio**; S2 (jul–dic) → **enero** del año siguiente.
-- ATS: el mes **subsiguiente** (ATS de septiembre → noviembre).
-- Renta: el año siguiente, en el mes del régimen.
+- Mensual: el mes siguiente. Semestral: S1 → julio, S2 → enero.
+- ATS: el mes subsiguiente. Renta: el año siguiente, en el mes del régimen.
 
-## Lo que hay que decir con cuidado
+## Cómo responder
 
-Estas cosas el código las **simplifica** o no las cubre. Señálalo en vez de
-afirmarlas como ley:
+- Da la fecha con el **día de la semana**, como lo imprime el script.
+- Cita la fuente cuando des un monto o una tarifa («tabla oficial RIMPE del SRI»).
+- Si el dato está en «Lo que falta verificar» de la normativa, dilo así y
+  remite a sri.gob.ec. Un «no lo tengo confirmado» es mejor que un número inventado.
+- Separa siempre **norma** de **estimado**: la calculadora de multas de la web
+  del estudio es comercial, no legal.
 
-- **Fin de semana y feriados.** El código no mueve la fecha si el vencimiento
-  cae sábado, domingo o feriado. Por norma general se corre al siguiente día
-  hábil. Avísalo cuando la fecha calculada caiga en uno de esos días.
-- **Multas e intereses.** La calculadora de la web (`utils/taxTools.ts`)
-  usa $30 por mes sin ventas y $45 con ventas, más 1,2 % de interés mensual
-  sobre el 15 % de las ventas. Es un **estimado comercial** para la página, no
-  el cálculo legal (que depende del impuesto causado, de las ventas y de la
-  tasa de interés trimestral vigente que publica el SRI). Para un caso real,
-  di que hay que calcularlo en el portal del SRI.
-- **Tablas de RIMPE.** Los montos de `calculateDetailedTax` son la tabla
-  que usa la web para estimar. Las tablas legales cambian con reformas: antes
-  de dar un valor a un cliente, verifica la resolución vigente del SRI.
-- **IVA:** el código usa 15 %. Si la pregunta es sobre un período antiguo,
-  la tarifa pudo ser otra.
-- Cualquier cambio legal posterior a lo que está en el código: dilo como
-  «verificar en sri.gob.ec», no lo inventes.
+## Diferencias conocidas entre la norma y el código
+
+Señálalas cuando toquen la respuesta. No asumas que el código tiene razón:
+- **Traslado por fin de semana o feriado:** `services/sri.ts` no lo aplica,
+  y la matriz puede mostrar un domingo como vencimiento. El script sí.
+- **Mayúsculas en el bot:** el bot (`telegram-bot/src`) compara el régimen con
+  `'Rimpe Negocio Popular'` / `'Rimpe Emprendedor'`, pero la base guarda
+  `'RIMPE …'`. Esas comparaciones fallan y los RIMPE se tratan como Régimen
+  General: IVA mensual y renta en marzo.
+- **Mes de renta de Emprendedores:** corregido en la web el 19-nov-2026
+  (ahora mayo). El bot todavía dice marzo.
 
 ## Seguridad con las claves del SRI
 

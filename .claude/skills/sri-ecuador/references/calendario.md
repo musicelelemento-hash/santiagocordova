@@ -1,7 +1,9 @@
 # Calendario de obligaciones (según el código del estudio)
 
 Fuente: `services/sri.ts`, `services/complianceEngine.ts`, `constants.ts`.
-«Día 9.º» = día según el 9.º dígito del RUC (1→10, 2→12 … 9→26, 0→28).
+«Día 9.º» = día según el 9.º dígito del RUC (1→10, 2→12 … 9→26, 0→28),
+trasladado al siguiente día hábil si cae en fin de semana o feriado (ver
+normativa-2026.md §6). Las fechas de esta tabla son las nominales.
 
 ## Personas naturales
 
@@ -10,8 +12,8 @@ Fuente: `services/sri.ts`, `services/complianceEngine.ts`, `constants.ts`.
 | IVA mensual (104) | mes M | mes M+1 | 9.º dígito |
 | IVA semestral (104) | S1 ene–jun | julio | 9.º dígito |
 | IVA semestral (104) | S2 jul–dic | enero siguiente | 9.º dígito |
-| Renta General / RIMPE Emprendedor (102 / 102A) | año A | marzo A+1 | 9.º dígito |
-| Renta RIMPE Negocio Popular (102A) | año A | mayo A+1 | 9.º dígito |
+| Renta Régimen General (102) | año A | marzo A+1 | 9.º dígito |
+| Renta RIMPE persona natural, Emprendedor y Negocio Popular | año A | mayo A+1 | 9.º dígito |
 | Anexo de gastos personales | año A | febrero A+1 | el código fija el 28 |
 | Anexo PVP | año A | enero, hasta el 5 | 5 |
 | ICE + Anexo ICE (solo si `requiresIce`) | mes M | mes M+1 | 9.º dígito |

@@ -1,5 +1,5 @@
 
-import { SRI_DUE_DATES, SRI_RENTA_GENERAL_MARCH, SRI_RENTA_NP_MAY } from '../constants';
+import { SRI_DUE_DATES, SRI_RENTA_GENERAL_MARCH, SRI_RENTA_RIMPE_MAY } from '../constants';
 import { Client, TaxRegime, Declaration, DeclarationStatus } from '../types';
 import { format, differenceInCalendarDays, subMonths, subYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -284,12 +284,15 @@ export const getAnnualIncomeTaxDueDate = (client: Pick<Client, 'ruc' | 'regime'>
     if (ninthDigit === -1 || !(ninthDigit in SRI_DUE_DATES)) return null;
     const day = SRI_DUE_DATES[ninthDigit];
 
-    let month = SRI_RENTA_GENERAL_MARCH; // Default March
+    // Personas naturales: Régimen General en marzo; TODO el RIMPE (Negocio
+    // Popular y Emprendedor) en mayo. Fuente: SRI, Boletín 026-2026 «Personas
+    // naturales del RIMPE deben declarar el impuesto a la renta de 2025» (mayo).
+    // Las sociedades RIMPE declaran en abril (ver getIncomeTaxSociedadesDueDate).
+    let month = SRI_RENTA_GENERAL_MARCH;
 
-    if (client.regime === TaxRegime.RimpeNegocioPopular) {
-        month = SRI_RENTA_NP_MAY; // May
+    if (client.regime === TaxRegime.RimpeNegocioPopular || client.regime === TaxRegime.RimpeEmprendedor) {
+        month = SRI_RENTA_RIMPE_MAY;
     }
-    // Rimpe Emprendedor also uses March, so we fall back to Default March
 
     return new Date(declarationYear + 1, month, day);
 };
