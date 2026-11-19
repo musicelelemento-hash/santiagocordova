@@ -70,12 +70,13 @@ mes de vencimiento.
 Señálalas cuando toquen la respuesta. No asumas que el código tiene razón:
 - **Traslado por fin de semana o feriado:** `services/sri.ts` no lo aplica,
   y la matriz puede mostrar un domingo como vencimiento. El script sí.
-- **Mayúsculas en el bot:** el bot (`telegram-bot/src`) compara el régimen con
-  `'Rimpe Negocio Popular'` / `'Rimpe Emprendedor'`, pero la base guarda
-  `'RIMPE …'`. Esas comparaciones fallan y los RIMPE se tratan como Régimen
-  General: IVA mensual y renta en marzo.
-- **Mes de renta de Emprendedores:** corregido en la web el 19-nov-2026
-  (ahora mayo). El bot todavía dice marzo.
+- **Régimen en el bot:** desde el 19-nov-2026 el bot compara el régimen con
+  `telegram-bot/src/regimen.ts` (sin distinguir mayúsculas) y escribe la forma
+  de la base: `'RIMPE Negocio Popular'` / `'RIMPE Emprendedor'`. Antes trataba
+  a los RIMPE como Régimen General. Si ves comparaciones exactas con
+  `'Rimpe …'` en código nuevo, es el mismo error.
+- **Mes de renta de Emprendedores:** mayo en la web y en el bot desde el
+  19-nov-2026.
 
 ## Seguridad con las claves del SRI
 

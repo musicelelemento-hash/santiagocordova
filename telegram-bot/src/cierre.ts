@@ -1,6 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { supabase } from './supabase';
 import { arePeriodsEqual, isPeriodBeforeClientStart, markPaymentAsPaid } from './database_ops';
+import { esPopular, esEmprendedor } from './regimen';
 
 // /cierre — el cruce honorarios × SRI del período activo.
 //
@@ -93,8 +94,7 @@ export function clasificarCierre(clients: any[], hoy: Date): Cierre {
         if (tp.requiresDeclarations === false || tp.clientType === 'solo_plan' || tp.isSignatureOnly === true) continue;
 
         const regime = String(c.regime || 'Régimen General').trim();
-        const esPopular = regime.toLowerCase().includes('popular');
-        const frecuencia = tp.ivaFrequency || (regime === 'Rimpe Emprendedor' ? 'Semestral' : (esPopular ? 'Ninguno' : 'Mensual'));
+        const frecuencia = tp.ivaFrequency || (esEmprendedor(regime) ? 'Semestral' : (esPopular(regime) ? 'Ninguno' : 'Mensual'));
         if (frecuencia !== 'Mensual' && frecuencia !== 'Semestral') continue;
 
         const esSemestral = frecuencia === 'Semestral';

@@ -66,11 +66,11 @@ CAMPOS DISPONIBLES: sri_password, email, phones, address, regime, name, trade_na
    - IVA: Mensual. Vence del 10 al 28 del mes siguiente (según el 9° dígito del RUC).
    - Renta: Anual (Marzo para personas naturales, Abril para sociedades).
    - Combinación típica: IVA Mensual + Renta Anual (o "Solo Mensual" / "Solo Anual" según perfil).
-2. Rimpe Emprendedor:
+2. RIMPE Emprendedor (ingresos USD 20.000,01–300.000):
    - IVA: Semestral (vence en Julio para semestre 1 [Ene-Jun], y Enero del año siguiente para semestre 2 [Jul-Dic]).
-   - Renta: Anual (Marzo).
+   - Renta: Anual en MAYO para personas naturales (Boletín SRI 026-2026); las sociedades RIMPE, en abril.
    - Combinación típica: IVA Semestral + Renta Anual.
-3. Rimpe Negocio Popular:
+3. RIMPE Negocio Popular (ingresos hasta USD 20.000):
    - IVA: Ninguno / Exento (el IVA está cubierto en su cuota única).
    - Renta: Anual (Declaración Simplificada / cuota unificada que vence en Mayo).
    - Combinación típica: Solo Renta Anual (IVA es "Ninguno").
@@ -659,7 +659,7 @@ const toolDefinitions = [
     { type: "function", function: { name: "update_client_note", description: "Nota en expediente.", parameters: { type: "object", properties: { ruc: { type: "string" }, note: { type: "string" } }, required: ["ruc", "note"] } } },
     { type: "function", function: { name: "get_debtor_clients", description: "Lista deudores." } },
     { type: "function", function: { name: "get_upcoming_deadlines", description: "Vencimientos SRI 7 días." } },
-    { type: "function", function: { name: "create_client", description: "Nuevo cliente.", parameters: { type: "object", properties: { ruc: { type: "string" }, name: { type: "string" }, regime: { type: "string", enum: ["Régimen General", "Rimpe Emprendedor", "Rimpe Negocio Popular"] }, sriPassword: { type: "string" }, email: { type: "string" }, phones: { type: "array", items: { type: "string" } } }, required: ["ruc", "name", "regime", "sriPassword"] } } },
+    { type: "function", function: { name: "create_client", description: "Nuevo cliente.", parameters: { type: "object", properties: { ruc: { type: "string" }, name: { type: "string" }, regime: { type: "string", enum: ["Régimen General", "RIMPE Emprendedor", "RIMPE Negocio Popular"] }, sriPassword: { type: "string" }, email: { type: "string" }, phones: { type: "array", items: { type: "string" } } }, required: ["ruc", "name", "regime", "sriPassword"] } } },
     { type: "function", function: { name: "mark_payment_as_paid", description: "Marca pago (IVA/RENTA/HONORARIOS). IMPORTANTE: NO uses esta herramienta si el usuario no dice de qué cliente es.", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA", "HONORARIOS"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc", "type"] } } },
     { type: "function", function: { name: "mark_declaration", description: "Inicia el flujo interactivo de declaración del SRI (IVA/RENTA) para un cliente. IMPORTANTE: NO uses esta herramienta si el usuario no dice de qué cliente es.", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc"] } } },
     { type: "function", function: { name: "mark_payment_as_unpaid", description: "Revierte pago a PENDIENTE (IVA/RENTA/HONORARIOS). IMPORTANTE: NO uses esta herramienta si el usuario no dice de qué cliente es.", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA", "HONORARIOS"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc", "type"] } } },
