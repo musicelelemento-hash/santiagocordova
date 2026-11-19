@@ -1,5 +1,5 @@
 
-import { SRI_DUE_DATES, SRI_RENTA_GENERAL_MARCH, SRI_RENTA_NP_MAY } from '../constants';
+import { SRI_DUE_DATES, SRI_RENTA_GENERAL_MARCH, SRI_RENTA_RIMPE_MAY } from '../constants';
 import { Client, TaxRegime, Declaration, DeclarationStatus } from '../types';
 import { format, differenceInCalendarDays, subMonths, subYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -284,12 +284,15 @@ export const getAnnualIncomeTaxDueDate = (client: Pick<Client, 'ruc' | 'regime'>
     if (ninthDigit === -1 || !(ninthDigit in SRI_DUE_DATES)) return null;
     const day = SRI_DUE_DATES[ninthDigit];
 
-    let month = SRI_RENTA_GENERAL_MARCH; // Default March
+    // Personas naturales: Régimen General en marzo; TODO el RIMPE (Negocio
+    // Popular y Emprendedor) en mayo. Fuente: SRI, Boletín 026-2026 «Personas
+    // naturales del RIMPE deben declarar el impuesto a la renta de 2025» (mayo).
+    // Las sociedades RIMPE declaran en abril (ver getIncomeTaxSociedadesDueDate).
+    let month = SRI_RENTA_GENERAL_MARCH;
 
-    if (client.regime === TaxRegime.RimpeNegocioPopular) {
-        month = SRI_RENTA_NP_MAY; // May
+    if (client.regime === TaxRegime.RimpeNegocioPopular || client.regime === TaxRegime.RimpeEmprendedor) {
+        month = SRI_RENTA_RIMPE_MAY;
     }
-    // Rimpe Emprendedor also uses March, so we fall back to Default March
 
     return new Date(declarationYear + 1, month, day);
 };
@@ -500,7 +503,7 @@ export const fetchSRIPublicData = async (identifier: string): Promise<SRIPublicD
     if (!identifier || (identifier.length !== 10 && identifier.length !== 13)) return null;
     const rucToQuery = identifier.length === 10 ? `${identifier}001` : identifier;
 
-    const fetchWithTimeout = async (url: string, timeout = 3500) => {
+    const fetchWithTimeout = async (url: string, timeout = 8000) => {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
         try {
@@ -520,11 +523,15 @@ export const fetchSRIPublicData = async (identifier: string): Promise<SRIPublicD
         // extensión sobre el propio portal, por ejemplo—; desde el navegador
         // hace falta un proxy.
         //
-        // El proxy anónimo de corsproxy.io dejó de existir: desde 2026 devuelve
-        // HTTP 403 `keyless_legacy_url` y pide API key. Se dejó configurable en
-        // vez de cablear otro servicio gratuito que mañana haga lo mismo.
+        // Primero el proxy propio del estudio: un Cloudflare Worker
+        // (workers/sri-ruc-proxy) que sólo consulta el padrón público del SRI,
+        // con CORS para santiagocordova.com, Vercel y localhost. Reemplaza a
+        // corsproxy.io, que desde 2026 devuelve HTTP 403 `keyless_legacy_url`.
+        // VITE_SRI_PROXY_URL permite apuntar a otro despliegue.
+        const sriProxy = ((import.meta as any)?.env?.VITE_SRI_PROXY_URL || 'https://sri-ruc-proxy.santiagocordova.workers.dev').replace(/\/$/, '');
         const proxyKey = (import.meta as any)?.env?.VITE_CORS_PROXY_KEY;
         const rutas = [
+            `${sriProxy}/ruc/${rucToQuery}`,
             targetUrl,
             proxyKey
                 ? `https://corsproxy.io/?key=${proxyKey}&url=${encodeURIComponent(targetUrl)}`

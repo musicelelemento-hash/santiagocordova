@@ -23,6 +23,7 @@ import { processPaymentReceipt } from './vision';
 import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
 import { generateRidePdfBuffer } from './pdf_generator';
 import { maskSecret } from './redact';
+import { esPopular, esEmprendedor } from './regimen';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
 
@@ -944,8 +945,8 @@ function buildClientKeyboard(clients: any[]): InlineKeyboard {
 async function showClientProfileCard(chatId: string, client: any, ctx: any) {
     const ruc = client.ruc || '';
     const regime = client.regime || 'Régimen General';
-    const isPopular = regime === 'Rimpe Negocio Popular';
-    const isEmprendedor = regime === 'Rimpe Emprendedor';
+    const isPopular = esPopular(regime);
+    const isEmprendedor = esEmprendedor(regime);
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
     const rawTaxProfile = client.tax_profile || {};
     const clientStartPeriod = client.clientStartPeriod || rawTaxProfile.clientStartPeriod || 'No configurado';
@@ -1627,8 +1628,8 @@ async function initiatePaymentFlow(chatId: string, matches: any[], ctx: any) {
 
 export async function startPaymentFlowForClient(chatId: string, client: any, ctx: any) {
     const regime = client.regime || 'Régimen General';
-    const isPopular = regime === 'Rimpe Negocio Popular';
-    const isEmprendedor = regime === 'Rimpe Emprendedor';
+    const isPopular = esPopular(regime);
+    const isEmprendedor = esEmprendedor(regime);
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
     const declTable = Array.isArray(client.sri_declaraciones) ? client.sri_declaraciones : [];
@@ -1776,8 +1777,8 @@ async function initiateDeclarationFlow(chatId: string, matches: any[], ctx: any)
 
 export async function startDeclarationFlowForClient(chatId: string, client: any, ctx: any) {
     const regime = client.regime || 'Régimen General';
-    const isPopular = regime === 'Rimpe Negocio Popular';
-    const isEmprendedor = regime === 'Rimpe Emprendedor';
+    const isPopular = esPopular(regime);
+    const isEmprendedor = esEmprendedor(regime);
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
     const history = client.sri_declaraciones || [];
@@ -2211,8 +2212,8 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
     if (dialog.type === 'mark_payment') {
         const client = dialog.client;
         const regime = client.regime || 'Régimen General';
-        const isPopular = regime === 'Rimpe Negocio Popular';
-        const isEmprendedor = regime === 'Rimpe Emprendedor';
+        const isPopular = esPopular(regime);
+        const isEmprendedor = esEmprendedor(regime);
         const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
         const isSemestral = ivaFrequency === 'Semestral';
 
@@ -2283,8 +2284,8 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
     if (dialog.type === 'mark_declaration') {
         const client = dialog.client;
         const regime = client.regime || 'Régimen General';
-        const isPopular = regime === 'Rimpe Negocio Popular';
-        const isEmprendedor = regime === 'Rimpe Emprendedor';
+        const isPopular = esPopular(regime);
+        const isEmprendedor = esEmprendedor(regime);
         const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
         const isSemestral = ivaFrequency === 'Semestral';
 
@@ -2483,8 +2484,8 @@ bot.on('callback_query:data', async (ctx) => {
             });
             const kb = new InlineKeyboard()
                 .text('Régimen General', 'baku_val_select:Régimen General').row()
-                .text('Rimpe Emprendedor', 'baku_val_select:Rimpe Emprendedor').row()
-                .text('Rimpe Negocio Popular', 'baku_val_select:Rimpe Negocio Popular').row()
+                .text('RIMPE Emprendedor', 'baku_val_select:RIMPE Emprendedor').row()
+                .text('RIMPE Negocio Popular', 'baku_val_select:RIMPE Negocio Popular').row()
                 .text('❌ Cancelar', 'baku_cancel');
             await ctx.reply(`⚖️ Selecciona el nuevo **Régimen Impositivo** para **${client.name}**:`, {
                 reply_markup: kb

@@ -29,6 +29,7 @@ import { supabase } from './supabase';
 import crypto from 'crypto';
 import { getFirestore } from './firebase-admin-init';
 import { maskSecret } from './redact';
+import { esPopular, esEmprendedor, esRimpe, regimenCanonico, mesRentaPersonaNatural } from './regimen';
 
 async function logAuditAction(action: string, details: string, type: string, severity: string) {
     try {
@@ -99,8 +100,8 @@ export interface ClientObligationsInfo {
 
 export function getClientObligations(client: any): ClientObligationsInfo {
     const regime = client.regime || 'Régimen General';
-    const isPopular = regime === 'Rimpe Negocio Popular';
-    const isEmprendedor = regime === 'Rimpe Emprendedor';
+    const isPopular = esPopular(regime);
+    const isEmprendedor = esEmprendedor(regime);
     
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
     const requiresAnnualRenta = client.tax_profile?.requiresAnnualRenta ?? true;
@@ -122,6 +123,8 @@ export function getClientObligations(client: any): ClientObligationsInfo {
     let rentaPeriodLabel = requiresAnnualRenta ? 'Anual (Marzo)' : 'No requiere';
     if (isPopular && requiresAnnualRenta) {
         rentaPeriodLabel = 'Anual Simplificada (Mayo)';
+    } else if (isEmprendedor && requiresAnnualRenta) {
+        rentaPeriodLabel = 'Anual RIMPE (Mayo)';
     }
 
     let obligationsDescription = "";
@@ -363,8 +366,8 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
             }
 
             const regime = c.regime || 'Régimen General';
-            const isPopular = regime === 'Rimpe Negocio Popular';
-            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const isPopular = esPopular(regime);
+            const isEmprendedor = esEmprendedor(regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
             const declTable = Array.isArray(c.sri_declaraciones) ? c.sri_declaraciones : [];
@@ -468,8 +471,8 @@ export async function getDebtorClients() {
 
         clients.forEach(c => {
             const regime = c.regime || 'Régimen General';
-            const isPopular = regime === 'Rimpe Negocio Popular';
-            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const isPopular = esPopular(regime);
+            const isEmprendedor = esEmprendedor(regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
             const pendingDeclarations = c.sri_declaraciones?.filter((d: any) => d.status === 'Pendiente') || [];
@@ -569,18 +572,16 @@ export async function getUpcomingDeadlines() {
 
             // Determine if they actually have an obligation due this month
             const regime = c.regime || 'Régimen General';
-            const isPopular = regime === 'Rimpe Negocio Popular';
-            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const isPopular = esPopular(regime);
+            const isEmprendedor = esEmprendedor(regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             const reqRenta = c.tax_profile?.requiresAnnualRenta ?? true;
 
             const hasIvaThisMonth = ivaFreq === 'Mensual' || 
                                     (ivaFreq === 'Semestral' && (currentMonth === 7 || currentMonth === 1));
             
-            const hasRentaThisMonth = reqRenta && (
-                (isPopular && currentMonth === 5) || // Popular Renta in May
-                (!isPopular && currentMonth === 3)   // General / Emprendedor Renta in March
-            );
+            // Renta persona natural: General en marzo, todo el RIMPE en mayo (SRI, Boletín 026-2026)
+            const hasRentaThisMonth = reqRenta && currentMonth === mesRentaPersonaNatural(regime);
 
             return hasIvaThisMonth || hasRentaThisMonth;
         });
@@ -588,20 +589,20 @@ export async function getUpcomingDeadlines() {
         if (upcoming.length === 0) return "📅 No hay vencimientos del SRI programados para los próximos 7 días.";
 
         const monthlyCount = upcoming.filter((c: any) => {
-            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
-            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = esEmprendedor(c.regime);
+            const isPopular = esPopular(c.regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             return ivaFreq === 'Mensual';
         }).length;
 
         const semiannualCount = upcoming.filter((c: any) => {
-            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
-            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = esEmprendedor(c.regime);
+            const isPopular = esPopular(c.regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             return ivaFreq === 'Semestral';
         }).length;
 
-        const popularCount = upcoming.filter((c: any) => c.regime === 'Rimpe Negocio Popular').length;
+        const popularCount = upcoming.filter((c: any) => esPopular(c.regime)).length;
 
         let response = `📅 *RESUMEN DE VENCIMIENTOS (7 DÍAS):*
 - IVA Mensual: ${monthlyCount}
@@ -617,8 +618,8 @@ export async function getUpcomingDeadlines() {
             return dayA - dayB;
         }).slice(0, 15).forEach((c: any) => {
             const dueDay = SRI_DUE_DATES[parseInt(String(c.ruc).charAt(8))];
-            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
-            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = esEmprendedor(c.regime);
+            const isPopular = esPopular(c.regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             const typeLabel = isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semst.' : 'Mens.');
             
@@ -679,13 +680,13 @@ export async function getUpcomingDeadlinesStructured() {
 
             // Determinar si tiene obligación tributaria aplicable en este mes
             const regime = c.regime || 'Régimen General';
-            const isPopular = regime === 'Rimpe Negocio Popular';
-            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const isPopular = esPopular(regime);
+            const isEmprendedor = esEmprendedor(regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             const reqRenta = c.tax_profile?.requiresAnnualRenta ?? true;
 
             const hasIvaThisMonth = ivaFreq === 'Mensual' || (ivaFreq === 'Semestral' && (currentMonth === 7 || currentMonth === 1));
-            const hasRentaThisMonth = reqRenta && ((isPopular && currentMonth === 5) || (!isPopular && currentMonth === 3));
+            const hasRentaThisMonth = reqRenta && currentMonth === mesRentaPersonaNatural(regime);
 
             if (!hasIvaThisMonth && !hasRentaThisMonth) return;
 
@@ -742,6 +743,7 @@ export const syncToSheets = async () => { console.warn("[Bot] Sheets sync no dis
 export async function updateClientData(ruc: string, updates: any) {
     console.log(`📝 Updating client ${ruc} in Supabase with:`, updates);
     try {
+        if (updates && 'regime' in updates) updates = { ...updates, regime: regimenCanonico(updates.regime) };
         const { error } = await supabase
             .from('clients')
             .update(updates)
@@ -870,8 +872,8 @@ export async function getDatabaseSummary() {
         if (!clients || clients.length === 0) return "La base de datos está vacía.";
 
         const total = clients.length;
-        const rimpePopular = clients.filter(c => c.regime === 'Rimpe Negocio Popular').length;
-        const rimpeEmprendedor = clients.filter(c => c.regime === 'Rimpe Emprendedor').length;
+        const rimpePopular = clients.filter(c => esPopular(c.regime)).length;
+        const rimpeEmprendedor = clients.filter(c => esEmprendedor(c.regime)).length;
         const general = total - rimpePopular - rimpeEmprendedor;
 
         let pendingIvaPayments = 0;
@@ -881,7 +883,7 @@ export async function getDatabaseSummary() {
 
         clients.forEach(c => {
             const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
-            const needsIva = c.regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
+            const needsIva = !esPopular(c.regime) && ivaFreq !== 'Ninguno';
             
             const declarations = c.sri_declaraciones || [];
             const lastIva = declarations.filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
@@ -919,7 +921,7 @@ export async function getDatabaseSummary() {
         });
 
         const pendingRentaCount = clients.filter(c => {
-            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (c.regime === 'Rimpe Negocio Popular' || c.regime === 'Rimpe Emprendedor');
+            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (esPopular(c.regime) || esEmprendedor(c.regime));
             const lastRenta = (c.sri_declaraciones || []).filter((d: any) => d.type === 'RENTA')[0];
             return needsRenta && !lastRenta?.is_paid;
         }).length;
@@ -980,12 +982,12 @@ export async function createClient(data: {
             ruc: data.ruc,
             name: data.name,
             sri_password: data.sriPassword,
-            regime: data.regime,
+            regime: regimenCanonico(data.regime),
             email: data.email || "",
             phones: data.phones || [],
             is_active: true,
             tax_profile: {
-                ivaFrequency: data.regime === 'Rimpe Negocio Popular' ? 'Ninguno' : data.regime === 'Rimpe Emprendedor' ? 'Semestral' : 'Mensual',
+                ivaFrequency: esPopular(data.regime) ? 'Ninguno' : esEmprendedor(data.regime) ? 'Semestral' : 'Mensual',
                 requiresAnnualRenta: true
             }
         };
@@ -1251,7 +1253,7 @@ export async function detectTaxInconsistencies() {
             const freq = c.tax_profile?.ivaFrequency || "";
             if (!regime) problems.push("⚠️ Régimen no definido");
             if (regime === 'Régimen General' && freq === 'Semestral') problems.push("⚠️ General con frecuencia Semestral");
-            if (regime.includes('Rimpe') && freq === 'Mensual') problems.push("⚠️ Rimpe con frecuencia Mensual");
+            if (esRimpe(regime) && freq === 'Mensual') problems.push("⚠️ Rimpe con frecuencia Mensual");
 
             // 4. RUC Validation (Emergency check)
             if (c.ruc && c.ruc.length !== 13) problems.push("❌ RUC inválido (no tiene 13 dígitos)");
@@ -1359,8 +1361,8 @@ export async function getClientsStatusReport() {
 
         clients.forEach((c: any) => {
             const regime = c.regime || 'Régimen General';
-            const isPopular = regime === 'Rimpe Negocio Popular';
-            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const isPopular = esPopular(regime);
+            const isEmprendedor = esEmprendedor(regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
             // Classify by frequency
@@ -1374,7 +1376,7 @@ export async function getClientsStatusReport() {
 
             // Classify by declaration status (latest IVA period)
             const declarations = c.sri_declaraciones || [];
-            const needsIva = regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
+            const needsIva = !esPopular(regime) && ivaFreq !== 'Ninguno';
             
             // Get latest IVA declaration
             const lastIva = declarations
@@ -1640,6 +1642,7 @@ export async function quickUpdateClient(identifier: string, field: string, value
         if (dbField === 'phones') {
             parsedValue = Array.isArray(value) ? value : [String(value)];
         }
+        if (dbField === 'regime') parsedValue = regimenCanonico(value);
 
         let updateErr;
         if (dbField === 'client_start_period' || dbField === 'iva_frequency') {
@@ -2954,10 +2957,10 @@ export async function generateDailyOperationalReport(): Promise<string> {
 
         clients.forEach((c: any) => {
             const regime = (c.regime || 'Régimen General').trim();
-            const isPopular = regime === 'Rimpe Negocio Popular' || 
+            const isPopular = esPopular(regime) || 
                               c.tax_profile?.ivaFrequency === 'Ninguno' || 
                               regime.toLowerCase().includes('popular');
-            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const isEmprendedor = esEmprendedor(regime);
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
             // 1. Auditoría de Credenciales

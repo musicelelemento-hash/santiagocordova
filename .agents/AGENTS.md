@@ -47,7 +47,7 @@ Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema),
 | **Matriz de Cumplimiento SRI** | 🟡 **95% (Casi Listo)** | Funcional. Pendiente: Exportador masivo de reportes en Excel/PDF para auditoría. |
 | **Extensiones Web SRI (Chrome/Edge)** | 🟡 **80% (En Proceso)** | Inyección funcional. Pendiente: Empaquetador `manifest.json` v3 listo para distribución e importador 1-click de facturas recibidas del SRI. |
 | **Automatización WhatsApp** | 🟡 **95%** | Sala de envío (`SalaDeEnvio.tsx`): de a uno, con el enlace al comprobante en el mensaje. **Nunca se verificó en pantalla con datos reales.** Pendiente: envío 100% automático (§5) y el email con PDF adjunto, que es lo siguiente (§7). |
-| **Autocompletado de RUC desde el SRI** | 🟡 **Degradado, no roto** | `corsproxy.io` dejó de ser gratuito. `fetchSRIPublicData()` ya no explota: sin `VITE_CORS_PROXY_KEY` devuelve `null` + warning en consola (no autocompleta, pero no rompe crear cliente). Verificado 05-nov-2026: la key no está configurada en `.env.local`. Ver §7. |
+| **Autocompletado de RUC desde el SRI** | 🟢 **Restaurado 19-nov-2026** | Proxy propio: Cloudflare Worker `sri-ruc-proxy` (`workers/sri-ruc-proxy/worker.js`, https://sri-ruc-proxy.santiagocordova.workers.dev/ruc/<ruc>), plan gratis. Sólo consulta el padrón público del SRI; CORS para santiagocordova.com, Vercel del proyecto y localhost. El servicio `movil-servicios` del SRI rechaza desde Cloudflare; responde el de catastro (el mismo que usa la página «Consulta de RUC»). Probado con un RUC real. Falta verlo en la web publicada. |
 | **Generador de Anexos (ATS / RDEP)** | 🔴 **Pendiente (Fase 2)** | Generación automática de XMLs de Anexos a partir de comprobantes guardados. |
 
 ---
@@ -294,7 +294,7 @@ Dos cuidados al construirlas:
 
 | Qué | Síntoma | Dónde |
 | :--- | :--- | :--- |
-| **`corsproxy.io` dejó de ser gratuito** | **Actualizado 05-nov-2026 — degradado, no roto.** `fetchSRIPublicData()` ya no explota con HTTP 403: intenta la URL directa (sin CORS sólo funciona desde la extensión, en el propio dominio del SRI) y, si hay `VITE_CORS_PROXY_KEY` configurada, el proxy de pago con esa key. Sin ninguna de las dos, devuelve `null` + warning — no autocompleta, pero no rompe crear un cliente. Verificado: la key no está en `.env.local`. Para que vuelva a autocompletar hace falta pagar una key de corsproxy.io o montar un proxy propio (un Cloudflare Worker gratis, mismo tier que ya usan para R2) — decisión del usuario, no de código. | `services/sri.ts` |
+| ~~`corsproxy.io` dejó de ser gratuito~~ | **CERRADA el 19-nov-2026**: reemplazado por el Worker propio `sri-ruc-proxy` (ver §3). | `services/sri.ts`, `workers/sri-ruc-proxy/` |
 | ~~Supabase rechaza la llave anon (401)~~ | **CERRADA el 07-sep-2026** (ver raíz §0b.2): no era la llave, era permiso de columna (`is_deleted`, 42501) + falta de política RLS de SELECT en `sri_declaraciones`. Documentado acá por si esta fila se leía como vigente. | raíz §0b.2 |
 
 > Sobre el 401 (histórico): una llave guardada en los Ajustes de la extensión

@@ -99,7 +99,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         return sessionStorage.getItem('dashboard_search') || '';
     });
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
-    const [selectedRegime, setSelectedRegime] = useState<'all' | 'Régimen General' | 'Rimpe Emprendedor' | 'Rimpe Negocio Popular'>('all');
+    const [selectedRegime, setSelectedRegime] = useState<'all' | 'Régimen General' | 'RIMPE Emprendedor' | 'RIMPE Negocio Popular'>('all');
     const [selectedObligation, setSelectedObligation] = useState<'all' | 'IVA' | 'RENTA'>('all');
     const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
 

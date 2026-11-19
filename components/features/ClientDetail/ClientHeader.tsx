@@ -210,6 +210,24 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         >
                             <ExternalLink size={16} strokeWidth={2} />
                         </button>
+                        <button
+                            onClick={async () => {
+                                // La consulta del SRI exige reCAPTCHA: no se automatiza. Se abre
+                                // la página oficial con el RUC ya copiado para pegarlo y consultar.
+                                const ruc = String(client.ruc || '').replace(/\D/g, '');
+                                try {
+                                    if (ruc) await navigator.clipboard.writeText(ruc);
+                                    toast.success(ruc ? `RUC ${ruc} copiado: pégalo en el SRI y resuelve el captcha.` : 'Abriendo la consulta del SRI.');
+                                } catch {
+                                    toast.success(`Abriendo la consulta del SRI. RUC: ${ruc}`);
+                                }
+                                window.open('https://srienlinea.sri.gob.ec/sri-en-linea/SriDeclaracionesWeb/EstadoTributario/Consultas/consultaEstadoTributario', '_blank', 'noopener,noreferrer');
+                            }}
+                            className="p-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-[#04B17B]/15 hover:text-[#04B17B] hover:border-[#04B17B]/30 rounded-xl border border-slate-200 dark:border-white/10 transition-all active:scale-95 shadow-sm"
+                            title="Estado tributario en el SRI (copia el RUC y abre la consulta oficial)"
+                        >
+                            <ShieldCheck size={16} strokeWidth={2} />
+                        </button>
                         {onDelete && (
                             <button
                                 onClick={onDelete}

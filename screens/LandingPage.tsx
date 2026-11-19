@@ -516,15 +516,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 description: "Declaración anual obligatoria simplificada para microempresarios, tiendas, talleres y comercios con facturación de hasta $20,000 USD al año."
             };
         } else if (ingresos <= 300000) {
+            // Tabla oficial RIMPE Emprendedor (SRI, sri.gob.ec/rimpe): fracción
+            // básica + % sobre el excedente de ingresos brutos.
             let impuestoEstimado = 60;
-            if (ingresos > 20000 && ingresos <= 50000) {
+            if (ingresos <= 50000) {
                 impuestoEstimado = 60 + (ingresos - 20000) * 0.01;
-            } else if (ingresos <= 100000) {
+            } else if (ingresos <= 75000) {
                 impuestoEstimado = 360 + (ingresos - 50000) * 0.0125;
+            } else if (ingresos <= 100000) {
+                impuestoEstimado = 672.5 + (ingresos - 75000) * 0.015;
             } else if (ingresos <= 200000) {
-                impuestoEstimado = 985 + (ingresos - 100000) * 0.015;
+                impuestoEstimado = 1047.5 + (ingresos - 100000) * 0.0175;
             } else {
-                impuestoEstimado = 2485 + (ingresos - 200000) * 0.02;
+                impuestoEstimado = 2797.5 + (ingresos - 200000) * 0.02;
             }
 
             return {
