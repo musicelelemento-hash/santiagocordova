@@ -91,7 +91,8 @@ const CompanyAnnexActions: React.FC<Props> = ({ client }) => {
         const facturas = audit?.invoices || [];
         // Sin compras no se bloquea: el ATS de un mes en cero va con <compras> vacío.
         const sinCompras = facturas.length === 0;
-        const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodoAts, facturas);
+        const atsRazonSocial = String((client.taxProfile as any)?.atsRazonSocial || '').trim();
+        const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodoAts, facturas, { razonSocial: atsRazonSocial || undefined });
         if (faltantes.length) {
             toast.error(`Faltan ${faltantes.length} datos (clave de acceso). Completa los comprobantes antes de presentar el ATS.`);
             return;

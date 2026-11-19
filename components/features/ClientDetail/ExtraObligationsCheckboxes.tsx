@@ -192,6 +192,14 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                           ATS Mensual
                         </span>
                         <span className="text-[9px] font-mono text-slate-400 mt-0.5">ANEXO_TRANSACCIONAL</span>
+                        <input
+                          type="text"
+                          disabled={disabled}
+                          value={editedClient.taxProfile?.atsRazonSocial || ''}
+                          onChange={(e) => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), atsRazonSocial: e.target.value } })}
+                          placeholder="Razón social exacta del RUC (para el ATS)"
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white/70 px-2 py-1 text-[10px] text-slate-700 outline-none placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-200"
+                        />
                       </div>
                     </label>
 

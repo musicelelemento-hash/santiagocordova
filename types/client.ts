@@ -220,6 +220,8 @@ export interface TaxProfile {
     firmaContadorPendiente?: { periodo?: string; cuando?: string; estado?: string };
     /** Datos del contador que firma las declaraciones. */
     contador?: { nombre?: string; ruc?: string; email?: string };
+    /** Razón social EXACTA del RUC para el ATS (si el nombre comercial difiere). */
+    atsRazonSocial?: string;
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;

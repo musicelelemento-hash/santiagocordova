@@ -35,7 +35,8 @@ const AtsQuickDownload: React.FC<{ client: Client }> = ({ client }) => {
             const facturas = audit?.invoices || [];
             const ventas: any = (client.taxProfile as any)?.ventasPorPeriodo?.[periodo] || null;
             const ventasBase = Number(ventas?.total) || 0;
-            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase });
+            const atsRazonSocial = String((client.taxProfile as any)?.atsRazonSocial || '').trim();
+            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase, razonSocial: atsRazonSocial || undefined });
             if (faltantes.length) {
                 toast.error(`Faltan ${faltantes.length} datos (clave de acceso). Completá los comprobantes.`);
                 return;

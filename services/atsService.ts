@@ -17,12 +17,13 @@ export async function descargarAtsDeCliente(
         const audit = SupplierCatalogService.getClientPurchases(client, periodo);
         const facturas = audit?.invoices || [];
         const ventas: any = (client.taxProfile as any)?.ventasPorPeriodo?.[periodo] || null;
+        const atsRazonSocial = String((client.taxProfile as any)?.atsRazonSocial || '').trim();
         const ventasBase = Number(ventas?.total) || 0;
         const { datos, faltantes } = atsDesdeCompras(
             { ruc: client.ruc, name: client.name },
             periodo,
             facturas,
-            { ventasBase },
+            { ventasBase, razonSocial: atsRazonSocial || undefined },
         );
         if (faltantes.length) return { ok: false, facturas: facturas.length, faltantes };
         await descargarAts(datos);

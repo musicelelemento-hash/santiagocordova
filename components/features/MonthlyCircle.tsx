@@ -100,7 +100,8 @@ const [acuse, setAcuse] = useState<any>(null);
         const sinCompras = facturas.length === 0;
         setGenerando(true);
         try {
-            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase: ventasBaseEfectiva });
+            const atsRazonSocial = String((client.taxProfile as any)?.atsRazonSocial || '').trim();
+            const { datos, faltantes } = atsDesdeCompras({ ruc: client.ruc, name: client.name }, periodo, facturas, { ventasBase: ventasBaseEfectiva, razonSocial: atsRazonSocial || undefined });
             if (sinCompras) {
                 toast.info(`ATS de ${nombrePeriodo(periodo)} sin compras registradas (mes en cero).`);
             }

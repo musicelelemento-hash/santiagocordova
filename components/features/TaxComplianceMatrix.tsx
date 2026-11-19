@@ -183,7 +183,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const facturas = audit?.invoices || [];
             const ventas: any = (cliente.taxProfile as any)?.ventasPorPeriodo?.[periodoSel] || null;
             const ventasBase = Number(ventas?.total) || 0;
-            const { datos, faltantes } = atsDesdeCompras({ ruc: cliente.ruc, name: cliente.name }, periodoSel, facturas, { ventasBase });
+            const atsRazonSocial = String((cliente.taxProfile as any)?.atsRazonSocial || '').trim();
+            const { datos, faltantes } = atsDesdeCompras({ ruc: cliente.ruc, name: cliente.name }, periodoSel, facturas, { ventasBase, razonSocial: atsRazonSocial || undefined });
             if (faltantes.length) {
                 toast.error(`Faltan ${faltantes.length} claves de acceso en las compras: completá los comprobantes antes del ATS.`);
                 return;

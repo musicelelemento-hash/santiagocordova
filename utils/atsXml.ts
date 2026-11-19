@@ -66,6 +66,13 @@ export interface AtsDatos {
 
 const s = (x: unknown, def = ''): string => (x === undefined || x === null ? def : String(x));
 
+/**
+ * El SRI valida la razón social contra la del RUC: no lleva puntos.
+ * Los ATS reales de VIMARBO dicen «VIMARBO COMPANY SAS», no «S.A.S.».
+ */
+export const normalizarRazonSocialSRI = (nombre: string): string =>
+    String(nombre || '').replace(/\./g, '').replace(/\s+/g, ' ').trim();
+
 const compraXml = (x: AtsCompra): string => {
     const pe = x.pagoExterior || ({} as AtsCompra['pagoExterior']);
     const lineas: string[] = [
@@ -177,7 +184,7 @@ export function atsDesdeCompras(
     client: { ruc: string; name: string },
     periodo: string,
     invoices: PurchaseInvoiceItem[] | undefined,
-    opciones?: { claveDeAcceso?: (inv: PurchaseInvoiceItem) => string | undefined; ventasBase?: number; serie?: string },
+    opciones?: { claveDeAcceso?: (inv: PurchaseInvoiceItem) => string | undefined; ventasBase?: number; serie?: string; razonSocial?: string },
 ): { datos: AtsDatos; faltantes: string[] } {
     const [anio, mes] = periodo.split('-').map(Number);
     const faltantes: string[] = [];
@@ -233,14 +240,14 @@ export function atsDesdeCompras(
         datos: {
             cabecera: {
                 IdInformante: String(client.ruc).replace(/\D/g, ''),
-                razonSocial: String(client.name || '').slice(0, 300),
+                razonSocial: (opciones?.razonSocial ? String(opciones.razonSocial) : normalizarRazonSocialSRI(String(client.name || ''))).slice(0, 300),
                 Anio: anio || new Date().getFullYear(),
                 Mes: mes || 1,
                 numEstabRuc: '001',
                 totalVentas: Number(opciones?.ventasBase || 0).toFixed(2),
             },
             compras,
-            ventasEstablecimiento: [{ codEstab: '001', ventasEstab: Number(opciones?.ventasBase || 0).toFixed(2), ivaComp: '0' }],
+            ventasEstablecimiento: [{ codEstab: '001', ventasEstab: String(Number(opciones?.ventasBase || 0)), ivaComp: '0' }],
         },
         faltantes,
     };
