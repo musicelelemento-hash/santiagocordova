@@ -34,5 +34,10 @@ create index if not exists notifications_ruc_idx on public.notifications (ruc, c
 
 alter table public.notifications enable row level security;
 
-create policy "notifications_all_anon" on public.notifications
-    for all to anon using (true) with check (true);
+-- Sólo con sesión iniciada (la pantalla de Notificaciones de la web). El bot
+-- usa la service key y no pasa por RLS. NO abrir a `anon`: la llave anónima
+-- viaja en el bundle de la web, y el despachador del bot manda por el Gmail
+-- del estudio todo lo que esté `pendiente` en esta tabla — con `anon` cualquiera
+-- podría encolar un correo con el destinatario y el texto que quisiera.
+create policy "notifications_authenticated" on public.notifications
+    for all to authenticated using (true) with check (true);
