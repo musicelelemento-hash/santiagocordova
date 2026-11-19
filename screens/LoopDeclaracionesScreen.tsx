@@ -377,6 +377,12 @@ export const LoopDeclaracionesScreen: React.FC<LoopDeclaracionesScreenProps> = (
     runRef.current = null;
     setCorriendo(false);
     toast.info(`Corrida cerrada: ${formatearDuracion(corrida.duracionMs)} en ${corrida.total} clientes.`);
+
+    // 🧾 Al final del bucle: lo que quedó esperando firma del contador.
+    const pendientesFirma = actuales.filter((c) => !!(c.taxProfile as any)?.firmaContadorPendiente);
+    if (pendientesFirma.length > 0) {
+      toast.warning(`${pendientesFirma.length} declaración(es) pendiente(s) de firma del contador: ${pendientesFirma.map((c) => c.name).slice(0, 3).join(', ')}${pendientesFirma.length > 3 ? '…' : ''}`);
+    }
   }, [tiempos, toast]);
 
   // Mantiene el ref apuntando a la versión fresca (ver comentario del ref).

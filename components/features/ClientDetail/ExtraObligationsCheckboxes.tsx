@@ -225,12 +225,24 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                           );
                         })}
                       </div>
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {(['nombre', 'RUC', 'correo'] as const).map((campo) => (
+                          <input
+                            key={campo}
+                            type="text"
+                            disabled={disabled}
+                            value={(editedClient.taxProfile?.contador as any)?.[campo === 'correo' ? 'email' : campo] || ''}
+                            onChange={(e) => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), contador: { ...((editedClient.taxProfile?.contador as any) || {}), [campo === 'correo' ? 'email' : campo]: e.target.value } } })}
+                            placeholder={campo === 'correo' ? 'Correo del contador' : `Datos del contador · ${campo}`}
+                            className="w-full rounded-lg border border-slate-200 bg-white/70 px-2.5 py-1.5 text-[10px] text-slate-700 outline-none placeholder:text-slate-400 dark:border-white/10 dark:bg-black/20 dark:text-slate-200"
+                          />
+                        ))}
+                      </div>
                       <p className="mt-2 text-[9px] leading-relaxed text-slate-400">
                         <b>Auto</b>: sociedad u obligado a llevar contabilidad → <b>Sí</b>; el resto → <b>No</b>.
             <b>Pendiente</b>: contesta <b>Sí</b> y deja la declaración marcada como <b>pendiente de firma del contador</b> (avisa en la ficha y en la extensión).
-                        Aplica aunque las ventas sean <b>0</b>: la obligación nace de ser sociedad, no del monto.
-                        Si en una SAS respondés <b>No</b>, el SRI acepta el envío, pero la declaración queda
-                        <b>sin firma de contador</b> y puede ser observada después.
+                        <b>En cero</b>: si la declaración no tiene movimiento, se envía <b>sin firma de contador</b> (criterio legal confirmado), aunque el cliente sea SAS.
+                        Con valores, en una SAS lo correcto es <b>Sí</b> o <b>Pendiente</b>.
                       </p>
                     </div>
                 </div>

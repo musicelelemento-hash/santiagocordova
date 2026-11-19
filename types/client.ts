@@ -218,6 +218,8 @@ export interface TaxProfile {
     firmaContadorModo?: 'auto' | 'si' | 'no' | 'pendiente';
     /** Declaración presentada que espera la firma del contador. */
     firmaContadorPendiente?: { periodo?: string; cuando?: string; estado?: string };
+    /** Datos del contador que firma las declaraciones. */
+    contador?: { nombre?: string; ruc?: string; email?: string };
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;

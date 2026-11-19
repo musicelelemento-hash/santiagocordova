@@ -31,7 +31,7 @@ export const FirmaPendienteChip: React.FC<Props> = ({ client, className = '' }) 
                 Pendiente de firma del contador
             </span>
             <span className="font-mono text-[10px] text-slate-400">
-                {pend.periodo || ''}{fecha ? ` · ${fecha}` : ''}
+                {pend.periodo || ''}{fecha ? ` · ${fecha}` : ''}{(client.taxProfile as any)?.contador?.nombre ? ` · firmar con ${(client.taxProfile as any).contador.nombre}` : ''}
             </span>
             <button
                 type="button"
