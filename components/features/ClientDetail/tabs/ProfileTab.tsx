@@ -22,6 +22,7 @@ import { SupplierCatalogService } from '../../../../services/supplierCatalogServ
 import SriCredentialAlert from '../../SriCredentialAlert';
 import { SriKeyVerifiedChip } from '../SriKeyVerifiedChip';
 import { FirmaPendienteChip } from '../FirmaPendienteChip';
+import { LoginAuditChip } from '../LoginAuditChip';
 import AtsQuickDownload from '../../AtsQuickDownload';
 
 interface ProfileTabProps {
@@ -562,6 +563,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             {/* Chip de auditoría: última verificación real en el SRI y último guardado de la clave */}
                             <SriKeyVerifiedChip client={editedClient} className="mt-2" />
                             <FirmaPendienteChip client={editedClient} className="mt-2" />
+                            <LoginAuditChip client={editedClient} className="mt-2" />
                             <div className="mt-2"><AtsQuickDownload client={editedClient} /></div>
 
                             {/* ── SMART ACTION SWITCH & KEY HEALTH (CABINA TÁCTICA) ── */}

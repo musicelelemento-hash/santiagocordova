@@ -222,6 +222,8 @@ export interface TaxProfile {
     contador?: { nombre?: string; ruc?: string; email?: string };
     /** Razón social EXACTA del RUC para el ATS (si el nombre comercial difiere). */
     atsRazonSocial?: string;
+    /** Últimos accesos al SRI (los escribe la extensión). */
+    loginAuditoria?: Array<{ cuando?: string; evento?: string; motivo?: string; origen?: string; sesionAbierta?: boolean }>;
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;
