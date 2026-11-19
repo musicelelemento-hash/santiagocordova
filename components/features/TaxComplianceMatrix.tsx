@@ -8,6 +8,8 @@ import { signPublicStorageUrl, openStoredFileInNewTab } from '../../services/fil
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { descargarAnexoIceXml, descargarAnexoIceZip } from '../../utils/iceXml';
+import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
+import { SupplierCatalogService } from '../../services/supplierCatalogService';
 import { entrarAlSriSinDeclarar, subirAnexoIceAlSri } from '../../services/extensionBridge';
 import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
 export { arePeriodsEqual };
@@ -173,6 +175,25 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     initialMode = 'IVA'
 }) => {
     const { toast } = useToast();
+
+    /** ATS de una celda: arma XML + ZIP listo para subir (no es comprobante). */
+    const descargarAtsDeCelda = async (cliente: Client, periodoSel: string) => {
+        try {
+            const audit = SupplierCatalogService.getClientPurchases(cliente, periodoSel);
+            const facturas = audit?.invoices || [];
+            const ventas: any = (cliente.taxProfile as any)?.ventasPorPeriodo?.[periodoSel] || null;
+            const ventasBase = Number(ventas?.total) || 0;
+            const { datos, faltantes } = atsDesdeCompras({ ruc: cliente.ruc, name: cliente.name }, periodoSel, facturas, { ventasBase });
+            if (faltantes.length) {
+                toast.error(`Faltan ${faltantes.length} claves de acceso en las compras: completá los comprobantes antes del ATS.`);
+                return;
+            }
+            await descargarAts(datos);
+            toast.success(facturas.length ? `ATS ${periodoSel} descargado (XML + ZIP para subir).` : `ATS ${periodoSel} descargado SIN compras (mes en cero).`);
+        } catch (e: any) {
+            toast.error(`No se pudo armar el ATS: ${e?.message || e}`);
+        }
+    };
     const { serviceFees } = useAppStore();
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
     const [matrixMode, setMatrixMode] = useState<MatrixMode>(initialMode);
@@ -4352,6 +4373,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     <LucideIcons.Upload size={13} />
                                     <span>Ya lo declaré: Subir PDF de Respaldo</span>
                                 </button>
+
+                                {String(obType).toUpperCase().includes('ATS') && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const cl = client;
+                                            const pSel = period;
+                                            setPendingCellModal(null);
+                                            void descargarAtsDeCelda(cl, pSel);
+                                        }}
+                                        className="w-full py-2.5 px-4 rounded-2xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 hover:text-cyan-100 border border-cyan-400/40 font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                        title="Descarga ATS-AAAA-MM.xml + ZIP del anexo para subir en Anexos del SRI. Esto NO es un comprobante de declaración."
+                                    >
+                                        <LucideIcons.FileSpreadsheet size={13} />
+                                        <span>Descargar ATS (ZIP para subir)</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>,
