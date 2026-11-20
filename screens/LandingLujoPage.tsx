@@ -83,7 +83,7 @@ const REGIONS = [
   { tag: 'EL ORO · CAPITAL', name: 'Machala', desc: 'Gestión tributaria para comercio, servicio y agro.' },
   { tag: 'NACIONAL · REMOTO', name: 'Guayaquil', desc: 'Soporte digital y declaraciones en línea.' },
   { tag: 'NACIONAL · REMOTO', name: 'Quito', desc: 'Asesoría fiscal a distancia, sin fricciones.' },
-  { tag: 'NACIONAL · REMOTO', name: 'Cuenca', desc: 'Ingeniería tributaria para todo el Austro.' },
+  { tag: 'NACIONAL · REMOTO', name: 'Cuenca', desc: 'Asesoría tributaria para todo el Austro.' },
 ];
 
 const AGRO_TAGS = ['AGRO & PRODUCCIÓN', 'COMERCIO & RETAIL', 'TRANSPORTE & LOGÍSTICA', 'PYMES & EMPRENDEDORES'];
@@ -150,7 +150,7 @@ const FAQS = [
   {
     tag: 'MÉTODO',
     color: '#04B17B',
-    q: '¿Por qué elegir Soluciones Tributarias PRO frente a un contador tradicional?',
+    q: '¿Por qué elegir SC Estrategias Fiscales frente a un contador tradicional?',
     a: 'Combinamos más de 10 años de experiencia fiscal con automatización algorítmica (sistema Nueva Luz 3.0): cero errores en casilleros de retenciones 615/617, sincronización inmediata de comprobantes electrónicos y blindaje fiscal continuo ante auditorías del SRI.',
   },
   {
@@ -163,7 +163,7 @@ const FAQS = [
     tag: 'PRESCRIPCIÓN',
     color: '#2B6AFF',
     q: '¿Cuándo prescriben las deudas y multas del SRI en Ecuador?',
-    a: 'Según el Artículo 55 del Código Tributario, las obligaciones tributarias prescriben en 5 años contados desde que fueron exigibles, o en 7 años si nunca se presentó la declaración. En Soluciones Tributarias PRO auditamos tu expediente para invocar formalmente la prescripción y evitar que pagues deudas que ya han caducado.',
+    a: 'Según el Artículo 55 del Código Tributario, las obligaciones tributarias prescriben en 5 años contados desde que fueron exigibles, o en 7 años si nunca se presentó la declaración. En SC Estrategias Fiscales auditamos tu expediente para invocar formalmente la prescripción y evitar que pagues deudas que ya han caducado.',
   },
   {
     tag: 'RUC BLOQUEADO',
@@ -488,7 +488,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <Logo className="w-8 h-8 sm:w-9 sm:h-9 flex-none" />
               <span className="flex flex-col leading-tight whitespace-nowrap">
                 <span className="font-display font-extrabold text-[12px] sm:text-[13px] tracking-tight text-white">SANTIAGO CÓRDOVA</span>
-                <span className="hidden min-[900px]:block font-mono text-[11px] font-bold tracking-[0.22em] text-[#04B17B] mt-0.5">SOLUCIONES TRIBUTARIAS PRO</span>
+                <span className="hidden min-[900px]:block font-mono text-[11px] font-bold tracking-[0.22em] text-[#04B17B] mt-0.5">SC ESTRATEGIAS FISCALES</span>
               </span>
             </a>
           </div>
@@ -669,7 +669,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </span>
           </Reveal>
           <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,7vw,6.4rem)' }}>
-            Ingeniería tributaria
+            Estrategia fiscal
             <br />
             <span
               style={{
@@ -726,7 +726,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </span>
           </Reveal>
         </div>
-        <div className="lujo-scrollcue hidden min-[1040px]:flex absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[2] flex-col items-center gap-2.5">
+        <div className="lujo-scrollcue hidden min-[1040px]:[@media(min-height:900px)]:flex absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[2] flex-col items-center gap-2.5">
           <span className="font-mono text-[11px] tracking-[0.34em] text-slate-400">SCROLL</span>
           <span style={{ width: 1, height: 46, background: 'linear-gradient(to bottom,#04B17B,transparent)', animation: 'lujoDrift 2.2s ease-in-out infinite alternate' }} />
         </div>
@@ -1547,7 +1547,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <span className="font-display font-extrabold text-white text-[13px]">SANTIAGO CÓRDOVA</span>
             </span>
             <p className="font-light text-[13px]" style={{ margin: '16px 0 0', maxWidth: 300, lineHeight: 1.65, color: '#8494a8' }}>
-              Soluciones Tributarias PRO. Contabilidad, declaraciones y blindaje fiscal con criterio profesional.
+              SC Estrategias Fiscales. Contabilidad, declaraciones y blindaje fiscal con criterio profesional.
             </p>
           </div>
           <div>
@@ -1573,7 +1573,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </div>
         </div>
         <div className="max-w-[1160px] mx-auto font-mono text-[11px] tracking-[0.18em]" style={{ margin: '34px auto 0', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)', color: '#7d8ca1' }}>
-          SOLUCIONES TRIBUTARIAS PRO · SISTEMA NUEVA LUZ 3.0
+          SC ESTRATEGIAS FISCALES · SISTEMA NUEVA LUZ 3.0
         </div>
       </footer>
     </div>
