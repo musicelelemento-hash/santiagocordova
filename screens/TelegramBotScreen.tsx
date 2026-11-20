@@ -1,16 +1,14 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { BakuEstadoPanel } from '../components/features/BakuEstadoPanel';
 import {
-    Bot, Send, Key, KeyRound, CheckCircle2, Copy, ExternalLink,
+    Bot, Send, Key, CheckCircle2, Copy, ExternalLink,
     RefreshCw, Search, Eye, EyeOff, Save, Sparkles, Layers,
     Terminal, Users, AlertCircle, FileText, Check, AlertTriangle,
-    Wand2, MessageSquare, Gauge, Plus, Trash2, Sliders, Smartphone,
-    ArrowRight, Play, CheckCircle, Flame, ThumbsUp, Zap, HelpCircle,
-    SlidersHorizontal, Edit3, X, Activity
+    Plus, Trash2, Sliders,
+    Edit3, X, Activity
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
-import { auditAndOptimizeBotResponse } from '../services/geminiService';
 import { cargarBotonesBaku, guardarBotonesBaku, motivoDeSupabase } from '../services/botWebConfig';
 
 interface TelegramBotScreenProps {
@@ -18,7 +16,7 @@ interface TelegramBotScreenProps {
     theme?: 'light' | 'dark';
 }
 
-type TabType = 'estado' | 'mapa' | 'claves' | 'reporte' | 'incompletos' | 'auditoria';
+type TabType = 'estado' | 'mapa' | 'claves' | 'incompletos' | 'auditoria';
 
 export interface CustomBotButton {
     id: string;
@@ -50,7 +48,7 @@ const accionDesconocida = (action: string): boolean => {
 };
 
 export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, theme = 'dark' }) => {
-    const { clients, tasks = [], updateClient } = useAppStore();
+    const { clients, updateClient } = useAppStore();
     const { toast } = useToast();
 
     const [activeTab, setActiveTab] = useState<TabType>('estado');
@@ -78,17 +76,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
     const [copiedText, setCopiedText] = useState<string | null>(null);
 
     // Auditoría & Simulador State
-    const [selectedAuditClientId, setSelectedAuditClientId] = useState<string>('');
-    const [auditQuery, setAuditQuery] = useState<string>('¿Cuánto debe Murillo y cuál es su estado tributario?');
-    const [personalityStyle, setPersonalityStyle] = useState<'directo' | 'dinamico' | 'formal'>('directo');
-    const [rawBotResponse, setRawBotResponse] = useState<string>('');
-    const [isAuditing, setIsAuditing] = useState<boolean>(false);
-    const [auditResult, setAuditResult] = useState<{
-        score: number;
-        clarityCritique: string;
-        optimizedResponse: string;
-        suggestedButtons: { label: string; action: string }[];
-    } | null>(null);
 
     // Custom Buttons State with LocalStorage
     const [customButtons, setCustomButtons] = useState<CustomBotButton[]>(() => {
@@ -169,14 +156,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
         });
     }, [activeClients]);
 
-    // Murillo specific detection
-    const murilloClient = useMemo(() => {
-        return activeClients.find(c =>
-            c.name.toUpperCase().includes('MURILLO') ||
-            c.ruc === '2026071315102'
-        );
-    }, [activeClients]);
-
     // Filtered clients for the Claves table
     const displayedClients = useMemo(() => {
         let list = activeClients;
@@ -203,13 +182,8 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             );
         }
 
-        // Put Murillo first if in list
-        return [...list].sort((a, b) => {
-            if (a.id === murilloClient?.id) return -1;
-            if (b.id === murilloClient?.id) return 1;
-            return a.name.localeCompare(b.name);
-        });
-    }, [activeClients, filterKeyStatus, searchTerm, murilloClient]);
+        return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }, [activeClients, filterKeyStatus, searchTerm]);
 
     const handleCopy = (text: string, id: string) => {
         navigator.clipboard.writeText(text);
@@ -248,118 +222,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
         }
     };
 
-    // Auditoría & Simulador Helpers
-    useEffect(() => {
-        if (!selectedAuditClientId && activeClients.length > 0) {
-            setSelectedAuditClientId(murilloClient?.id || activeClients[0].id);
-        }
-    }, [activeClients, murilloClient, selectedAuditClientId]);
-
-    const AUDIT_SCENARIOS = [
-        {
-            title: '💡 Deuda & Estado Murillo',
-            query: '¿Cuánto debe Murillo y cuál es su estado tributario?',
-            category: 'Cobranzas'
-        },
-        {
-            title: '🔑 Configurar Clave SRI',
-            query: 'Pon la clave del SRI a Murillo 123456',
-            category: 'Accesos'
-        },
-        {
-            title: '📅 Vencimientos de la Semana',
-            query: '¿Cuáles son los clientes con vencimiento de declaración esta semana?',
-            category: 'Tributario'
-        },
-        {
-            title: '💰 Balance de Honorarios',
-            query: 'Dame el resumen de cobranzas de honorarios del mes actual',
-            category: 'Gestión'
-        },
-        {
-            title: '📱 Mensaje Cobro WhatsApp',
-            query: 'Genera el mensaje de cobro formal para Murillo por $45',
-            category: 'Cobranzas'
-        },
-        {
-            title: '⚠️ Revisión de Credenciales',
-            query: '¿Qué clientes tienen la clave del SRI incorrecta o faltante?',
-            category: 'Accesos'
-        }
-    ];
-
-    const handleSelectScenario = (scenario: { title: string; query: string }) => {
-        setAuditQuery(scenario.query);
-        handleGenerateBaseResponse(scenario.query);
-    };
-
-    const handleGenerateBaseResponse = (queryToUse?: string) => {
-        const q = (queryToUse || auditQuery).toLowerCase();
-        const client = activeClients.find(c => c.id === selectedAuditClientId) || murilloClient || activeClients[0];
-        const clientName = client?.name || 'Cliente';
-        const clientRuc = client?.ruc || '0000000000001';
-        const clientPhone = client?.phones?.[0] || 'No registrado';
-        const pass = client?.sriPassword || '';
-
-        // Calculate pending tasks debt
-        const clientTasks = (tasks || []).filter(t => t.clientId === client?.id);
-        const debt = clientTasks
-            .filter(t => t.status !== 'Pagada' && t.status !== 'Completada')
-            .reduce((sum, t) => sum + (t.cost || 0), 0);
-
-        let response = '';
-
-        if (q.includes('clave') || q.includes('password') || q.includes('contraseña')) {
-            if (q.includes('pon') || q.includes('actualiza') || q.includes('cambia')) {
-                response = `Hola Santiago, espero que estés bien. He procedido a recibir tu solicitud de actualización. La nueva clave para el contribuyente ${clientName} con RUC ${clientRuc} será registrada como 123456. Por favor confirma si deseas que proceda a guardarla en la base de datos de Supabase. Saludos cordiales. Baku.`;
-            } else {
-                response = `Hola estimado Santiago, con respecto a la clave del SRI del cliente ${clientName} (RUC: ${clientRuc}), te informo que ${pass ? `su clave registrada actualmente es ${pass}. Recuerda mantenerla segura.` : 'no posee ninguna contraseña registrada en la base de datos. Sería bueno que la configuremos pronto.'} Quedo a tus órdenes para lo que necesites. Baku.`;
-            }
-        } else if (q.includes('debe') || q.includes('deuda') || q.includes('cobro') || q.includes('cuanto')) {
-            response = `Estimado Santiago, un saludo cordial. Consultando la base de datos de Soluciones Contables Pro, te indico que el cliente ${clientName} con RUC ${clientRuc} y teléfono ${clientPhone} tiene un total pendiente de ${debt > 0 ? `$${debt.toFixed(2)} por honorarios contables` : 'al día en sus pagos de honorarios ($0.00)'}. Su régimen es ${client?.regime || 'General'}. Cualquier duda adicional me puedes avisar para preparar el comprobante. Baku.`;
-        } else if (q.includes('vencimiento') || q.includes('semana') || q.includes('plazo')) {
-            const digit9 = clientRuc.length >= 10 ? clientRuc[8] : '1';
-            const daysMap: Record<string, number> = { '1': 10, '2': 12, '3': 14, '4': 16, '5': 18, '6': 20, '7': 22, '8': 24, '9': 26, '0': 28 };
-            const dueDay = daysMap[digit9] || 14;
-            response = `Buenas tardes Santiago. Para tu información tributaria, el 9no dígito del RUC de ${clientName} es ${digit9}, por lo cual su vencimiento mensual es el día ${dueDay} de cada mes. Recuerda ingresar al portal del SRI con anticipación para evitar multas por declaraciones tardías. Atentamente, Baku.`;
-        } else if (q.includes('balance') || q.includes('honorario') || q.includes('resumen')) {
-            const totalClients = activeClients.length;
-            const withoutKey = clientsWithKeyIssues.length;
-            response = `Hola Santiago. Aquí te dejo el informe del despacho: Contamos actualmente con ${totalClients} clientes activos en la cartera. De ellos, ${withoutKey} clientes presentan novedades o no tienen su clave del SRI guardada. Las recaudaciones siguen en proceso regular. Por favor revisa si deseas que te dé más detalles. Saludos. Baku.`;
-        } else {
-            response = `Hola Santiago. En respuesta a tu consulta sobre "${queryToUse || auditQuery}", he revisado los registros en Supabase para ${clientName}. Todo se encuentra sincronizado bajo el régimen ${client?.regime || 'General'}. Dime qué otra acción deseas realizar para apoyarte. Saludos. Baku.`;
-        }
-
-        setRawBotResponse(response);
-        return response;
-        setAuditResult(null);
-    };
-
-    const handleRunAiAudit = async () => {
-        let baseResp = rawBotResponse;
-        if (!baseResp.trim()) {
-            // El estado de React no se actualiza en el acto: se usa lo que devuelve.
-            baseResp = handleGenerateBaseResponse();
-        }
-
-        setIsAuditing(true);
-        try {
-            const styleDesc = personalityStyle === 'directo'
-                ? 'Ultra-directo ejecutivo (Cero saludos vacíos, datos en código monoespaciado, máxima acción)'
-                : personalityStyle === 'dinamico'
-                    ? 'Dinámico & ágil (Microinteractivo, emojis funcionales, orientado a resolución móvil)'
-                    : 'Tributario formal (Normativa SRI, artículos, referencias técnicas de casillero)';
-
-            const result = await auditAndOptimizeBotResponse(auditQuery, baseResp || 'Consulta general', styleDesc);
-            setAuditResult(result);
-            toast.success(`Auditoría IA completada · Eficiencia: ${result.score}/100`);
-        } catch (e: any) {
-            toast.error(e?.message || 'Error al ejecutar auditoría con Gemini AI');
-        } finally {
-            setIsAuditing(false);
-        }
-    };
-
     const handleAddCustomButton = () => {
         if (!newBtnLabel.trim() || !newBtnAction.trim()) {
             toast.warning('Ingresa el texto del botón y su comando o acción');
@@ -395,56 +257,12 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
         persistButtons(updated);
     };
 
-    const handleExecuteSimulatedButton = (btn: { label: string; action: string }) => {
-        if (btn.action === '/claves') {
-            toast.info('⚡ Acción 1-Toque: Cambiando a Asignador de Claves SRI');
-            setActiveTab('claves');
-        } else if (btn.action === '/reporte') {
-            toast.info('⚡ Acción 1-Toque: Abriendo Reporte Operativo');
-            setActiveTab('reporte');
-        } else if (btn.action === 'generar_cobro') {
-            const client = activeClients.find(c => c.id === selectedAuditClientId) || murilloClient;
-            const text = `Estimado ${client?.name || 'Cliente'}, le saluda el Ing. Santiago Córdova. Le recordamos que sus honorarios profesionales se encuentran pendientes. Puede realizar su transferencia a la cuenta habitual. ¡Muchas gracias!`;
-            navigator.clipboard.writeText(text);
-            toast.success('📱 Mensaje de WhatsApp generado y copiado al portapapeles');
-        } else {
-            navigator.clipboard.writeText(btn.action);
-            toast.success(`⚡ Botón [${btn.label}] ejecutado · Comando copiado: ${btn.action}`);
-        }
-    };
-
-    const renderTelegramFormattedText = (rawText: string) => {
-        if (!rawText) return null;
-        const lines = rawText.split('\n');
-        return lines.map((line, idx) => {
-            const parts = line.split(/(`[^`]+`|\*\*[^*]+\*\*|<b>[^<]+<\/b>|<code>[^<]+<\/code>)/g);
-            return (
-                <div key={idx} className="min-h-[1.25rem] leading-relaxed">
-                    {parts.map((p, pIdx) => {
-                        if (p.startsWith('`') && p.endsWith('`')) {
-                            return <code key={pIdx} className="bg-[#0f1722] text-amber-300 font-mono text-xs px-1.5 py-0.5 rounded border border-amber-500/20">{p.slice(1, -1)}</code>;
-                        }
-                        if (p.startsWith('<code>') && p.endsWith('</code>')) {
-                            return <code key={pIdx} className="bg-[#0f1722] text-amber-300 font-mono text-xs px-1.5 py-0.5 rounded border border-amber-500/20">{p.slice(6, -7)}</code>;
-                        }
-                        if (p.startsWith('**') && p.endsWith('**')) {
-                            return <strong key={pIdx} className="font-bold text-white">{p.slice(2, -2)}</strong>;
-                        }
-                        if (p.startsWith('<b>') && p.endsWith('</b>')) {
-                            return <strong key={pIdx} className="font-bold text-white">{p.slice(3, -4)}</strong>;
-                        }
-                        return <span key={pIdx}>{p}</span>;
-                    })}
-                </div>
-            );
-        });
-    };
 
     return (
         <div className="min-h-screen bg-[#080B10] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6">
             {/* Header Hero */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/10 via-emerald-500/5 to-cyan-500/10 border border-amber-500/20 p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500/10 via-emerald-500/5 to-cyan-500/10 border border-blue-500/20 p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-2">
@@ -452,7 +270,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             BAKU TELEGRAM BOT V2.0 · LIVE SUPABASE SYNC
                         </div>
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-400 tracking-tight">
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-emerald-300 tracking-tight">
                             Gestión Interna del Bot de Telegram
                         </h1>
                         <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
@@ -514,64 +332,19 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                     </div>
                     <div
                         onClick={() => setActiveTab('auditoria')}
-                        className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 cursor-pointer transition-all"
+                        className="p-3 rounded-xl bg-[#2B6AFF]/5 border border-[#2B6AFF]/20 hover:border-[#2B6AFF]/40 cursor-pointer transition-all"
                     >
-                        <div className="text-xs text-yellow-400 font-medium flex items-center justify-between">
-                            <span>Auditoría &amp; Reglas IA</span>
-                            <Sparkles size={13} className="animate-pulse" />
+                        <div className="text-xs text-[#7ea2ff] font-medium flex items-center justify-between">
+                            <span>Botones de /menu</span>
+                            <Sliders size={13} />
                         </div>
-                        <div className="text-sm font-bold text-yellow-300 mt-2 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-                            Simulador Activo
+                        <div className="text-sm font-bold text-white mt-2">
+                            {customButtons.filter(b => b.isActive).length} activos
                         </div>
-                        <div className="text-[11px] text-yellow-400/70 mt-1">Cero relleno · 1-clic</div>
+                        <div className="text-[11px] text-slate-400 mt-1">Hasta 6 en Telegram</div>
                     </div>
                 </div>
             </div>
-
-            {/* Caso Murillo Spotlight Banner */}
-            {murilloClient && (
-                <div className="rounded-xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/30 border border-amber-500/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
-                    <div className="flex items-start sm:items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                            <KeyRound size={20} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 uppercase tracking-wide">
-                                    Caso Especial Solucionado
-                                </span>
-                                <span className="text-xs text-slate-400 font-mono">RUC: {murilloClient.ruc}</span>
-                            </div>
-                            <div className="text-base font-bold text-white mt-0.5">
-                                {murilloClient.name}
-                            </div>
-                            <div className="text-xs text-slate-300 mt-0.5">
-                                Estado actual:{' '}
-                                {murilloClient.sriPassword ? (
-                                    <span className="text-emerald-400 font-mono font-medium">Clave configurada ({murilloClient.sriPassword.slice(0, 2)}••••)</span>
-                                ) : (
-                                    <span className="text-rose-400 font-semibold">Sin clave en base de datos</span>
-                                )}
-                                {' · '}
-                                <span className="text-slate-400">Ahora puedes escribirle en Telegram <i>"pon clave a murillo 1234"</i> o asignarla aquí abajo.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            onClick={() => {
-                                setActiveTab('claves');
-                                setSearchTerm('MURILLO');
-                            }}
-                            className="px-4 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all"
-                        >
-                            ✏️ Configurar Clave de Murillo
-                        </button>
-                    </div>
-                </div>
-            )}
 
             {/* Navigation Tabs */}
             <div className="flex border-b border-slate-800 gap-2 overflow-x-auto">
@@ -590,7 +363,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                     onClick={() => setActiveTab('claves')}
                     className={`px-4 py-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 shrink-0 ${
                         activeTab === 'claves'
-                            ? 'border-amber-400 text-amber-400 bg-amber-500/5'
+                            ? 'border-blue-400 text-blue-400 bg-blue-500/5'
                             : 'border-transparent text-slate-400 hover:text-slate-200'
                     }`}
                 >
@@ -601,12 +374,12 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                     onClick={() => setActiveTab('auditoria')}
                     className={`px-4 py-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 shrink-0 ${
                         activeTab === 'auditoria'
-                            ? 'border-yellow-400 text-yellow-300 bg-yellow-500/10 shadow-lg shadow-yellow-500/5'
+                            ? 'border-blue-400 text-blue-300 bg-blue-500/10 shadow-lg shadow-blue-500/5'
                             : 'border-transparent text-slate-400 hover:text-slate-200'
                     }`}
                 >
-                    <Sparkles size={16} className="text-yellow-400 animate-pulse" />
-                    🔬 Auditoría &amp; Simulador IA (Reglas &amp; Botones)
+                    <Sliders size={16} className="text-blue-400" />
+                    Botones de /menu
                 </button>
                 <button
                     onClick={() => setActiveTab('mapa')}
@@ -618,17 +391,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                 >
                     <Layers size={16} />
                     Mapa Visual de Funciones &amp; Comandos
-                </button>
-                <button
-                    onClick={() => setActiveTab('reporte')}
-                    className={`px-4 py-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 shrink-0 ${
-                        activeTab === 'reporte'
-                            ? 'border-emerald-400 text-emerald-400 bg-emerald-500/5'
-                            : 'border-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                >
-                    <FileText size={16} />
-                    Reporte Operativo Interactivo
                 </button>
                 <button
                     onClick={() => setActiveTab('incompletos')}
@@ -685,7 +447,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                 onClick={() => setFilterKeyStatus('missing')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                     filterKeyStatus === 'missing'
-                                        ? 'bg-amber-500 text-slate-950 font-bold'
+                                        ? 'bg-blue-500 text-slate-950 font-bold'
                                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }`}
                             >
@@ -695,7 +457,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                 onClick={() => setFilterKeyStatus('short')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                     filterKeyStatus === 'short'
-                                        ? 'bg-amber-500 text-slate-950 font-bold'
+                                        ? 'bg-blue-500 text-slate-950 font-bold'
                                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }`}
                             >
@@ -747,24 +509,16 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                         displayedClients.map(client => {
                                             const isEditing = editingPasswords[client.id] !== undefined;
                                             const currentVal = isEditing ? editingPasswords[client.id] : (client.sriPassword || '');
-                                            const isMurillo = client.id === murilloClient?.id;
                                             const phone = client.phones?.[0];
 
                                             return (
                                                 <tr
                                                     key={client.id}
-                                                    className={`hover:bg-slate-800/30 transition-colors ${
-                                                        isMurillo ? 'bg-amber-500/5' : ''
-                                                    }`}
+                                                    className="hover:bg-slate-800/30 transition-colors"
                                                 >
                                                     <td className="py-3.5 px-4">
                                                         <div className="font-bold text-white flex items-center gap-2">
                                                             {client.name}
-                                                            {isMurillo && (
-                                                                <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-black">
-                                                                    CASO MURILLO
-                                                                </span>
-                                                            )}
                                                         </div>
                                                         <div className="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-2">
                                                             <span>RUC: {client.ruc}</span>
@@ -831,7 +585,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                                             disabled={!isEditing || savingId === client.id}
                                                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                                                 isEditing
-                                                                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md active:scale-95'
+                                                                    ? 'bg-blue-500 hover:bg-blue-400 text-slate-950 shadow-md active:scale-95'
                                                                     : 'bg-slate-800/60 text-slate-500 cursor-not-allowed'
                                                             }`}
                                                         >
@@ -859,9 +613,9 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {/* Tarjeta 1: Gestión Interna */}
-                        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 transition-all space-y-4">
+                        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-blue-500/40 transition-all space-y-4">
                             <div className="flex items-center justify-between">
-                                <span className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <span className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                     <Bot size={22} />
                                 </span>
                                 <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">
@@ -955,77 +709,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             )}
 
             {/* TAB 3: REPORTE OPERATIVO EN VIVO */}
-            {activeTab === 'reporte' && (
-                <div className="rounded-2xl bg-slate-900/40 border border-slate-800 p-6 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-bold text-white">Vista Previa de la Consola Operativa</h3>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                                Así luce y responde Baku cuando solicitas el reporte diario proactivo en Telegram:
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="max-w-2xl mx-auto rounded-2xl bg-slate-950 border border-slate-800 p-6 space-y-4 font-mono text-xs text-slate-200 shadow-2xl">
-                        <div className="flex items-center justify-between text-slate-400 border-b border-slate-800/80 pb-3">
-                            <span className="flex items-center gap-2 text-emerald-400 font-bold">
-                                <Bot size={16} /> BAKU ASISTENTE SRI
-                            </span>
-                            <span>{new Date().toLocaleDateString('es-EC', { dateStyle: 'long' })}</span>
-                        </div>
-
-                        <div className="space-y-3 leading-relaxed">
-                            <div className="text-amber-400 font-bold text-sm">
-                                📊 REPORTE OPERATIVO CONSOLIDADO
-                            </div>
-                            <div>👥 <b>Cartera Total:</b> {activeClients.length} contribuyentes activos</div>
-                            <div>
-                                🔑 <b>Auditoría Claves SRI:</b> {activeClients.length - clientsWithKeyIssues.length} operativas ·{' '}
-                                <span className="text-rose-400 font-bold">{clientsWithKeyIssues.length} requieren atención</span>
-                            </div>
-                            <div>
-                                📋 <b>Expedientes:</b> {incompleteClients.length} clientes con datos pendientes (teléfono/email)
-                            </div>
-                            <div>
-                                🛡️ <b>Mesa RPA:</b> Enlace en tiempo real activo con la extensión Nueva Luz 3.0.
-                            </div>
-                        </div>
-
-                        {/* Interactive Action Keyboard Simulation */}
-                        <div className="pt-4 border-t border-slate-800/80 space-y-2">
-                            <div className="text-[11px] text-slate-400 font-sans font-semibold">
-                                ⚡ Teclado de Acción Rápida (1-Clic en Telegram):
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 font-sans font-medium text-xs">
-                                <button
-                                    onClick={() => setActiveTab('claves')}
-                                    className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-center transition-all"
-                                >
-                                    🔑 Resolver Claves SRI ({clientsWithKeyIssues.length})
-                                </button>
-                                <button
-                                    onClick={() => navigate('cobranza')}
-                                    className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-center transition-all"
-                                >
-                                    💰 Deudores &amp; Mora
-                                </button>
-                                <button
-                                    onClick={() => navigate('declaraciones')}
-                                    className="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-center transition-all"
-                                >
-                                    ⏰ Ver Vencimientos
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('mapa')}
-                                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-center transition-all"
-                                >
-                                    🧰 Gestión Interna
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* TAB 4: EXPEDIENTES POR COMPLETAR */}
             {activeTab === 'incompletos' && (
@@ -1109,358 +792,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             {/* TAB 5: AUDITORÍA & SIMULADOR IA DE RESPUESTAS (REGLAS Y BOTONES) */}
             {activeTab === 'auditoria' && (
                 <div className="space-y-6">
-                    {/* Banner de Cabecera del Laboratorio */}
-                    <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-cyan-500/10 border border-yellow-500/20 p-6 backdrop-blur-xl">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                            <div className="space-y-1.5">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-mono font-semibold">
-                                    <Sparkles size={13} className="text-yellow-400" />
-                                    LABORATORIO DE COMUNICACIÓN BAKU ELITE · GEMINI AI
-                                </div>
-                                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                                    Auditoría &amp; Simulador de Respuestas del Bot
-                                </h2>
-                                <p className="text-slate-400 text-xs sm:text-sm max-w-3xl leading-relaxed">
-                                    Verifica cómo responde Baku ante casos de la vida real con datos vivos de Supabase. Pule la brevedad, elimina relleno protocolar, exige teclados interactivos de 1 toque y crea nuevas funciones personalizadas.
-                                </p>
-                            </div>
-
-                            {/* Selector de Personalidad y Estilo */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 bg-slate-950/70 p-2 rounded-xl border border-slate-800">
-                                <span className="text-xs font-bold text-slate-400 px-2 flex items-center gap-1">
-                                    <SlidersHorizontal size={13} /> Estilo:
-                                </span>
-                                <div className="grid grid-cols-3 gap-1.5">
-                                    <button
-                                        onClick={() => setPersonalityStyle('directo')}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                                            personalityStyle === 'directo'
-                                                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                        }`}
-                                    >
-                                        <Zap size={13} /> Directo
-                                    </button>
-                                    <button
-                                        onClick={() => setPersonalityStyle('dinamico')}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                                            personalityStyle === 'dinamico'
-                                                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
-                                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                        }`}
-                                    >
-                                        <Flame size={13} /> Dinámico
-                                    </button>
-                                    <button
-                                        onClick={() => setPersonalityStyle('formal')}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                                            personalityStyle === 'formal'
-                                                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20'
-                                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                        }`}
-                                    >
-                                        <FileText size={13} /> Formal
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Selector de Cliente de Prueba Vía Supabase */}
-                        <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <Users size={16} className="text-amber-400 shrink-0" />
-                                <span className="text-xs font-bold text-slate-300">Cliente para la simulación:</span>
-                                <select
-                                    value={selectedAuditClientId}
-                                    onChange={(e) => {
-                                        setSelectedAuditClientId(e.target.value);
-                                        setAuditResult(null);
-                                    }}
-                                    className="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-amber-400 max-w-xs truncate"
-                                >
-                                    {activeClients.map(c => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name} ({c.ruc}) {c.id === murilloClient?.id ? '★ MURILLO' : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Mini Resumen del Cliente Seleccionado */}
-                            {(() => {
-                                const c = activeClients.find(x => x.id === selectedAuditClientId) || murilloClient;
-                                if (!c) return null;
-                                return (
-                                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                                        <span className="px-2 py-1 rounded bg-slate-900/80 border border-slate-800 text-slate-300 font-mono">
-                                            RUC: {c.ruc}
-                                        </span>
-                                        <span className="px-2 py-1 rounded bg-slate-900/80 border border-slate-800 text-slate-300">
-                                            Régimen: {c.regime || 'General'}
-                                        </span>
-                                        {c.sriPassword ? (
-                                            <span className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono">
-                                                🔑 Clave OK ({c.sriPassword.slice(0, 2)}••••)
-                                            </span>
-                                        ) : (
-                                            <span className="px-2 py-1 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 font-semibold">
-                                                ⚠️ Sin Clave SRI
-                                            </span>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    </div>
-
-                    {/* Escenarios de Prueba & Editor de Consulta */}
-                    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-5 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                                <MessageSquare size={16} className="text-yellow-400" />
-                                <h3 className="font-bold text-white text-sm">Escenarios de Prueba Rápidos (1-Clic)</h3>
-                            </div>
-                            <span className="text-xs text-slate-400">Haz clic en un caso para simularlo al instante</span>
-                        </div>
-
-                        {/* Chips de Escenarios */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                            {AUDIT_SCENARIOS.map((sc, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => handleSelectScenario(sc)}
-                                    className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 hover:bg-amber-500/5 text-left transition-all group"
-                                >
-                                    <div className="text-xs font-bold text-slate-200 group-hover:text-amber-300 transition-colors">
-                                        {sc.title}
-                                    </div>
-                                    <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">
-                                        {sc.category}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Campo de Entrada de Consulta */}
-                        <div className="space-y-2 pt-2">
-                            <label className="text-xs font-semibold text-slate-400 flex items-center justify-between">
-                                <span>Consulta o Instrucción enviada por Santiago:</span>
-                                <span className="text-[11px] text-slate-500">Puedes editar o escribir cualquier orden libre</span>
-                            </label>
-                            <div className="relative">
-                                <textarea
-                                    rows={2}
-                                    value={auditQuery}
-                                    onChange={(e) => setAuditQuery(e.target.value)}
-                                    placeholder="Ej: ¿Cuánto debe Murillo y cuál es su estado fiscal?"
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-400/80 transition-all font-mono"
-                                />
-                            </div>
-
-                            {/* Botones de Acción de Simulación */}
-                            <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
-                                <button
-                                    onClick={() => handleGenerateBaseResponse()}
-                                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center gap-2"
-                                >
-                                    <Bot size={15} />
-                                    Generar Respuesta Base
-                                </button>
-                                <button
-                                    onClick={handleRunAiAudit}
-                                    disabled={isAuditing}
-                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
-                                >
-                                    {isAuditing ? (
-                                        <>
-                                            <RefreshCw size={15} className="animate-spin" />
-                                            Auditando con Gemini AI...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles size={15} />
-                                            ✨ Auditar y Optimizar con IA
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Comparador de Respuestas: Base vs Optimizada */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Columna Izquierda: Respuesta Base Original */}
-                        <div className="bg-slate-900/40 rounded-2xl border border-slate-800/80 p-5 space-y-4 flex flex-col justify-between">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                                        <h3 className="font-bold text-white text-sm">Respuesta Base (Sin Optimizar)</h3>
-                                    </div>
-                                    <span className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-                                        Texto convencional
-                                    </span>
-                                </div>
-
-                                <div className="bg-slate-950/70 border border-slate-800/60 rounded-xl p-4 text-xs text-slate-300 leading-relaxed font-sans min-h-[140px] whitespace-pre-wrap">
-                                    {rawBotResponse || (
-                                        <span className="text-slate-500 italic">
-                                            Haz clic en "Generar Respuesta Base" o selecciona un caso de arriba para simular la respuesta inicial del bot...
-                                        </span>
-                                    )}
-                                </div>
-
-                                {rawBotResponse && (
-                                    <div className="rounded-xl bg-slate-950/40 border border-slate-800/80 p-3 text-xs text-slate-400 space-y-1">
-                                        <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wide">
-                                            Diagnóstico Preliminar:
-                                        </div>
-                                        <div className="text-slate-400 leading-tight">
-                                            {rawBotResponse.toLowerCase().includes('hola') || rawBotResponse.toLowerCase().includes('estimado') ? (
-                                                <span className="text-amber-300/90">
-                                                    ⚠️ Contiene saludos protocolares y texto de relleno ("Hola estimado..."). La IA los eliminará para dar prioridad al dato inmediato.
-                                                </span>
-                                            ) : (
-                                                <span className="text-emerald-400/90">
-                                                    ✓ Estructura informativa base identificada. Lista para incorporar botones de 1 toque.
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {rawBotResponse && (
-                                <button
-                                    onClick={() => handleCopy(rawBotResponse, 'base_resp')}
-                                    className="w-full py-2 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-semibold flex items-center justify-center gap-2 transition-all mt-3"
-                                >
-                                    <Copy size={13} />
-                                    {copiedText === 'base_resp' ? 'Copiado' : 'Copiar Texto Base'}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Columna Derecha: Vista Previa de Telegram Mockup con Auditoría IA */}
-                        <div className="bg-gradient-to-b from-slate-900/60 to-slate-950/80 rounded-2xl border border-yellow-500/30 p-5 space-y-4 flex flex-col justify-between shadow-2xl">
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles size={16} className="text-yellow-400" />
-                                        <h3 className="font-bold text-white text-sm">Respuesta Auditada (Baku Elite)</h3>
-                                    </div>
-                                    {auditResult && (
-                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold font-mono">
-                                            <Gauge size={13} /> {auditResult.score}/100 Eficiencia
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Crítica del Auditor IA */}
-                                {auditResult?.clarityCritique && (
-                                    <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3 text-xs text-yellow-200/90 flex items-start gap-2.5">
-                                        <Zap size={15} className="text-yellow-400 shrink-0 mt-0.5" />
-                                        <div>
-                                            <span className="font-bold text-yellow-300">Auditoría IA: </span>
-                                            {auditResult.clarityCritique}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Simulación de Burbuja de Telegram Dark Mode */}
-                                <div className="rounded-2xl bg-[#17212b] border border-[#242f3d] p-4 text-slate-100 shadow-xl space-y-3">
-                                    {/* Cabecera del Bot en Telegram */}
-                                    <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-800/60">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 flex items-center justify-center font-black text-[10px]">
-                                                ⚡
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-white flex items-center gap-1">
-                                                    Baku | Comandante Operativo
-                                                    <span className="text-[10px] px-1 rounded bg-blue-500/20 text-blue-400 font-mono">bot</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span className="text-[11px] text-slate-400 font-mono">Telegram Live</span>
-                                    </div>
-
-                                    {/* Cuerpo del Mensaje */}
-                                    <div className="text-xs text-slate-200 leading-relaxed font-sans min-h-[90px]">
-                                        {auditResult ? (
-                                            renderTelegramFormattedText(auditResult.optimizedResponse)
-                                        ) : (
-                                            <div className="text-slate-400 italic text-center py-6">
-                                                Presiona <span className="text-yellow-400 font-semibold">"✨ Auditar y Optimizar con IA"</span> para ver la versión perfeccionada sin relleno y con teclado interactivo...
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Footer con hora y check de Telegram */}
-                                    <div className="flex items-center justify-end gap-1 text-[10px] text-slate-400 font-mono pt-1">
-                                        <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                        <span className="text-cyan-400 font-bold">✓✓</span>
-                                    </div>
-
-                                    {/* Teclado Inline Interactivo (1-Toque) */}
-                                    {((auditResult?.suggestedButtons && auditResult.suggestedButtons.length > 0) || customButtons.some(b => b.isActive)) && (
-                                        <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                                                <span>Teclado Interactivo (Haz clic para probar):</span>
-                                                <span className="text-cyan-400 text-[9px]">1-TOQUE ACTION</span>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-1.5">
-                                                {/* Botones sugeridos por la IA */}
-                                                {(auditResult?.suggestedButtons || []).map((btn, bIdx) => (
-                                                    <button
-                                                        key={`ai_${bIdx}`}
-                                                        onClick={() => handleExecuteSimulatedButton(btn)}
-                                                        className="py-2 px-3 rounded-lg bg-[#242f3d] hover:bg-[#2e3b4d] active:scale-95 border border-cyan-500/30 text-cyan-200 text-xs font-semibold text-center transition-all truncate flex items-center justify-center gap-1.5 shadow"
-                                                    >
-                                                        <span>{btn.label}</span>
-                                                    </button>
-                                                ))}
-
-                                                {/* Botones personalizados activos */}
-                                                {customButtons.filter(b => b.isActive).slice(0, 4).map((cBtn) => (
-                                                    <button
-                                                        key={cBtn.id}
-                                                        onClick={() => handleExecuteSimulatedButton(cBtn)}
-                                                        className="py-2 px-3 rounded-lg bg-[#1f2937] hover:bg-[#283548] active:scale-95 border border-amber-500/30 text-amber-200 text-xs font-semibold text-center transition-all truncate flex items-center justify-center gap-1.5 shadow"
-                                                    >
-                                                        <span>{cBtn.label}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Botones de acción inferior */}
-                            {auditResult && (
-                                <div className="flex items-center gap-2 pt-2">
-                                    <button
-                                        onClick={() => handleCopy(auditResult.optimizedResponse, 'opt_resp')}
-                                        className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 transition-all"
-                                    >
-                                        <Copy size={14} />
-                                        {copiedText === 'opt_resp' ? '¡Copiado para Telegram!' : 'Copiar Texto Optimizado'}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            toast.success('Respuesta modelo y estructura de botones guardadas en la memoria local');
-                                        }}
-                                        className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-all flex items-center gap-1.5"
-                                    >
-                                        <Save size={14} /> Guardar
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
                     {/* SECCIÓN: PERSONALIZADOR DE FUNCIONES & BOTONES DEL BOT */}
                     <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1566,7 +897,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                     key={btn.id}
                                     className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                                         btn.isActive
-                                            ? 'bg-slate-950/80 border-slate-700/80 hover:border-amber-500/40'
+                                            ? 'bg-slate-950/80 border-slate-700/80 hover:border-blue-500/40'
                                             : 'bg-slate-950/40 border-slate-800/40 opacity-50'
                                     }`}
                                 >
@@ -1590,13 +921,6 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                                     </div>
 
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                        <button
-                                            onClick={() => handleExecuteSimulatedButton(btn)}
-                                            title="Probar en simulador"
-                                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 transition-colors"
-                                        >
-                                            <Play size={13} />
-                                        </button>
                                         <button
                                             onClick={() => handleToggleCustomButton(btn.id)}
                                             title={btn.isActive ? 'Desactivar' : 'Activar'}
@@ -1622,10 +946,10 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                     </div>
 
                     {/* TARJETA INFORMATIVA: REGLA DE ORO DE COMUNICACIÓN BAKU (SECCIÓN 13 DE AGENTS.MD) */}
-                    <div className="rounded-2xl bg-gradient-to-r from-amber-950/30 via-slate-900 to-amber-950/20 border border-amber-500/30 p-5 space-y-3">
+                    <div className="rounded-2xl bg-gradient-to-r from-blue-950/30 via-slate-900 to-blue-950/20 border border-blue-500/30 p-5 space-y-3">
                         <div className="flex items-center gap-2">
-                            <Sparkles size={16} className="text-amber-400" />
-                            <h4 className="font-bold text-amber-300 text-xs sm:text-sm uppercase tracking-wide">
+                            <Sparkles size={16} className="text-blue-400" />
+                            <h4 className="font-bold text-blue-300 text-xs sm:text-sm uppercase tracking-wide">
                                 Regla de Oro Activa en Memoria del Sistema (.agents/AGENTS.md §13)
                             </h4>
                         </div>
@@ -1639,7 +963,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
                                 <div className="font-bold text-white mb-1">2. Código Monoespaciado</div>
                                 <p className="text-slate-400 text-[11px] leading-relaxed">
-                                    RUCs, claves y números siempre en formato <code className="text-amber-300 bg-slate-900 px-1 py-0.5 rounded">`código`</code> para copiado con 1 toque en el móvil.
+                                    RUCs, claves y números siempre en formato <code className="text-blue-300 bg-slate-900 px-1 py-0.5 rounded">`código`</code> para copiado con 1 toque en el móvil.
                                 </p>
                             </div>
                             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
