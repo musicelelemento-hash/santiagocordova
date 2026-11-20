@@ -24,6 +24,7 @@ import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
 import { generateRidePdfBuffer } from './pdf_generator';
 import { maskSecret } from './redact';
 import { esPopular, esEmprendedor } from './regimen';
+import { calcularVencimiento, periodosEnCurso } from './vencimientos';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
 
@@ -993,6 +994,11 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
         .text('👁 Ver Clave SRI', `baku_reveal_sri:${ruc}`)
         .text('👁 Ver Clave Firma', `baku_reveal_sig:${ruc}`).row()
         .text('✏️ Editar Perfil', `baku_hub_edit:${ruc}`)
+        .text('📅 Próximos vencimientos', `baku_venc:${ruc}`).row()
+        // Consultas oficiales del SRI: piden captcha, así que se abren en el navegador
+        // (no se automatizan). El RUC va en la ficha para copiarlo.
+        .url('🏛 Estado tributario (SRI)', 'https://srienlinea.sri.gob.ec/sri-en-linea/SriDeclaracionesWeb/EstadoTributario/Consultas/consultaEstadoTributario')
+        .url('📜 Consulta de RUC (SRI)', 'https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc').row()
         .text('🔙 Menú Principal', 'baku_nav:home');
 
     // Si tiene teléfono móvil válido, agregar botón directo para abrir chat de WhatsApp
@@ -2988,6 +2994,34 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_venc:')) {
+        const ruc = data.replace('baku_venc:', '');
+        const clients = await findClients(ruc, 'ruc, name, regime, tax_profile');
+        const c = clients && clients[0];
+        if (!c) { await ctx.reply('❌ No encontré ese cliente. Baku.'); return; }
+        const { iva, renta } = periodosEnCurso(c.regime || '', c.tax_profile?.ivaFrequency);
+        const linea = (etiqueta: string, periodo: string) => {
+            try {
+                const v = calcularVencimiento(c.ruc, periodo, c.regime || '');
+                const nota = v.traslado ? ` <i>(el ${v.nominal.slice(8)} cae fin de semana: ${v.traslado})</i>` : '';
+                return `• <b>${etiqueta} ${periodo}</b>: ${v.texto}${nota}`;
+            } catch (e: any) {
+                return `• <b>${etiqueta} ${periodo}</b>: ${e.message}`;
+            }
+        };
+        const lineas = [
+            `📅 <b>Vencimientos de ${c.name}</b>\n<code>${c.ruc}</code> · ${c.regime || 'Régimen General'}`,
+            iva ? linea('IVA', iva) : '• <b>IVA</b>: no declara IVA',
+            linea('Renta', renta),
+            '\n<i>Feriados nacionales no considerados: si uno cae ese día, se corre al siguiente día hábil.</i>',
+        ];
+        await ctx.reply(lineas.join('\n'), {
+            parse_mode: 'HTML',
+            reply_markup: new InlineKeyboard().text('🔙 Volver al Expediente', `baku_hub_profile:${c.ruc}`),
+        });
+        return;
+    }
+
     if (data.startsWith('baku_hub_profile:')) {
         const ruc = data.replace('baku_hub_profile:', '');
         try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
@@ -4102,6 +4136,7 @@ try {
 // hasta el próximo reinicio. Ahora la vieja se detiene ordenadamente con SIGTERM
 // y la nueva reintenta el 409 con espera creciente.
 let apagando = false;
+let estuvoEnLinea = false; // si ya estuvo en línea y llega un 409, es que arrancó una instancia más nueva
 const REINTENTOS_409 = [5, 10, 20, 30, 60, 60, 60]; // segundos (~4 min en total)
 
 async function apagarOrdenado(senal: string) {
@@ -4129,11 +4164,19 @@ async function launchBot(intento = 0): Promise<void> {
 
         await bot.start({
             onStart: (botInfo) => {
+                estuvoEnLinea = true;
                 console.log(`✅ ¡Bot @${botInfo.username} en línea y listo para recibir mensajes!`);
             }
         });
     } catch (err: any) {
         if (apagando) return; // el 409 de la instancia que se está apagando no es un error
+        if (estuvoEnLinea && String(err?.message || err).includes('409')) {
+            // Una instancia más nueva tomó el control (despliegue): ésta se retira en vez de
+            // pelear por getUpdates. Render la apaga enseguida con SIGTERM.
+            console.log('👋 409 tras estar en línea: arrancó una instancia más nueva. Esta se retira.');
+            apagando = true;
+            return;
+        }
         const msg = String(err?.message || err);
         if (msg.includes('401')) {
             console.error('🔑 ERROR 401: El TELEGRAM_BOT_TOKEN es inválido o no está configurado.');
