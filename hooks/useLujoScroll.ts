@@ -38,7 +38,7 @@ export interface LujoScrollEngine {
   /** Attach to the thin progress bar under the header. */
   progressRef: React.RefObject<HTMLDivElement>;
   /** Attach to the hero background media (subtle scale/translate on scroll). */
-  heroMediaRef: React.RefObject<HTMLImageElement>;
+  heroMediaRef: React.RefObject<HTMLElement>;
   /** Currently active nav section id, for the pill nav + mobile dock highlight. */
   activeId: string;
   /** True while `prefers-reduced-motion: reduce` is set. */
@@ -50,7 +50,7 @@ export function useLujoScroll(): LujoScrollEngine {
   const actNodes = useRef<Map<string, HTMLElement>>(new Map());
   const navNodes = useRef<Map<string, HTMLElement>>(new Map());
   const progressRef = useRef<HTMLDivElement>(null);
-  const heroMediaRef = useRef<HTMLImageElement>(null);
+  const heroMediaRef = useRef<HTMLElement>(null);
   const activeIdRef = useRef('');
   const [activeId, setActiveId] = useState('');
 

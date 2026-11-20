@@ -126,38 +126,69 @@ export const CountUp: React.FC<{ to: number; suffix?: string; duration?: number 
 // prevent. Fixed by always observing, and only skipping the *initial*
 // force-to-poster for eager media so it still paints animated immediately.)
 export const ActMedia: React.FC<{
-  webp: string;
+  /** Video MP4 en bucle. Si está, se usa en vez del WebP animado (~1 MB contra ~15 MB). */
+  video?: string;
+  webp?: string;
   poster: string;
   alt?: string;
   className?: string;
   style?: React.CSSProperties;
   eager?: boolean;
-  imgRef?: React.Ref<HTMLImageElement>;
-}> = ({ webp, poster, alt = '', className, style, eager, imgRef }) => {
-  const localRef = useRef<HTMLImageElement>(null);
+  imgRef?: React.Ref<HTMLElement>;
+}> = ({ video, webp, poster, alt = '', className, style, eager, imgRef }) => {
+  const localRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
+  const setRefs = (node: HTMLImageElement | HTMLVideoElement | null) => {
+    localRef.current = node;
+    if (typeof imgRef === 'function') imgRef(node);
+    else if (imgRef && 'current' in (imgRef as any)) (imgRef as React.MutableRefObject<HTMLElement | null>).current = node;
+  };
 
   useEffect(() => {
-    const img = localRef.current;
-    if (!img) return;
+    const el = localRef.current;
+    if (!el) return;
+    const reducido = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const io = new IntersectionObserver(
       ([entry]) => {
-        const want = entry.isIntersecting ? webp : poster;
-        if (img.getAttribute('src') !== want) img.setAttribute('src', want);
+        if (el instanceof HTMLVideoElement) {
+          // Sólo se reproduce mientras está a la vista (y nunca con «reducir movimiento»).
+          if (entry.isIntersecting && !reducido) {
+            if (!el.getAttribute('src') && video) el.setAttribute('src', video);
+            el.play().catch(() => { /* autoplay bloqueado: queda el póster */ });
+          } else {
+            el.pause();
+          }
+          return;
+        }
+        const want = entry.isIntersecting && webp && !reducido ? webp : poster;
+        if (el.getAttribute('src') !== want) el.setAttribute('src', want);
       },
       { rootMargin: '10% 0px' }
     );
-    io.observe(img);
+    io.observe(el);
     return () => io.disconnect();
-  }, [webp, poster]);
+  }, [video, webp, poster]);
+
+  if (video) {
+    return (
+      <video
+        ref={setRefs}
+        // El hero carga su video de inmediato; el resto, al acercarse a la vista.
+        {...(eager ? { src: video, autoPlay: true, preload: 'auto' as const } : { preload: 'none' as const })}
+        poster={poster}
+        muted
+        loop
+        playsInline
+        aria-label={alt || undefined}
+        className={className}
+        style={style}
+      />
+    );
+  }
 
   return (
     <img
-      ref={(node) => {
-        (localRef as React.MutableRefObject<HTMLImageElement | null>).current = node;
-        if (typeof imgRef === 'function') imgRef(node);
-        else if (imgRef && 'current' in (imgRef as any)) (imgRef as React.MutableRefObject<HTMLImageElement | null>).current = node;
-      }}
-      src={eager ? webp : poster}
+      ref={setRefs}
+      src={eager && webp ? webp : poster}
       alt={alt}
       loading={eager ? undefined : 'lazy'}
       // React 18 (this repo's version) doesn't map the camelCase `fetchPriority` prop to the
