@@ -104,3 +104,26 @@ export function periodosEnCurso(regimen: string, frecuenciaIva: string | undefin
     const prev = new Date(y, m - 1, 1);
     return { iva: `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`, renta };
 }
+
+/**
+ * Dígitos del RUC cuyo vencimiento mensual cae HOY, ya trasladado por fin de
+ * semana o feriado (un sábado 22 se presenta el lunes 24: ese lunes vencen el 7
+ * y el 8). Lista vacía si hoy no vence nadie. `hoy` en hora de Ecuador.
+ */
+export function digitosQueVencenHoy(hoy: Date, feriados: Set<string> = new Set()): string[] {
+    const y = hoy.getFullYear(), m = hoy.getMonth() + 1, d = hoy.getDate();
+    const clave = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    return Object.keys(DIA_POR_DIGITO)
+        .filter((dig) => iso(trasladar(fecha(y, m, DIA_POR_DIGITO[dig]), feriados).fecha) === clave)
+        .sort((a, b) => DIA_POR_DIGITO[a] - DIA_POR_DIGITO[b]);
+}
+
+/** Fecha de hoy en Ecuador (UTC-5) como Date local con año/mes/día de Guayaquil. */
+export function hoyEnEcuador(ahora = new Date()): Date {
+    const ec = new Date(ahora.getTime() - 5 * 3600 * 1000);
+    return new Date(ec.getUTCFullYear(), ec.getUTCMonth(), ec.getUTCDate());
+}
+
+export function textoFecha(f: Date): string {
+    return `${DIAS[f.getDay()]} ${f.getDate()} de ${MESES[f.getMonth()]}`;
+}

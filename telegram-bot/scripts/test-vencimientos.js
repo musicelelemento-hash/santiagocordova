@@ -7,7 +7,7 @@ require(path.join(botDir, 'node_modules', 'ts-node')).register({
     project: path.join(botDir, 'tsconfig.json'),
     transpileOnly: true,
 });
-const { calcularVencimiento, periodosEnCurso } = require(path.join(botDir, 'src', 'vencimientos.ts'));
+const { calcularVencimiento, periodosEnCurso, digitosQueVencenHoy, hoyEnEcuador } = require(path.join(botDir, 'src', 'vencimientos.ts'));
 
 let mal = 0;
 function ver(nombre, cond, detalle) {
@@ -68,6 +68,15 @@ p = periodosEnCurso('RIMPE Emprendedor', 'Mensual', nov);
 ver('Emprendedor que optó por mensual: mes anterior', p.iva === '2026-10', p);
 p = periodosEnCurso('RIMPE Negocio Popular', undefined, nov);
 ver('Negocio Popular: sin IVA', p.iva === null && p.renta === '2025', p);
+
+// Dígitos que vencen hoy (encabezado del /menu)
+ver('lun 23-nov-2026: vence el 7 (domingo 22 trasladado)', JSON.stringify(digitosQueVencenHoy(new Date(2026, 10, 23))) === '["7"]', digitosQueVencenHoy(new Date(2026, 10, 23)));
+ver('mar 24-nov-2026: vence el 8', JSON.stringify(digitosQueVencenHoy(new Date(2026, 10, 24))) === '["8"]', digitosQueVencenHoy(new Date(2026, 10, 24)));
+ver('dom 22-nov-2026: no vence nadie', digitosQueVencenHoy(new Date(2026, 10, 22)).length === 0);
+ver('lun 16-nov-2026: vencen el 3 (sáb 14) y el 4', JSON.stringify(digitosQueVencenHoy(new Date(2026, 10, 16))) === '["3","4"]', digitosQueVencenHoy(new Date(2026, 10, 16)));
+ver('vie 26-feb-2027: vencen el 9 y el 0 (dom 28 se adelanta)', JSON.stringify(digitosQueVencenHoy(new Date(2027, 1, 26))) === '["9","0"]', digitosQueVencenHoy(new Date(2027, 1, 26)));
+const h = hoyEnEcuador(new Date('2026-11-21T03:00:00Z'));
+ver('hoy en Ecuador: 03:00 UTC del 21 todavía es el 20', h.getDate() === 20, h);
 
 console.log(mal ? `\n${mal} fallaron` : '\ntodo verde');
 process.exit(mal ? 1 : 0);

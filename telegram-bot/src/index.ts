@@ -24,7 +24,7 @@ import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
 import { generateRidePdfBuffer } from './pdf_generator';
 import { maskSecret } from './redact';
 import { esPopular, esEmprendedor } from './regimen';
-import { calcularVencimiento, periodosEnCurso } from './vencimientos';
+import { calcularVencimiento, periodosEnCurso, digitosQueVencenHoy, hoyEnEcuador, textoFecha } from './vencimientos';
 import { INICIO, agendaConFechas, origenPermitido } from './estado';
 import { modelosGemini } from './ai';
 
@@ -97,20 +97,34 @@ bot.catch(async (err) => {
 // ⚡ CENTRO DE CONTROL CONTABLE INTERACTIVO — BAKU 3.0 (EXECUTIVE HUBS)
 // ═════════════════════════════════════════════════════════════════
 
+// Menú principal: arriba lo que más se usa (buscar, cierre, cobrar, vencimientos);
+// abajo los centros temáticos. Sin duplicados: «Matriz» y «Cierre» abrían lo mismo.
 export function buildMainMenuKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
-        .text('🏛️ Tributario & SRI', 'baku_hub:sri')
-        .text('💰 Finanzas & Caja', 'baku_hub:finances').row()
-        .text('🔐 Bóveda & Facturación', 'baku_hub:vault_invoice')
-        .text('📲 Clientes & CRM 360°', 'baku_hub:clients_crm').row()
-        .text('🧰 Gestión Interna & Alertas', 'baku_hub:internal_mgmt').row()
-        .text('📊 Resumen Ejecutivo', 'baku_cmd:quick_report')
-        .text('⚡ Estado Baku', 'baku_nav:status');
+        .text('🔎 Buscar cliente', 'baku_nav:search')
+        .text('📊 Cierre del mes', 'baku_cierre:resumen').row()
+        .text('💳 Cobrar honorarios', 'baku_nav:pay_quick')
+        .text('📅 Vencimientos', 'baku_nav:deadlines').row()
+        .text('🏛️ SRI', 'baku_hub:sri')
+        .text('💰 Finanzas', 'baku_hub:finances')
+        .text('👥 Clientes', 'baku_hub:clients_crm').row()
+        .text('🔐 Bóveda y facturación', 'baku_hub:vault_invoice')
+        .text('🧰 Gestión', 'baku_hub:internal_mgmt').row()
+        .text('⚡ Estado de Baku', 'baku_nav:status');
 }
 
-export function buildMainMenuText(): string {
-    return `⚡ <b>CENTRO DE CONTROL CONTABLE — ${BOT_NAME.toUpperCase()} 3.0</b>\n\n` +
-           `Bienvenido Santiago. Selecciona un centro de mando o escribe directamente tu requerimiento (RUC, clave, pagos, notas de voz, fotos de recibos o archivos .p12):`;
+// Encabezado con lo útil del día: qué dígitos del RUC vencen hoy (con el traslado
+// por fin de semana ya aplicado). Cálculo puro, sin consultar la base: el menú abre al instante.
+export function buildMainMenuText(ahora = new Date()): string {
+    const hoy = hoyEnEcuador(ahora);
+    const digitos = digitosQueVencenHoy(hoy);
+    const fechaHoy = textoFecha(hoy);
+    const linea = digitos.length === 0
+        ? 'Hoy no vence ningún dígito.'
+        : `Hoy vence el IVA del 9.º dígito <b>${digitos.join('</b> y <b>')}</b>.`;
+    return `⚡ <b>${BOT_NAME}</b> · ${fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1)}\n` +
+           `${linea}\n\n` +
+           `Escríbeme lo que necesites (un nombre, un RUC, «¿quién me debe?», una nota de voz o una foto) o elige:`;
 }
 
 export async function showMainMenu(ctx: any, isEdit: boolean = false) {
@@ -126,16 +140,14 @@ export async function showMainMenu(ctx: any, isEdit: boolean = false) {
 }
 
 export async function showSriHub(ctx: any, isEdit: boolean = false) {
-    const text = `🏛️ <b>CENTRO DE MANDO TRIBUTARIO & SRI</b>\n\n` +
-                 `Control maestro de obligaciones tributarias, calendario fiscal, sanciones y trámites especiales:`;
+    const text = `🏛️ <b>SRI</b>\nObligaciones, vencimientos, multas y trámites especiales.`;
     const kb = new InlineKeyboard()
-        .text('⏰ Vencimientos & Calendario', 'baku_nav:deadlines')
-        .text('🧮 Calculadora Multas SRI', 'baku_sri:calculator').row()
-        .text('📊 Cierre del Período Activo', 'baku_cierre:resumen')
-        .text('📊 Matriz de Obligaciones', 'baku_sri:matrix').row()
-        .text('👴 Devolución IVA 3ra Edad', 'baku_sri:devoluciones')
-        .text('🔑 Consultar Claves SRI', 'baku_nav:sri_keys').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('📅 Vencimientos', 'baku_nav:deadlines')
+        .text('🧮 Calcular multa', 'baku_sri:calculator').row()
+        .text('📊 Cierre del mes', 'baku_cierre:resumen')
+        .text('👴 Devolución IVA 3ra edad', 'baku_sri:devoluciones').row()
+        .text('🔑 Claves SRI', 'baku_nav:sri_keys').row()
+        .text('🔙 Menú', 'baku_nav:home');
 
     if (isEdit) {
         try {
@@ -147,13 +159,12 @@ export async function showSriHub(ctx: any, isEdit: boolean = false) {
 }
 
 export async function showFinancesHub(ctx: any, isEdit: boolean = false) {
-    const text = `💰 <b>CENTRO DE MANDO FINANCIERO & CAJA CHICA</b>\n\n` +
-                 `Gestión de liquidez, control diario de caja, cobro de honorarios y mora de clientes:`;
+    const text = `💰 <b>Finanzas</b>\nCobro de honorarios, deudores y cierre del mes.`;
     const kb = new InlineKeyboard()
-        .text('📊 Cierre del Período Activo', 'baku_cierre:resumen').row()
-        .text('💳 Cobro Rápido Honorarios', 'baku_nav:pay_quick')
-        .text('📋 Deudores & Mora', 'baku_page_debt:1').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('📊 Cierre del mes', 'baku_cierre:resumen').row()
+        .text('💳 Cobrar honorarios', 'baku_nav:pay_quick')
+        .text('📋 Deudores', 'baku_page_debt:1').row()
+        .text('🔙 Menú', 'baku_nav:home');
 
     if (isEdit) {
         try {
@@ -165,8 +176,7 @@ export async function showFinancesHub(ctx: any, isEdit: boolean = false) {
 }
 
 export async function showVaultInvoiceHub(ctx: any, isEdit: boolean = false) {
-    const text = `🔐 <b>BÓVEDA DIGITAL, FACTURADORES & LLENADO</b>\n\n` +
-                 `Control de software (Talonario, SRI, Ecuafact, Zifact), llenado de facturas, firmas .p12 y archivo de declaraciones:`;
+    const text = `🔐 <b>Bóveda y facturación</b>\nFirmas .p12, facturadores, llenado y comprobantes.`;
     const kb = new InlineKeyboard()
         .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary')
         .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
@@ -177,7 +187,7 @@ export async function showVaultInvoiceHub(ctx: any, isEdit: boolean = false) {
         .text('📄 Comprobantes PDF (Declaraciones)', 'baku_cmd:browse_proofs').row()
         .text('📤 Subir Firma (.p12)', 'baku_cmd:upload_p12')
         .text('🔍 Facturas Emitidas', 'baku_cmd:browse_invoices').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
 
     if (isEdit) {
         try {
@@ -189,14 +199,13 @@ export async function showVaultInvoiceHub(ctx: any, isEdit: boolean = false) {
 }
 
 export async function showClientsCrmHub(ctx: any, isEdit: boolean = false) {
-    const text = `📲 <b>CRM & GESTIÓN DE CLIENTES 360°</b>\n\n` +
-                 `Expedientes fiscales, canales de fidelización, enlaces mágicos y tarjeta ejecutiva:`;
+    const text = `👥 <b>Clientes</b>\nExpedientes, portal del cliente y resumen de cartera.`;
     const kb = new InlineKeyboard()
-        .text('👤 Buscar Expediente Cliente', 'baku_nav:search')
-        .text('🔗 Enlace Mágico Portal', 'baku_crm:share_portal').row()
-        .text('📇 Tarjeta Digital Santiago', 'baku_crm:digital_card')
-        .text('📊 Resumen de Cartera', 'baku_cmd:quick_report').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔎 Buscar cliente', 'baku_nav:search')
+        .text('🔗 Enlace al portal', 'baku_crm:share_portal').row()
+        .text('📇 Mi tarjeta digital', 'baku_crm:digital_card')
+        .text('📊 Resumen de cartera', 'baku_cmd:quick_report').row()
+        .text('🔙 Menú', 'baku_nav:home');
 
     if (isEdit) {
         try {
@@ -223,7 +232,7 @@ export async function showInternalManagementHub(ctx: any, isEdit: boolean = fals
             .text(`🟡 Firmas por Caducar (${summary.expiringSignaturesCount})`, 'baku_mgmt:expiring_sigs')
             .text(`👥 Fichas Incompletas (${summary.incompleteClientsCount})`, 'baku_mgmt:incomplete').row()
             .text(`⚡ Reporte Operativo Completo`, 'baku_cmd:daily_report')
-            .text(`🔙 Menú Principal`, 'baku_nav:home');
+            .text(`🔙 Menú`, 'baku_nav:home');
 
         if (isEdit) {
             try {
@@ -245,7 +254,7 @@ export async function showMissingKeysWizard(ctx: any, page: number = 1, isEdit: 
             const text = `🎉 <b>¡TODAS LAS CLAVES SRI ESTÁN OPERATIVAS!</b>\n\nNo hay clientes con claves vacías, cortas o rechazadas en la base de datos. Baku.`;
             const kb = new InlineKeyboard()
                 .text('🧰 Gestión Interna', 'baku_hub:internal_mgmt')
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
             if (isEdit) {
                 try { await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb }); return; } catch(e) {}
             }
@@ -289,7 +298,7 @@ export async function showMissingKeysWizard(ctx: any, page: number = 1, isEdit: 
 
         kb.row(
             InlineKeyboard.text('🧰 Gestión Interna', 'baku_hub:internal_mgmt'),
-            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+            InlineKeyboard.text('🔙 Menú', 'baku_nav:home')
         );
 
         if (isEdit) {
@@ -312,7 +321,7 @@ export async function showIncompleteClientsWizard(ctx: any, page: number = 1, is
             const text = `🎉 <b>¡TODOS LOS CLIENTES TIENEN DATOS COMPLETOS!</b>\n\nNo hay clientes sin teléfono, sin correo o sin régimen asignado. Baku.`;
             const kb = new InlineKeyboard()
                 .text('🧰 Gestión Interna', 'baku_hub:internal_mgmt')
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
             if (isEdit) {
                 try { await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb }); return; } catch(e) {}
             }
@@ -355,7 +364,7 @@ export async function showIncompleteClientsWizard(ctx: any, page: number = 1, is
 
         kb.row(
             InlineKeyboard.text('🧰 Gestión Interna', 'baku_hub:internal_mgmt'),
-            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+            InlineKeyboard.text('🔙 Menú', 'baku_nav:home')
         );
 
         if (isEdit) {
@@ -448,7 +457,7 @@ export async function showInteractiveDebtors(ctx: any, page: number = 1, isEdit:
         const data = await getDebtorClientsPaginated(page, 4);
         if (data.totalCount === 0) {
             const text = `🎉 <b>¡CARTERA TOTALMENTE AL DÍA!</b>\n\nNo existen clientes con honorarios pendientes registrados. Baku.`;
-            const kb = new InlineKeyboard().text('🔙 Menú Principal', 'baku_nav:home');
+            const kb = new InlineKeyboard().text('🔙 Menú', 'baku_nav:home');
             if (isEdit) {
                 await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb });
             } else {
@@ -487,7 +496,7 @@ export async function showInteractiveDebtors(ctx: any, page: number = 1, isEdit:
             InlineKeyboard.text('🔄 Refrescar', `baku_page_debt:${data.page}`),
             InlineKeyboard.text('🔙 Hub Finanzas', 'baku_hub:finances')
         );
-        kb.row(InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home'));
+        kb.row(InlineKeyboard.text('🔙 Menú', 'baku_nav:home'));
 
         if (isEdit) {
             try {
@@ -541,7 +550,7 @@ export async function showInteractiveDeadlines(ctx: any, isEdit: boolean = false
             InlineKeyboard.text('🔄 Refrescar', 'baku_nav:deadlines'),
             InlineKeyboard.text('🔙 Hub Tributario', 'baku_hub:sri')
         );
-        kb.row(InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home'));
+        kb.row(InlineKeyboard.text('🔙 Menú', 'baku_nav:home'));
 
         if (isEdit) {
             try {
@@ -565,7 +574,7 @@ export async function showInteractiveSignaturesVault(ctx: any, page: number = 1,
                          `Para respaldar una firma, simplemente arrastra o envía el archivo <code>.p12</code> o <code>.pfx</code> a este chat de Telegram.`;
             const kb = new InlineKeyboard()
                 .text('📤 Subir Firma (.p12)', 'baku_cmd:upload_p12').row()
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
             if (isEdit) {
                 try { await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: kb }); return; } catch(e) {}
             }
@@ -635,7 +644,7 @@ export async function showInteractiveSignaturesVault(ctx: any, page: number = 1,
 
         kb.row(
             InlineKeyboard.text('📤 Subir Otra Firma', 'baku_cmd:upload_p12'),
-            InlineKeyboard.text('🔙 Menú Principal', 'baku_nav:home')
+            InlineKeyboard.text('🔙 Menú', 'baku_nav:home')
         );
 
         if (isEdit) {
@@ -687,7 +696,7 @@ bot.command('resumen', async (ctx) => {
     const kb = new InlineKeyboard()
         .text('💰 Ver Deudores', 'baku_page_debt:1')
         .text('⏰ Vencimientos', 'baku_nav:deadlines').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
     await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML', reply_markup: kb });
 });
 
@@ -714,7 +723,7 @@ bot.command(['facturadores', 'software'], async (ctx) => {
         .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
         .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
         .text('🔄 Renovaciones Críticas', 'baku_cmd:renovaciones_summary')
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
 
     await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
 });
@@ -738,7 +747,7 @@ bot.command(['llenado', 'facturas_llenado'], async (ctx) => {
     const kb = new InlineKeyboard()
         .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
         .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
 
     await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
 });
@@ -770,7 +779,7 @@ bot.command(['credenciales', 'clave_facturador', 'claves_facturacion'], async (c
     const kb = new InlineKeyboard()
         .text('🔍 Buscar Otro Cliente', 'baku_cmd:get_credenciales')
         .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
 
     await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
 });
@@ -792,7 +801,7 @@ bot.command(['renovaciones', 'vencimientos_planes', 'kyc'], async (ctx) => {
     const kb = new InlineKeyboard()
         .text('💼 Ver Facturadores', 'baku_cmd:facturadores_summary')
         .text('🔑 Credenciales', 'baku_cmd:get_credenciales').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
 
     await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
 });
@@ -1001,7 +1010,7 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
         // (no se automatizan). El RUC va en la ficha para copiarlo.
         .url('🏛 Estado tributario (SRI)', 'https://srienlinea.sri.gob.ec/sri-en-linea/SriDeclaracionesWeb/EstadoTributario/Consultas/consultaEstadoTributario')
         .url('📜 Consulta de RUC (SRI)', 'https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc').row()
-        .text('🔙 Menú Principal', 'baku_nav:home');
+        .text('🔙 Menú', 'baku_nav:home');
 
     // Si tiene teléfono móvil válido, agregar botón directo para abrir chat de WhatsApp
     const firstPhone = Array.isArray(client.phones) ? client.phones[0] : (client.phone || client.phones || '');
@@ -1150,7 +1159,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
             .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
             .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
             .text('🔄 Renovaciones Críticas', 'baku_cmd:renovaciones_summary')
-            .text('🔙 Menú Principal', 'baku_nav:home');
+            .text('🔙 Menú', 'baku_nav:home');
         await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
         return true;
     }
@@ -1174,7 +1183,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         const kb = new InlineKeyboard()
             .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
             .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary').row()
-            .text('🔙 Menú Principal', 'baku_nav:home');
+            .text('🔙 Menú', 'baku_nav:home');
         await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
         return true;
     }
@@ -1196,7 +1205,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         const kb = new InlineKeyboard()
             .text('💼 Ver Facturadores', 'baku_cmd:facturadores_summary')
             .text('🔑 Credenciales', 'baku_cmd:get_credenciales').row()
-            .text('🔙 Menú Principal', 'baku_nav:home');
+            .text('🔙 Menú', 'baku_nav:home');
         await ctx.reply(msg, { parse_mode: 'HTML', reply_markup: kb });
         return true;
     }
@@ -1332,7 +1341,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
             const kb = new InlineKeyboard()
                 .text('🔍 Buscar Otro', 'baku_cmd:get_credenciales')
                 .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
             await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
         }
         return true;
@@ -2004,7 +2013,7 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                     const kb = new InlineKeyboard()
                         .text('🔍 Buscar Otro', 'baku_cmd:get_credenciales')
                         .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
-                        .text('🔙 Menú Principal', 'baku_nav:home');
+                        .text('🔙 Menú', 'baku_nav:home');
                     await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
                 }
             }
@@ -2032,7 +2041,7 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                 const shareText = getClientPortalShareText(client);
                 const kb = new InlineKeyboard()
                     .text('📲 Hub Clientes', 'baku_hub:clients_crm')
-                    .text('🔙 Menú Principal', 'baku_nav:home');
+                    .text('🔙 Menú', 'baku_nav:home');
                 await ctx.reply(shareText, { parse_mode: 'HTML', reply_markup: kb });
             }
         } catch (e: any) {
@@ -2928,7 +2937,7 @@ bot.on('callback_query:data', async (ctx) => {
             await ctx.reply(convertMarkdownToTelegramHtml(msg), { parse_mode: 'HTML' });
             const p12BackKb = new InlineKeyboard()
                 .text('🔙 Volver al Expediente', `baku_sel_direct:${ruc}`)
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
             await ctx.reply('👆 Acciones del expediente:', { reply_markup: p12BackKb });
         }
         return;
@@ -2949,7 +2958,7 @@ bot.on('callback_query:data', async (ctx) => {
             await ctx.reply(convertMarkdownToTelegramHtml(msg), { parse_mode: 'HTML' });
             const p12BackKb = new InlineKeyboard()
                 .text('🔙 Volver al Expediente', `baku_sel_direct:${ruc}`)
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
             await ctx.reply('👆 Acciones del expediente:', { reply_markup: p12BackKb });
         }
         return;
@@ -3374,7 +3383,7 @@ bot.on('callback_query:data', async (ctx) => {
         const cardText = getSantiagoExecutiveCard();
         const kb = new InlineKeyboard()
             .text('📲 Hub Clientes', 'baku_hub:clients_crm')
-            .text('🔙 Menú Principal', 'baku_nav:home');
+            .text('🔙 Menú', 'baku_nav:home');
         await ctx.reply(cardText, { parse_mode: 'HTML', reply_markup: kb });
         return;
     }
@@ -3565,7 +3574,7 @@ bot.on('callback_query:data', async (ctx) => {
                 .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
                 .text('✍️ Centro de Llenado', 'baku_cmd:llenado_summary').row()
                 .text('🔄 Renovaciones Críticas', 'baku_cmd:renovaciones_summary')
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
 
             await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
         } else if (cmd === 'llenado_summary') {
@@ -3587,7 +3596,7 @@ bot.on('callback_query:data', async (ctx) => {
             const kb = new InlineKeyboard()
                 .text('🔑 Consultar Credenciales', 'baku_cmd:get_credenciales')
                 .text('💼 Facturadores & Software', 'baku_cmd:facturadores_summary').row()
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
 
             await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
         } else if (cmd === 'renovaciones_summary') {
@@ -3607,7 +3616,7 @@ bot.on('callback_query:data', async (ctx) => {
             const kb = new InlineKeyboard()
                 .text('💼 Ver Facturadores', 'baku_cmd:facturadores_summary')
                 .text('🔑 Credenciales', 'baku_cmd:get_credenciales').row()
-                .text('🔙 Menú Principal', 'baku_nav:home');
+                .text('🔙 Menú', 'baku_nav:home');
 
             await ctx.reply(text, { parse_mode: 'HTML', reply_markup: kb });
         } else if (cmd === 'get_credenciales') {
@@ -3678,7 +3687,7 @@ bot.on('callback_query:data', async (ctx) => {
         const shareText = getClientPortalShareText(client);
         const kb = new InlineKeyboard()
             .text('📲 Hub Clientes', 'baku_hub:clients_crm')
-            .text('🔙 Menú Principal', 'baku_nav:home');
+            .text('🔙 Menú', 'baku_nav:home');
         await ctx.reply(shareText, { parse_mode: 'HTML', reply_markup: kb });
     } else if (dialog.type === 'get_credenciales') {
         pendingDialogs.delete(chatId);
@@ -3686,7 +3695,7 @@ bot.on('callback_query:data', async (ctx) => {
         const kb = new InlineKeyboard()
             .text('🔍 Buscar Otro Cliente', 'baku_cmd:get_credenciales')
             .text('💼 Facturadores', 'baku_cmd:facturadores_summary').row()
-            .text('🔙 Menú Principal', 'baku_nav:home');
+            .text('🔙 Menú', 'baku_nav:home');
         await ctx.reply(res.message, { parse_mode: 'HTML', reply_markup: kb, link_preview_options: { is_disabled: true } });
     }
 });
