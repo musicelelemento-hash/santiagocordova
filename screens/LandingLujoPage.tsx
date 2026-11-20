@@ -409,6 +409,9 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           .lujo-raices-texto { align-self: end; padding-bottom: 108px; }
           .lujo-raices-tags { display: none; }
         }
+        @keyframes lujoCtaBrillo { 0% { transform: scale(1); filter: brightness(1); } 28% { transform: scale(1.06); filter: brightness(1.3) saturate(1.2); } 100% { transform: scale(1); filter: brightness(1); } }
+        .lujo-cta-brillo { animation: lujoCtaBrillo 1.4s cubic-bezier(.16,1,.3,1) 1; }
+        @media (prefers-reduced-motion: reduce) { .lujo-cta-brillo { animation: none; } }
         .lujo-hero-parallax { transform: translate3d(calc(var(--mx,0) * -22px), calc(var(--my,0) * -14px), 0); transition: transform .9s cubic-bezier(.16,1,.3,1); }
         /* Compuerta de bóveda: cada video de acto entra como una ranura que se abre con el scroll
            (--p de useLujoScroll; con «reducir movimiento» --p = 0.5 y queda abierta). */
@@ -1436,7 +1439,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       </section>
 
       {/* ── TESTIMONIOS ──────────────────────────────────────────────────── */}
-      <section className="relative px-6" style={{ padding: 'clamp(70px,10vh,130px) 24px', background: '#050a1b' }}>
+      <section data-parada="Clientes" className="relative px-6" style={{ padding: 'clamp(70px,10vh,130px) 24px', background: '#050a1b' }}>
         <div className="max-w-[1160px] mx-auto">
           <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>
             CLIENTES
@@ -1494,6 +1497,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
+              data-cta-final
               className="inline-flex items-center justify-center gap-3 w-full sm:w-auto rounded-2xl font-mono text-xs sm:text-[13px] font-black uppercase tracking-[0.14em] text-white transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
               style={{
                 marginTop: 36,

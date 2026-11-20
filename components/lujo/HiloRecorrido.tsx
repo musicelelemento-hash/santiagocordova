@@ -16,11 +16,25 @@ interface Geo {
   W: number;
   H: number;
   d: string;
-  nudos: { x: number; y: number }[];
+  nudos: { x: number; y: number; nombre: string; lado: 0 | 1 }[];
+  conNombres: boolean;
   fin: { x: number; y: number };
 }
 
 const MAX_CONTENIDO = 1160;
+
+/** Nombre de cada parada: `data-parada` de la sección, o éste según su id. */
+const PARADAS: Record<string, string> = {
+  blindaje: 'Blindaje',
+  sistema: 'El sistema',
+  herramientas: 'Herramientas',
+  resultados: 'Resultados',
+  cobertura: 'Cobertura',
+  raices: 'El Oro',
+  criterio: 'Criterio',
+  servicios: 'Servicios',
+  faq: 'Preguntas',
+};
 
 export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = ({ raiz }) => {
   const reducido = usePrefersReducedMotion();
@@ -66,12 +80,13 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
       const sale = { x, y: Math.max(entra.y + 40, bottom - Math.min(cruce * 0.5, s.offsetHeight * 0.25)) };
       d += curva(prev, entra);
       d += `L${sale.x.toFixed(1)} ${sale.y.toFixed(1)}`;
-      nudos.push(entra);
+      nudos.push({ ...entra, nombre: s.dataset.parada || PARADAS[s.id] || '', lado: (i % 2) as 0 | 1 });
       prev = sale;
     });
     const fin = { x: W / 2, y: cta.offsetTop + Math.min(70, cta.offsetHeight * 0.1) };
     d += curva(prev, fin);
-    setGeo({ W, H, d, nudos, fin });
+    // Los nombres van de costado, en el margen: sólo si hay margen para ellos.
+    setGeo({ W, H, d, nudos, fin, conNombres: W >= 1100 });
   }, [raiz]);
 
   // Medir al montar y cada vez que cambie el tamaño de la página.
@@ -122,6 +137,7 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
     }
 
     let raf = 0;
+    let llego = false;
     const pintar = () => {
       raf = 0;
       const rootTop = root.getBoundingClientRect().top + window.scrollY;
@@ -143,7 +159,18 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
         punta.style.opacity = largo > 0 && largo < L - 1 ? '1' : '0';
       }
       geo.nudos.forEach((n, i) => nudosRef.current[i]?.classList.toggle('on', n.y <= meta));
-      nudosRef.current[geo.nudos.length]?.classList.toggle('on', largo >= L - 1);
+      const alFinal = largo >= L - 1;
+      nudosRef.current[geo.nudos.length]?.classList.toggle('on', alFinal);
+      // Al llegar al final, el lazo «anuda» y el botón de la llamada final brilla una vez.
+      if (alFinal && !llego) {
+        const boton = root.querySelector<HTMLElement>('[data-cta-final]');
+        if (boton) {
+          boton.classList.remove('lujo-cta-brillo');
+          void boton.offsetWidth; // reinicia la animación
+          boton.classList.add('lujo-cta-brillo');
+        }
+      }
+      llego = alFinal;
     };
     const alScroll = () => {
       if (!raf) raf = requestAnimationFrame(pintar);
@@ -172,9 +199,15 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
         .hilo-recorrido .nudo .centro { opacity: .25; }
         .hilo-recorrido .nudo.on .anillo { opacity: .9; transform: scale(1); }
         .hilo-recorrido .nudo.on .centro { opacity: 1; }
+        .hilo-recorrido .nombre { opacity: 0; transition: opacity .6s ease .15s; }
+        .hilo-recorrido .nudo.on .nombre { opacity: .85; }
+        .hilo-recorrido .estallido { opacity: 0; transform-box: fill-box; transform-origin: center; }
+        .hilo-recorrido .nudo.on .estallido { animation: hiloEstallido 1.5s cubic-bezier(.16,1,.3,1) 1 both; }
+        .hilo-recorrido .nudo.on .estallido + .estallido { animation-delay: .25s; }
+        @keyframes hiloEstallido { from { transform: scale(.3); opacity: .95; } to { transform: scale(5); opacity: 0; } }
         .hilo-recorrido .punta-halo { animation: hiloLatido 1.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
         @keyframes hiloLatido { from { transform: scale(.75); opacity: .55; } to { transform: scale(1.15); opacity: .9; } }
-        @media (prefers-reduced-motion: reduce) { .hilo-recorrido .punta-halo { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .hilo-recorrido .punta-halo, .hilo-recorrido .nudo.on .estallido { animation: none; } }
       `}</style>
       <defs>
         <linearGradient id="hiloColor" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2={geo.H}>
@@ -195,12 +228,32 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
       {/* Halo ancho y trazo fino: lo ya recorrido */}
       <path ref={brilloRef} d={geo.d} fill="none" stroke="url(#hiloColor)" strokeOpacity={0.18} strokeWidth={7} strokeLinecap="round" />
       <path ref={trazoRef} d={geo.d} fill="none" stroke="url(#hiloColor)" strokeWidth={1.6} strokeLinecap="round" />
-      {[...geo.nudos, geo.fin].map((n, i) => (
+      {geo.nudos.map((n, i) => (
         <g key={i} ref={(el) => (nudosRef.current[i] = el)} className="nudo">
-          <circle className="anillo" cx={n.x} cy={n.y} r={i === geo.nudos.length ? 11 : 7} fill="none" stroke="#4edea3" strokeWidth={1.2} />
-          <circle className="centro" cx={n.x} cy={n.y} r={i === geo.nudos.length ? 4.5 : 3} fill="#dbe6ff" />
+          <circle className="anillo" cx={n.x} cy={n.y} r={7} fill="none" stroke="#4edea3" strokeWidth={1.2} />
+          <circle className="centro" cx={n.x} cy={n.y} r={3} fill="#dbe6ff" />
+          {geo.conNombres && n.nombre && (
+            // De costado, pegado a la línea y dentro del margen (rotate 90: la letra queda a la derecha de la base).
+            <text
+              className="nombre"
+              transform={`translate(${n.lado === 0 ? n.x + 9 : n.x - 20} ${n.y + 16}) rotate(90)`}
+              fontSize={11}
+              fontWeight={600}
+              letterSpacing="0.02em"
+              fill="#a9bcdf"
+              style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}
+            >
+              {n.nombre}
+            </text>
+          )}
         </g>
       ))}
+      <g ref={(el) => (nudosRef.current[geo.nudos.length] = el)} className="nudo">
+        <circle className="estallido" cx={geo.fin.x} cy={geo.fin.y} r={10} fill="none" stroke="#4edea3" strokeWidth={1.4} />
+        <circle className="estallido" cx={geo.fin.x} cy={geo.fin.y} r={10} fill="none" stroke="#6E9BFF" strokeWidth={1.2} />
+        <circle className="anillo" cx={geo.fin.x} cy={geo.fin.y} r={11} fill="none" stroke="#4edea3" strokeWidth={1.4} />
+        <circle className="centro" cx={geo.fin.x} cy={geo.fin.y} r={4.5} fill="#dbe6ff" />
+      </g>
       <g ref={puntaRef} style={{ opacity: 0 }}>
         <circle className="punta-halo" r={16} fill="url(#hiloPunta)" />
         <circle r={2.6} fill="#ffffff" />

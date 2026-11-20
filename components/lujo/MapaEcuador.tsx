@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { EC_CAPITALES, EC_CONTINENTE, EC_GALAPAGOS } from './ecuadorMapa';
 
 /**
@@ -12,6 +12,13 @@ import { EC_CAPITALES, EC_CONTINENTE, EC_GALAPAGOS } from './ecuadorMapa';
  *              cercana a la más lejana; cada capital se prende al llegarle
  * Una vez dibujado, por cada arco viaja una chispa en bucle.
  * Con «reducir movimiento» se muestra todo dibujado y sin chispas viajeras.
+ *
+ * «Estás aquí»: se pregunta una vez a /api/region (Vercel da la provincia
+ * aproximada por la conexión, sin pedir permiso) y esa provincia queda
+ * resaltada. Si falla o no es Ecuador, el mapa sale igual, sin resaltar.
+ * Para probarlo sin estar en esa provincia, en la consola del navegador:
+ *   localStorage.setItem('mapaProvincia', 'G')   // código ISO; removeItem para volver
+ * (no sirve ?provincia= en la URL: App.tsx reescribe la dirección al cargar).
  */
 
 const AZUL = '#6E9BFF';
@@ -23,6 +30,41 @@ const CON_ETIQUETA = new Set(['Guayas', 'Pichincha', 'Azuay', 'Manabí', 'Loja',
 // Hacia qué lado va la etiqueta, para que no pise el arco ni el borde.
 const ETIQUETA_IZQ = new Set(['Manabí', 'Guayas', 'Esmeraldas']);
 
+// Códigos ISO 3166-2:EC → nombre usado en EC_CAPITALES.
+const PROVINCIA_ISO: Record<string, string> = {
+  A: 'Azuay', B: 'Bolívar', F: 'Cañar', C: 'Carchi', H: 'Chimborazo', X: 'Cotopaxi', O: 'El Oro', E: 'Esmeraldas',
+  W: 'Galápagos', G: 'Guayas', I: 'Imbabura', L: 'Loja', R: 'Los Ríos', M: 'Manabí', S: 'Morona Santiago', N: 'Napo',
+  D: 'Orellana', Y: 'Pastaza', P: 'Pichincha', SE: 'Santa Elena', SD: 'Santo Domingo', U: 'Sucumbíos', T: 'Tungurahua',
+  Z: 'Zamora Chinchipe',
+};
+
+function useProvinciaVisitante(): string | null {
+  const [prov, setProv] = useState<string | null>(null);
+  useEffect(() => {
+    let prueba: string | null = null;
+    try {
+      prueba = window.localStorage.getItem('mapaProvincia');
+    } catch {
+      /* almacenamiento bloqueado: se sigue con /api/region */
+    }
+    if (prueba) {
+      setProv(PROVINCIA_ISO[prueba.toUpperCase()] ?? null);
+      return;
+    }
+    let vivo = true;
+    fetch('/api/region', { headers: { Accept: 'application/json' } })
+      .then((r) => (r.ok && (r.headers.get('content-type') || '').includes('json') ? r.json() : null))
+      .then((d: { region?: string | null } | null) => {
+        if (vivo && d?.region) setProv(PROVINCIA_ISO[d.region] ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  return prov;
+}
+
 const INICIO = 0.22;
 const TRAMO = 0.58;
 
@@ -31,6 +73,7 @@ const avance = (desde: number, dura: number) =>
   `clamp(0, calc((var(--p, 0) - ${desde.toFixed(3)}) / ${dura.toFixed(3)}), 1)`;
 
 export const MapaEcuador: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => {
+  const aqui = useProvinciaVisitante();
   const { hub, arcos } = useMemo(() => {
     const [, hx, hy] = EC_CAPITALES.find(([n]) => n === 'El Oro')!;
     const resto = EC_CAPITALES.filter(([n]) => n !== 'El Oro')
@@ -50,7 +93,8 @@ export const MapaEcuador: React.FC<{ className?: string; style?: React.CSSProper
     <svg
       viewBox="262 10 372 424"
       className={`mapa-ec ${className ?? ''}`}
-      style={style}
+      // Visible: las etiquetas de la costa (Esmeraldas, Manabí) salen un poco del recuadro.
+      style={{ overflow: 'visible', ...style }}
       role="img"
       aria-label="Mapa del Ecuador: desde El Oro, conexiones a las 24 provincias"
     >
@@ -60,6 +104,7 @@ export const MapaEcuador: React.FC<{ className?: string; style?: React.CSSProper
         .mapa-ec .onda { transform-box: fill-box; transform-origin: center; animation: mapaOnda 2.4s cubic-bezier(.16,1,.3,1) infinite; }
         @keyframes mapaViaje { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
         @keyframes mapaOnda { from { transform: scale(.4); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
+        @media (max-width: 767px) { .mapa-ec text { font-size: 17px; } .mapa-ec .aqui-2 { font-size: 15px; } }
         @media (prefers-reduced-motion: reduce) {
           .mapa-ec .dib { stroke-dashoffset: 0 !important; }
           .mapa-ec [data-luz] { opacity: 1 !important; }
@@ -118,8 +163,29 @@ export const MapaEcuador: React.FC<{ className?: string; style?: React.CSSProper
           />
           <g data-luz style={{ opacity: `calc(0.18 + 0.82 * ${avance(a.desde + 0.08, 0.03)})` }}>
             <circle cx={a.x} cy={a.y} r={7} fill="url(#mapaHalo)" />
+            {aqui === a.n && (
+              <>
+                <circle className="onda" cx={a.x} cy={a.y} r={5} fill="none" stroke={VERDE_CLARO} strokeWidth={1.2} />
+                <circle cx={a.x} cy={a.y} r={4.6} fill={VERDE_CLARO} />
+              </>
+            )}
             <circle cx={a.x} cy={a.y} r={2.6} fill="#dbe6ff" />
-            {CON_ETIQUETA.has(a.n) && (
+            {aqui === a.n ? (
+              <text
+                x={ETIQUETA_IZQ.has(a.n) || a.x > 450 ? a.x - 10 : a.x + 10}
+                y={a.y + 4}
+                textAnchor={ETIQUETA_IZQ.has(a.n) || a.x > 450 ? 'end' : 'start'}
+                fontSize={13}
+                fontWeight={800}
+                fill="#ffffff"
+                style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}
+              >
+                {a.n}
+                <tspan x={ETIQUETA_IZQ.has(a.n) || a.x > 450 ? a.x - 10 : a.x + 10} className="aqui-2" dy="1.15em" fill={VERDE_CLARO} fontWeight={600} fontSize={11}>
+                  estás aquí
+                </tspan>
+              </text>
+            ) : CON_ETIQUETA.has(a.n) && (
               <text
                 x={ETIQUETA_IZQ.has(a.n) ? a.x - 8 : a.x + 8}
                 y={a.y + 4}
@@ -146,6 +212,11 @@ export const MapaEcuador: React.FC<{ className?: string; style?: React.CSSProper
         <text x={hub.x - 12} y={hub.y + 22} textAnchor="end" fontSize={15} fontWeight={800} fill="#ffffff" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
           El Oro
         </text>
+        {aqui === 'El Oro' && (
+          <text x={hub.x - 12} y={hub.y + 37} textAnchor="end" fontSize={11} fontWeight={600} fill={VERDE_CLARO} style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
+            estás aquí
+          </text>
+        )}
       </g>
     </svg>
   );
