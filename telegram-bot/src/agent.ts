@@ -6,6 +6,7 @@ import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getGeminiApiKey, MODELS, modelosGemini, avisarErrorGemini } from './ai';
+import { calcularVencimiento } from './vencimientos';
 import { pendingDialogs, bot, startPaymentFlowForClient, startDeclarationFlowForClient } from './index';
 import { InputFile } from 'grammy';
 import * as path from 'path';
@@ -71,14 +72,21 @@ CAMPOS DISPONIBLES: sri_password, email, phones, address, regime, name, trade_na
    - Renta: Anual en MAYO para personas naturales (Boletín SRI 026-2026); las sociedades RIMPE, en abril.
    - Combinación típica: IVA Semestral + Renta Anual.
 3. RIMPE Negocio Popular (ingresos hasta USD 20.000):
-   - IVA: Ninguno / Exento (el IVA está cubierto en su cuota única).
-   - Renta: Anual (Declaración Simplificada / cuota unificada que vence en Mayo).
+   - IVA: No declara IVA (emite notas de venta).
+   - Renta: cuota anual por tabla, en MAYO. Tabla oficial desde 2024: hasta 2.500 → $0 · hasta 5.000 → $5 · hasta 10.000 → $15 · hasta 15.000 → $35 · hasta 20.000 → $60.
    - Combinación típica: Solo Renta Anual (IVA es "Ninguno").
+
+Tabla oficial de renta RIMPE Emprendedor (sobre ingresos brutos, sin deducciones): 20.000–50.000 → $60 + 1% del excedente de 20.000 · 50.000–75.000 → $360 + 1,25% · 75.000–100.000 → $672,50 + 1,5% · 100.000–200.000 → $1.047,50 + 1,75% · 200.000–300.000 → $2.797,50 + 2%.
+IVA: tarifa general 15% desde el 1-abr-2024 (antes 12%).
+REGÍMENES DEROGADOS: el RISE y el Régimen de Microempresas ya no existen (hoy es RIMPE); la cuota fija de $60 para todo Negocio Popular fue sólo 2022–2023. Si te preguntan por ellos, aclara que están derogados salvo que la consulta sea de un período viejo.
 
 --- 📅 REGLA DE VENCIMIENTOS (Dígito 9° del RUC) ---
 Dígito 9° → Día de vencimiento:
 1 → 10, 2 → 12, 3 → 14, 4 → 16, 5 → 18, 6 → 20, 7 → 22, 8 → 24, 9 → 26, 0 → 28
 (Ejemplo: RUC 0707018438001 -> 9° dígito es 3 -> Vence el día 14 de cada período).
+Para dar CUALQUIER fecha de vencimiento usa la herramienta 'calcular_vencimiento' (no calcules días de la semana de cabeza).
+TRASLADO: si ese día cae sábado, domingo o feriado, vence el SIGUIENTE DÍA HÁBIL; si ese traslado lo pasaría al mes siguiente, se ADELANTA al último día hábil del mes. Al dar una fecha, di el día de la semana y aplica esta regla.
+MULTA por declarar tarde con impuesto a pagar: 3% del impuesto causado por cada mes o fracción (Art. 100 LRTI), más interés por mora con la tasa trimestral que publica el SRI. NO inventes montos de multa ni tasas: si no los tienes, dilo y remite al SRI.
 
 --- 💰 HONORARIOS CONTADOR vs. OBLIGACIÓN SRI ---
 Existen DOS conceptos totalmente distintos en Baku que debes tener muy claros al interactuar con Santiago:
@@ -91,7 +99,7 @@ MODO SECRETARIA (FORMULARIO CONVERSACIONAL): Cuando Santiago te pida crear un nu
 1. Nombre completo del cliente.
 2. Número de RUC (valida que tenga 13 dígitos y sea numérico).
 3. Clave del SRI.
-4. Régimen fiscal (Régimen General, Rimpe Emprendedor o Rimpe Negocio Popular).
+4. Régimen fiscal (Régimen General, RIMPE Emprendedor o RIMPE Negocio Popular).
 5. (Opcional) Email de contacto.
 6. (Opcional) Teléfono de contacto.
 Una vez que tengas recopilados los datos obligatorios (1-4), ejecuta la herramienta 'create_client'.
@@ -243,6 +251,30 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
             return `📧 ${result} (${data.clientName}, periodo ${period}) Baku.`;
         } catch (e: any) {
             return `❌ Error al enviar el comprobante por email: ${e.message}`;
+        }
+    },
+    calcular_vencimiento: async ({ cliente, periodo, feriados }: { cliente: string; periodo: string; feriados?: string[] }, chatId: string) => {
+        // RUC/cédula directo, o se busca el cliente para conocer su régimen.
+        let ruc = String(cliente || '').replace(/\D/g, '');
+        let regimen = '';
+        let nombre = '';
+        if (ruc.length !== 10 && ruc.length !== 13) {
+            const encontrados = await findClients(cliente, 'ruc, name, regime');
+            if (!encontrados || encontrados.length === 0) return `No encontré a «${cliente}». Pásame el RUC.`;
+            if (encontrados.length > 1) return `Hay ${encontrados.length} coincidencias: ${encontrados.slice(0, 5).map((c: any) => `${c.name} (${c.ruc})`).join(', ')}. ¿Cuál?`;
+            ruc = encontrados[0].ruc; regimen = encontrados[0].regime || ''; nombre = encontrados[0].name || '';
+        } else {
+            const encontrados = await findClients(ruc, 'ruc, name, regime').catch(() => []);
+            if (encontrados && encontrados[0]) { regimen = encontrados[0].regime || ''; nombre = encontrados[0].name || ''; }
+        }
+        try {
+            const v = calcularVencimiento(ruc, periodo, regimen, { feriados });
+            const quien = nombre ? `${nombre} (RUC ${ruc})` : `RUC ${ruc}`;
+            const nota = v.traslado ? ` La fecha nominal era ${v.nominal}: ${v.traslado}.` : '';
+            const avisoFeriados = feriados && feriados.length ? '' : ' (No se consideraron feriados nacionales: si alguno cae cerca, indícalo.)';
+            return `${quien}, período ${periodo}: vence el ${v.texto}. Regla: ${v.regla}.${nota}${avisoFeriados}`;
+        } catch (e: any) {
+            return e.message;
         }
     },
     get_current_time: async ({ timezone }: { timezone?: string }, chatId: string) => {
@@ -649,6 +681,7 @@ function cleanMessages(messages: any[], maxToolLength: number = 600, maxGeneralL
 // Tool Definitions for LLM
 const toolDefinitions = [
     { type: "function", function: { name: "get_current_time", description: "Hora actual.", parameters: { type: "object", properties: { timezone: { type: "string" } } } } },
+    { type: "function", function: { name: "calcular_vencimiento", description: "Fecha EXACTA de vencimiento SRI de un cliente para un período, con día de la semana y el traslado oficial si cae fin de semana o feriado. Usar SIEMPRE que pregunten cuándo vence algo; no calcules fechas de cabeza.", parameters: { type: "object", properties: { cliente: { type: "string", description: "Nombre o RUC del cliente" }, periodo: { type: "string", description: "2026-10 (IVA mensual), 2026-S1 o 2026-S2 (IVA semestral), 2025 (renta anual)" }, feriados: { type: "array", items: { type: "string" }, description: "Feriados nacionales cercanos en formato AAAA-MM-DD, si se conocen" } }, required: ["cliente", "periodo"] } } },
     { type: "function", function: { name: "get_database_summary", description: "Resumen global cartera (conteo clientes).", parameters: { type: "object", properties: {} } } },
     { type: "function", function: { name: "get_financial_summary", description: "Reporte de recaudación y honorarios del mes actual.", parameters: { type: "object", properties: {} } } },
     { type: "function", function: { name: "read_unread_emails", description: "Lee Gmail unread.", parameters: { type: "object", properties: { maxResults: { type: "number" } } } } },
