@@ -81,3 +81,26 @@ export function calcularVencimiento(ruc: string, periodo: string, regimen = '', 
     const { fecha: final, traslado } = trasladar(nominal, new Set(opciones.feriados || []));
     return { fecha: iso(final), nominal: iso(nominal), texto: texto(final), regla: `${regla} · día ${dia} por 9.º dígito ${digitos[8]}`, traslado };
 }
+
+/**
+ * Períodos que el cliente tiene en curso hoy (lo que toca declarar ahora),
+ * con la misma regla que getPeriod de la web (services/sri.ts):
+ * mensual → mes anterior; semestral → S1 desde junio, S2 desde diciembre;
+ * renta → año anterior.
+ */
+export function periodosEnCurso(regimen: string, frecuenciaIva: string | undefined, hoy = new Date()): { iva: string | null; renta: string } {
+    const y = hoy.getFullYear();
+    const m = hoy.getMonth(); // 0-11
+    const renta = String(y - 1);
+    const freq = esPopular(regimen) || frecuenciaIva === 'Ninguno'
+        ? 'Ninguno'
+        : (frecuenciaIva || (esEmprendedor(regimen) ? 'Semestral' : 'Mensual'));
+    if (freq === 'Ninguno') return { iva: null, renta };
+    if (freq === 'Semestral') {
+        if (m === 5) return { iva: `${y}-S1`, renta };
+        if (m === 11) return { iva: `${y}-S2`, renta };
+        return { iva: m < 5 ? `${y - 1}-S2` : `${y}-S1`, renta };
+    }
+    const prev = new Date(y, m - 1, 1);
+    return { iva: `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`, renta };
+}

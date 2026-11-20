@@ -7,7 +7,7 @@ require(path.join(botDir, 'node_modules', 'ts-node')).register({
     project: path.join(botDir, 'tsconfig.json'),
     transpileOnly: true,
 });
-const { calcularVencimiento } = require(path.join(botDir, 'src', 'vencimientos.ts'));
+const { calcularVencimiento, periodosEnCurso } = require(path.join(botDir, 'src', 'vencimientos.ts'));
 
 let mal = 0;
 function ver(nombre, cond, detalle) {
@@ -49,6 +49,25 @@ ver('acepta el formato 2026-1S', r.fecha.startsWith('2026-07'), r);
 ver('Negocio Popular no declara IVA', lanza(() => v('0702345678001', '2026-10', 'RIMPE Negocio Popular')));
 ver('regimen con mayúsculas distintas también', lanza(() => v('0702345678001', '2026-10', 'Rimpe negocio popular')));
 ver('período inválido avisa', lanza(() => v('0702345678001', 'octubre')));
+
+// Períodos en curso (botón «Próximos vencimientos» de la ficha)
+const nov = new Date(2026, 10, 20), jun = new Date(2026, 5, 3), ene = new Date(2026, 0, 15), dic = new Date(2026, 11, 1);
+let p = periodosEnCurso('Régimen General', undefined, nov);
+ver('General en noviembre: IVA 2026-10, renta 2025', p.iva === '2026-10' && p.renta === '2025', p);
+p = periodosEnCurso('Régimen General', undefined, ene);
+ver('General en enero: IVA de diciembre del año anterior', p.iva === '2025-12', p);
+p = periodosEnCurso('RIMPE Emprendedor', undefined, nov);
+ver('Emprendedor en noviembre: S1 del año', p.iva === '2026-S1', p);
+p = periodosEnCurso('RIMPE Emprendedor', undefined, jun);
+ver('Emprendedor en junio: ya muestra S1', p.iva === '2026-S1', p);
+p = periodosEnCurso('RIMPE Emprendedor', undefined, dic);
+ver('Emprendedor en diciembre: ya muestra S2', p.iva === '2026-S2', p);
+p = periodosEnCurso('RIMPE Emprendedor', undefined, ene);
+ver('Emprendedor en enero: S2 del año anterior', p.iva === '2025-S2', p);
+p = periodosEnCurso('RIMPE Emprendedor', 'Mensual', nov);
+ver('Emprendedor que optó por mensual: mes anterior', p.iva === '2026-10', p);
+p = periodosEnCurso('RIMPE Negocio Popular', undefined, nov);
+ver('Negocio Popular: sin IVA', p.iva === null && p.renta === '2025', p);
 
 console.log(mal ? `\n${mal} fallaron` : '\ntodo verde');
 process.exit(mal ? 1 : 0);
