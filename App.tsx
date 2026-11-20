@@ -45,15 +45,7 @@ const ServicesPage = React.lazy(() => import('./screens/ServicesPage').then(m =>
 const ClientPortalScreen = React.lazy(() => import('./screens/ClientPortalScreen').then(m => ({ default: m.ClientPortalScreen })));
 const MusicPage = React.lazy(() => import('./screens/MusicPage').then(m => ({ default: m.MusicPage })));
 const LandingLujoPage = React.lazy(() => import('./screens/LandingLujoPage').then(m => ({ default: m.LandingLujoPage })));
-// `/clasica` is a fallback safety net, not the homepage, so it's lazy like every other screen â€”
-// previously it was imported eagerly at the top of this file, which meant its whole bundle
-// (gsap + ScrollTrigger, the CinematicIntro 3D hero, Lenis smooth-scroll) shipped in the *main*
-// entry chunk and ran on every route, including this new `/` homepage: gsap's ScrollTrigger
-// ticker was found running a background requestAnimationFrame loop on `/` even though nothing
-// on the Lujo page uses gsap at all. Fixing the import fixes that idle background work and
 import { entrarAlSriSinDeclarar, publicarEstadoMes } from './services/extensionBridge';
-// trims real weight off the homepage's initial bundle.
-const LandingPage = React.lazy(() => import('./screens/LandingPage').then(m => ({ default: m.LandingPage })));
 const AuditLogScreen = React.lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
 const FacturacionSriScreen = React.lazy(() => import('./screens/FacturacionSriScreen').then(m => ({ default: m.FacturacionSriScreen })));
 const FirmasScreen = React.lazy(() => import('./screens/FirmasScreen').then(m => ({ default: m.FirmasScreen })));
@@ -81,7 +73,7 @@ const ScreenLoader = () => (
 );
 
 
-type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music' | 'clasica';
+type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music';
 
 const BUILD_BADGE = (() => {
     try {
@@ -169,7 +161,6 @@ const [appState, setAppState] = useState<AppState>(() => {
     if (path === '/admin' || path === '/dashboard' || path === '/login') return 'login';
     if (path === '/services') return 'services';
     if (path === '/musica' || path === '/music') return 'music';
-    if (path === '/clasica') return 'clasica';
     if (path === '/portal') return 'login';
     return 'landing';
   });
@@ -215,7 +206,6 @@ const [appState, setAppState] = useState<AppState>(() => {
     else if (appState === 'services') targetPath = '/services';
     else if (appState === 'client_portal') targetPath = '/portal';
     else if (appState === 'music') targetPath = '/musica';
-    else if (appState === 'clasica') targetPath = '/clasica';
 
     if (path + window.location.search !== targetPath) {
       window.history.pushState({ appState }, '', targetPath);
@@ -240,8 +230,6 @@ const [appState, setAppState] = useState<AppState>(() => {
         setAppState('services');
       } else if (path === '/musica' || path === '/music') {
         setAppState('music');
-      } else if (path === '/clasica') {
-        setAppState('clasica');
       } else if (path === '/portal') {
         setAppState('login');
       } else {
@@ -842,22 +830,6 @@ const [appState, setAppState] = useState<AppState>(() => {
   if (appState === 'landing') return (
     <Suspense fallback={<ScreenLoader />}>
       <LandingLujoPage
-        onAdminAccess={() => setAppState('login')}
-        onNavigateToServices={() => setAppState('services')}
-        currentUser={publicUser}
-        onLogin={setPublicUser}
-        onLogout={() => setPublicUser(null)}
-        theme={theme}
-        toggleTheme={toggleTheme}
-      />
-    </Suspense>
-  );
-  // PÃ¡gina clÃ¡sica (pre-2026): se mantiene intacta como red de seguridad en /clasica,
-  // con las mismas herramientas de negocio (validador RUC/cÃ©dula, simulador RIMPE,
-  // calculadora de multas, calendario RUC, FAQ) que ya tenÃ­a en producciÃ³n.
-  if (appState === 'clasica') return (
-    <Suspense fallback={<ScreenLoader />}>
-      <LandingPage
         onAdminAccess={() => setAppState('login')}
         onNavigateToServices={() => setAppState('services')}
         currentUser={publicUser}

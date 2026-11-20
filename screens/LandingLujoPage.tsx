@@ -254,8 +254,46 @@ interface LandingLujoPageProps {
 }
 
 export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdminAccess, onNavigateToServices }) => {
-  const { registerAct, registerNav, progressRef, heroMediaRef, activeId } = useLujoScroll();
+  const { registerAct, registerNav, progressRef, heroMediaRef, activeId, reduced } = useLujoScroll();
   const raizRef = useRef<HTMLDivElement>(null);
+  const giroRef = useRef<HTMLDivElement>(null);
+
+  // «Calcula tu caso»: mientras la luz da vuelta alrededor del titular, la
+  // sección entra girada, como si la cámara la rodeara, y queda de frente
+  // (sin transform) cuando el titular llega a media pantalla. Sin estado de
+  // React por cuadro; con «reducir movimiento» no gira.
+  useEffect(() => {
+    const escena = giroRef.current;
+    const seccion = escena?.closest('section');
+    if (!escena || !seccion) return;
+    if (reduced) {
+      escena.style.transform = 'none';
+      escena.style.opacity = '1';
+      return;
+    }
+    let raf = 0;
+    const pintar = () => {
+      raf = 0;
+      const vh = window.innerHeight;
+      const top = seccion.getBoundingClientRect().top;
+      const g = Math.min(1, Math.max(0, (top - vh * 0.42) / (vh * 0.58)));
+      const e = g * g * (3 - 2 * g); // suave al llegar
+      escena.style.transform =
+        e > 0.001 ? `rotateY(${(-36 * e).toFixed(2)}deg) rotateX(${(16 * e).toFixed(2)}deg) rotateZ(${(-5 * e).toFixed(2)}deg) scale(${(1 - 0.12 * e).toFixed(3)})` : 'none';
+      escena.style.opacity = (1 - 0.6 * e).toFixed(3);
+    };
+    const alScroll = () => {
+      if (!raf) raf = requestAnimationFrame(pintar);
+    };
+    pintar();
+    window.addEventListener('scroll', alScroll, { passive: true, capture: true });
+    window.addEventListener('resize', alScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', alScroll, { capture: true });
+      window.removeEventListener('resize', alScroll);
+    };
+  }, [reduced]);
   const { serviceFees } = useAppStore();
 
   // ── Acceso administrativo oculto (equivalente a `handleProtectedAccess` de
@@ -839,9 +877,16 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           Mismos motores que screens/LandingPage.tsx (utils/sriCalculators.ts
           + utils/taxTools.ts), reempaquetados como tarjetas que abren un
           panel modal en vez de un formulario largo en la página. */}
-      <section id="herramientas" ref={registerNav('herramientas')} className="relative px-6" style={{ padding: 'clamp(80px,12vh,150px) 24px', background: '#020617' }}>
+      <section
+        id="herramientas"
+        data-giro
+        ref={registerNav('herramientas')}
+        className="relative px-6"
+        style={{ padding: 'clamp(80px,12vh,150px) 24px', background: '#020617', perspective: 1300, overflow: 'clip' }}
+      >
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 0%, rgba(4,177,123,0.10), transparent 70%)' }} />
-        <div className="relative max-w-[1160px] mx-auto">
+        {/* Giro de cámara: entra de costado y queda de frente al llegar (efecto en LandingLujoPage, más abajo) */}
+        <div ref={giroRef} className="lujo-giro-escena relative max-w-[1160px] mx-auto" style={{ transformOrigin: '50% 28%' }}>
           <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>
             HERRAMIENTAS
           </Reveal>
