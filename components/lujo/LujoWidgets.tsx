@@ -125,6 +125,10 @@ export const CountUp: React.FC<{ to: number; suffix?: string; duration?: number 
 // decoding at once, exactly the perf problem this whole mechanism exists to
 // prevent. Fixed by always observing, and only skipping the *initial*
 // force-to-poster for eager media so it still paints animated immediately.)
+/** En el celular cada video tiene una versión de 540p al lado (`nombre-m.mp4`): pesa ~4 veces menos. */
+const videoSegunPantalla = (video?: string) =>
+  video && typeof window !== 'undefined' && window.innerWidth < 768 ? video.replace(/\.mp4$/, '-m.mp4') : video;
+
 export const ActMedia: React.FC<{
   /** Video MP4 en bucle. Si está, se usa en vez del WebP animado (~1 MB contra ~15 MB). */
   video?: string;
@@ -143,6 +147,8 @@ export const ActMedia: React.FC<{
     else if (imgRef && 'current' in (imgRef as any)) (imgRef as React.MutableRefObject<HTMLElement | null>).current = node;
   };
 
+  const src = videoSegunPantalla(video);
+
   useEffect(() => {
     const el = localRef.current;
     if (!el) return;
@@ -152,7 +158,7 @@ export const ActMedia: React.FC<{
         if (el instanceof HTMLVideoElement) {
           // Sólo se reproduce mientras está a la vista (y nunca con «reducir movimiento»).
           if (entry.isIntersecting && !reducido) {
-            if (!el.getAttribute('src') && video) el.setAttribute('src', video);
+            if (!el.getAttribute('src') && src) el.setAttribute('src', src);
             el.play().catch(() => { /* autoplay bloqueado: queda el póster */ });
           } else {
             el.pause();
@@ -166,14 +172,14 @@ export const ActMedia: React.FC<{
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [video, webp, poster]);
+  }, [src, webp, poster]);
 
   if (video) {
     return (
       <video
         ref={setRefs}
         // El hero carga su video de inmediato; el resto, al acercarse a la vista.
-        {...(eager ? { src: video, autoPlay: true, preload: 'auto' as const } : { preload: 'none' as const })}
+        {...(eager ? { src, autoPlay: true, preload: 'auto' as const } : { preload: 'none' as const })}
         poster={poster}
         muted
         loop
