@@ -648,8 +648,10 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         style={{ minHeight: '100vh' }}
       >
         <ActMedia
-          webp={`${MEDIA}obsidian-crystal.webp`}
-          poster={`${MEDIA}poster-obsidian-crystal.png`}
+          // Render propio en Blender 5.3 (cristal con órbitas Azure/Emerald, bucle de 5 s):
+          // 0,5 MB contra los 14,7 MB del WebP dorado anterior.
+          video={`${MEDIA}hero-azure.mp4`}
+          poster={`${MEDIA}poster-hero-azure.jpg`}
           eager
           imgRef={heroMediaRef}
           className="absolute inset-0 w-full h-full object-cover"
@@ -1385,7 +1387,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               }}
             >
               <img
-                src={`${MEDIA}poster-obsidian-crystal.png`}
+                src={`${MEDIA}poster-hero-azure.jpg`}
                 alt=""
                 loading="lazy"
                 decoding="async"
@@ -1508,7 +1510,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
 
       {/* ── CIERRE ───────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden text-center px-6" style={{ padding: 'clamp(90px,14vh,170px) 24px' }}>
-        <img src={`${MEDIA}poster-obsidian-crystal.png`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0.3 }} />
+        <img src={`${MEDIA}poster-hero-azure.jpg`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0.3 }} />
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 50% 50%, rgba(43,106,255,0.14), transparent 70%), linear-gradient(to bottom, rgba(2,6,23,0.92), rgba(2,6,23,0.97))' }} />
         <div className="relative z-[2] max-w-[760px] mx-auto">
           <Reveal index={0} as="h2" className="font-display font-extrabold text-white" style={{ margin: 0, letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,5.4vw,4.2rem)' }}>
