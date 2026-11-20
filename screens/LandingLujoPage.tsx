@@ -13,6 +13,7 @@ import {
   HelpCircle,
   LayoutGrid,
   MapPin,
+  Scale,
   MessageCircle,
   Search,
   ShieldAlert,
@@ -59,6 +60,11 @@ import {
  */
 
 const WHATSAPP_NUMBER = '593978980722';
+/** Azure Vivid en un paso más claro para texto chico: #2B6AFF sobre Obsidian
+ * da 4,4:1 y no llega al mínimo legible (4,5:1); este tinte del mismo azul da ~6:1. */
+const AZURE_TEXTO = '#6E9BFF';
+const textoLegible = (c: string) => (c.toUpperCase() === '#2B6AFF' ? AZURE_TEXTO : c);
+
 const wa = (message: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 const MEDIA = '/media/';
 
@@ -247,7 +253,7 @@ const ToolModal: React.FC<{ title: string; tag: string; color: string; onClose: 
 
   return (
     <div
-      className="fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
+      className="fixed inset-0 z-[250] flex items-center justify-center p-3 sm:p-4 animate-in fade-in motion-reduce:animate-none"
       style={{ background: 'rgba(2,6,23,0.86)', backdropFilter: 'blur(20px)' }}
       onClick={onClose}
     >
@@ -267,7 +273,7 @@ const ToolModal: React.FC<{ title: string; tag: string; color: string; onClose: 
         >
           <X size={14} />
         </button>
-        <span className="font-mono text-[9px] sm:text-[10px] font-bold tracking-[0.28em]" style={{ color }}>{tag}</span>
+        <span className="font-mono text-[11px] font-bold tracking-[0.28em]" style={{ color: textoLegible(color) }}>{tag}</span>
         <h3 className="font-display font-extrabold text-white" style={{ margin: '10px 0 0', fontSize: 'clamp(1.2rem,3vw,1.7rem)', letterSpacing: '-0.02em' }}>{title}</h3>
         <div style={{ marginTop: 18 }}>{children}</div>
       </div>
@@ -524,7 +530,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <Logo className="w-8 h-8 sm:w-9 sm:h-9 flex-none" />
               <span className="flex flex-col leading-tight whitespace-nowrap">
                 <span className="font-display font-extrabold text-[12px] sm:text-[13px] tracking-tight text-white">SANTIAGO CÓRDOVA</span>
-                <span className="hidden min-[900px]:block font-mono text-[9px] font-bold tracking-[0.22em] text-[#04B17B] mt-0.5">SOLUCIONES TRIBUTARIAS PRO</span>
+                <span className="hidden min-[900px]:block font-mono text-[11px] font-bold tracking-[0.22em] text-[#04B17B] mt-0.5">SOLUCIONES TRIBUTARIAS PRO</span>
               </span>
             </a>
           </div>
@@ -554,7 +560,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-none inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#04B17B]/50 bg-[#04B17B]/15 hover:bg-[#04B17B] text-[#4edea3] hover:text-white font-mono text-[10.5px] sm:text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-300 shadow-sm group"
+              className="flex-none inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#04B17B]/50 bg-[#04B17B]/15 hover:bg-[#04B17B] text-[#4edea3] hover:text-white font-mono text-[11px] font-bold uppercase tracking-[0.12em] transition-[background-color,color,border-color,box-shadow] duration-300 shadow-sm group"
               title="Iniciar consulta directa por WhatsApp con Santiago Córdova"
             >
               <span className="w-2 h-2 rounded-full bg-[#4edea3] group-hover:bg-white animate-pulse transition-colors" />
@@ -568,7 +574,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       {/* ── BIOMETRIC OVERLAY (Admin Access) — equivalente al de screens/LandingPage.tsx ── */}
       {showBiometric && (
         <div
-          className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-center animate-in fade-in"
+          className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-center animate-in fade-in motion-reduce:animate-none"
           role="status"
           aria-live="polite"
         >
@@ -576,7 +582,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             <Fingerprint size={92} className="text-[#04B17B] animate-pulse" />
           </div>
           <div className="mt-8 text-center">
-            <div className="font-mono text-[10px] font-bold tracking-[0.5em] mb-2 animate-pulse" style={{ color: '#04B17B' }}>AUTENTICACIÓN BIOMÉTRICA</div>
+            <div className="font-mono text-[11px] font-bold tracking-[0.5em] mb-2 animate-pulse" style={{ color: '#04B17B' }}>AUTENTICACIÓN BIOMÉTRICA</div>
             <div className="font-display font-extrabold text-white text-2xl tracking-tight">CENTRO DE CONTROL TRIBUTARIO</div>
           </div>
         </div>
@@ -611,7 +617,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             href={item.href}
             ref={registerNav(item.href.slice(1))}
             data-active={activeId === item.href.slice(1) ? '1' : '0'}
-            className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 font-mono text-[8.5px] font-bold tracking-[0.12em]"
+            className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 font-mono text-[11px] font-bold tracking-[0.04em]"
             style={{ minHeight: 46 }}
           >
             <item.icon size={17} />
@@ -632,7 +638,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           href="#servicios"
           ref={registerNav('servicios')}
           data-active={activeId === 'servicios' ? '1' : '0'}
-          className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 font-mono text-[8.5px] font-bold tracking-[0.12em]"
+          className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 font-mono text-[11px] font-bold tracking-[0.04em]"
           style={{ minHeight: 46 }}
         >
           <LayoutGrid size={17} />
@@ -641,7 +647,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         <button
           type="button"
           onClick={handleProtectedAccess}
-          className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 hover:text-[#04B17B] font-mono text-[8.5px] font-bold tracking-[0.12em] transition-colors cursor-pointer border-0 bg-transparent"
+          className="lujo-docklink flex-1 flex flex-col items-center justify-center gap-0.5 rounded-full text-slate-400 hover:text-[#04B17B] font-mono text-[11px] font-bold tracking-[0.04em] transition-colors cursor-pointer border-0 bg-transparent"
           style={{ minHeight: 46 }}
           title="Acceso al Portal"
         >
@@ -697,11 +703,11 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           <Reveal index={0} className="inline-flex flex-wrap items-center justify-center gap-2" as="div">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '7px 15px', borderRadius: 999, border: '1px solid rgba(43,106,255,0.42)', background: 'rgba(43,106,255,0.10)' }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: '#2B6AFF', animation: 'lujoPulse 2.4s infinite' }} />
-              <span className="font-mono text-[10px] font-bold tracking-[0.28em]" style={{ color: '#b9cdff' }}>PASAJE · EL ORO · ECUADOR</span>
+              <span className="font-mono text-[11px] font-bold tracking-[0.28em]" style={{ color: '#b9cdff' }}>PASAJE · EL ORO · ECUADOR</span>
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 15px', borderRadius: 999, border: '1px solid rgba(4,177,123,0.40)', background: 'rgba(4,177,123,0.10)' }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: '#4edea3' }} />
-              <span className="font-mono text-[10px] font-bold tracking-[0.22em]" style={{ color: '#4edea3' }}>REGULARIZACIÓN SRI<span className="hidden sm:inline"> · CERO MULTAS ABUSIVAS</span></span>
+              <span className="font-mono text-[11px] font-bold tracking-[0.22em]" style={{ color: '#4edea3' }}>REGULARIZACIÓN SRI<span className="hidden sm:inline"> · CERO MULTAS ABUSIVAS</span></span>
             </span>
           </Reveal>
           <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,7vw,6.4rem)' }}>
@@ -728,7 +734,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario gratuito.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-8 rounded-2xl font-mono text-xs sm:text-[12.5px] font-black uppercase tracking-[0.14em] text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-8 rounded-2xl font-mono text-xs sm:text-[12.5px] font-black uppercase tracking-[0.14em] text-white transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
               style={{
                 background: 'linear-gradient(135deg, #00C49F 0%, #04B17B 48%, #027A8A 100%)',
                 boxShadow: '0 18px 40px -10px rgba(4,177,123,0.65), 0 0 20px -4px rgba(4,177,123,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
@@ -740,14 +746,14 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </a>
             <a
               href="#servicios"
-              className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-7 rounded-2xl text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-[0.14em] transition-all duration-300 hover:border-[#04B17B]/60 hover:bg-[#04B17B]/10"
+              className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto h-13 sm:h-14 px-6 sm:px-7 rounded-2xl text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-[0.14em] transition-[background-color,color,border-color,box-shadow] duration-300 hover:border-[#04B17B]/60 hover:bg-[#04B17B]/10"
               style={{ border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(5,20,36,0.7)', backdropFilter: 'blur(12px)' }}
             >
               <span>Ver Servicios & Tarifas</span>
               <ArrowRight size={14} className="text-[#04B17B] shrink-0" />
             </a>
           </Reveal>
-          <Reveal index={4} className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-slate-400 font-mono text-[10.5px] sm:text-[11.5px]" style={{ marginTop: 26 }}>
+          <Reveal index={4} className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-slate-400 font-mono text-[11px] sm:text-[11.5px]" style={{ marginTop: 26 }}>
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle size={13} className="text-[#04B17B]" />
               <span>Auditoría inicial sin costo</span>
@@ -763,7 +769,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </Reveal>
         </div>
         <div className="lujo-scrollcue hidden min-[1040px]:flex absolute bottom-[26px] left-1/2 -translate-x-1/2 z-[2] flex-col items-center gap-2.5">
-          <span className="font-mono text-[9px] tracking-[0.34em] text-slate-500">SCROLL</span>
+          <span className="font-mono text-[11px] tracking-[0.34em] text-slate-400">SCROLL</span>
           <span style={{ width: 1, height: 46, background: 'linear-gradient(to bottom,#04B17B,transparent)', animation: 'lujoDrift 2.2s ease-in-out infinite alternate' }} />
         </div>
       </section>
@@ -797,7 +803,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(-90px, -6vw, -30px)), calc((0.5 - var(--p,0)) * -46px), 0)' }}
           >
             <div style={{ maxWidth: 620 }}>
-              <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>ACTO I — CIFRADO DE DATOS</span>
+              <span className="font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>ACTO I — CIFRADO DE DATOS</span>
               <h2 className="font-display font-extrabold text-white" style={{ margin: '20px 0 0', letterSpacing: '-0.03em', lineHeight: 1.03, fontSize: 'clamp(2.1rem,5.2vw,4.4rem)' }}>
                 Blindaje total de tu información fiscal
               </h2>
@@ -810,7 +816,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   { k: 'ACCESOS', v: 'Bóveda de claves SRI' },
                 ].map((item) => (
                   <div key={item.k} className="rounded-2xl" style={{ padding: '16px 18px', border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(14px)' }}>
-                    <div className="font-mono text-[10px] tracking-[0.18em]" style={{ color: '#04B17B' }}>{item.k}</div>
+                    <div className="font-mono text-[11px] tracking-[0.18em]" style={{ color: '#04B17B' }}>{item.k}</div>
                     <div className="font-display font-bold text-white text-[15px]" style={{ marginTop: 7 }}>{item.v}</div>
                   </div>
                 ))}
@@ -825,7 +831,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 55% 45% at 50% 40%, rgba(43,106,255,0.12), transparent 70%)' }} />
         <div className="relative max-w-[1160px] mx-auto grid items-center" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,340px), 1fr))', gap: 'clamp(32px,5vw,70px)' }}>
           <div>
-            <Reveal index={0} as="span" className="inline-block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>
+            <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>
               EL SISTEMA — NUEVA LUZ 3.0
             </Reveal>
             <Reveal index={1} as="h2" className="font-display font-extrabold text-white" style={{ margin: '20px 0 0', letterSpacing: '-0.03em', lineHeight: 1.05, fontSize: 'clamp(2rem,4.4vw,3.6rem)' }}>
@@ -866,7 +872,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       <section id="herramientas" ref={registerNav('herramientas')} className="relative px-6" style={{ padding: 'clamp(80px,12vh,150px) 24px', background: '#020617' }}>
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 0%, rgba(4,177,123,0.10), transparent 70%)' }} />
         <div className="relative max-w-[1160px] mx-auto">
-          <Reveal index={0} as="span" className="inline-block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>
+          <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>
             HERRAMIENTAS
           </Reveal>
           <Reveal index={1} as="h2" className="font-display font-extrabold text-white" style={{ margin: '18px 0 0', maxWidth: 760, letterSpacing: '-0.03em', lineHeight: 1.05, fontSize: 'clamp(2rem,4.4vw,3.4rem)' }}>
@@ -897,10 +903,10 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   >
                     <tool.icon size={21} strokeWidth={1.7} />
                   </span>
-                  <span className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: tool.color }}>{tool.tag}</span>
+                  <span className="font-mono text-[11px] tracking-[0.2em]" style={{ color: textoLegible(tool.color) }}>{tool.tag}</span>
                   <h3 className="font-display font-bold text-white text-[17px]" style={{ margin: '14px 0 0', lineHeight: 1.25 }}>{tool.title}</h3>
                   <p className="font-light flex-1 text-[13px]" style={{ margin: '10px 0 0', lineHeight: 1.6, color: '#9fadc0' }}>{tool.desc}</p>
-                  <span className="inline-flex items-center gap-2 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em]" style={{ marginTop: 16, color: tool.color }}>
+                  <span className="inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.14em]" style={{ marginTop: 16, color: textoLegible(tool.color) }}>
                     Abrir herramienta <ArrowRight size={13} />
                   </span>
                 </button>
@@ -929,7 +935,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             {rucInput.trim() !== '' && rucInfo?.valid && (
               <div className="rounded-2xl" style={{ padding: '16px 18px', border: '1px solid rgba(4,177,123,0.3)', background: 'rgba(4,177,123,0.08)' }}>
                 <div className="font-display font-bold text-[14px]" style={{ color: '#4edea3' }}>✓ Identificación válida · {rucInfo.typeLabel}</div>
-                <div className="font-mono text-[11px] tracking-[0.12em]" style={{ marginTop: 8, color: '#2B6AFF' }}>📍 PROVINCIA: {rucInfo.province?.toUpperCase()}</div>
+                <div className="font-mono text-[11px] tracking-[0.12em]" style={{ marginTop: 8, color: AZURE_TEXTO }}><MapPin size={12} className="inline -mt-0.5 mr-1" aria-hidden="true" />PROVINCIA: {rucInfo.province?.toUpperCase()}</div>
                 <p className="font-light text-[12.5px]" style={{ marginTop: 8, lineHeight: 1.6, color: '#c3d0dd' }}>{rucInfo.details}</p>
               </div>
             )}
@@ -969,7 +975,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 key={opt.id}
                 type="button"
                 onClick={() => setSimActividad(opt.id)}
-                className="rounded-xl font-mono text-[9.5px] font-bold uppercase tracking-wide leading-tight"
+                className="rounded-xl font-mono text-[11px] font-bold uppercase tracking-wide leading-tight"
                 style={
                   simActividad === opt.id
                     ? { padding: '10px 6px', background: '#2B6AFF', color: '#fff' }
@@ -983,7 +989,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           {simActividad !== 'discapacidad_3ra_edad' && (
             <div style={{ marginTop: 20 }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>INGRESOS ANUALES ESTIMADOS</span>
+                <span className="font-mono text-[11px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>INGRESOS ANUALES ESTIMADOS</span>
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10 focus-within:border-[#04B17B]/60 transition-colors">
                   <span className="font-mono text-xs font-bold text-slate-400">$</span>
                   <input
@@ -996,7 +1002,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                     aria-label="Ingresos anuales estimados en dólares"
                     className="w-24 bg-transparent font-mono text-[14px] font-bold text-[#04B17B] outline-none text-right"
                   />
-                  <span className="font-mono text-[10px] text-slate-500">USD</span>
+                  <span className="font-mono text-[11px] text-slate-500">USD</span>
                 </div>
               </div>
               <input
@@ -1010,7 +1016,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 className="w-full mt-2 cursor-pointer"
                 style={{ accentColor: '#04B17B' }}
               />
-              <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+              <div className="flex justify-between text-[11px] font-mono text-slate-500 mt-1">
                 <span>$0</span>
                 <span>$20k (NP)</span>
                 <span>$100k</span>
@@ -1019,14 +1025,14 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </div>
           )}
           <div className="rounded-2xl" style={{ marginTop: 22, padding: '18px 20px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
-            <div className="font-mono text-[10px] tracking-[0.14em]" style={{ color: '#2B6AFF' }}>{taxDetails.regimen.toUpperCase()}</div>
+            <div className="font-mono text-[11px] tracking-[0.14em]" style={{ color: AZURE_TEXTO }}>{taxDetails.regimen.toUpperCase()}</div>
             <div className="flex items-center justify-between" style={{ marginTop: 10 }}>
               <span className="font-light text-[13px]" style={{ color: '#9fadc0' }}>Impuesto estimado anual</span>
               <span className="font-mono font-bold text-[16px]" style={{ color: '#04B17B' }}>${taxDetails.impuestoEstimadoAnual.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
               <span className="font-light text-[13px]" style={{ color: '#9fadc0' }}>Ahorro estimado con nosotros</span>
-              <span className="font-mono font-bold text-[16px]" style={{ color: '#2B6AFF' }}>${taxDetails.ahorroEstimado.toLocaleString()}</span>
+              <span className="font-mono font-bold text-[16px]" style={{ color: AZURE_TEXTO }}>${taxDetails.ahorroEstimado.toLocaleString()}</span>
             </div>
             <p className="font-light text-[12px]" style={{ marginTop: 12, lineHeight: 1.6, color: '#8b99ac' }}>{taxDetails.formularios}</p>
           </div>
@@ -1051,7 +1057,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         <ToolModal title="Calcular multas y atrasos SRI" tag="RIESGO ESTIMADO · ART. 100 LRTI" color="#2B6AFF" onClose={() => setActiveTool(null)}>
           <div>
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>MESES SIN DECLARAR</span>
+              <span className="font-mono text-[11px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>MESES SIN DECLARAR</span>
               <span className="font-mono text-[14px] font-bold text-white">
                 {penaltyMeses} {penaltyMeses === 1 ? 'mes' : 'meses'}
                 {penaltyMeses >= 60 ? ' (5+ años · Posible Prescripción)' : ''}
@@ -1068,7 +1074,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               className="w-full mt-3 cursor-pointer"
               style={{ accentColor: '#2B6AFF' }}
             />
-            <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+            <div className="flex justify-between text-[11px] font-mono text-slate-500 mt-1">
               <span>1 mes</span>
               <span>12 meses (1 año)</span>
               <span>36 meses (3 años)</span>
@@ -1077,8 +1083,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </div>
           {penaltyMeses >= 60 && (
             <div className="rounded-xl p-3.5 border border-[#2B6AFF]/40 bg-[#2B6AFF]/10 text-left" style={{ marginTop: 14 }}>
-              <div className="font-mono text-[9.5px] font-bold text-[#b9cdff] tracking-wider flex items-center gap-1.5">
-                <span>⚖️ ALERTA LEGAL · ART. 55 CÓDIGO TRIBUTARIO</span>
+              <div className="font-mono text-[11px] font-bold text-[#b9cdff] tracking-wider flex items-center gap-1.5">
+                <Scale size={12} aria-hidden="true" /><span>ALERTA LEGAL · ART. 55 CÓDIGO TRIBUTARIO</span>
               </div>
               <p className="text-[11.5px] text-slate-300 mt-1 leading-relaxed">
                 Tus obligaciones tributarias con más de 5 años pueden calificar para <strong>extinción por prescripción</strong>. No pagues sin antes auditar tu expediente para evitar desembolsos por deudas ya caducadas.
@@ -1089,7 +1095,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             <button
               type="button"
               onClick={() => setPenaltyType('sin_ventas')}
-              className="rounded-xl font-mono text-[10px] font-bold uppercase tracking-wide"
+              className="rounded-xl font-mono text-[11px] font-bold uppercase tracking-wide"
               style={
                 penaltyType === 'sin_ventas'
                   ? { padding: '10px 6px', background: '#2B6AFF', color: '#050e18', fontWeight: 800 }
@@ -1101,7 +1107,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             <button
               type="button"
               onClick={() => setPenaltyType('con_ventas')}
-              className="rounded-xl font-mono text-[10px] font-bold uppercase tracking-wide"
+              className="rounded-xl font-mono text-[11px] font-bold uppercase tracking-wide"
               style={
                 penaltyType === 'con_ventas'
                   ? { padding: '10px 6px', background: '#2B6AFF', color: '#050e18', fontWeight: 800 }
@@ -1114,7 +1120,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           {penaltyType === 'con_ventas' && (
             <div style={{ marginTop: 18 }}>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>VENTAS MENSUALES ESTIMADAS</span>
+                <span className="font-mono text-[11px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>VENTAS MENSUALES ESTIMADAS</span>
                 <span className="font-mono text-[15px] font-bold text-white">${penaltyVentasEst.toLocaleString()}</span>
               </div>
               <input
@@ -1133,7 +1139,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           <div className="rounded-2xl" style={{ marginTop: 22, padding: '18px 20px', border: '1px solid rgba(43,106,255,0.3)', background: 'rgba(43,106,255,0.08)' }}>
             <div className="flex items-center justify-between">
               <span className="font-light text-[13px]" style={{ color: '#b9cdff' }}>Riesgo total estimado</span>
-              <span className="font-mono font-extrabold text-[20px]" style={{ color: '#2B6AFF' }}>${penaltyResult.totalRiesgo.toLocaleString()}</span>
+              <span className="font-mono font-extrabold text-[20px]" style={{ color: AZURE_TEXTO }}>${penaltyResult.totalRiesgo.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
               <span className="font-light text-[12px]" style={{ color: '#9fadc0' }}>Multa base + interés estimado</span>
@@ -1181,7 +1187,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             ))}
           </div>
           <div className="rounded-2xl" style={{ marginTop: 20, padding: '18px 20px', border: '1px solid rgba(4,177,123,0.3)', background: 'rgba(4,177,123,0.08)' }}>
-            <div className="font-mono text-[10px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>9NO DÍGITO {selectedRucDigit}</div>
+            <div className="font-mono text-[11px] tracking-[0.16em]" style={{ color: '#7d8ca1' }}>9NO DÍGITO {selectedRucDigit}</div>
             <div className="font-display font-extrabold text-white" style={{ marginTop: 6, fontSize: 'clamp(1.2rem,3vw,1.5rem)' }}>{deadlineInfo.label}</div>
             {deadlineInfo.isImminent ? (
               <div className="font-mono text-[12px] font-bold" style={{ marginTop: 8, color: '#fb7185' }}>⚠ Faltan {deadlineInfo.daysLeft} días. ¡Es inminente!</div>
@@ -1227,7 +1233,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(30px, 6vw, 90px)), calc((0.5 - var(--p,0)) * -46px), 0)' }}
           >
             <div style={{ maxWidth: 620, textAlign: 'left' }}>
-              <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>ACTO II — RESULTADOS MEDIBLES</span>
+              <span className="font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>ACTO II — RESULTADOS MEDIBLES</span>
               <h2 className="font-display font-extrabold text-white" style={{ margin: '20px 0 0', letterSpacing: '-0.03em', lineHeight: 1.03, fontSize: 'clamp(2.1rem,5.2vw,4.4rem)' }}>
                 Pagar lo correcto, ni un centavo de más
               </h2>
@@ -1237,17 +1243,17 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <div className="flex flex-wrap gap-[26px]" style={{ marginTop: 34 }}>
                 <div>
                   <div className="font-mono font-bold text-white" style={{ fontSize: 'clamp(1.8rem,3.4vw,2.6rem)' }}><CountUp to={10} suffix="+" /></div>
-                  <div className="font-mono text-[10px] tracking-[0.2em]" style={{ marginTop: 4, color: '#7d8ca1' }}>AÑOS DE EXPERIENCIA</div>
+                  <div className="font-mono text-[11px] tracking-[0.2em]" style={{ marginTop: 4, color: '#7d8ca1' }}>AÑOS DE EXPERIENCIA</div>
                 </div>
                 <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
                 <div>
                   <div className="font-mono font-bold text-white" style={{ fontSize: 'clamp(1.8rem,3.4vw,2.6rem)' }}><CountUp to={500} suffix="+" /></div>
-                  <div className="font-mono text-[10px] tracking-[0.2em]" style={{ marginTop: 4, color: '#7d8ca1' }}>EMPRESAS Y PROFESIONALES</div>
+                  <div className="font-mono text-[11px] tracking-[0.2em]" style={{ marginTop: 4, color: '#7d8ca1' }}>EMPRESAS Y PROFESIONALES</div>
                 </div>
                 <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
                 <div>
                   <div className="font-mono font-bold text-white" style={{ fontSize: 'clamp(1.8rem,3.4vw,2.6rem)' }}>24h</div>
-                  <div className="font-mono text-[10px] tracking-[0.2em]" style={{ marginTop: 4, color: '#7d8ca1' }}>FIRMA ELECTRÓNICA .P12</div>
+                  <div className="font-mono text-[11px] tracking-[0.2em]" style={{ marginTop: 4, color: '#7d8ca1' }}>FIRMA ELECTRÓNICA .P12</div>
                 </div>
               </div>
             </div>
@@ -1273,7 +1279,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             className="lujo-cobertura-contenido relative z-[2] w-full max-w-[1160px] px-6 text-center"
             style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translateY(calc((0.5 - var(--p,0)) * -46px)) scale(calc(0.94 + var(--p,0) * 0.11))' }}
           >
-            <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>ACTO III — COBERTURA NACIONAL</span>
+            <span className="font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>ACTO III — COBERTURA NACIONAL</span>
             <h2
               className="lujo-cobertura-titulo font-display font-extrabold text-white mx-auto flex flex-wrap justify-center"
               style={{ margin: '20px auto 0', maxWidth: 900, letterSpacing: '-0.03em', lineHeight: 1.04, fontSize: 'clamp(2.1rem,5vw,4.2rem)', gap: '0 0.35em' }}
@@ -1284,7 +1290,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             <div className="lujo-cobertura-grid grid text-left mx-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,220px), 1fr))', gap: 12, maxWidth: 940, marginTop: 38 }}>
               {REGIONS.map((r) => (
                 <div key={r.name} className="rounded-[18px]" style={{ padding: 18, border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(5,20,36,0.55)', backdropFilter: 'blur(16px)' }}>
-                  <div className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: r.tag.startsWith('EL ORO') ? '#04B17B' : '#2B6AFF' }}>{r.tag}</div>
+                  <div className="font-mono text-[11px] tracking-[0.2em]" style={{ color: r.tag.startsWith('EL ORO') ? '#04B17B' : AZURE_TEXTO }}>{r.tag}</div>
                   <div className="font-display font-bold text-white text-[17px]" style={{ marginTop: 8 }}>{r.name}</div>
                   <div className="lujo-cobertura-desc font-light text-[13px]" style={{ marginTop: 6, lineHeight: 1.55, color: '#9fadc0' }}>{r.desc}</div>
                 </div>
@@ -1319,7 +1325,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(-70px, -5vw, -24px)), calc((0.5 - var(--p,0)) * -50px), 0)' }}
           >
             <div style={{ maxWidth: 640 }}>
-              <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>ACTO IV — RAÍCES PRODUCTIVAS</span>
+              <span className="font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>ACTO IV — RAÍCES PRODUCTIVAS</span>
               <h2 className="font-display font-extrabold text-white" style={{ margin: '20px 0 0', letterSpacing: '-0.03em', lineHeight: 1.03, fontSize: 'clamp(2.1rem,5.2vw,4.4rem)' }}>
                 El Oro es agro, y el agro tiene su propia contabilidad
               </h2>
@@ -1330,7 +1336,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 {AGRO_TAGS.map((tag, i) => (
                   <span
                     key={tag}
-                    className="font-mono text-[10.5px] tracking-[0.14em] rounded-full"
+                    className="font-mono text-[11px] tracking-[0.14em] rounded-full"
                     style={
                       i === 0
                         ? { padding: '9px 15px', border: '1px solid rgba(43,106,255,0.35)', background: 'rgba(43,106,255,0.10)', color: '#b9cdff' }
@@ -1354,12 +1360,12 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         >
           <div className="relative z-[3] flex justify-between items-end gap-5 pointer-events-none" style={{ padding: '0 clamp(20px,5vw,72px) clamp(16px,3vh,32px)' }}>
             <div>
-              <span className="block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>RECORRIDO LATERAL</span>
+              <span className="block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>RECORRIDO LATERAL</span>
               <h2 className="font-display font-extrabold text-white" style={{ margin: '14px 0 0', letterSpacing: '-0.03em', lineHeight: 1.02, fontSize: 'clamp(1.7rem,3.6vw,3rem)' }}>
                 Cuatro frentes, un solo criterio
               </h2>
             </div>
-            <span className="font-mono text-[10px] tracking-[0.26em] text-slate-500 whitespace-nowrap">SIGUE BAJANDO →</span>
+            <span className="font-mono text-[11px] tracking-[0.26em] text-slate-400 whitespace-nowrap">SIGUE BAJANDO →</span>
           </div>
           <div className="relative flex items-center overflow-hidden" style={{ minHeight: 0 }}>
             {/* Explicit height:100% here (the prototype's markup omits it and relies on the
@@ -1376,7 +1382,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   <img src={`${MEDIA}${panel.poster}`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: panel.posterOpacity }} />
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.25) 60%)' }} />
                   <div className="absolute left-0 right-0 bottom-0" style={{ padding: 'clamp(24px,3.4vw,44px)' }}>
-                    <span className="font-mono text-[10px] tracking-[0.24em]" style={{ color: panel.color }}>{panel.tag}</span>
+                    <span className="font-mono text-[11px] tracking-[0.24em]" style={{ color: textoLegible(panel.color) }}>{panel.tag}</span>
                     <h3 className="font-display font-extrabold text-white" style={{ margin: '12px 0 0', letterSpacing: '-0.025em', fontSize: 'clamp(1.5rem,3.2vw,2.6rem)' }}>{panel.title}</h3>
                     <p className="font-light" style={{ margin: '12px 0 0', maxWidth: 520, fontSize: 'clamp(0.92rem,1.2vw,1.05rem)', lineHeight: 1.65, color: '#cdd7e3' }}>{panel.desc}</p>
                   </div>
@@ -1400,7 +1406,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             style={{ boxSizing: 'border-box', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,300px), 1fr))', gap: 'clamp(28px,5vw,64px)' }}
           >
             <div>
-              <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#8a6b22' }}>INTERLUDIO — CRITERIO HUMANO</span>
+              <span className="font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: '#8a6b22' }}>INTERLUDIO — CRITERIO HUMANO</span>
               <h2 className="font-display font-extrabold" style={{ margin: '20px 0 0', letterSpacing: '-0.032em', lineHeight: 1.04, fontSize: 'clamp(2rem,4.6vw,3.6rem)', color: '#0F172A' }}>
                 La máquina calcula. La decisión sigue siendo profesional.
               </h2>
@@ -1448,7 +1454,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       <section id="servicios" ref={registerNav('servicios')} className="relative px-6" style={{ padding: 'clamp(80px,12vh,150px) 24px', background: 'linear-gradient(to bottom,#020617,#050a1b)' }}>
         <div className="absolute top-0 left-0 right-0" style={{ height: 'clamp(60px,10vh,140px)', background: 'linear-gradient(to bottom,#EEF3FB,rgba(2,6,23,0))' }} />
         <div className="relative max-w-[1160px] mx-auto">
-          <Reveal index={0} as="span" className="inline-block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>
+          <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>
             SERVICIOS
           </Reveal>
           <Reveal index={1} as="h2" className="font-display font-extrabold text-white" style={{ margin: '18px 0 0', maxWidth: 760, letterSpacing: '-0.03em', lineHeight: 1.05, fontSize: 'clamp(2rem,4.4vw,3.4rem)' }}>
@@ -1464,7 +1470,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                   <service.icon size={21} strokeWidth={1.7} />
                 </span>
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: service.color }}>{service.tag}</span>
+                  <span className="font-mono text-[11px] tracking-[0.2em]" style={{ color: textoLegible(service.color) }}>{service.tag}</span>
                   <span className="font-display font-extrabold text-white text-[22px]">
                     {service.price != null ? `$${service.price}` : service.period}
                     {service.price != null && <span className="font-medium text-[11px]" style={{ color: '#8b99ac' }}> {service.period}</span>}
@@ -1475,7 +1481,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 <ul className="grid gap-2" style={{ margin: '18px 0 0', padding: 0, listStyle: 'none' }}>
                   {service.bullets.map((b) => (
                     <li key={b} className="flex gap-2 text-[12.5px]" style={{ color: '#b8c3d2' }}>
-                      <span style={{ color: service.color }}>·</span>{b}
+                      <span style={{ color: textoLegible(service.color) }}>·</span>{b}
                     </li>
                   ))}
                 </ul>
@@ -1489,7 +1495,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <span className="grid place-items-center rounded-2xl" style={{ width: 44, height: 44, marginBottom: 20, border: '1px solid rgba(78,222,163,0.35)', background: 'rgba(78,222,163,0.12)', color: '#4edea3' }}>
                 <Sparkles size={21} strokeWidth={1.7} />
               </span>
-              <div className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: '#4edea3' }}>¿NO SABES DÓNDE ESTÁS PARADO?</div>
+              <div className="font-mono text-[11px] tracking-[0.2em]" style={{ color: '#4edea3' }}>¿NO SABES DÓNDE ESTÁS PARADO?</div>
               <h3 className="font-display font-bold text-white text-[19px]" style={{ margin: '16px 0 0', lineHeight: 1.25 }}>Diagnóstico tributario sin costo</h3>
               <p className="font-light flex-1 text-[13.5px]" style={{ margin: '12px 0 0', lineHeight: 1.65, color: '#c3d0dd' }}>
                 Revisamos tu historial en el SRI, tu régimen y tus pendientes. Te decimos exactamente qué falta y cuánto cuesta ponerlo al día.
@@ -1512,7 +1518,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       {/* ── TESTIMONIOS ──────────────────────────────────────────────────── */}
       <section className="relative px-6" style={{ padding: 'clamp(70px,10vh,130px) 24px', background: '#050a1b' }}>
         <div className="max-w-[1160px] mx-auto">
-          <Reveal index={0} as="span" className="inline-block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#2B6AFF' }}>
+          <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>
             CLIENTES
           </Reveal>
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,280px), 1fr))', marginTop: 34 }}>
@@ -1521,7 +1527,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 <p className="font-light text-[14.5px]" style={{ margin: 0, lineHeight: 1.7, color: '#cdd7e3' }}>&ldquo;{t.quote}&rdquo;</p>
                 <footer style={{ marginTop: 18 }}>
                   <div className="font-display font-bold text-white text-[14px]">{t.name}</div>
-                  <div className="font-mono text-[10px] tracking-[0.14em]" style={{ marginTop: 3, color: '#04B17B' }}>{t.city} · {t.role.toUpperCase()}</div>
+                  <div className="font-mono text-[11px] tracking-[0.14em]" style={{ marginTop: 3, color: '#04B17B' }}>{t.city} · {t.role.toUpperCase()}</div>
                 </footer>
               </Reveal>
             ))}
@@ -1532,7 +1538,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <section id="faq" ref={registerNav('faq')} className="relative px-6" style={{ padding: 'clamp(70px,10vh,130px) 24px', background: 'linear-gradient(to bottom,#050a1b,#020617)' }}>
         <div className="max-w-[880px] mx-auto">
-          <Reveal index={0} as="span" className="inline-block font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>
+          <Reveal index={0} as="span" className="inline-block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>
             PREGUNTAS FRECUENTES
           </Reveal>
           <Reveal index={1} as="h2" className="font-display font-extrabold text-white" style={{ margin: '18px 0 36px', letterSpacing: '-0.03em', lineHeight: 1.06, fontSize: 'clamp(1.9rem,4vw,3rem)' }}>
@@ -1542,7 +1548,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             {FAQS.map((faq, i) => (
               <Reveal key={faq.q} index={i} as="details" className="rounded-[18px]" style={{ border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.02)', padding: '20px 22px' }}>
                 <summary className="flex gap-3.5 items-start font-display font-bold text-white text-[16px]" style={{ cursor: 'pointer', listStyle: 'none', lineHeight: 1.4 }}>
-                  <span className="flex-none font-mono text-[10px] tracking-[0.14em]" style={{ color: faq.color, marginTop: 5 }}>{faq.tag}</span>
+                  <span className="flex-none font-mono text-[11px] tracking-[0.14em]" style={{ color: textoLegible(faq.color), marginTop: 5 }}>{faq.tag}</span>
                   {faq.q}
                 </summary>
                 <p className="font-light text-[14px]" style={{ margin: '14px 0 0', lineHeight: 1.75, color: '#a9b6c9' }}>{faq.a}</p>
@@ -1568,7 +1574,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               href={wa('Hola Santiago Córdova, quiero agendar un diagnóstico tributario.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto rounded-2xl font-mono text-xs sm:text-[13px] font-black uppercase tracking-[0.14em] text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+              className="inline-flex items-center justify-center gap-3 w-full sm:w-auto rounded-2xl font-mono text-xs sm:text-[13px] font-black uppercase tracking-[0.14em] text-white transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
               style={{
                 marginTop: 36,
                 minHeight: 56,
@@ -1587,7 +1593,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </Reveal>
 
           <Reveal index={0} style={{ marginTop: 52, paddingTop: 34, borderTop: '1px solid rgba(255,255,255,0.09)' }}>
-            <div className="font-mono text-[10px] tracking-[0.26em] text-slate-500">O ENTRA DIRECTO AL TEMA</div>
+            <div className="font-mono text-[11px] tracking-[0.26em] text-slate-400">O ENTRA DIRECTO AL TEMA</div>
             <div className="flex flex-wrap gap-2.5 justify-center" style={{ marginTop: 20 }}>
               {[
                 { label: 'Declaraciones atrasadas SRI', color: '#2B6AFF', msg: 'Hola Santiago Córdova, tengo declaraciones pendientes en el SRI y quiero regularizar mi RUC con recargos mínimos.', gold: true, icon: ShieldAlert },
@@ -1631,7 +1637,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </p>
           </div>
           <div>
-            <div className="font-mono text-[9.5px] tracking-[0.22em]" style={{ color: '#4a5a70' }}>NAVEGACIÓN</div>
+            <div className="font-mono text-[11px] tracking-[0.22em]" style={{ color: '#7d8ca1' }}>NAVEGACIÓN</div>
             <div className="grid gap-2.5" style={{ marginTop: 16 }}>
               {NAV_LINKS.filter((l) => l.href !== '#resultados').map((link) => (
                 <a key={link.href} href={link.href} className="text-[13px]" style={{ color: '#9fadc0' }}>{link.label === 'Sistema' ? 'El sistema' : link.label === 'FAQ' ? 'Preguntas frecuentes' : link.label}</a>
@@ -1639,7 +1645,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </div>
           </div>
           <div>
-            <div className="font-mono text-[9.5px] tracking-[0.22em]" style={{ color: '#4a5a70' }}>CONTACTO</div>
+            <div className="font-mono text-[11px] tracking-[0.22em]" style={{ color: '#7d8ca1' }}>CONTACTO</div>
             <div className="grid gap-3" style={{ marginTop: 16 }}>
               <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 text-[13px]" style={{ color: '#04B17B' }}>
                 <MessageCircle size={16} />
@@ -1652,7 +1658,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </div>
           </div>
         </div>
-        <div className="max-w-[1160px] mx-auto font-mono text-[9.5px] tracking-[0.18em]" style={{ margin: '34px auto 0', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)', color: '#46566c' }}>
+        <div className="max-w-[1160px] mx-auto font-mono text-[11px] tracking-[0.18em]" style={{ margin: '34px auto 0', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.06)', color: '#7d8ca1' }}>
           SOLUCIONES TRIBUTARIAS PRO · SISTEMA NUEVA LUZ 3.0
         </div>
       </footer>
