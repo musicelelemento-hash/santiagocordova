@@ -741,7 +741,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       <section id="blindaje" ref={registerAct('blindaje')} className="relative" style={{ height: '300vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            webp={`${MEDIA}shield-circuit.webp`}
+            video={`${MEDIA}shield-circuit.mp4`}
             poster={`${MEDIA}poster-shield-circuit.png`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{
@@ -1172,7 +1172,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       <section id="resultados" ref={registerAct('resultados')} className="relative" style={{ height: '300vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            webp={`${MEDIA}financial-bars.webp`}
+            video={`${MEDIA}financial-bars.mp4`}
             poster={`${MEDIA}poster-financial-bars.png`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ opacity: 0.46, transform: 'translate3d(calc(var(--p,0) * -6vw),0,0) scale(calc(1.1 + 0.16 * var(--p,0)))', willChange: 'transform' }}
@@ -1221,7 +1221,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       <section id="cobertura" ref={registerAct('cobertura')} className="relative" style={{ height: '320vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            webp={`${MEDIA}ecuador-map.webp`}
+            video={`${MEDIA}ecuador-map.mp4`}
             poster={`${MEDIA}poster-ecuador-map.png`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ opacity: 0.52, transform: 'scale(calc(1.18 - 0.14 * var(--p,0)))', willChange: 'transform' }}
@@ -1256,7 +1256,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       <section id="raices" ref={registerAct('raices')} className="relative" style={{ height: '300vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            webp={`${MEDIA}cacao-fields.webp`}
+            video={`${MEDIA}cacao-fields.mp4`}
             poster={`${MEDIA}poster-cacao-fields.png`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ opacity: 0.58, transform: 'translate3d(calc(var(--p,0) * -4vw),calc(var(--p,0) * 3vh),0) scale(calc(1.26 - 0.16 * var(--p,0)))', willChange: 'transform' }}
