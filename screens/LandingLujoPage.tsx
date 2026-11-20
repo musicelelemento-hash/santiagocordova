@@ -923,7 +923,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
-            style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #04B17B, #03875E)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
+            style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #037A57, #025C42)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
           >
             <MessageCircle size={15} />
             Consultar por WhatsApp
@@ -1015,7 +1015,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
-            style={{ marginTop: 18, height: 48, background: 'linear-gradient(135deg, #04B17B, #03875E)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
+            style={{ marginTop: 18, height: 48, background: 'linear-gradient(135deg, #037A57, #025C42)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
           >
             <MessageCircle size={15} />
             Agendar este plan
@@ -1170,7 +1170,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] w-full transition-transform active:scale-95"
-            style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #04B17B, #03875E)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
+            style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #037A57, #025C42)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
           >
             <MessageCircle size={15} />
             Asegurar mi declaración
@@ -1428,7 +1428,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2.5 rounded-2xl font-mono text-[11px] font-bold uppercase tracking-[0.14em] transition-transform active:scale-95"
-                style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #04B17B, #03875E)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
+                style={{ marginTop: 20, height: 48, background: 'linear-gradient(135deg, #037A57, #025C42)', color: '#ffffff', boxShadow: '0 10px 24px -8px rgba(4,177,123,0.6)' }}
               >
                 <MessageCircle size={15} />
                 Escribir por WhatsApp
