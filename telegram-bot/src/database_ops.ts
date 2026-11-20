@@ -31,6 +31,74 @@ import { getFirestore } from './firebase-admin-init';
 import { maskSecret } from './redact';
 import { esPopular, esEmprendedor, esRimpe, regimenCanonico, mesRentaPersonaNatural } from './regimen';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Consultas livianas de la lista de clientes.
+//
+// Traer `*, sri_declaraciones(*)` de todos los clientes eran ~16 MB y ~9 s por
+// consulta: la mayor parte son archivos embebidos (declaration_history 6,2 MB,
+// proof_file 5,3 MB, vault 4,8 MB — medido el 19-nov-2026). Las vistas de lista
+// sólo preguntan si HAY comprobante (`!!d.proof_file`), nunca leen el PDF.
+// Así que se piden las columnas sin archivos y, aparte, los ids de las
+// declaraciones con comprobante; a esas se les marca `proof_file` con un valor
+// no vacío para que la lógica existente siga igual. Para descargar un PDF se
+// sigue usando la consulta completa de un solo cliente.
+// ─────────────────────────────────────────────────────────────────────────────
+const COLUMNAS_CLIENTE_SIN_ARCHIVOS = [
+    'id', 'ruc', 'name', 'trade_name', 'email', 'phones', 'address', 'regime', 'tax_profile',
+    'fee_structure', 'custom_service_fee', 'advance_credits', 'is_active', 'is_deleted', 'is_vip',
+    'is_artisan', 'notes', 'structured_notes', 'economic_activity', 'establishment_count',
+    'jurisdiction', 'renta_category', 'created_at', 'updated_at',
+    'sri_password', 'iess_password', 'signature_password', 'signature_expiration',
+    'annual_renta_status', 'annual_renta_paid', 'anexo_gastos_status', 'anexo_gastos_paid',
+    'anexo_pvp_status', 'anexo_pvp_paid', 'ice_declaration_status', 'ice_declaration_paid',
+    'ice_anexo_status', 'ice_anexo_paid', 'devolucion_iva_status', 'devolucion_iva_paid',
+    'has_elderly_devolucion_iva', 'elderly_devolucion_iva_status', 'elderly_devolucion_iva_paid',
+    'has_renta_refund', 'renta_refund_status', 'renta_refund_paid', 'renta_refund_amount',
+    'renta_refund_requested_at', 'renta_refund_confirmation_started_at', 'renta_refund_confirmation_deadline',
+].join(', ');
+const COLUMNAS_DECLARACION_SIN_ARCHIVO =
+    'id, client_id, type, period, status, is_paid, paid_at, is_notified_whatsapp, notified_whatsapp_at, created_at, updated_at';
+// `as '*'`: supabase-js no sabe tipar una lista armada en tiempo de ejecución
+// (daría GenericStringError); el cliente no tiene tipos generados, así que
+// el resultado es el mismo `any` que devolvía `*`.
+export const SELECT_CLIENTES_LIGERO = `${COLUMNAS_CLIENTE_SIN_ARCHIVOS}, sri_declaraciones(${COLUMNAS_DECLARACION_SIN_ARCHIVO})` as '*';
+const MARCA_COMPROBANTE = '__hay_comprobante__';
+
+/** Marca `proof_file` en las declaraciones que tienen comprobante, sin descargarlo. */
+export async function marcarComprobantes(clients: any[] | null | undefined): Promise<void> {
+    if (!clients || clients.length === 0) return;
+    const conProof = new Set<string>();
+    for (let desde = 0; ; desde += 1000) {
+        const { data, error } = await supabase
+            .from('sri_declaraciones')
+            .select('id')
+            // proof_file es jsonb: en la base sólo hay NULL u objetos (19-nov-2026),
+            // así que «no es null» equivale a `!!d.proof_file`. Un .neq('') rompería:
+            // '' no es JSON válido.
+            .not('proof_file', 'is', null)
+            .range(desde, desde + 999);
+        if (error) { console.warn('⚠️ No se pudieron marcar los comprobantes:', error.message); return; }
+        (data || []).forEach((d: any) => conProof.add(String(d.id)));
+        if (!data || data.length < 1000) break;
+    }
+    for (const c of clients) {
+        for (const d of (c.sri_declaraciones || [])) {
+            d.proof_file = conProof.has(String(d.id)) ? MARCA_COMPROBANTE : null;
+        }
+    }
+}
+
+/** Misma regla que isCourtesyClient de la web (services/clientService.ts), sin período. */
+export function esClienteCortesia(c: any): boolean {
+    if (!c) return false;
+    if (c.custom_service_fee === 0) return true;
+    const f = c.fee_structure || {};
+    if (f.monthly === 0 && f.semestral === 0 && f.annual === 0) return true;
+    const texto = `${c.tax_profile?.category || ''} ${c.tax_profile?.alias || ''} ${c.notes || ''}`.toLowerCase();
+    return /cortes[ií]a|trueque|familia/.test(texto);
+}
+
+
 async function logAuditAction(action: string, details: string, type: string, severity: string) {
     try {
         await supabase.from('audit_logs').insert({
@@ -348,7 +416,10 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('id, ruc, name, trade_name, email, phones, phone, regime, tax_profile, fee_structure, is_active, declaration_history, requires_declarations, sri_declaraciones(type, period, status, is_paid, proof_file)')
+            // Antes pedía `phone` y `requires_declarations`, columnas que no existen en
+            // `clients`: Supabase rechazaba la consulta entera y la cobranza del lunes
+            // salía vacía («Error getting raw debtors»).
+            .select('id, ruc, name, trade_name, email, phones, regime, tax_profile, fee_structure, is_active, declaration_history, sri_declaraciones(type, period, status, is_paid, proof_file)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -360,8 +431,7 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
             // 🛡️ Ignorar clientes de solo firma, solo plan o que no requieren declaraciones
             if (c.tax_profile?.requiresDeclarations === false || 
                 c.tax_profile?.clientType === 'solo_plan' || 
-                c.tax_profile?.isSignatureOnly === true || 
-                c.requires_declarations === false) {
+                c.tax_profile?.isSignatureOnly === true) {
                 return;
             }
 
@@ -455,10 +525,11 @@ export async function getDebtorClients() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select(SELECT_CLIENTES_LIGERO)
             .eq('is_deleted', false);
 
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return "No hay clientes registrados.";
         
         let totalDebt = 0;
@@ -542,10 +613,11 @@ export async function getUpcomingDeadlines() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select(SELECT_CLIENTES_LIGERO)
             .eq('is_deleted', false);
 
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return "No hay clientes registrados.";
         const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
         
@@ -557,8 +629,7 @@ export async function getUpcomingDeadlines() {
             // 🛡️ Ignorar clientes de solo firma, solo plan o que no requieren declaraciones
             if (c.tax_profile?.requiresDeclarations === false || 
                 c.tax_profile?.clientType === 'solo_plan' || 
-                c.tax_profile?.isSignatureOnly === true || 
-                c.requires_declarations === false) {
+                c.tax_profile?.isSignatureOnly === true) {
                 return false;
             }
 
@@ -647,10 +718,11 @@ export async function getUpcomingDeadlinesStructured() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select(SELECT_CLIENTES_LIGERO)
             .eq('is_deleted', false);
 
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return { today: [], thisWeek: [], later: [], total: 0 };
 
         const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
@@ -666,8 +738,7 @@ export async function getUpcomingDeadlinesStructured() {
             // 🛡️ Ignorar clientes de solo firma, solo plan o que no requieren declaraciones
             if (c.tax_profile?.requiresDeclarations === false || 
                 c.tax_profile?.clientType === 'solo_plan' || 
-                c.tax_profile?.isSignatureOnly === true || 
-                c.requires_declarations === false) {
+                c.tax_profile?.isSignatureOnly === true) {
                 return;
             }
 
@@ -792,10 +863,11 @@ export async function getFinancialSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select(SELECT_CLIENTES_LIGERO)
             .eq('is_deleted', false);  // BUG FIX: exclude deleted clients from financial summary
 
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients) return "No hay datos de clientes para analizar. Baku.";
 
         const now = new Date();
@@ -865,10 +937,11 @@ export async function getDatabaseSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select(SELECT_CLIENTES_LIGERO)
             .eq('is_deleted', false);
 
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return "La base de datos está vacía.";
 
         const total = clients.length;
@@ -1179,8 +1252,9 @@ export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | '
 export async function getCredentialStatus() {
     console.log(`🔍 Scanning SRI credentials in Supabase...`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('is_deleted', false);
+        const { data: clients, error } = await supabase.from('clients').select(SELECT_CLIENTES_LIGERO).eq('is_deleted', false);
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return "No hay clientes registrados.";
 
         const weakPasswords = ["123456", "sri123", "contraseña", "password", "sri2024", "sri2025"];
@@ -1233,8 +1307,9 @@ export async function getCredentialStatus() {
 export async function detectTaxInconsistencies() {
     console.log(`🛡️ Running Escudo Fiscal analysis in Supabase...`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('is_deleted', false);
+        const { data: clients, error } = await supabase.from('clients').select(SELECT_CLIENTES_LIGERO).eq('is_deleted', false);
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return "La base de datos está vacía.";
         
         const insights: string[] = [];
@@ -1347,10 +1422,11 @@ export async function getClientsStatusReport() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, sri_declaraciones(*)')
+            .select(SELECT_CLIENTES_LIGERO)
             .eq('is_deleted', false);
 
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return "No hay clientes registrados en la base de datos.";
 
         const mensuales: string[] = [];
@@ -2139,10 +2215,11 @@ export async function getMonthlyCollectionReport(): Promise<string> {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('name, ruc, regime, sri_declaraciones(*), fee_structure, is_courtesy')
+            .select(`name, ruc, regime, fee_structure, custom_service_fee, notes, tax_profile, sri_declaraciones(${COLUMNAS_DECLARACION_SIN_ARCHIVO})` as '*')
             .eq('is_deleted', false)
             .eq('is_active', true);
         if (error) throw error;
+        await marcarComprobantes(clients);
         if (!clients || clients.length === 0) return '❌ No hay clientes activos. Baku.';
 
         const now = new Date();
@@ -2159,7 +2236,7 @@ export async function getMonthlyCollectionReport(): Promise<string> {
         const collectors: string[] = [];
 
         for (const c of clients as any[]) {
-            if (c.is_courtesy) continue;
+            if (esClienteCortesia(c)) continue; // antes leía is_courtesy, columna que no existe: la consulta fallaba entera
             const obligations = getClientObligations(c);
             const ivaFee = obligations.ivaFrequency === 'Mensual' ? (c.fee_structure?.monthly ?? 5)
                          : obligations.ivaFrequency === 'Semestral' ? (c.fee_structure?.semestral ?? 10)
