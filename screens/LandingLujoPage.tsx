@@ -28,6 +28,8 @@ import {
 import { Logo } from '../components/ui/Logo';
 import { Crystal3D } from '../components/3d/Crystal3D';
 import { Reveal, CountUp, ActMedia } from '../components/lujo/LujoWidgets';
+import { MapaEcuador } from '../components/lujo/MapaEcuador';
+import { HiloRecorrido } from '../components/lujo/HiloRecorrido';
 import { useLujoScroll } from '../hooks/useLujoScroll';
 import { useAppStore } from '../store/useAppStore';
 import { PublicUser } from '../types';
@@ -253,6 +255,7 @@ interface LandingLujoPageProps {
 
 export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdminAccess, onNavigateToServices }) => {
   const { registerAct, registerNav, progressRef, heroMediaRef, activeId } = useLujoScroll();
+  const raizRef = useRef<HTMLDivElement>(null);
   const { serviceFees } = useAppStore();
 
   // ── Acceso administrativo oculto (equivalente a `handleProtectedAccess` de
@@ -378,7 +381,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
   }, []);
 
   return (
-    <div className="lujo-root" style={{ position: 'relative', background: '#020617', color: '#e2e8f0' }}>
+    <div ref={raizRef} className="lujo-root" style={{ position: 'relative', background: '#020617', color: '#e2e8f0' }}>
       <style>{`
         /* NOTE: deliberately no \`overflow-x: hidden\` here — setting only overflow-x (and not
            overflow-y) on an ancestor forces overflow-y to compute as \`auto\` per the CSS spec,
@@ -400,6 +403,12 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         /* El único momento orquestado de la carga: el render del hero se «enciende». */
         @keyframes lujoIgnite { 0% { opacity: 0; filter: brightness(.25) blur(14px) saturate(.4) } 60% { filter: brightness(1.25) blur(0) saturate(1.2) } 100% { opacity: 1; filter: none } }
         .lujo-hero-media { animation: lujoIgnite 2.2s cubic-bezier(.16,1,.3,1) both; }
+        .lujo-mapa-ec { --mw: min(44vw, 560px, 72vh); width: var(--mw); right: max(0px, calc((100vw - 1160px) / 2)); top: calc(50% - var(--mw) * 0.57 + 20px); }
+        @media (max-width: 767px) {
+          .lujo-mapa-ec { --mw: min(66vw, 31vh); right: auto; left: 50%; margin-left: calc(var(--mw) * -0.5); top: 78px; }
+          .lujo-raices-texto { align-self: end; padding-bottom: 108px; }
+          .lujo-raices-tags { display: none; }
+        }
         .lujo-hero-parallax { transform: translate3d(calc(var(--mx,0) * -22px), calc(var(--my,0) * -14px), 0); transition: transform .9s cubic-bezier(.16,1,.3,1); }
         /* Compuerta de bóveda: cada video de acto entra como una ranura que se abre con el scroll
            (--p de useLujoScroll; con «reducir movimiento» --p = 0.5 y queda abierta). */
@@ -1261,15 +1270,12 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       {/* ── ACTO IV · RAÍCES (AGRO) ──────────────────────────────────────── */}
       <section id="raices" ref={registerAct('raices')} className="relative" style={{ height: '210vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
-          <ActMedia
-            video={`${MEDIA}act-cacao.mp4`}
-            poster={`${MEDIA}poster-act-cacao.jpg`}
-            className="lujo-compuerta absolute inset-0 w-full h-full object-cover object-[55%_40%]"
-            style={{ opacity: 0.95, transform: 'translate3d(calc(var(--p,0) * -4vw),calc(var(--p,0) * 3vh),0) scale(calc(1.26 - 0.16 * var(--p,0)))', willChange: 'transform' }}
+          {/* El Ecuador desde El Oro: el mapa se dibuja y chispea con el scroll (MapaEcuador) */}
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 55% 60% at 70% 52%, rgba(43,106,255,0.16), transparent 70%), radial-gradient(ellipse 30% 30% at 62% 70%, rgba(4,177,123,0.12), transparent 70%)' }} />
+          <MapaEcuador
+            className="lujo-mapa-ec absolute pointer-events-none"
+            style={{ transform: 'translate3d(0, calc((0.5 - var(--p,0)) * 40px), 0) scale(calc(0.94 + 0.08 * var(--p,0)))', willChange: 'transform' }}
           />
-          <span className="lujo-ranura" data-lado="arriba" aria-hidden="true" />
-          <span className="lujo-ranura" data-lado="abajo" aria-hidden="true" />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.38) 45%, rgba(2,6,23,0.1) 72%, rgba(2,6,23,0.5) 100%)' }} />
           {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
           <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
           <span
@@ -1279,7 +1285,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             04
           </span>
           <div
-            className="relative z-[2] w-full max-w-[1160px] px-6"
+            className="lujo-raices-texto relative z-[2] w-full max-w-[1160px] px-6"
             style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translate3d(calc((var(--p,0) - 0.5) * clamp(-70px, -5vw, -24px)), calc((0.5 - var(--p,0)) * -50px), 0)' }}
           >
             <div style={{ maxWidth: 640 }}>
@@ -1290,7 +1296,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               <p className="font-light" style={{ margin: '22px 0 0', maxWidth: 540, fontSize: 'clamp(0.98rem,1.4vw,1.15rem)', lineHeight: 1.7, color: '#c4cddb' }}>
                 Banano, cacao, camarón y comercio mayorista: producción, exportación y retenciones tratadas con las reglas que realmente les aplican. Contabilidad que entiende el ciclo del campo.
               </p>
-              <div className="flex flex-wrap gap-2.5" style={{ marginTop: 30 }}>
+              <div className="lujo-raices-tags flex flex-wrap gap-2.5" style={{ marginTop: 30 }}>
                 {AGRO_TAGS.map((tag, i) => (
                   <span
                     key={tag}
@@ -1576,6 +1582,9 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           SC ESTRATEGIAS FISCALES · SISTEMA NUEVA LUZ 3.0
         </div>
       </footer>
+
+      {/* El lazo que une las secciones mientras se baja */}
+      <HiloRecorrido raiz={raizRef} />
     </div>
   );
 };
