@@ -53,6 +53,7 @@ const PARADAS: Record<string, string> = {
 };
 
 const f = (n: number) => n.toFixed(1);
+
 const unidad = (a: P, b: P): P => {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -124,14 +125,61 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
       agregar(`C${f(m2.x + uOut.x * l2)} ${f(m2.y + uOut.y * l2)} ${f(b.x)} ${f(b.y - (b.y - m2.y) * 0.5)} ${f(b.x)} ${f(b.y)}`, b, b.y);
     };
 
+    /**
+     * Sección con `data-giro`: en vez del rulo chico, la luz da vuelta y media
+     * alrededor del titular, de frente, como una órbita. Se mide el titular sin
+     * el giro de cámara puesto (si no, el rectángulo sale deformado).
+     */
+    const orbitar = (s: HTMLElement, xGutter: number) => {
+      const h2 = s.querySelector('h2');
+      if (!h2) return null;
+      // Posición por offsets (no los afectan el giro de cámara ni la entrada
+      // animada de Reveal); ancho del texto real con un Range.
+      let ox = 0;
+      let oy = 0;
+      for (let e: HTMLElement | null = h2; e && e !== root; e = e.offsetParent as HTMLElement | null) {
+        ox += e.offsetLeft;
+        oy += e.offsetTop;
+      }
+      // El giro de cámara deforma el ancho medido: se quita un instante (sin pintar entre medio).
+      const escena = s.querySelector<HTMLElement>('.lujo-giro-escena');
+      const antes = escena?.style.transform ?? '';
+      if (escena) escena.style.transform = 'none';
+      const rango = document.createRange();
+      rango.selectNodeContents(h2);
+      const lineas = Array.from(rango.getClientRects());
+      if (escena) escena.style.transform = antes;
+      const anchoTexto = lineas.length ? Math.max(...lineas.map((l) => l.width)) : h2.offsetWidth;
+      const w = Math.min(anchoTexto, h2.offsetWidth, W - 40);
+      const rx = Math.min(w / 2 + (W >= 768 ? 64 : 22), W / 2 - 8);
+      const ry = h2.offsetHeight / 2 + (W >= 768 ? 52 : 34);
+      const cx = Math.min(Math.max(ox + w / 2, rx + 6), W - rx - 6);
+      const cy = oy + h2.offsetHeight / 2;
+      const der = { x: cx + rx, y: cy };
+      const izq = { x: cx - rx, y: cy };
+      const a = prev;
+      const v0 = cy - vh * 0.38;
+      const paso = (vh * 0.76) / 3;
+      agregar(`C${f(a.x)} ${f(a.y + (der.y - a.y) * 0.45)} ${f(der.x)} ${f(der.y - (der.y - a.y) * 0.5)} ${f(der.x)} ${f(der.y)}`, der, Math.max(a.y + 1, v0));
+      const media = (p: P) => `A${f(rx)} ${f(ry)} 0 0 1 ${f(p.x)} ${f(p.y)}`;
+      agregar(media(izq), izq, v0 + paso);
+      agregar(media(der), der, v0 + paso * 2);
+      agregar(media(izq), izq, v0 + paso * 3);
+      const g = { x: xGutter, y: cy + ry + Math.min(140, vh * 0.16) };
+      agregar(`C${f(izq.x)} ${f(izq.y - 70)} ${f(g.x)} ${f(g.y - 140)} ${f(g.x)} ${f(g.y)}`, g, g.y);
+      return g;
+    };
+
     const nudos: Geo['nudos'] = [];
     medio.forEach((s, i) => {
       const x = xs[i % 2];
       const top = s.offsetTop;
       const bottom = top + s.offsetHeight;
-      const entra = { x, y: top + Math.min(cruce * 0.5, s.offsetHeight * 0.25) };
+      let entra = { x, y: top + Math.min(cruce * 0.5, s.offsetHeight * 0.25) };
+      const orbita = s.dataset.giro !== undefined ? orbitar(s, x) : null;
+      if (orbita) entra = orbita;
+      else cruzar(entra);
       const sale = { x, y: Math.max(entra.y + 40, bottom - Math.min(cruce * 0.5, s.offsetHeight * 0.25)) };
-      cruzar(entra);
       // Baja por el margen ondulando suave, no en línea recta.
       const h = sale.y - entra.y;
       const lado = i % 2 === 0 ? 1 : -1;

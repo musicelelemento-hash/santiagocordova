@@ -7,10 +7,8 @@ import type { ServiceFeesConfig } from '../types/service';
  * — como `screens/LandingLujoPage.tsx` — puedan ofrecer las mismas
  * herramientas sin reimplementar ni desincronizar las reglas tributarias.
  *
- * IMPORTANTE: la matemática aquí debe permanecer idéntica a la de
- * `screens/LandingPage.tsx` (que se deja intacta como página "clásica" en
- * `/clasica`). Si las reglas del SRI cambian, actualiza ambos lugares o,
- * mejor, migra `LandingPage.tsx` a importar de aquí en una pasada aparte.
+ * La página clásica (`screens/LandingPage.tsx`, en `/clasica`) se eliminó
+ * el 20-nov-2026: esta es ahora la única copia de estas reglas en la web.
  */
 
 export type ActividadTipo = 'comercial' | 'profesional' | 'discapacidad_3ra_edad';
