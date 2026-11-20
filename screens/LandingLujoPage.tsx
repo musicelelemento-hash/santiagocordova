@@ -88,48 +88,6 @@ const REGIONS = [
 
 const AGRO_TAGS = ['AGRO & PRODUCCIÓN', 'COMERCIO & RETAIL', 'TRANSPORTE & LOGÍSTICA', 'PYMES & EMPRENDEDORES'];
 
-// Per-panel poster opacity restored to match the prototype's own tuning per photo
-// (`Landing 3D Lujo.dc.html`'s `#galeria` articles: 0.62 / 0.55 / 0.6 / 0.62) — the port had
-// flattened all four to a single 0.6, which is close but not an exact copy.
-const GALLERY_PANELS = [
-  {
-    poster: 'poster-act-escudo.jpg',
-    color: '#04B17B',
-    tag: '01 · CUMPLIMIENTO',
-    title: 'IVA y retenciones al día',
-    desc: 'Declaración mensual o semestral presentada antes del vencimiento, con el comprobante archivado y el aviso enviado.',
-    border: 'rgba(255,255,255,0.10)',
-    posterOpacity: 0.85,
-  },
-  {
-    poster: 'poster-act-barras.jpg',
-    color: '#2B6AFF',
-    tag: '02 · OPTIMIZACIÓN',
-    title: 'Retenciones a favor recuperadas',
-    desc: 'Cruce de comprobantes y encuadre en la tabla del SRI para que el saldo a favor no se quede en el aire.',
-    border: 'rgba(255,255,255,0.10)',
-    posterOpacity: 0.85,
-  },
-  {
-    poster: 'poster-act-red.jpg',
-    color: '#04B17B',
-    tag: '03 · PRESENCIA',
-    title: 'Presencial en El Oro, remoto en el país',
-    desc: 'Visitas programadas en la provincia y atención digital para Guayaquil, Quito y Cuenca.',
-    border: 'rgba(255,255,255,0.10)',
-    posterOpacity: 0.85,
-  },
-  {
-    poster: 'poster-act-cacao.jpg',
-    color: '#2B6AFF',
-    tag: '04 · SECTORES',
-    title: 'Contabilidad que entiende el campo',
-    desc: 'Banano, cacao, camarón y comercio mayorista, con las reglas que realmente les aplican.',
-    border: 'rgba(43,106,255,0.28)',
-    posterOpacity: 0.85,
-  },
-];
-
 // Same real testimonials shown on the current landing (screens/LandingPage.tsx).
 const TESTIMONIALS = [
   {
@@ -1352,55 +1310,11 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         </div>
       </section>
 
-      {/* ── RECORRIDO LATERAL (horizontal gallery act) ──────────────────── */}
-      <section id="galeria" ref={registerAct('galeria')} className="relative" style={{ height: '320vh' }}>
-        <div
-          className="sticky top-0 h-screen overflow-hidden grid"
-          style={{ background: '#020617', gridTemplateRows: 'auto minmax(0,1fr) auto', paddingTop: 'clamp(74px,12vh,120px)', paddingBottom: 'clamp(20px,4vh,44px)', boxSizing: 'border-box' }}
-        >
-          <div className="relative z-[3] flex justify-between items-end gap-5 pointer-events-none" style={{ padding: '0 clamp(20px,5vw,72px) clamp(16px,3vh,32px)' }}>
-            <div>
-              <span className="block font-mono text-[11px] font-bold tracking-[0.3em]" style={{ color: AZURE_TEXTO }}>RECORRIDO LATERAL</span>
-              <h2 className="font-display font-extrabold text-white" style={{ margin: '14px 0 0', letterSpacing: '-0.03em', lineHeight: 1.02, fontSize: 'clamp(1.7rem,3.6vw,3rem)' }}>
-                Cuatro frentes, un solo criterio
-              </h2>
-            </div>
-            <span className="font-mono text-[11px] tracking-[0.26em] text-slate-400 whitespace-nowrap">SIGUE BAJANDO →</span>
-          </div>
-          <div className="relative flex items-center overflow-hidden" style={{ minHeight: 0 }}>
-            {/* Explicit height:100% here (the prototype's markup omits it and relies on the
-                flex parent stretching the item, which browsers resolve inconsistently when the
-                parent uses `align-items:center` instead of the default `stretch` — verified via
-                Playwright that without this, the panels below collapse to zero height). */}
-            <div className="flex h-full" style={{ gap: '2vw', padding: '0 clamp(20px,5vw,72px)', willChange: 'transform', transform: 'translate3d(calc(var(--p,0) * -232vw),0,0)' }}>
-              {GALLERY_PANELS.map((panel) => (
-                <article
-                  key={panel.title}
-                  className="relative flex-none rounded-[26px] overflow-hidden"
-                  style={{ width: '78vw', maxWidth: 1100, height: '100%', maxHeight: 'min(64vh,620px)', border: `1px solid ${panel.border}` }}
-                >
-                  <img src={`${MEDIA}${panel.poster}`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: panel.posterOpacity }} />
-                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.25) 60%)' }} />
-                  <div className="absolute left-0 right-0 bottom-0" style={{ padding: 'clamp(24px,3.4vw,44px)' }}>
-                    <span className="font-mono text-[11px] tracking-[0.24em]" style={{ color: textoLegible(panel.color) }}>{panel.tag}</span>
-                    <h3 className="font-display font-extrabold text-white" style={{ margin: '12px 0 0', letterSpacing: '-0.025em', fontSize: 'clamp(1.5rem,3.2vw,2.6rem)' }}>{panel.title}</h3>
-                    <p className="font-light" style={{ margin: '12px 0 0', maxWidth: 520, fontSize: 'clamp(0.92rem,1.2vw,1.05rem)', lineHeight: 1.65, color: '#cdd7e3' }}>{panel.desc}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-          <div className="relative z-[3] rounded-full overflow-hidden" style={{ margin: 'clamp(16px,3vh,32px) clamp(20px,5vw,72px) 0', height: 2, background: 'rgba(255,255,255,0.10)' }}>
-            <div style={{ height: '100%', width: 'calc(var(--p,0) * 100%)', background: 'linear-gradient(90deg,#04B17B,#2B6AFF)' }} />
-          </div>
-        </div>
-      </section>
-
       {/* ── INTERLUDIO CLARO · CRITERIO ──────────────────────────────────── */}
       <section id="criterio" ref={registerAct('criterio')} className="relative" style={{ height: '160vh', background: '#EEF3FB' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center" style={{ background: '#EEF3FB' }}>
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 55% at 70% 40%, rgba(43,106,255,0.30), transparent 68%)' }} />
-          <div className="absolute top-0 left-0 right-0" style={{ height: 120, background: 'linear-gradient(to bottom, rgba(2,6,23,0.22), transparent)' }} />
+          <div className="absolute top-0 left-0 right-0" style={{ height: 'clamp(140px,26vh,260px)', background: 'linear-gradient(to bottom, #020617, rgba(2,6,23,0.35) 45%, transparent)', opacity: 'calc(1 - min(1, var(--p,0) * 3))' }} />
           <div
             className="relative z-[2] w-full max-w-[1160px] px-6 grid items-center"
             style={{ boxSizing: 'border-box', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,300px), 1fr))', gap: 'clamp(28px,5vw,64px)' }}
