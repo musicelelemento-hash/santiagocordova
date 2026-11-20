@@ -3,25 +3,41 @@ import { usePrefersReducedMotion } from '../../hooks/useReducedMotion';
 
 /**
  * El «lazo» de la portada: una línea de luz que nace debajo del hero, baja
- * por los márgenes cruzando de un lado al otro en cada cambio de sección y
- * termina en la llamada final. Se va dibujando con el scroll; la punta lleva
- * una chispa y cada sección que alcanza enciende su nudo.
+ * por los márgenes ondulando, cruza de un lado al otro en cada cambio de
+ * sección dando una vuelta (un rulo) y termina en la llamada final. Se va
+ * dibujando con el scroll; la punta es una chispa con estela y cada sección
+ * que alcanza enciende su nudo.
  *
  * Va encima de las secciones (z 4) pero debajo del menú (z 90), sin recibir
  * clics. La geometría se recalcula sólo cuando cambia el tamaño de la página
  * (ResizeObserver); el scroll únicamente mueve dashoffset y la chispa.
  */
 
+interface P {
+  x: number;
+  y: number;
+}
+
+/** Un tramo del trazo: comando SVG desde `desde`, y hasta qué altura de scroll («v») lo cubre. */
+interface Tramo {
+  desde: P;
+  cmd: string;
+  v: number;
+}
+
 interface Geo {
   W: number;
   H: number;
   d: string;
+  tramos: Tramo[];
+  v0: number;
   nudos: { x: number; y: number; nombre: string; lado: 0 | 1 }[];
   conNombres: boolean;
-  fin: { x: number; y: number };
+  fin: P;
 }
 
 const MAX_CONTENIDO = 1160;
+const ESTELA = 170; // largo de la estela de luz detrás de la chispa (px)
 
 /** Nombre de cada parada: `data-parada` de la sección, o éste según su id. */
 const PARADAS: Record<string, string> = {
@@ -36,11 +52,21 @@ const PARADAS: Record<string, string> = {
   faq: 'Preguntas',
 };
 
+const f = (n: number) => n.toFixed(1);
+const unidad = (a: P, b: P): P => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const l = Math.hypot(dx, dy) || 1;
+  return { x: dx / l, y: dy / l };
+};
+
 export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = ({ raiz }) => {
   const reducido = usePrefersReducedMotion();
   const [geo, setGeo] = useState<Geo | null>(null);
   const trazoRef = useRef<SVGPathElement>(null);
   const brilloRef = useRef<SVGPathElement>(null);
+  const estelaRef = useRef<SVGPathElement>(null);
+  const medidorRef = useRef<SVGPathElement>(null);
   const puntaRef = useRef<SVGGElement>(null);
   const nudosRef = useRef<(SVGGElement | null)[]>([]);
 
@@ -54,39 +80,70 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
     const vh = window.innerHeight;
     const margen = W >= 1100 ? Math.max(26, (W - MAX_CONTENIDO) / 4) : W >= 768 ? 20 : 9;
     const xs = [margen, W - margen];
+    const vaiven = W >= 1100 ? Math.min(18, margen * 0.35) : 5; // cuánto ondula en el margen
+    const radio = Math.max(24, Math.min(62, W * 0.045)); // tamaño de cada vuelta
 
     const hero = secciones[0];
     const cta = secciones[secciones.length - 1];
     const medio = secciones.slice(1, -1);
 
     // Nace al pie del hero, por debajo de los botones y la lista de beneficios.
-    const inicio = { x: W / 2, y: hero.offsetTop + hero.offsetHeight - 16 };
-    // Cuánto ocupa el cruce de un lado al otro (más largo en pantallas anchas).
+    const inicio: P = { x: W / 2, y: hero.offsetTop + hero.offsetHeight - 16 };
     const cruce = Math.min(vh * 0.55, 420);
 
-    let d = `M${inicio.x.toFixed(1)} ${inicio.y.toFixed(1)}`;
+    const tramos: Tramo[] = [];
     let prev = inicio;
-    const nudos: Geo['nudos'] = [];
-    const curva = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-      const k = (b.y - a.y) * 0.55;
-      return `C${a.x.toFixed(1)} ${(a.y + k).toFixed(1)} ${b.x.toFixed(1)} ${(b.y - k).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+    const agregar = (cmd: string, fin: P, v: number) => {
+      tramos.push({ desde: prev, cmd, v });
+      prev = fin;
     };
 
+    /**
+     * Cruce de `prev` a `b` con una vuelta (rulo) en el camino. El rulo es una
+     * cúbica cuyos controles se cruzan; los tramos que llegan y salen siguen su
+     * tangente para que la línea no quiebre. Mientras se recorre el rulo, el
+     * scroll avanza `giro` px: la chispa da la vuelta sin apurarse.
+     */
+    const cruzar = (b: P) => {
+      const a = prev;
+      const dir = Math.sign(b.x - a.x) || 1;
+      const dy = b.y - a.y;
+      const r = Math.min(radio, Math.max(14, dy * 0.12));
+      const c = { x: (a.x + b.x) / 2, y: a.y + dy * 0.3 };
+      const m1 = { x: c.x - dir * r * 0.7, y: c.y - r * 0.15 };
+      const m2 = { x: c.x + dir * r * 0.7, y: c.y + r * 0.15 };
+      const k1 = { x: c.x + dir * r * 2.4, y: c.y + r * 2.0 };
+      const k2 = { x: c.x - dir * r * 2.4, y: c.y + r * 2.0 };
+      const uIn = unidad(m1, k1);
+      const uOut = unidad(k2, m2);
+      const l1 = Math.min(160, Math.hypot(m1.x - a.x, m1.y - a.y) * 0.4);
+      const l2 = Math.min(160, Math.hypot(b.x - m2.x, b.y - m2.y) * 0.4);
+      const giro = Math.min(r * 4.5, dy * 0.4);
+      agregar(`C${f(a.x)} ${f(a.y + (m1.y - a.y) * 0.55)} ${f(m1.x - uIn.x * l1)} ${f(m1.y - uIn.y * l1)} ${f(m1.x)} ${f(m1.y)}`, m1, m1.y);
+      agregar(`C${f(k1.x)} ${f(k1.y)} ${f(k2.x)} ${f(k2.y)} ${f(m2.x)} ${f(m2.y)}`, m2, m1.y + giro);
+      agregar(`C${f(m2.x + uOut.x * l2)} ${f(m2.y + uOut.y * l2)} ${f(b.x)} ${f(b.y - (b.y - m2.y) * 0.5)} ${f(b.x)} ${f(b.y)}`, b, b.y);
+    };
+
+    const nudos: Geo['nudos'] = [];
     medio.forEach((s, i) => {
       const x = xs[i % 2];
       const top = s.offsetTop;
       const bottom = top + s.offsetHeight;
       const entra = { x, y: top + Math.min(cruce * 0.5, s.offsetHeight * 0.25) };
       const sale = { x, y: Math.max(entra.y + 40, bottom - Math.min(cruce * 0.5, s.offsetHeight * 0.25)) };
-      d += curva(prev, entra);
-      d += `L${sale.x.toFixed(1)} ${sale.y.toFixed(1)}`;
+      cruzar(entra);
+      // Baja por el margen ondulando suave, no en línea recta.
+      const h = sale.y - entra.y;
+      const lado = i % 2 === 0 ? 1 : -1;
+      agregar(`C${f(x + vaiven * lado)} ${f(entra.y + h / 3)} ${f(x - vaiven * lado)} ${f(entra.y + (2 * h) / 3)} ${f(sale.x)} ${f(sale.y)}`, sale, sale.y);
       nudos.push({ ...entra, nombre: s.dataset.parada || PARADAS[s.id] || '', lado: (i % 2) as 0 | 1 });
-      prev = sale;
     });
     const fin = { x: W / 2, y: cta.offsetTop + Math.min(70, cta.offsetHeight * 0.1) };
-    d += curva(prev, fin);
+    cruzar(fin);
+
+    const d = `M${f(inicio.x)} ${f(inicio.y)}` + tramos.map((t) => t.cmd).join('');
     // Los nombres van de costado, en el margen: sólo si hay margen para ellos.
-    setGeo({ W, H, d, nudos, fin, conNombres: W >= 1100 });
+    setGeo({ W, H, d, tramos, v0: inicio.y, nudos, fin, conNombres: W >= 1100 });
   }, [raiz]);
 
   // Medir al montar y cada vez que cambie el tamaño de la página.
@@ -112,29 +169,40 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
   // Dibujar según el scroll.
   useEffect(() => {
     const trazo = trazoRef.current;
+    const medidor = medidorRef.current;
     const root = raiz.current;
-    if (!geo || !trazo || !root) return;
+    if (!geo || !trazo || !medidor || !root) return;
     const L = trazo.getTotalLength();
-    // Muestras (largo, y) para pasar de «altura en la página» a «largo dibujado».
-    // El trazo siempre baja, así que y crece con el largo.
-    const N = 600;
-    const muestras: { l: number; y: number; x: number }[] = [];
-    for (let i = 0; i <= N; i++) {
-      const l = (L * i) / N;
-      const p = trazo.getPointAtLength(l);
-      muestras.push({ l, y: p.y, x: p.x });
+    // Anclas (altura de scroll → largo dibujado), una por tramo. Entre dos
+    // anclas se interpola: así el rulo, que sube y baja, avanza parejo.
+    const anclas: { v: number; l: number }[] = [{ v: geo.v0, l: 0 }];
+    let acumulado = 0;
+    for (const t of geo.tramos) {
+      medidor.setAttribute('d', `M${f(t.desde.x)} ${f(t.desde.y)}${t.cmd}`);
+      acumulado += medidor.getTotalLength();
+      anclas.push({ v: Math.max(t.v, anclas[anclas.length - 1].v + 1), l: Math.min(acumulado, L) });
     }
     const brillo = brilloRef.current;
-    for (const t of [trazo, brillo]) {
-      if (!t) continue;
-      t.style.strokeDasharray = `${L} ${L}`;
-    }
+    const estela = estelaRef.current;
+    for (const t of [trazo, brillo]) if (t) t.style.strokeDasharray = `${L} ${L}`;
+    if (estela) estela.style.strokeDasharray = `${ESTELA} ${L + ESTELA}`;
 
     if (reducido) {
       for (const t of [trazo, brillo]) if (t) t.style.strokeDashoffset = '0';
+      if (estela) estela.style.opacity = '0';
       nudosRef.current.forEach((n) => n?.classList.add('on'));
       return;
     }
+
+    const largoPara = (meta: number) => {
+      if (meta <= anclas[0].v) return 0;
+      for (let i = 1; i < anclas.length; i++) {
+        const a = anclas[i - 1];
+        const b = anclas[i];
+        if (meta < b.v) return a.l + ((b.l - a.l) * (meta - a.v)) / (b.v - a.v);
+      }
+      return L;
+    };
 
     let raf = 0;
     let llego = false;
@@ -142,20 +210,13 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
       raf = 0;
       const rootTop = root.getBoundingClientRect().top + window.scrollY;
       const meta = window.scrollY + window.innerHeight * 0.6 - rootTop;
-      // Búsqueda binaria en las muestras.
-      let lo = 0;
-      let hi = N;
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1;
-        if (muestras[mid].y < meta) lo = mid + 1;
-        else hi = mid;
-      }
-      const m = muestras[Math.min(lo, N)];
-      const largo = meta <= muestras[0].y ? 0 : m.l;
+      const largo = largoPara(meta);
       for (const t of [trazo, brillo]) if (t) t.style.strokeDashoffset = `${L - largo}`;
+      if (estela) estela.style.strokeDashoffset = `${ESTELA - largo}`;
       const punta = puntaRef.current;
       if (punta) {
-        punta.style.transform = `translate(${m.x}px, ${m.y}px)`;
+        const p = trazo.getPointAtLength(largo);
+        punta.style.transform = `translate(${p.x}px, ${p.y}px)`;
         punta.style.opacity = largo > 0 && largo < L - 1 ? '1' : '0';
       }
       geo.nudos.forEach((n, i) => nudosRef.current[i]?.classList.toggle('on', n.y <= meta));
@@ -227,7 +288,11 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
       <path d={geo.d} fill="none" stroke="rgba(110,155,255,0.07)" strokeWidth={1} />
       {/* Halo ancho y trazo fino: lo ya recorrido */}
       <path ref={brilloRef} d={geo.d} fill="none" stroke="url(#hiloColor)" strokeOpacity={0.18} strokeWidth={7} strokeLinecap="round" />
-      <path ref={trazoRef} d={geo.d} fill="none" stroke="url(#hiloColor)" strokeWidth={1.6} strokeLinecap="round" />
+      <path ref={trazoRef} d={geo.d} fill="none" stroke="url(#hiloColor)" strokeWidth={1.8} strokeLinecap="round" />
+      {/* Estela: el último tramo recorrido, más brillante, como la cola de un cometa */}
+      <path ref={estelaRef} d={geo.d} fill="none" stroke="#c9f7e4" strokeOpacity={0.85} strokeWidth={2.6} strokeLinecap="round" />
+      {/* Sólo para medir tramos; no se ve */}
+      <path ref={medidorRef} fill="none" stroke="none" />
       {geo.nudos.map((n, i) => (
         <g key={i} ref={(el) => (nudosRef.current[i] = el)} className="nudo">
           <circle className="anillo" cx={n.x} cy={n.y} r={7} fill="none" stroke="#4edea3" strokeWidth={1.2} />
@@ -255,8 +320,8 @@ export const HiloRecorrido: React.FC<{ raiz: React.RefObject<HTMLElement> }> = (
         <circle className="centro" cx={geo.fin.x} cy={geo.fin.y} r={4.5} fill="#dbe6ff" />
       </g>
       <g ref={puntaRef} style={{ opacity: 0 }}>
-        <circle className="punta-halo" r={16} fill="url(#hiloPunta)" />
-        <circle r={2.6} fill="#ffffff" />
+        <circle className="punta-halo" r={24} fill="url(#hiloPunta)" />
+        <circle r={3.2} fill="#ffffff" />
       </g>
     </svg>
   );
