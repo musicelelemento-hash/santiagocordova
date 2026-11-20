@@ -25,6 +25,8 @@ import { generateRidePdfBuffer } from './pdf_generator';
 import { maskSecret } from './redact';
 import { esPopular, esEmprendedor } from './regimen';
 import { calcularVencimiento, periodosEnCurso } from './vencimientos';
+import { INICIO, agendaConFechas, origenPermitido } from './estado';
+import { modelosGemini } from './ai';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
 
@@ -3993,12 +3995,40 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// La web lee el estado de Baku desde el navegador: CORS sólo para sus dominios y
+// sólo en las rutas de lectura sin secretos. Antes no había CORS y la tarjeta
+// de canales de Ajustes no podía leer /notificaciones/estado.
+app.use((req, res, next) => {
+    const origen = req.headers.origin;
+    if (req.method === 'GET' && ['/', '/estado', '/notificaciones/estado'].includes(req.path) && origenPermitido(origen)) {
+        res.setHeader('Access-Control-Allow-Origin', String(origen));
+        res.setHeader('Vary', 'Origin');
+    }
+    next();
+});
+
 // Health check endpoint for Render
 app.get('/', (req, res) => {
     res.json({
         status: 'online',
         service: 'Baku Telegram Bot',
         timestamp: new Date().toISOString()
+    });
+});
+
+// Estado para la pantalla del bot en la web (sin secretos).
+app.get('/estado', async (_req, res) => {
+    let modelo: string | null = null;
+    try { modelo = (await modelosGemini()).principal; } catch { /* sin IA */ }
+    res.json({
+        ok: true,
+        servicio: 'Baku',
+        version: (process.env.RENDER_GIT_COMMIT || '').slice(0, 7) || null,
+        enLineaDesde: INICIO.toISOString(),
+        minutosEnLinea: Math.round((Date.now() - INICIO.getTime()) / 60000),
+        correo: { tokenConfigurado: Boolean(process.env.EMAIL_ROUTE_TOKEN) },
+        ia: { gemini: modelo },
+        agenda: agendaConFechas(),
     });
 });
 

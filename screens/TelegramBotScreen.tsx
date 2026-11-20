@@ -1,11 +1,12 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { BakuEstadoPanel } from '../components/features/BakuEstadoPanel';
 import {
     Bot, Send, Key, KeyRound, CheckCircle2, Copy, ExternalLink,
     RefreshCw, Search, Eye, EyeOff, Save, Sparkles, Layers,
     Terminal, Users, AlertCircle, FileText, Check, AlertTriangle,
     Wand2, MessageSquare, Gauge, Plus, Trash2, Sliders, Smartphone,
     ArrowRight, Play, CheckCircle, Flame, ThumbsUp, Zap, HelpCircle,
-    SlidersHorizontal, Edit3, X
+    SlidersHorizontal, Edit3, X, Activity
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
@@ -17,7 +18,7 @@ interface TelegramBotScreenProps {
     theme?: 'light' | 'dark';
 }
 
-type TabType = 'mapa' | 'claves' | 'reporte' | 'incompletos' | 'auditoria';
+type TabType = 'estado' | 'mapa' | 'claves' | 'reporte' | 'incompletos' | 'auditoria';
 
 export interface CustomBotButton {
     id: string;
@@ -52,7 +53,7 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
     const { clients, tasks = [], updateClient } = useAppStore();
     const { toast } = useToast();
 
-    const [activeTab, setActiveTab] = useState<TabType>('claves');
+    const [activeTab, setActiveTab] = useState<TabType>('estado');
     const [searchTerm, setSearchTerm] = useState('');
     // 🚫 Chrome/gestores de contraseñas rellenaban este buscador con el correo
     // del admin (autofill) y el filtro no encontraba nada. Se fuerza a vacío.
@@ -575,6 +576,17 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             {/* Navigation Tabs */}
             <div className="flex border-b border-slate-800 gap-2 overflow-x-auto">
                 <button
+                    onClick={() => setActiveTab('estado')}
+                    className={`px-4 py-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 shrink-0 ${
+                        activeTab === 'estado'
+                            ? 'border-[#04B17B] text-[#04B17B] bg-[#04B17B]/5'
+                            : 'border-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    <Activity size={16} />
+                    Estado de Baku
+                </button>
+                <button
                     onClick={() => setActiveTab('claves')}
                     className={`px-4 py-3 font-semibold text-sm transition-all border-b-2 flex items-center gap-2 shrink-0 ${
                         activeTab === 'claves'
@@ -632,6 +644,8 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
             </div>
 
             {/* TAB 1: ASIGNADOR DE CLAVES */}
+            {activeTab === 'estado' && <BakuEstadoPanel />}
+
             {activeTab === 'claves' && (
                 <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
