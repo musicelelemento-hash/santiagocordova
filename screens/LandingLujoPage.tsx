@@ -87,40 +87,40 @@ const AGRO_TAGS = ['AGRO & PRODUCCIÓN', 'COMERCIO & RETAIL', 'TRANSPORTE & LOG�
 // flattened all four to a single 0.6, which is close but not an exact copy.
 const GALLERY_PANELS = [
   {
-    poster: 'poster-shield-circuit.png',
+    poster: 'poster-act-escudo.jpg',
     color: '#04B17B',
     tag: '01 · CUMPLIMIENTO',
     title: 'IVA y retenciones al día',
     desc: 'Declaración mensual o semestral presentada antes del vencimiento, con el comprobante archivado y el aviso enviado.',
     border: 'rgba(255,255,255,0.10)',
-    posterOpacity: 0.62,
+    posterOpacity: 0.85,
   },
   {
-    poster: 'poster-financial-bars.png',
+    poster: 'poster-act-barras.jpg',
     color: '#2B6AFF',
     tag: '02 · OPTIMIZACIÓN',
     title: 'Retenciones a favor recuperadas',
     desc: 'Cruce de comprobantes y encuadre en la tabla del SRI para que el saldo a favor no se quede en el aire.',
     border: 'rgba(255,255,255,0.10)',
-    posterOpacity: 0.55,
+    posterOpacity: 0.85,
   },
   {
-    poster: 'poster-ecuador-map.png',
+    poster: 'poster-act-red.jpg',
     color: '#04B17B',
     tag: '03 · PRESENCIA',
     title: 'Presencial en El Oro, remoto en el país',
     desc: 'Visitas programadas en la provincia y atención digital para Guayaquil, Quito y Cuenca.',
     border: 'rgba(255,255,255,0.10)',
-    posterOpacity: 0.6,
+    posterOpacity: 0.85,
   },
   {
-    poster: 'poster-cacao-fields.png',
+    poster: 'poster-act-cacao.jpg',
     color: '#2B6AFF',
     tag: '04 · SECTORES',
     title: 'Contabilidad que entiende el campo',
     desc: 'Banano, cacao, camarón y comercio mayorista, con las reglas que realmente les aplican.',
     border: 'rgba(43,106,255,0.28)',
-    posterOpacity: 0.62,
+    posterOpacity: 0.85,
   },
 ];
 
@@ -433,6 +433,18 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         @keyframes lujoPulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
         @keyframes lujoDrift { 0% { transform: translateY(0) } 100% { transform: translateY(8px) } }
         @keyframes lujoShine { to { background-position: 200% center } }
+        /* El único momento orquestado de la carga: el render del hero se «enciende». */
+        @keyframes lujoIgnite { 0% { opacity: 0; filter: brightness(.25) blur(14px) saturate(.4) } 60% { filter: brightness(1.25) blur(0) saturate(1.2) } 100% { opacity: 1; filter: none } }
+        .lujo-hero-media { animation: lujoIgnite 2.2s cubic-bezier(.16,1,.3,1) both; }
+        .lujo-hero-parallax { transform: translate3d(calc(var(--mx,0) * -22px), calc(var(--my,0) * -14px), 0); transition: transform .9s cubic-bezier(.16,1,.3,1); }
+        /* Compuerta de bóveda: cada video de acto entra como una ranura que se abre con el scroll
+           (--p de useLujoScroll; con «reducir movimiento» --p = 0.5 y queda abierta). */
+        .lujo-compuerta { --abre: min(1, calc(var(--p,0) * 3.4)); clip-path: inset(calc(44% * (1 - var(--abre))) 0 round calc(28px * (1 - var(--abre)))); }
+        .lujo-ranura { position: absolute; left: 0; right: 0; height: 1px; pointer-events: none; z-index: 1;
+          background: linear-gradient(90deg, transparent, #04B17B 20%, #7fb0ff 50%, #04B17B 80%, transparent);
+          box-shadow: 0 0 18px 2px rgba(4,177,123,.7); opacity: calc(1 - min(1, var(--p,0) * 3.4)); }
+        .lujo-ranura[data-lado="arriba"] { top: calc(44% * (1 - min(1, var(--p,0) * 3.4))); }
+        .lujo-ranura[data-lado="abajo"] { bottom: calc(44% * (1 - min(1, var(--p,0) * 3.4))); }
         .lujo-card { transition: transform .45s cubic-bezier(.16,1,.3,1), border-color .45s, box-shadow .45s; }
         .lujo-card:hover { transform: translateY(-6px); border-color: rgba(4,177,123,0.4); box-shadow: 0 40px 80px -30px rgba(4,177,123,0.35); }
         .lujo-navlink[data-active="1"] { background: #04B17B; color: #031310 !important; }
@@ -655,7 +667,14 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
         // far shorter than 100vh, so the box still floors at 100vh) and only grows taller than the
         // viewport — instead of clipping — on the rare short/cramped one.
         style={{ minHeight: '100vh' }}
+        onPointerMove={(e) => {
+          if (e.pointerType !== 'mouse') return;
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty('--mx', String((e.clientX - r.left) / r.width - 0.5));
+          e.currentTarget.style.setProperty('--my', String((e.clientY - r.top) / r.height - 0.5));
+        }}
       >
+        <div className="lujo-hero-parallax absolute inset-[-24px]">
         <ActMedia
           // Render propio en Blender 5.3 (cristal con órbitas Azure/Emerald, bucle de 5 s):
           // 0,5 MB contra los 14,7 MB del WebP dorado anterior.
@@ -663,14 +682,15 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           poster={`${MEDIA}poster-hero-azure.jpg`}
           eager
           imgRef={heroMediaRef}
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.62, transform: 'scale(1.06)', willChange: 'transform' }}
+          className="lujo-hero-media absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.9, transform: 'scale(1.06)', willChange: 'transform' }}
         />
+        </div>
         <div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(4,177,123,0.16), transparent 70%), linear-gradient(to bottom, rgba(2,6,23,0.82) 0%, rgba(2,6,23,0.42) 35%, rgba(2,6,23,0.94) 100%)',
+              'radial-gradient(ellipse 46% 40% at 50% 52%, rgba(2,6,23,0.55), transparent 75%), linear-gradient(to bottom, rgba(2,6,23,0.72) 0%, rgba(2,6,23,0.12) 32%, rgba(2,6,23,0.18) 62%, rgba(2,6,23,0.94) 100%)',
           }}
         />
         <div className="relative z-[2] w-full max-w-[1100px] px-6 text-center">
@@ -749,18 +769,20 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       </section>
 
       {/* ── ACTO I · BLINDAJE ────────────────────────────────────────────── */}
-      <section id="blindaje" ref={registerAct('blindaje')} className="relative" style={{ height: '300vh' }}>
+      <section id="blindaje" ref={registerAct('blindaje')} className="relative" style={{ height: '210vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            video={`${MEDIA}shield-circuit.mp4`}
-            poster={`${MEDIA}poster-shield-circuit.png`}
-            className="absolute inset-0 w-full h-full object-cover"
+            video={`${MEDIA}act-escudo.mp4`}
+            poster={`${MEDIA}poster-act-escudo.jpg`}
+            className="lujo-compuerta absolute inset-0 w-full h-full object-cover object-[74%_50%]"
             style={{
               opacity: 0.95,
               transform: 'translate3d(calc(var(--p,0) * 5vw),0,0) scale(calc(1.26 - 0.18 * var(--p,0)))',
               willChange: 'transform',
             }}
           />
+          <span className="lujo-ranura" data-lado="arriba" aria-hidden="true" />
+          <span className="lujo-ranura" data-lado="abajo" aria-hidden="true" />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 62% 50%, rgba(4,177,123,0.20), transparent 68%), linear-gradient(to right, rgba(2,6,23,0.92) 0%, rgba(2,6,23,0.62) 38%, rgba(2,6,23,0.12) 68%, rgba(2,6,23,0) 100%)' }} />
           {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
           <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
@@ -1181,14 +1203,16 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       )}
 
       {/* ── ACTO II · RESULTADOS ─────────────────────────────────────────── */}
-      <section id="resultados" ref={registerAct('resultados')} className="relative" style={{ height: '300vh' }}>
+      <section id="resultados" ref={registerAct('resultados')} className="relative" style={{ height: '210vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            video={`${MEDIA}financial-bars.mp4`}
-            poster={`${MEDIA}poster-financial-bars.png`}
-            className="absolute inset-0 w-full h-full object-cover"
+            video={`${MEDIA}act-barras.mp4`}
+            poster={`${MEDIA}poster-act-barras.jpg`}
+            className="lujo-compuerta absolute inset-0 w-full h-full object-cover object-[30%_50%]"
             style={{ opacity: 0.95, transform: 'translate3d(calc(var(--p,0) * -6vw),0,0) scale(calc(1.1 + 0.16 * var(--p,0)))', willChange: 'transform' }}
           />
+          <span className="lujo-ranura" data-lado="arriba" aria-hidden="true" />
+          <span className="lujo-ranura" data-lado="abajo" aria-hidden="true" />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 38% 50%, rgba(43,106,255,0.18), transparent 68%), linear-gradient(to left, rgba(2,6,23,0.92) 0%, rgba(2,6,23,0.62) 38%, rgba(2,6,23,0.12) 68%, rgba(2,6,23,0) 100%)' }} />
           {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
           <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
@@ -1232,14 +1256,16 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       </section>
 
       {/* ── ACTO III · COBERTURA ─────────────────────────────────────────── */}
-      <section id="cobertura" ref={registerAct('cobertura')} className="relative" style={{ height: '320vh' }}>
+      <section id="cobertura" ref={registerAct('cobertura')} className="relative" style={{ height: '230vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            video={`${MEDIA}ecuador-map.mp4`}
-            poster={`${MEDIA}poster-ecuador-map.png`}
-            className="absolute inset-0 w-full h-full object-cover"
+            video={`${MEDIA}act-red.mp4`}
+            poster={`${MEDIA}poster-act-red.jpg`}
+            className="lujo-compuerta absolute inset-0 w-full h-full object-cover object-[52%_50%]"
             style={{ opacity: 0.95, transform: 'scale(calc(1.18 - 0.14 * var(--p,0)))', willChange: 'transform' }}
           />
+          <span className="lujo-ranura" data-lado="arriba" aria-hidden="true" />
+          <span className="lujo-ranura" data-lado="abajo" aria-hidden="true" />
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(4,177,123,0.14), transparent 72%), linear-gradient(to bottom, rgba(2,6,23,0.8) 0%, rgba(2,6,23,0.22) 40%, rgba(2,6,23,0.25) 62%, rgba(2,6,23,0.88) 100%)' }} />
           {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
           <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
@@ -1269,14 +1295,16 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       </section>
 
       {/* ── ACTO IV · RAÍCES (AGRO) ──────────────────────────────────────── */}
-      <section id="raices" ref={registerAct('raices')} className="relative" style={{ height: '300vh' }}>
+      <section id="raices" ref={registerAct('raices')} className="relative" style={{ height: '210vh' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center">
           <ActMedia
-            video={`${MEDIA}cacao-fields.mp4`}
-            poster={`${MEDIA}poster-cacao-fields.png`}
-            className="absolute inset-0 w-full h-full object-cover"
+            video={`${MEDIA}act-cacao.mp4`}
+            poster={`${MEDIA}poster-act-cacao.jpg`}
+            className="lujo-compuerta absolute inset-0 w-full h-full object-cover object-[55%_40%]"
             style={{ opacity: 0.95, transform: 'translate3d(calc(var(--p,0) * -4vw),calc(var(--p,0) * 3vh),0) scale(calc(1.26 - 0.16 * var(--p,0)))', willChange: 'transform' }}
           />
+          <span className="lujo-ranura" data-lado="arriba" aria-hidden="true" />
+          <span className="lujo-ranura" data-lado="abajo" aria-hidden="true" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.38) 45%, rgba(2,6,23,0.1) 72%, rgba(2,6,23,0.5) 100%)' }} />
           {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
           <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
@@ -1319,7 +1347,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       </section>
 
       {/* ── RECORRIDO LATERAL (horizontal gallery act) ──────────────────── */}
-      <section id="galeria" ref={registerAct('galeria')} className="relative" style={{ height: '420vh' }}>
+      <section id="galeria" ref={registerAct('galeria')} className="relative" style={{ height: '320vh' }}>
         <div
           className="sticky top-0 h-screen overflow-hidden grid"
           style={{ background: '#020617', gridTemplateRows: 'auto minmax(0,1fr) auto', paddingTop: 'clamp(74px,12vh,120px)', paddingBottom: 'clamp(20px,4vh,44px)', boxSizing: 'border-box' }}
@@ -1363,7 +1391,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       </section>
 
       {/* ── INTERLUDIO CLARO · CRITERIO ──────────────────────────────────── */}
-      <section id="criterio" ref={registerAct('criterio')} className="relative" style={{ height: '200vh', background: '#EEF3FB' }}>
+      <section id="criterio" ref={registerAct('criterio')} className="relative" style={{ height: '160vh', background: '#EEF3FB' }}>
         <div className="sticky top-0 h-screen overflow-hidden grid place-items-center" style={{ background: '#EEF3FB' }}>
           <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 55% at 70% 40%, rgba(43,106,255,0.30), transparent 68%)' }} />
           <div className="absolute top-0 left-0 right-0" style={{ height: 120, background: 'linear-gradient(to bottom, rgba(2,6,23,0.22), transparent)' }} />
