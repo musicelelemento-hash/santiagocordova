@@ -465,6 +465,15 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           .lujo-hero-desc { margin-top: 12px !important; }
           .lujo-hero-ctas { margin-top: 16px !important; }
         }
+        /* Cobertura en el celular: sin desplazamientos ni zoom (empujaban el título y las
+           tarjetas fuera de la pantalla) y tarjetas en 2 columnas compactas que caben en el alto. */
+        @media (max-width: 767px) {
+          .lujo-cobertura-contenido, .lujo-cobertura-titulo > span { transform: none !important; }
+          .lujo-cobertura-titulo { font-size: 1.85rem !important; }
+          .lujo-cobertura-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-top: 22px !important; }
+          .lujo-cobertura-grid > div { padding: 12px 14px !important; }
+          .lujo-cobertura-desc { display: none; }
+        }
       `}</style>
 
       {/* ── HEADER: progress bar + desktop pill nav ─────────────────────── */}
@@ -672,7 +681,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 15px', borderRadius: 999, border: '1px solid rgba(4,177,123,0.40)', background: 'rgba(4,177,123,0.10)' }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: '#4edea3' }} />
-              <span className="font-mono text-[10px] font-bold tracking-[0.22em]" style={{ color: '#4edea3' }}>REGULARIZACIÓN SRI · CERO MULTAS ABUSIVAS</span>
+              <span className="font-mono text-[10px] font-bold tracking-[0.22em]" style={{ color: '#4edea3' }}>REGULARIZACIÓN SRI<span className="hidden sm:inline"> · CERO MULTAS ABUSIVAS</span></span>
             </span>
           </Reveal>
           <Reveal index={1} as="h1" className="lujo-hero-title font-display font-extrabold text-white" style={{ margin: '26px 0 0', letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,7vw,6.4rem)' }}>
@@ -747,13 +756,14 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             poster={`${MEDIA}poster-shield-circuit.png`}
             className="absolute inset-0 w-full h-full object-cover"
             style={{
-              opacity: 0.5,
+              opacity: 0.95,
               transform: 'translate3d(calc(var(--p,0) * 5vw),0,0) scale(calc(1.26 - 0.18 * var(--p,0)))',
-              clipPath: 'polygon(0 0, calc(34% + var(--p,0) * 76%) 0, calc(8% + var(--p,0) * 100%) 100%, 0 100%)',
-              willChange: 'transform, clip-path',
+              willChange: 'transform',
             }}
           />
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 62% 50%, rgba(4,177,123,0.20), transparent 68%), linear-gradient(to right, rgba(2,6,23,0.95) 0%, rgba(2,6,23,0.72) 48%, rgba(2,6,23,0.35) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 62% 50%, rgba(4,177,123,0.20), transparent 68%), linear-gradient(to right, rgba(2,6,23,0.92) 0%, rgba(2,6,23,0.62) 38%, rgba(2,6,23,0.12) 68%, rgba(2,6,23,0) 100%)' }} />
+          {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
+          <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
           <span
             className="absolute inset-0 grid place-items-center font-display font-extrabold pointer-events-none select-none"
             style={{ fontSize: 'clamp(9rem,26vw,22rem)', color: 'rgba(255,255,255,0.035)', transform: 'translateY(calc((0.5 - var(--p,0)) * 70px))' }}
@@ -1177,9 +1187,11 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             video={`${MEDIA}financial-bars.mp4`}
             poster={`${MEDIA}poster-financial-bars.png`}
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.46, transform: 'translate3d(calc(var(--p,0) * -6vw),0,0) scale(calc(1.1 + 0.16 * var(--p,0)))', willChange: 'transform' }}
+            style={{ opacity: 0.95, transform: 'translate3d(calc(var(--p,0) * -6vw),0,0) scale(calc(1.1 + 0.16 * var(--p,0)))', willChange: 'transform' }}
           />
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 38% 50%, rgba(43,106,255,0.18), transparent 68%), linear-gradient(to left, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.7) 50%, rgba(2,6,23,0.4) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 38% 50%, rgba(43,106,255,0.18), transparent 68%), linear-gradient(to left, rgba(2,6,23,0.92) 0%, rgba(2,6,23,0.62) 38%, rgba(2,6,23,0.12) 68%, rgba(2,6,23,0) 100%)' }} />
+          {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
+          <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
           <span
             className="absolute inset-0 grid place-items-center font-display font-extrabold pointer-events-none select-none"
             style={{ fontSize: 'clamp(9rem,26vw,22rem)', color: 'rgba(255,255,255,0.035)', transform: 'translateY(calc((0.5 - var(--p,0)) * 70px))' }}
@@ -1226,27 +1238,29 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             video={`${MEDIA}ecuador-map.mp4`}
             poster={`${MEDIA}poster-ecuador-map.png`}
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.52, transform: 'scale(calc(1.18 - 0.14 * var(--p,0)))', willChange: 'transform' }}
+            style={{ opacity: 0.95, transform: 'scale(calc(1.18 - 0.14 * var(--p,0)))', willChange: 'transform' }}
           />
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(4,177,123,0.14), transparent 72%), linear-gradient(to bottom, rgba(2,6,23,0.9) 0%, rgba(2,6,23,0.55) 45%, rgba(2,6,23,0.92) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(4,177,123,0.14), transparent 72%), linear-gradient(to bottom, rgba(2,6,23,0.8) 0%, rgba(2,6,23,0.22) 40%, rgba(2,6,23,0.25) 62%, rgba(2,6,23,0.88) 100%)' }} />
+          {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
+          <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
           <div
-            className="relative z-[2] w-full max-w-[1160px] px-6 text-center"
+            className="lujo-cobertura-contenido relative z-[2] w-full max-w-[1160px] px-6 text-center"
             style={{ boxSizing: 'border-box', opacity: 'calc(0.12 + 0.88 * var(--q,1))', transform: 'translateY(calc((0.5 - var(--p,0)) * -46px)) scale(calc(0.94 + var(--p,0) * 0.11))' }}
           >
             <span className="font-mono text-[10px] font-bold tracking-[0.3em]" style={{ color: '#04B17B' }}>ACTO III — COBERTURA NACIONAL</span>
             <h2
-              className="font-display font-extrabold text-white mx-auto flex flex-wrap justify-center"
+              className="lujo-cobertura-titulo font-display font-extrabold text-white mx-auto flex flex-wrap justify-center"
               style={{ margin: '20px auto 0', maxWidth: 900, letterSpacing: '-0.03em', lineHeight: 1.04, fontSize: 'clamp(2.1rem,5vw,4.2rem)', gap: '0 0.35em' }}
             >
               <span style={{ transform: 'translateX(min(0px, calc((var(--p,0) - 0.5) * 150px)))' }}>Base en Pasaje,</span>
               <span style={{ transform: 'translateX(max(0px, calc((0.5 - var(--p,0)) * 150px)))' }}>alcance en todo el Ecuador</span>
             </h2>
-            <div className="grid text-left mx-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,220px), 1fr))', gap: 12, maxWidth: 940, marginTop: 38 }}>
+            <div className="lujo-cobertura-grid grid text-left mx-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,220px), 1fr))', gap: 12, maxWidth: 940, marginTop: 38 }}>
               {REGIONS.map((r) => (
                 <div key={r.name} className="rounded-[18px]" style={{ padding: 18, border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(5,20,36,0.55)', backdropFilter: 'blur(16px)' }}>
                   <div className="font-mono text-[9.5px] tracking-[0.2em]" style={{ color: r.tag.startsWith('EL ORO') ? '#04B17B' : '#2B6AFF' }}>{r.tag}</div>
                   <div className="font-display font-bold text-white text-[17px]" style={{ marginTop: 8 }}>{r.name}</div>
-                  <div className="font-light text-[13px]" style={{ marginTop: 6, lineHeight: 1.55, color: '#9fadc0' }}>{r.desc}</div>
+                  <div className="lujo-cobertura-desc font-light text-[13px]" style={{ marginTop: 6, lineHeight: 1.55, color: '#9fadc0' }}>{r.desc}</div>
                 </div>
               ))}
             </div>
@@ -1261,9 +1275,11 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
             video={`${MEDIA}cacao-fields.mp4`}
             poster={`${MEDIA}poster-cacao-fields.png`}
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.58, transform: 'translate3d(calc(var(--p,0) * -4vw),calc(var(--p,0) * 3vh),0) scale(calc(1.26 - 0.16 * var(--p,0)))', willChange: 'transform' }}
+            style={{ opacity: 0.95, transform: 'translate3d(calc(var(--p,0) * -4vw),calc(var(--p,0) * 3vh),0) scale(calc(1.26 - 0.16 * var(--p,0)))', willChange: 'transform' }}
           />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.96) 0%, rgba(2,6,23,0.5) 45%, rgba(2,6,23,0.8) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,6,23,0.94) 0%, rgba(2,6,23,0.38) 45%, rgba(2,6,23,0.1) 72%, rgba(2,6,23,0.5) 100%)' }} />
+          {/* Sólo en el celular: el texto ocupa todo el ancho y necesita un poco más de contraste */}
+          <div className="absolute inset-0 md:hidden pointer-events-none" style={{ background: 'rgba(2,6,23,0.4)' }} />
           <span
             className="absolute inset-0 grid place-items-center font-display font-extrabold pointer-events-none select-none"
             style={{ fontSize: 'clamp(9rem,26vw,22rem)', color: 'rgba(255,255,255,0.035)', transform: 'translateY(calc((0.5 - var(--p,0)) * 70px))' }}
