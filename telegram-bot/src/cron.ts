@@ -124,7 +124,12 @@ export function startCronJobs(bot: Bot) {
     cron.schedule('0 0 * * *', async () => {
         console.log("⏰ Ejecutando copia de seguridad automática a Google Sheets (00:00 AM)...");
         try {
-            const { data: clients, error } = await supabase.from('clients').select('*').eq('is_deleted', false);
+            // Sólo lo que escribe syncToSheets. Antes era select('*'): bajaba ~16 MB de archivos
+            // y no traía sri_declaraciones, así que la columna RENTA salía siempre «Pendiente».
+            const { data: clients, error } = await supabase
+                .from('clients')
+                .select('ruc, name, regime, notes, sri_declaraciones(type, period, status)')
+                .eq('is_deleted', false);
             if (error) throw error;
             if (clients && clients.length > 0) {
                 await syncToSheets(clients);
