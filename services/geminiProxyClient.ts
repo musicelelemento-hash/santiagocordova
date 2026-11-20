@@ -49,7 +49,8 @@ export interface GeminiProxyResponse {
   candidates?: Array<{ content?: GeminiProxyContent }>;
 }
 
-const PROXY_URL = (import.meta as any).env?.VITE_GEMINI_PROXY_URL as string | undefined;
+// Por defecto, la función de Vercel /api/gemini (la llave vive en el servidor).
+const PROXY_URL = ((import.meta as any).env?.VITE_GEMINI_PROXY_URL as string | undefined) || '/api/gemini';
 const PROXY_ACCESS_KEY = (import.meta as any).env?.VITE_GEMINI_PROXY_ACCESS_KEY as string | undefined;
 
 export function isProxyConfigured(): boolean {
@@ -64,6 +65,7 @@ async function generateContent(req: GeminiProxyRequest): Promise<GeminiProxyResp
     model: req.model,
     contents: req.contents,
   };
+  if ((req.config as any)?.systemInstruction) body.systemInstruction = (req.config as any).systemInstruction;
   if (req.config) {
     if (req.config.tools) body.tools = req.config.tools;
     const generationConfig: Record<string, unknown> = {};
@@ -77,6 +79,13 @@ async function generateContent(req: GeminiProxyRequest): Promise<GeminiProxyResp
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (PROXY_ACCESS_KEY) headers['x-proxy-key'] = PROXY_ACCESS_KEY;
+  // /api/gemini exige sesión iniciada: se manda el token de Supabase.
+  try {
+    const { supabase } = await import('./supabase');
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  } catch { /* sin sesión: el proxy responde 401 */ }
 
   const res = await fetch(PROXY_URL, {
     method: 'POST',

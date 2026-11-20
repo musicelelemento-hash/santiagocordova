@@ -1,12 +1,10 @@
 
-import { GoogleGenAI } from "@google/genai";
-import { getProxyClient, isProxyConfigured, GeminiProxyRequest, GeminiProxyResponse } from "./geminiProxyClient";
+import { getProxyClient, GeminiProxyRequest, GeminiProxyResponse } from "./geminiProxyClient";
 import { Client, Task, AnalysisType, TaxRegime, Message } from "../types";
 
 /**
  * Interfaz común para ambos backends de IA:
  *  - Proxy serverless (recomendado): la API key vive en el backend, nunca en el bundle.
- *  - SDK directo con VITE_GEMINI_API_KEY: modo legado/desarrollo local.
  */
 type AIClientLike = {
   models: {
@@ -14,14 +12,11 @@ type AIClientLike = {
   };
 };
 
-// Inicialización del cliente AI
-const getAIClient = (): AIClientLike | null => {
-  // Si hay proxy configurado, la API key NO viaja al navegador.
-  if (isProxyConfigured()) return getProxyClient();
-  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  return new GoogleGenAI(apiKey) as unknown as AIClientLike;
-};
+// Inicialización del cliente AI: siempre por el proxy (/api/gemini en Vercel).
+// Antes había un modo directo con VITE_GEMINI_API_KEY: Vite mete esa variable
+// en el JavaScript público, o sea que la llave quedaba a la vista de cualquiera.
+// El modelo lo elige el servidor (los nombres de abajo son sólo referencia).
+const getAIClient = (): AIClientLike | null => getProxyClient();
 
 export const summarizeTextWithGemini = async (text: string): Promise<string> => {
   if (!text || text.trim().length < 5) return "";
@@ -30,7 +25,7 @@ export const summarizeTextWithGemini = async (text: string): Promise<string> => 
     if (!ai) return text.substring(0, 100) + "...";
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: [{ role: 'user', parts: [{ text: `Eres un asistente contable experto. Resume la siguiente nota de cliente en una frase ejecutiva y accionable: "${text}"` }] }],
     });
     return response.text || text;
@@ -53,7 +48,7 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
 
     if (ai) {
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         contents: [{
           role: 'user',
           parts: [
@@ -113,7 +108,7 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
 
     // MOCK FALLBACK: NO devolver datos falsos de demostración — eso creaba clientes inventados.
     // Mejor lanzar un error claro para que el usuario sepa que falta configurar la IA.
-    throw new Error("IA de análisis no configurada. Configura el proxy de Gemini (VITE_GEMINI_PROXY_URL) o VITE_GEMINI_API_KEY.");
+    throw new Error("IA de análisis no disponible: inicia sesión en el panel.");
 
   } catch (error) {
     console.error("Gemini Document Error:", error);
@@ -143,7 +138,7 @@ export const runStrategicAnalysis = async (clients: Client[], tasks: Task[], typ
     };
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: [{
         role: 'user',
         parts: [{
@@ -273,7 +268,7 @@ export const getAssistantResponse = async (messages: Message[], clients: Client[
         ];
 
         let response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',
             contents: history,
             config: {
                 tools: [{ functionDeclarations: toolDeclarations }]
@@ -305,7 +300,7 @@ export const getAssistantResponse = async (messages: Message[], clients: Client[
 
             // Get standard response after providing tool data
             response = await ai.models.generateContent({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: history,
                 config: {
                     tools: [{ functionDeclarations: toolDeclarations }]
@@ -374,7 +369,7 @@ Responde estrictamente en formato JSON con la siguiente estructura:
 }`;
 
     const res = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
 

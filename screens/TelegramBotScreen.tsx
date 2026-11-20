@@ -330,14 +330,15 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
         }
 
         setRawBotResponse(response);
+        return response;
         setAuditResult(null);
     };
 
     const handleRunAiAudit = async () => {
         let baseResp = rawBotResponse;
         if (!baseResp.trim()) {
-            handleGenerateBaseResponse();
-            baseResp = rawBotResponse;
+            // El estado de React no se actualiza en el acto: se usa lo que devuelve.
+            baseResp = handleGenerateBaseResponse();
         }
 
         setIsAuditing(true);
