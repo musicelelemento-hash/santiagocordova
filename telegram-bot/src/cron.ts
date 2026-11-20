@@ -7,6 +7,7 @@ import { searchEmails } from './gmail';
 import { generateAiText } from './ai';
 import { proponerCobranzaSemanal } from './cobranza_semanal';
 import { revisarObligacionesAnualesEmpresas } from './empresas_recordatorios';
+import { registrarEjecucion } from './estado';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
 
@@ -71,6 +72,7 @@ export function startCronJobs(bot: Bot) {
     // Monitoreo SRI Proactivo: 9 AM, 2 PM, 6 PM Lunes a Viernes
     cron.schedule('0 9,14,18 * * 1-5', async () => {
         console.log("⏰ Ejecutando monitoreo proactivo del Buzón SRI...");
+        registrarEjecucion('buzon');
         const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
         const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
         try {
@@ -99,6 +101,7 @@ export function startCronJobs(bot: Bot) {
     // Ejecutar todos los días a las 03:30 AM hora de Ecuador
     cron.schedule('30 3 * * *', async () => {
         console.log("⏰ Ejecutando reporte proactivo de madrugada (03:30 AM)...");
+        registrarEjecucion('reporte');
         await triggerProactiveReport(bot);
     }, {
         timezone: "America/Guayaquil"
@@ -109,6 +112,7 @@ export function startCronJobs(bot: Bot) {
     // Lunes Financiero 08:00: Baku arma la lista de deudores y PREGUNTA. Los correos salen sólo con un botón.
     cron.schedule('0 8 * * 1', async () => {
         console.log("⏰ Lunes Financiero (08:00): proponiendo la cobranza semanal...");
+        registrarEjecucion('lunes');
         const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
         const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
         try {
@@ -123,6 +127,7 @@ export function startCronJobs(bot: Bot) {
     // Copia de seguridad silenciosa a Google Sheets a la media noche
     cron.schedule('0 0 * * *', async () => {
         console.log("⏰ Ejecutando copia de seguridad automática a Google Sheets (00:00 AM)...");
+        registrarEjecucion('backup');
         try {
             // Sólo lo que escribe syncToSheets. Antes era select('*'): bajaba ~16 MB de archivos
             // y no traía sri_declaraciones, así que la columna RENTA salía siempre «Pendiente».
@@ -145,6 +150,7 @@ export function startCronJobs(bot: Bot) {
     // 🔐 Viernes Credencial: Alerta de claves SRI por caducar cada Viernes a las 09:00 AM
     cron.schedule('0 9 * * 5', async () => {
         console.log("⏰ Ejecutando revisión de credenciales SRI (Viernes 09:00 AM)...");
+        registrarEjecucion('credenciales');
         const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
         const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
         try {
@@ -175,6 +181,7 @@ export function startCronJobs(bot: Bot) {
     // 🏢 Obligaciones anuales de sociedades: todos los días 08:30
     cron.schedule('30 8 * * *', async () => {
     console.log('⏰ Revisando obligaciones anuales de sociedades (08:30)...');
+    registrarEjecucion('sociedades');
     const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
     const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
     try {
