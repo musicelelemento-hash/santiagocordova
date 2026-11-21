@@ -83,7 +83,11 @@ export const db = {
         // 2. Check local DB
         const localData = await this.getLocal(key);
 
-        // 3. Fallback to Firestore only if available and local is empty
+        // 3. Fallback to Firestore only if available and local is empty.
+        //    (21-nov-2026) Antes consultaba Firestore SIEMPRE y descartaba el
+        //    resultado si había dato local: cada lectura esperaba a la red para
+        //    nada, y la carga del panel quedaba colgada de eso.
+        if (localData !== undefined) return localData as T;
         try {
             const docRef = doc(firestoreDb, "sc_pro_backup", key);
             const docSnap = await getDoc(docRef);

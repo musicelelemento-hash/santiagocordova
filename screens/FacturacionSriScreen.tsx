@@ -3062,7 +3062,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5 mt-0.5">
-                Soluciones Tributarias <span className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-mono font-black tracking-wider shadow-sm border border-blue-400/30">PRO</span>
+                SC Estrategias Fiscales <span className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-mono font-black tracking-wider shadow-sm border border-blue-400/30">PRO</span>
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 Facturación Electrónica & Suite SRI Ecuador · Cumplimiento Res. NAC-027
@@ -4620,7 +4620,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       `Hola *${buyerName}*,\nLe comparto el detalle de su factura emitida en el SRI por Servicios Contables.\n\n` +
                       `*Total:* $${invoiceTotals.total.toFixed(2)}\n` +
                       `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
-                      `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
+                      `¡Muchas gracias por su confianza!\n_Santiago Córdova - SC Estrategias Fiscales_`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -5210,7 +5210,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   `Hola *${buyerName}*,\nLe comparto el detail de su factura emitida en el SRI por Servicios Contables.\n\n` +
                   `*Total:* $${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}\n` +
                   `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
-                  `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
+                  `¡Muchas gracias por su confianza!\n_Santiago Córdova - SC Estrategias Fiscales_`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
