@@ -35,7 +35,7 @@ import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix'
 import { ClientsDashboard, QuickFilterKey } from '../components/features/ClientsDashboard';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
 import { downloadStoredFile } from '../services/fileService';
-import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
+import { getClientDebtSummary, getClientUndeclaredSummary, estadoAlCobrar } from '../services/complianceEngine';
 import { useCampaignContext } from '../hooks/useCampaignContext';
 import { CampaignBanner } from '../components/ui/CampaignBanner';
 import { useDebounce } from '../hooks/useDebounce';
@@ -834,14 +834,14 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     ...updatedHistory[idx],
                     is_paid: isPaid,
                     paidAt: isPaid ? now : undefined,
-                    status: isPaid ? DeclarationStatus.Pagada : (updatedHistory[idx].status === DeclarationStatus.Pagada ? DeclarationStatus.Enviada : updatedHistory[idx].status),
+                    status: isPaid ? estadoAlCobrar(updatedHistory[idx]) : (updatedHistory[idx].status === DeclarationStatus.Pagada ? DeclarationStatus.Enviada : updatedHistory[idx].status),
                     updatedAt: now
                 };
             } else {
                 updatedHistory.push({
                     period: targetPeriod,
                     type: t,
-                    status: isPaid ? DeclarationStatus.Pagada : DeclarationStatus.Pendiente,
+                    status: DeclarationStatus.Pendiente, // cobrar no es declarar: ver estadoAlCobrar
                     is_paid: isPaid,
                     paidAt: isPaid ? now : undefined,
                     updatedAt: now
@@ -974,7 +974,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             matchingIndices.forEach(idx => {
                 history[idx] = {
                     ...history[idx],
-                    status: newStatus,
+                    status: action === 'pay' ? estadoAlCobrar(history[idx]) : newStatus,
                     updatedAt: nowIso,
                     ...(action === 'declare' ? { declaredAt: nowIso } : {}),
                     ...(action === 'pay' ? { is_paid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
@@ -983,7 +983,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         } else {
             history.push({
                 period,
-                status: newStatus,
+                status: action === 'pay' ? DeclarationStatus.Pendiente : newStatus,
                 updatedAt: nowIso,
                 ...(action === 'declare' ? { declaredAt: nowIso } : {}),
                 ...(action === 'pay' ? { is_paid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})

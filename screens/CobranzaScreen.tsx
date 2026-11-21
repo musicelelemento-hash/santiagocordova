@@ -3,7 +3,7 @@ import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, R
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
 import { calcularCapacidad, formatearBytes } from '../services/capacity';
-import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary, arePeriodsEqual } from '../services/complianceEngine';
+import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary, arePeriodsEqual, estadoAlCobrar } from '../services/complianceEngine';
 
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
 import {
@@ -556,7 +556,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             if (clientIdx > -1) {
                 const decls = [...(newClients[clientIdx].declarations ?? [])];
                 const declIdx = decls.findIndex(d => d.period === item.period);
-                const entry = { period: item.period, status: DeclarationStatus.Pagada, is_paid: true, paidAt: nowIso, transactionId: `PAY-${key.slice(-6)}`, amount: item.amount, updatedAt: nowIso };
+                const entry = { period: item.period, status: estadoAlCobrar(declIdx > -1 ? decls[declIdx] : undefined), is_paid: true, paidAt: nowIso, transactionId: `PAY-${key.slice(-6)}`, amount: item.amount, updatedAt: nowIso };
                 if (declIdx > -1) decls[declIdx] = { ...decls[declIdx], ...entry };
                 else decls.push(entry as any);
                 newClients[clientIdx] = { ...newClients[clientIdx], declarations: decls, updatedAt: nowIso };
@@ -1640,7 +1640,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             matchingIndices.forEach(idx => {
                 history[idx] = {
                     ...history[idx],
-                    status: DeclarationStatus.Pagada,
+                    status: estadoAlCobrar(history[idx]),
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
@@ -1651,7 +1651,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         } else {
             history.push({
                 period,
-                status: DeclarationStatus.Pagada,
+                status: DeclarationStatus.Pendiente,
                 is_paid: true,
                 paidAt: nowIso,
                 transactionId,
@@ -1732,7 +1732,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 matchingIndices.forEach(idx => {
                     history[idx] = {
                         ...history[idx],
-                        status: DeclarationStatus.Pagada,
+                        status: estadoAlCobrar(history[idx]),
                         is_paid: true,
                         paidAt: nowIso,
                         transactionId,
@@ -1743,7 +1743,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 history.push({
                     period: p.period,
-                    status: DeclarationStatus.Pagada,
+                    status: DeclarationStatus.Pendiente,
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
@@ -1798,7 +1798,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         matchingIndices.forEach(idx => {
                             history[idx] = {
                                 ...history[idx],
-                                status: DeclarationStatus.Pagada,
+                                status: estadoAlCobrar(history[idx]),
                                 is_paid: true,
                                 paidAt: nowIso,
                                 transactionId,
@@ -1809,7 +1809,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     } else {
                         history.push({
                             period: p.period,
-                            status: DeclarationStatus.Pagada,
+                            status: DeclarationStatus.Pendiente,
                             is_paid: true,
                             paidAt: nowIso,
                             transactionId,
@@ -1868,7 +1868,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     matchingIndices.forEach(idx => {
                         history[idx] = {
                             ...history[idx],
-                            status: DeclarationStatus.Pagada,
+                            status: estadoAlCobrar(history[idx]),
                             is_paid: true,
                             paidAt: nowIso,
                             transactionId,
@@ -1882,7 +1882,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 totalAmount += fee;
                 history.push({
                     period: p.key,
-                    status: DeclarationStatus.Pagada,
+                    status: DeclarationStatus.Pendiente,
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
@@ -1939,7 +1939,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     matchingIndices.forEach(idx => {
                         history[idx] = {
                             ...history[idx],
-                            status: DeclarationStatus.Pagada,
+                            status: estadoAlCobrar(history[idx]),
                             is_paid: true,
                             paidAt: nowIso,
                             transactionId,
@@ -1956,7 +1956,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 history.push({
                     period: periodKey,
-                    status: DeclarationStatus.Pagada,
+                    status: DeclarationStatus.Pendiente,
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
@@ -2009,7 +2009,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 matchingIndices.forEach(idx => {
                     history[idx] = {
                         ...history[idx],
-                        status: DeclarationStatus.Pagada,
+                        status: estadoAlCobrar(history[idx]),
                         is_paid: true,
                         paidAt: nowIso,
                         transactionId,
@@ -2020,7 +2020,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 history.push({
                     period,
-                    status: DeclarationStatus.Pagada,
+                    status: DeclarationStatus.Pendiente,
                     is_paid: true,
                     paidAt: nowIso,
                     transactionId,
@@ -2170,7 +2170,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     if (selectedSyncKeys.has(key) && decls[d.index]) {
                         decls[d.index] = {
                             ...decls[d.index],
-                            status: DeclarationStatus.Pagada,
+                            status: estadoAlCobrar(decls[d.index]),
                             is_paid: true,
                             paidAt: nowIso,
                             paymentMethod: 'Cobro Declaración Liquidada',

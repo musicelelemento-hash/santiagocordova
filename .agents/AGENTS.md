@@ -232,6 +232,8 @@ cada una. No sé cuántas filas históricas están hoy en ese estado falso:
 `/cierre` muestra 2 en el período activo, no mira los anteriores.
 **Estado**: implementada en el bot el 15-nov-2026. Al registrar un pago (`markPaymentAsPaid`), se marca `is_paid = true` y no se sube a `Pagada` si la declaración está `Pendiente` (evita que un pago adelantado figure engañosamente como presentado ante el SRI). Si la fila no existía para ese período, se crea con el estado real consultando también `declaration_history`. En `/cierre` se agregaron acciones interactivas completas: cobro con confirmación en 1 toque (`baku_cierre:pay` y `conf`), acceso directo al expediente 360° para pendientes (`baku_sel`) y consulta de comprobantes para verificaciones (`baku_hub_proofs`).
 
+**En la web, el 21-nov-2026**: misma regla en las pantallas de Cobranza y Clientes con `estadoAlCobrar()` (`services/complianceEngine.ts`): 14 lugares de cobro dejaron de poner `Pagada` a ciegas (las filas nuevas por cobro adelantado quedan `Pendiente` + `is_paid`). Reportes suma ingresos por `is_paid`. Las filas históricas que ya quedaron en `Pagada` sin declarar **no se tocaron**: arreglarlas pide revisar la base.
+
 **WhatsApp Cloud API (Meta)** — el único camino oficial a «un botón y salieron
 los 500», y el único que adjunta el PDF por WhatsApp. Necesita cuenta de Meta
 Business, número dedicado y plantilla aprobada. Meta cobra por mensaje y sus
@@ -312,6 +314,7 @@ Dos cuidados al construirlas:
 | **Verificar la sala de envío en pantalla** | nunca se hizo | necesita sesión para llegar a la matriz |
 | **Botones de un clic desde la ficha del cliente** | ideas anotadas | §6 |
 | **Exportador masivo de la matriz (Excel/PDF)** | pendiente | §3, único hueco de ese módulo |
+| **Correo `contacto@santiagocordova.com`** | pendiente (21-nov-2026) | Ya figura en los datos para Google (`index.html`) pero no existe. El dominio está en **Namecheap** y Santiago ya usa otros correos con él: antes de crear el reenvío hay que ver qué servicio de correo usa (los registros MX) para no romperlos. Él lo revisa desde la computadora. |
 | **Generador de Anexos (ATS / RDEP)** | fase 2 | §3 |
 
 ### Por qué el email va antes que WhatsApp
