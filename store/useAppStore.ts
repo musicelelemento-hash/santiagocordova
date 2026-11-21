@@ -999,16 +999,52 @@ export const useAppStore = create<AppState>((set, get) => ({
       const t0 = performance.now();
 
       // ── FASE 1: Carga local instantánea (IndexedDB) ──────────
-      // Prioridad: mostrar la UI lo antes posible con datos locales
+      // Prioridad: mostrar la UI lo antes posible con datos locales.
+      // (21-nov-2026) Antes leía la configuración con db.get, que va primero a
+      // la nube (Supabase y Firestore): la lista de clientes —que ya estaba en
+      // el navegador— esperaba a esas 6 lecturas remotas y tardaba ~30-40 s en
+      // aparecer. Ahora todo sale de IndexedDB y la nube se consulta después,
+      // sin bloquear (refrescarConfiguracion, más abajo), con las mismas reglas.
       const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig, systemSettings] = await Promise.all([
         db.getLocal('clients'),
-        db.get<Task[]>('tasks'),
-        db.get<WebOrder[]>('webOrders'),
-        db.get<Record<string, string>>('sriCredentials'),
-        db.get<ServiceFeesConfig>('serviceFees'),
-        db.get<ReminderConfig>('reminderConfig'),
-        db.get<SystemSettings>('systemSettings'),
+        db.getLocal('tasks') as Promise<Task[] | undefined>,
+        db.getLocal('webOrders') as Promise<WebOrder[] | undefined>,
+        db.getLocal('sriCredentials') as Promise<Record<string, string> | undefined>,
+        db.getLocal('serviceFees') as Promise<ServiceFeesConfig | undefined>,
+        db.getLocal('reminderConfig') as Promise<ReminderConfig | undefined>,
+        db.getLocal('systemSettings') as Promise<SystemSettings | undefined>,
       ]);
+
+      // Configuración de la nube (lo que antes bloqueaba la Fase 1): mismas
+      // lecturas db.get, mismo saneamiento; sólo pisa lo que la nube trae.
+      // Las tasks se suman por id sin perder las que ya están en pantalla.
+      const refrescarConfiguracion = async () => {
+        try {
+          const [cTasks, cWebOrders, cCreds, cFees, cReminder, cSettings] = await Promise.all([
+            db.get<Task[]>('tasks'),
+            db.get<WebOrder[]>('webOrders'),
+            db.get<Record<string, string>>('sriCredentials'),
+            db.get<ServiceFeesConfig>('serviceFees'),
+            db.get<ReminderConfig>('reminderConfig'),
+            db.get<SystemSettings>('systemSettings'),
+          ]);
+          const cambios: Partial<AppState> = {};
+          if (Array.isArray(cTasks) && cTasks.length > 0) {
+            const porId = new Map<string, Task>();
+            cTasks.forEach((t) => { if (t && t.id) porId.set(t.id, t); });
+            (get().tasks || []).forEach((t) => { if (t && t.id) porId.set(t.id, t); });
+            cambios.tasks = Array.from(porId.values());
+          }
+          if (cWebOrders) cambios.webOrders = cWebOrders;
+          if (cCreds) cambios.sriCredentials = cCreds;
+          if (cFees) cambios.serviceFees = { ...INITIAL_SERVICE_FEES, ...cFees, ivaSemestral: (cFees.ivaSemestral === 5 ? 10 : cFees.ivaSemestral) };
+          if (cReminder) cambios.reminderConfig = sanitizeReminderConfig(cReminder);
+          if (cSettings) cambios.systemSettings = { ...get().systemSettings, ...cSettings };
+          if (Object.keys(cambios).length > 0) set(cambios);
+        } catch (e) {
+          console.warn('⚠️ No se pudo refrescar la configuración desde la nube; se sigue con la local:', e);
+        }
+      };
 
       const localData = localClients && Array.isArray(localClients) && localClients.length > 0
         ? localClients
@@ -1221,6 +1257,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       };
 
+      // Configuración de la nube: siempre, sin bloquear la pantalla.
+      refrescarConfiguracion();
+
       // Si no había datos locales, esperar a la nube
       if (!localData) {
         await cloudRefresh();
@@ -1228,13 +1267,16 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ clients: mockClients });
         }
         if (!get().isLoaded) {
+          // Sólo lo que haya localmente: si refrescarConfiguracion ya trajo la
+          // configuración de la nube mientras se esperaba a los clientes, no se
+          // pisa con valores iniciales (las tasks de cloudRefresh tampoco).
           set({
             isLoaded: true,
-            tasks: tasks || [],
-            webOrders: webOrders || [],
-            sriCredentials: sriCredentials || {},
-            serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
-            reminderConfig: sanitizeReminderConfig(reminderConfig),
+            ...(tasks && tasks.length > 0 && (get().tasks || []).length === 0 ? { tasks } : {}),
+            ...(webOrders ? { webOrders } : {}),
+            ...(sriCredentials ? { sriCredentials } : {}),
+            ...(serviceFees ? { serviceFees: { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } } : {}),
+            ...(reminderConfig ? { reminderConfig: sanitizeReminderConfig(reminderConfig) } : {}),
           });
         }
       } else {
