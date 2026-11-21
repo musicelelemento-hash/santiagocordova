@@ -1450,6 +1450,36 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setIsComboModalOpen(false);
     };
 
+    // ── Filtros activos, siempre a la vista (21-nov-2026) ─────────────────────
+    // La búsqueda se comparte con la barra superior y queda guardada en la sesión,
+    // y entrar desde el Dashboard trae filtros puestos: la lista y la matriz podían
+    // quedar mostrando sólo una parte sin que se notara («a veces se ocultan
+    // clientes»). Ahora, si hay algún filtro, se dice cuál y se puede quitar.
+    const ETIQUETA_FILTRO_RAPIDO: Record<string, string> = {
+        total: 'Todos', 'fact-proyectada': 'Facturación proyectada', 'al-dia': 'Al día', 'con-deuda': 'Con deuda',
+        'claves-ok': 'Claves SRI al día', 'firmas-vencen': 'Firmas por vencer', 'regimen-general': 'Régimen General',
+        'rimpe-emprendedor': 'RIMPE Emprendedor', 'rimpe-popular': 'RIMPE Negocio Popular', 'iva-mensual': 'IVA mensual',
+        'iva-semestral': 'IVA semestral', exentos: 'Exentos', vencidos: 'Vencidos',
+    };
+    const filtrosActivos: string[] = [];
+    if (searchTerm && searchTerm.trim()) filtrosActivos.push(`búsqueda «${searchTerm.trim()}»`);
+    if (selectedDigitFilter) filtrosActivos.push(`9.º dígito ${selectedDigitFilter}`);
+    if (quickFilter && quickFilter !== 'total') filtrosActivos.push(ETIQUETA_FILTRO_RAPIDO[quickFilter] || String(quickFilter));
+    if (regimeFilter !== 'all') filtrosActivos.push(String(regimeFilter));
+    if (specificCategoryFilter) filtrosActivos.push('categoría elegida');
+    if (filterOption === 'inactive') filtrosActivos.push('sólo inactivos');
+    else if (filterOption === 'all') filtrosActivos.push('activos e inactivos');
+    const totalActivosVisibles = clients.filter((c) => !c.isDeleted && (c.isActive ?? true)).length;
+    const quitarFiltros = () => {
+        setSearchTerm('');
+        try { sessionStorage.removeItem('clients_search'); } catch { /* sesión bloqueada */ }
+        setSelectedDigitFilter(null);
+        setQuickFilter(null);
+        setRegimeFilter('all');
+        setSpecificCategoryFilter(null);
+        setFilterOption('active');
+    };
+
     // El detalle ahora se renderiza como un overlay al final para no desmontar la lista y preservar scroll/estado
 
     return (
@@ -2035,6 +2065,27 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         className="px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
                     >
                         Vaciar Papelera
+                    </button>
+                </div>
+            )}
+
+            {filtrosActivos.length > 0 && (
+                <div
+                    role="status"
+                    className="mx-4 sm:mx-0 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-amber-400/30 bg-amber-400/[0.07] px-4 py-3 text-[13px] text-amber-100"
+                >
+                    <Filter size={15} className="text-amber-300 shrink-0" aria-hidden="true" />
+                    <span>
+                        Mostrando <b className="text-white">{sortedClients.length}</b> de <b className="text-white">{totalActivosVisibles}</b> clientes activos
+                        <span className="text-amber-200/80"> · filtros: {filtrosActivos.join(' · ')}</span>
+                    </span>
+                    <button
+                        type="button"
+                        onClick={quitarFiltros}
+                        className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-amber-300/40 bg-amber-300/10 px-3 py-1.5 text-[12px] font-bold text-amber-100 hover:bg-amber-300/20 transition-colors"
+                    >
+                        <X size={13} aria-hidden="true" />
+                        Quitar filtros
                     </button>
                 </div>
             )}
