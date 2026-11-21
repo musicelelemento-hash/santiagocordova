@@ -236,7 +236,7 @@ const sanitizeSingleClient = (c: any): Client => {
   return client as Client;
 };
 
-const sanitizeClients = (rawClients: any[]): Client[] => {
+export const sanitizeClients = (rawClients: any[]): Client[] => {
   if (!Array.isArray(rawClients)) return [];
 
   // Deduplicate and sanitize in a single pass
@@ -253,20 +253,27 @@ const sanitizeClients = (rawClients: any[]): Client[] => {
       uniqueClients.set(key, sanitized);
     } else {
       const existing = uniqueClients.get(key)!;
-      // Resolve collision: Keep the one with the most declaration history.
-      const clientHistoryStr = sanitized.declarations ? sanitized.declarations.length : 0;
-      const existingHistoryStr = existing.declarations ? existing.declarations.length : 0;
-
-      if (clientHistoryStr > existingHistoryStr) {
-        uniqueClients.set(key, sanitized);
-      } else if (clientHistoryStr === existingHistoryStr) {
-        // If same history length, prefer the one that is NOT deleted or is active
-        if (sanitized.isActive && !existing.isActive) {
-          uniqueClients.set(key, sanitized);
-        } else if (!sanitized.isDeleted && existing.isDeleted) {
-          uniqueClients.set(key, sanitized);
-        }
+      // Resolver choque (21-nov-2026). Antes ganaba SIEMPRE el de más historial,
+      // aunque estuviera en la papelera: un cliente activo podía «desaparecer»
+      // detrás de una fila borrada del mismo RUC.
+      //  - Misma ficha (mismo id, p. ej. copia vieja + copia nueva): gana la más
+      //    reciente, así una copia vieja no resucita a un cliente borrado.
+      //  - Fichas distintas con el mismo RUC: gana la que no está en la papelera,
+      //    después la activa, y recién después la de más historial.
+      const historial = (c: Client) => (c.declarations ? c.declarations.length : 0);
+      const fecha = (c: Client) => Date.parse((c as any).updatedAt || '') || 0;
+      let ganaNuevo: boolean;
+      if (sanitized.id && sanitized.id === existing.id) {
+        const fn = fecha(sanitized), fe = fecha(existing);
+        ganaNuevo = fn !== fe ? fn > fe : historial(sanitized) > historial(existing);
+      } else if (!!sanitized.isDeleted !== !!existing.isDeleted) {
+        ganaNuevo = !sanitized.isDeleted;
+      } else if (!!sanitized.isActive !== !!existing.isActive) {
+        ganaNuevo = !!sanitized.isActive;
+      } else {
+        ganaNuevo = historial(sanitized) > historial(existing);
       }
+      if (ganaNuevo) uniqueClients.set(key, sanitized);
     }
   }
 

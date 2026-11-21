@@ -344,6 +344,31 @@ pero necesita cuenta de Meta Business, número dedicado y plantilla aprobada, y
 Meta cobra por mensaje. **Verificar el precio actual antes de comprometerse**;
 no confiar en lo que recuerde una IA.
 
+### Por qué una pantalla muestra más o menos clientes (21-nov-2026)
+
+En la base (21-nov-2026): 140 = 130 activos + 5 inactivos + 5 en la papelera,
+sin RUC repetidos. Cada número de pantalla es un subconjunto distinto:
+
+| Dónde | Qué cuenta |
+| :--- | :--- |
+| Dashboard «N clientes activos» | activos (`!isDeleted && isActive`); cambia si se elige régimen/obligación |
+| Directorio «Todos (N)» | activos **+ inactivos** (no borrados) |
+| Copia del navegador | todos, papelera incluida |
+| Matriz «Total clientes» | lo que deja el Directorio (búsqueda, dígito, filtro rápido) **y** la frecuencia de IVA de la pestaña |
+| Cobranza | activos con honorario > 0 y que no son «cortesía» |
+
+**El síntoma «a veces se ocultan clientes»** venía de la búsqueda: se comparte
+con la barra superior, queda guardada en la sesión (`sessionStorage
+clients_search`) y entrar desde el Dashboard trae filtros puestos; la lista y la
+matriz mostraban un subconjunto sin decirlo. Ahora el Directorio muestra
+«Mostrando X de Y clientes activos · filtros: …» con «Quitar filtros».
+
+Reglas frágiles que siguen: «cortesía» en Cobranza también se decide por
+palabras en notas/alias (`cortesía`, `trueque`, `familia`, `cero`) — hoy no
+esconde a nadie (verificado), pero una nota con «cero» puede esconder un
+cliente; y «solo plan» tiene tres definiciones distintas (ver
+`clientService.isCourtesyClient`, `ClientsScreen:581`, `AdminDashboard:2470`).
+
 ### Lo que ya está y no hay que reconstruir
 
 - **La sala de envío** (`components/features/SalaDeEnvio.tsx`) — de a uno, con
