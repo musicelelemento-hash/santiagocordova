@@ -77,9 +77,10 @@ export const Reveal: React.FC<{
 };
 
 // ─── COUNT-UP ───────────────────────────────────────────────────────────────
-export const CountUp: React.FC<{ to: number; suffix?: string; duration?: number }> = ({
+export const CountUp: React.FC<{ to: number; suffix?: string; prefix?: string; duration?: number }> = ({
   to,
   suffix = '',
+  prefix = '',
   duration = 1600,
 }) => {
   const ref = useRef<HTMLSpanElement>(null);
@@ -102,6 +103,7 @@ export const CountUp: React.FC<{ to: number; suffix?: string; duration?: number 
 
   return (
     <span ref={ref}>
+      {prefix}
       {val.toLocaleString('es-EC')}
       {suffix}
     </span>

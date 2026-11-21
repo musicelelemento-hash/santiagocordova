@@ -13,6 +13,7 @@ import {
   HelpCircle,
   LayoutGrid,
   MapPin,
+  Plus,
   Scale,
   MessageCircle,
   Search,
@@ -87,6 +88,15 @@ const REGIONS = [
   { tag: 'NACIONAL · REMOTO', name: 'Quito', desc: 'Asesoría fiscal a distancia, sin fricciones.' },
   { tag: 'NACIONAL · REMOTO', name: 'Cuenca', desc: 'Asesoría tributaria para todo el Austro.' },
 ];
+
+// Chispas del cierre: posiciones y ritmos fijos (no aleatorios en cada render).
+const CHISPAS_CIERRE = Array.from({ length: 22 }, (_, i) => ({
+  x: (i * 37 + 11) % 100,
+  dur: 7 + ((i * 13) % 9),
+  delay: (i * 1.7) % 12,
+  o: 0.45 + ((i * 7) % 5) / 10,
+  verde: i % 3 !== 0,
+}));
 
 const AGRO_TAGS = ['AGRO & PRODUCCIÓN', 'COMERCIO & RETAIL', 'TRANSPORTE & LOGÍSTICA', 'PYMES & EMPRENDEDORES'];
 
@@ -419,7 +429,19 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
   }, []);
 
   return (
-    <div ref={raizRef} className="lujo-root" style={{ position: 'relative', background: '#020617', color: '#e2e8f0' }}>
+    <div
+      ref={raizRef}
+      className="lujo-root"
+      style={{ position: 'relative', background: '#020617', color: '#e2e8f0' }}
+      onPointerMove={(e) => {
+        if (e.pointerType !== 'mouse') return;
+        const card = (e.target as HTMLElement).closest<HTMLElement>('.lujo-card');
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--cx', `${e.clientX - r.left}px`);
+        card.style.setProperty('--cy', `${e.clientY - r.top}px`);
+      }}
+    >
       <style>{`
         /* NOTE: deliberately no \`overflow-x: hidden\` here — setting only overflow-x (and not
            overflow-y) on an ancestor forces overflow-y to compute as \`auto\` per the CSS spec,
@@ -459,8 +481,52 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           box-shadow: 0 0 18px 2px rgba(4,177,123,.7); opacity: calc(1 - min(1, var(--p,0) * 3.4)); }
         .lujo-ranura[data-lado="arriba"] { top: calc(44% * (1 - min(1, var(--p,0) * 3.4))); }
         .lujo-ranura[data-lado="abajo"] { bottom: calc(44% * (1 - min(1, var(--p,0) * 3.4))); }
-        .lujo-card { transition: transform .45s cubic-bezier(.16,1,.3,1), border-color .45s, box-shadow .45s; }
-        .lujo-card:hover { transform: translateY(-6px); border-color: rgba(4,177,123,0.4); box-shadow: 0 40px 80px -30px rgba(4,177,123,0.35); }
+        /* Tarjetas: Reveal deja transform:none en línea, así que la elevación va por
+           la propiedad «translate» (se suma, no se pisa). El brillo sigue al puntero
+           (--cx/--cy los pone el pointermove de la raíz). */
+        .lujo-card { position: relative; isolation: isolate; transition: translate .45s cubic-bezier(.16,1,.3,1), border-color .45s, box-shadow .45s; }
+        .lujo-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; opacity: 0; transition: opacity .4s ease;
+          background: radial-gradient(360px circle at var(--cx, 50%) var(--cy, 0%), rgba(4,177,123,0.16), rgba(43,106,255,0.06) 45%, transparent 70%); }
+        .lujo-card:hover { translate: 0 -8px; border-color: rgba(4,177,123,0.4); box-shadow: 0 40px 80px -30px rgba(4,177,123,0.35); }
+        .lujo-card:hover::before { opacity: 1; }
+
+        /* Testimonios: un borde de luz que da la vuelta despacio */
+        @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+        .lujo-testimonio { position: relative; isolation: isolate; }
+        .lujo-testimonio::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+          background: conic-gradient(from var(--ang), transparent 0 62%, rgba(4,177,123,0.9) 76%, rgba(110,155,255,0.9) 88%, transparent 100%);
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+          animation: lujoBorde 7s linear infinite; }
+        .lujo-testimonio .comilla { position: absolute; top: -14px; right: 18px; font-size: 72px; line-height: 1; color: rgba(4,177,123,0.22); font-family: Georgia, serif; animation: lujoFlota 5s ease-in-out infinite alternate; }
+        @keyframes lujoBorde { to { --ang: 360deg; } }
+        @keyframes lujoFlota { from { translate: 0 0; } to { translate: 0 -8px; } }
+
+        /* Preguntas: abren y cierran suave; el + gira a × */
+        .lujo-faq { interpolate-size: allow-keywords; transition: border-color .3s, background-color .3s; }
+        .lujo-faq::details-content { block-size: 0; overflow: clip; transition: block-size .5s cubic-bezier(.16,1,.3,1), content-visibility .5s allow-discrete; }
+        .lujo-faq[open]::details-content { block-size: auto; }
+        .lujo-faq summary::-webkit-details-marker { display: none; }
+        .lujo-faq .mas { margin-left: auto; flex: none; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,0.14); color: #4edea3; transition: rotate .45s cubic-bezier(.16,1,.3,1), background-color .3s; }
+        .lujo-faq[open] .mas { rotate: 45deg; background: rgba(4,177,123,0.15); }
+        .lujo-faq[open] { border-color: rgba(4,177,123,0.35) !important; background: rgba(4,177,123,0.04) !important; }
+
+        /* Cierre: aurora que se mueve, chispas que suben y el botón que respira */
+        .lujo-aurora { position: absolute; border-radius: 999px; filter: blur(70px); opacity: .55; pointer-events: none; }
+        .lujo-aurora.a { width: 46vw; height: 46vw; left: -8vw; top: -10vw; background: radial-gradient(circle, rgba(4,177,123,0.55), transparent 65%); animation: lujoAuroraA 14s ease-in-out infinite alternate; }
+        .lujo-aurora.b { width: 50vw; height: 50vw; right: -10vw; bottom: -18vw; background: radial-gradient(circle, rgba(43,106,255,0.55), transparent 65%); animation: lujoAuroraB 17s ease-in-out infinite alternate; }
+        @keyframes lujoAuroraA { to { translate: 18vw 10vw; scale: 1.15; } }
+        @keyframes lujoAuroraB { to { translate: -16vw -12vw; scale: .9; } }
+        .lujo-chispa { position: absolute; bottom: -10px; width: 3px; height: 3px; border-radius: 999px; background: #4edea3; box-shadow: 0 0 8px #4edea3; pointer-events: none; animation: lujoSube linear infinite; }
+        @keyframes lujoSube { from { translate: 0 0; opacity: 0; } 15% { opacity: 1; } to { translate: 0 -110vh; opacity: 0; } }
+        [data-cta-final] { position: relative; }
+        [data-cta-final]::after { content: ''; position: absolute; inset: -2px; border-radius: inherit; border: 2px solid rgba(78,222,163,0.6); pointer-events: none; animation: lujoRespira 2.6s cubic-bezier(.16,1,.3,1) infinite; }
+        @keyframes lujoRespira { from { scale: 1; opacity: .9; } to { scale: 1.18 1.45; opacity: 0; } }
+
+        @media (prefers-reduced-motion: reduce) {
+          .lujo-testimonio::before, .lujo-testimonio .comilla, .lujo-aurora, .lujo-chispa, [data-cta-final]::after { animation: none; }
+          .lujo-chispa { display: none; }
+          .lujo-faq::details-content { transition: none; }
+        }
         .lujo-navlink[data-active="1"] { background: #04B17B; color: #031310 !important; }
         .lujo-navlink:not([data-active="1"]):hover { background: rgba(255,255,255,0.08); color: #fff; }
         .lujo-docklink[data-active="1"] { color: #04B17B !important; background: rgba(4,177,123,0.12); }
@@ -1440,7 +1506,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-mono text-[11px] tracking-[0.2em]" style={{ color: textoLegible(service.color) }}>{service.tag}</span>
                   <span className="font-display font-extrabold text-white text-[22px]">
-                    {service.price != null ? `$${service.price}` : service.period}
+                    {service.price != null ? <CountUp prefix="$" to={service.price} duration={1300} /> : service.period}
                     {service.price != null && <span className="font-medium text-[11px]" style={{ color: '#8b99ac' }}> {service.period}</span>}
                   </span>
                 </div>
@@ -1491,7 +1557,8 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </Reveal>
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,280px), 1fr))', marginTop: 34 }}>
             {TESTIMONIALS.map((t, i) => (
-              <Reveal key={t.name} index={i} as="blockquote" className="rounded-[20px]" style={{ margin: 0, padding: 26, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+              <Reveal key={t.name} index={i} as="blockquote" className="lujo-testimonio rounded-[20px]" style={{ margin: 0, padding: 26, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                <span className="comilla" aria-hidden="true">&ldquo;</span>
                 <p className="font-light text-[14.5px]" style={{ margin: 0, lineHeight: 1.7, color: '#cdd7e3' }}>&ldquo;{t.quote}&rdquo;</p>
                 <footer style={{ marginTop: 18 }}>
                   <div className="font-display font-bold text-white text-[14px]">{t.name}</div>
@@ -1514,10 +1581,13 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
           </Reveal>
           <div className="grid gap-2.5">
             {FAQS.map((faq, i) => (
-              <Reveal key={faq.q} index={i} as="details" className="rounded-[18px]" style={{ border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.02)', padding: '20px 22px' }}>
+              <Reveal key={faq.q} index={i} as="details" className="lujo-faq rounded-[18px]" style={{ border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.02)', padding: '20px 22px' }}>
                 <summary className="flex gap-3.5 items-start font-display font-bold text-white text-[16px]" style={{ cursor: 'pointer', listStyle: 'none', lineHeight: 1.4 }}>
                   <span className="flex-none font-mono text-[11px] tracking-[0.14em]" style={{ color: textoLegible(faq.color), marginTop: 5 }}>{faq.tag}</span>
-                  {faq.q}
+                  <span className="flex-1">{faq.q}</span>
+                  <span className="mas" aria-hidden="true">
+                    <Plus size={14} />
+                  </span>
                 </summary>
                 <p className="font-light text-[14px]" style={{ margin: '14px 0 0', lineHeight: 1.75, color: '#a9b6c9' }}>{faq.a}</p>
               </Reveal>
@@ -1529,6 +1599,17 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
       {/* ── CIERRE ───────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden text-center px-6" style={{ padding: 'clamp(90px,14vh,170px) 24px' }}>
         <img src={`${MEDIA}poster-hero-azure.jpg`} alt="" loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0.3 }} />
+        {/* Aurora que se mueve detrás y chispas que suben (CSS: .lujo-aurora, .lujo-chispa) */}
+        <div className="lujo-aurora a" aria-hidden="true" />
+        <div className="lujo-aurora b" aria-hidden="true" />
+        {CHISPAS_CIERRE.map((c, i) => (
+          <span
+            key={i}
+            className="lujo-chispa"
+            aria-hidden="true"
+            style={{ left: `${c.x}%`, animationDuration: `${c.dur}s`, animationDelay: `-${c.delay}s`, opacity: c.o, background: c.verde ? '#4edea3' : '#6E9BFF', boxShadow: `0 0 8px ${c.verde ? '#4edea3' : '#6E9BFF'}` }}
+          />
+        ))}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 60% at 50% 50%, rgba(43,106,255,0.14), transparent 70%), linear-gradient(to bottom, rgba(2,6,23,0.92), rgba(2,6,23,0.97))' }} />
         <div className="relative z-[2] max-w-[760px] mx-auto">
           <Reveal index={0} as="h2" className="font-display font-extrabold text-white" style={{ margin: 0, letterSpacing: '-0.035em', lineHeight: 1.05, fontSize: 'clamp(2.1rem,5.4vw,4.2rem)' }}>
