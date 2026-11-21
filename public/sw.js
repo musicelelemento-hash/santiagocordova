@@ -6,7 +6,7 @@
  *   - estáticos con hash: caché primero (el nombre cambia con cada build).
  * Nada de cachear llamadas a Supabase/API: los datos siempre frescos.
  */
-const VERSION = 'scpro-v1';
+const VERSION = 'scpro-v2';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {

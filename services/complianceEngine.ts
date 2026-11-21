@@ -86,6 +86,21 @@ export const isDeclared = (decl: Declaration | undefined): boolean => {
         decl.status === DeclarationStatus.Pagada;
 };
 
+/**
+ * Estado que debe quedar en una declaración al COBRAR el honorario.
+ *
+ * Cobrar no es declarar: el cobro se marca con `is_paid`; el estado sólo sube
+ * a «Pagada» si la declaración ya estaba presentada (Enviada/Pagada o con
+ * comprobante). Si no, se conserva (Pendiente, Vencida…) para que el período
+ * siga figurando como pendiente ante el SRI. Antes, cobrar por adelantado
+ * dejaba el período como «Pagada» y todo el sistema lo leía como declarado.
+ * Misma regla que `markPaymentAsPaid` del bot (15-nov-2026).
+ */
+export const estadoAlCobrar = (decl: Declaration | undefined): DeclarationStatus => {
+    if (isDeclared(decl)) return DeclarationStatus.Pagada;
+    return (decl?.status as DeclarationStatus) || DeclarationStatus.Pendiente;
+};
+
 export const isPaid = (decl: Declaration | undefined, client?: Client): boolean => {
     if (client && isCourtesyClient(client)) return true;
     if (!decl) return false;
