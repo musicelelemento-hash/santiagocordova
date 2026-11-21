@@ -111,7 +111,8 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                     return (
                         <div
                             key={decl.period + idx}
-                            className="grid grid-cols-[1.5fr_1.2fr_1.2fr_1fr_auto] gap-0 px-8 py-6 hover:bg-primary/[0.02] dark:hover:bg-primary/[0.04] transition-all duration-300 group/row items-center"
+                            className="panel-fila grid grid-cols-[1.5fr_1.2fr_1.2fr_1fr_auto] gap-0 px-8 py-6 group/row items-center"
+                            style={{ ['--i' as any]: Math.min(idx, 30) }}
                         >
                             {/* 1. Periodo y Tipo */}
                             <div className="flex items-center gap-4">

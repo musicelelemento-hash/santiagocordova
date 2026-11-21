@@ -355,7 +355,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
     return (
         <div className="w-full space-y-6 font-mono text-slate-100">
             {/* ── 1. CABECERA TÁCTICA & SELECTOR DE PERÍODO ─────────────────────── */}
-            <div className="bg-[#051424]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold shadow-lg shadow-amber-500/10">
                         <ShoppingCart size={24} />
@@ -412,7 +412,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
             </div>
 
             {/* ── 2. ACTIVIDAD ECONÓMICA DEL CLIENTE (CATEGORIZACIÓN) ─────────── */}
-            <div className="bg-[#051424]/70 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="panel-tarjeta-plana bg-[#051424]/70 backdrop-blur-xl p-4 sm:p-5 rounded-3xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
                         <Tag size={18} />
@@ -457,7 +457,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
             </div>
 
             {/* ── 3. KPI CARDS: CASILLEROS TRIBUTARIOS DEL FORMULARIO 104 SRI ──── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-xs font-mono">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-xs font-mono panel-cascada">
                 {/* Casillero 500 / 510: Con Crédito */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-[#051424]/90 border border-emerald-500/30 shadow-lg shadow-emerald-500/5 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
@@ -607,7 +607,7 @@ export const PurchasesTab: React.FC<PurchasesTabProps> = ({
             </div>
 
             {/* ── 5. TABLA DE FACTURAS DE COMPRAS DEL CLIENTE ──────────────────── */}
-            <div className="bg-[#051424]/90 rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                         <thead>

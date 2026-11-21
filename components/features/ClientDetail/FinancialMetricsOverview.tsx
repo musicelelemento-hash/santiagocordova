@@ -400,10 +400,10 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
     const isDark = theme === 'dark';
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 panel-cascada">
 
             {/* BARRA SUPERIOR Y SELECTOR DE PERÍODO (STITCH LUXURY HEADER) */}
-            <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${
+            <div className={`panel-tarjeta-plana p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${
                 isDark
                     ? 'bg-[#051424]/90 border-white/10 border-t-white/20 text-white shadow-2xl shadow-black/40'
                     : 'bg-white/90 border-slate-200 text-slate-900 shadow-slate-200/50'
@@ -471,7 +471,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 
             {/* TERMÓMETRO INTELIGENTE (RIMPE NEGOCIO POPULAR O RÉGIMEN GENERAL) */}
             {isPopular ? (
-                <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
+                <div className={`panel-tarjeta-plana p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
                     isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
                 }`}>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
@@ -522,7 +522,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                     </div>
                 </div>
             ) : isGeneralRegime ? (
-                <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
+                <div className={`panel-tarjeta-plana p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
                     isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
                 }`}>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
@@ -570,7 +570,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
             ) : null}
 
             {/* GRÁFICO COMPARATIVO DE EVOLUCIÓN */}
-            <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
+            <div className={`panel-tarjeta-plana p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
                 isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
             }`}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -668,12 +668,12 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
             </div>
 
             {/* 4 CARDS PRINCIPALES DE MÉTRICAS KPI (DEL PERÍODO SELECCIONADO) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 panel-cascada">
 
                 {/* KPI 1: VENTAS / INGRESOS */}
                 <div
                     onClick={() => handleCopy('Total Ventas/Ingresos', metrics.totalVentas)}
-                    className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
+                    className={`panel-tarjeta group relative rounded-3xl p-6 border backdrop-blur-2xl cursor-pointer shadow-xl overflow-hidden ${
                         isDark
                             ? 'bg-[#051424]/90 border-[#00A896]/30 border-t-white/20 hover:border-[#00A896]/60 shadow-black/40'
                             : 'bg-white border-emerald-200 hover:border-emerald-400 shadow-emerald-500/5'
@@ -707,7 +707,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 {/* KPI 2: COMPRAS / GASTOS */}
                 <div
                     onClick={() => handleCopy('Total Compras/Gastos', metrics.totalCompras)}
-                    className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
+                    className={`panel-tarjeta group relative rounded-3xl p-6 border backdrop-blur-2xl cursor-pointer shadow-xl overflow-hidden ${
                         isDark
                             ? 'bg-[#051424]/90 border-[#2B6AFF]/30 border-t-white/20 hover:border-[#2B6AFF]/60 shadow-black/40'
                             : 'bg-white border-indigo-200 hover:border-indigo-400 shadow-indigo-500/5'
@@ -741,7 +741,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 {/* KPI 3: RETENCIONES */}
                 <div
                     onClick={() => handleCopy('Total Retenciones', isPopular ? metrics.retRenta : metrics.totalRetenciones)}
-                    className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
+                    className={`panel-tarjeta group relative rounded-3xl p-6 border backdrop-blur-2xl cursor-pointer shadow-xl overflow-hidden ${
                         isDark
                             ? 'bg-[#051424]/90 border-[#C9A96E]/30 border-t-white/20 hover:border-[#C9A96E]/60 shadow-black/40'
                             : 'bg-white border-purple-200 hover:border-purple-400 shadow-purple-500/5'
@@ -773,7 +773,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 </div>
 
                 {/* KPI 4: RESULTADO IMPOSITIVO */}
-                <div className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
+                <div className={`panel-tarjeta group relative rounded-3xl p-6 border backdrop-blur-2xl cursor-pointer shadow-xl overflow-hidden ${
                     isPopular
                         ? isDark
                             ? 'bg-[#051424]/90 border-[#C9A96E]/40 border-t-white/20 hover:border-[#C9A96E]/70 shadow-black/40'
@@ -827,7 +827,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
             </div>
 
             {/* TABLA DE DESGLOSE DETALLADO CASILLEROS (ADAPTADA AL RÉGIMEN) */}
-            <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl ${
+            <div className={`panel-tarjeta-plana p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl ${
                 isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
             }`}>
                 <h3 className={`text-base font-black font-display mb-6 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>

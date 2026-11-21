@@ -135,9 +135,9 @@ const FinancialOverviewCard: React.FC<{
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 panel-cascada">
             {/* CARD 1: Anticipos y Prepagos */}
-            <div className={`p-5 rounded-3xl border backdrop-blur-2xl transition-all shadow-xl ${
+            <div className={`panel-tarjeta-plana p-5 rounded-3xl border backdrop-blur-2xl shadow-xl ${
                 hasAdvance
                     ? 'bg-gradient-to-br from-emerald-500/10 via-[#00A896]/10 to-teal-500/10 dark:from-emerald-500/15 dark:via-[#00A896]/15 dark:to-teal-500/15 border-emerald-500/30'
                     : 'bg-white/80 dark:bg-[#051424]/90 border-slate-200/60 dark:border-white/10 opacity-70'
@@ -194,7 +194,7 @@ const FinancialOverviewCard: React.FC<{
             </div>
 
             {/* CARD 2: Cartera y Deuda */}
-            <div className={`p-5 rounded-3xl border backdrop-blur-2xl transition-all shadow-xl ${
+            <div className={`panel-tarjeta-plana p-5 rounded-3xl border backdrop-blur-2xl shadow-xl ${
                 hasDebt
                     ? 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/30'
                     : 'bg-white/80 dark:bg-[#051424]/90 border-slate-200/60 dark:border-white/10 opacity-70'
@@ -323,7 +323,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
+        <div className="space-y-6 panel-cascada">
 
             {/* ── FILA 1: Mesa de Control Tributario y Cobros (Full Width) ── */}
             <div className="w-full">
@@ -358,10 +358,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* ── COLUMNA 1: INTELIGENCIA FISCAL & ANALÍTICA TRIBUTARIA ── */}
-                <div className="space-y-6 flex flex-col">
+                <div className="space-y-6 flex flex-col panel-cascada">
                     
                     {/* 1. Módulo de Inteligencia Fiscal SRI */}
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-5 shadow-xl">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-5 shadow-xl">
                         <div className="flex items-center justify-between border-b border-slate-200/40 dark:border-white/10 pb-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-2xl bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center justify-center font-bold shadow-md shadow-[#00A896]/10">
@@ -428,7 +428,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 2. Gráfico de Historial de Honorarios */}
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl flex-1 flex flex-col">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl flex-1 flex flex-col">
                         <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                             <Activity size={14} className="text-[#2B6AFF]" strokeWidth={2.5} />
                             Historial de Honorarios y Recaudación
@@ -439,7 +439,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 3. Bitácora / Notas Estructuradas del Cliente */}
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl">
                         <ClientNotes
                             clientId={client.id}
                             notes={client.structuredNotes || []}
@@ -449,10 +449,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
 
                 {/* ── COLUMNA 2: SISTEMA DE FACTURACIÓN, CREDENCIALES & ACCIONES ── */}
-                <div className="space-y-6 flex flex-col">
+                <div className="space-y-6 flex flex-col panel-cascada">
 
                     {/* 1. Acceso Rápido al Sistema de Facturación (Enlace a Bóveda) */}
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-2xl bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center justify-center font-bold shadow-md shadow-[#00A896]/10">
@@ -500,7 +500,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 2. Claves de Acceso y Firma Electrónica (.p12) */}
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-display">
                             <FileKey size={14} className="text-[#00A896]" strokeWidth={2.5} />
                             Credenciales & Archivo de Firma Electrónica
@@ -933,7 +933,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         const visiblesProv = showAllProviders ? proveedoresProv : proveedoresProv.slice(0, 6);
 
                         return (
-                            <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
+                            <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-white/10">
                                     <div className="flex items-center gap-2.5">
                                         <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center font-bold shadow-md shadow-amber-500/10">
@@ -1128,7 +1128,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     })()}
 
                     {/* 4. Centro de Acciones Tácticas */}
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-3 shadow-xl font-mono">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-3 shadow-xl font-mono">
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2 font-display">
                             <Zap size={14} className="text-amber-400" strokeWidth={2.5} />
                             Centro de Acciones Tácticas

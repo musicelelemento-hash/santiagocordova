@@ -218,7 +218,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                     <tbody className="divide-y divide-white/5 text-xs font-medium">
                         {/* FILA 1: IVA (Solo para contribuyentes con obligación de IVA mensual o semestral) */}
                         {showIvaRow && (
-                            <tr className="hover:bg-white/5 transition-all">
+                            <tr className="panel-fila hover:bg-white/5" style={{ ['--i' as any]: 0 }}>
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
                                         <div className="w-9 h-9 rounded-xl bg-[#2B6AFF]/15 text-[#2B6AFF] border border-[#2B6AFF]/30 flex items-center justify-center flex-shrink-0 font-bold shadow-sm">
@@ -344,7 +344,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                         {/* FILA 2: IMPUESTO A LA RENTA (Si aplica) */}
                         {rentaData?.needed && !isRentaBeforeStart && (
-                            <tr className="hover:bg-white/5 transition-all">
+                            <tr className="panel-fila hover:bg-white/5" style={{ ['--i' as any]: 1 }}>
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
                                         <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center justify-center flex-shrink-0 font-bold shadow-sm">

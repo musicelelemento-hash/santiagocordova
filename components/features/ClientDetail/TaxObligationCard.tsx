@@ -330,7 +330,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
     );
 
     return (
-        <div className={`rounded-3xl shadow-lg transition-all duration-700 group overflow-hidden relative border bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl dark:border-t-white/20 ${cardBorder}`}>
+        <div className={`panel-tarjeta-plana rounded-3xl shadow-lg group overflow-hidden relative border bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl dark:border-t-white/20 ${cardBorder}`}>
             {/* Barra de estado superior */}
             <div className={`h-1 w-full transition-all duration-700 ${topBar}`} />
 
