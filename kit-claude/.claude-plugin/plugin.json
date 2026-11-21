@@ -1,0 +1,9 @@
+{
+  "name": "kit-santiago",
+  "version": "1.0.0",
+  "description": "Equipo líder + agentes (explorador, implementador, verificador), guía para delegar bien y la skill sri-ecuador. Reutilizable en cualquier proyecto de Santiago Córdova.",
+  "author": {
+    "name": "Santiago Córdova"
+  },
+  "keywords": ["agentes", "equipo", "sri", "ecuador", "contabilidad"]
+}

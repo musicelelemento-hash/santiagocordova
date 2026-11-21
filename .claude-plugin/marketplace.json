@@ -1,0 +1,17 @@
+{
+  "name": "santiagocordova",
+  "owner": {
+    "name": "Santiago Córdova"
+  },
+  "plugins": [
+    {
+      "name": "kit-santiago",
+      "source": "./kit-claude",
+      "description": "Equipo líder + agentes (explorador, implementador, verificador), guía para delegar y la skill sri-ecuador.",
+      "version": "1.0.0"
+    }
+  ],
+  "metadata": {
+    "description": "Herramientas de Claude Code de Santiago Córdova: equipo de agentes y skills reutilizables."
+  }
+}
