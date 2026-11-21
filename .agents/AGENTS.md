@@ -44,7 +44,7 @@ Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema),
 | :--- | :--- | :--- |
 | **Aislamiento Solo Plan / Matriz SRI** | 🟢 **100% Completado** | Clientes de solo plan exentos de la matriz y alertas. |
 | **Venta de Planes & Combos** | 🟢 **100% Completado** | Registro de .p12, credenciales y emisión comprobante SRI. |
-| **Matriz de Cumplimiento SRI** | 🟡 **95% (Casi Listo)** | Funcional. Pendiente: Exportador masivo de reportes en Excel/PDF para auditoría. |
+| **Matriz de Cumplimiento SRI** | 🟢 **100%** | Exportar a Excel desde la barra de la matriz (21-nov-2026): hoja «Matriz» (cliente × período: Declarado / Enviado sin PDF / Pendiente / VENCIDO / No aplica · cobrado o por cobrar) y hoja «Resumen» por período. Exporta lo que está en pantalla (filtros, modo, año). PDF: el botón de imprimir. |
 | **Extensiones Web SRI (Chrome/Edge)** | 🟡 **80% (En Proceso)** | Inyección funcional. Pendiente: Empaquetador `manifest.json` v3 listo para distribución e importador 1-click de facturas recibidas del SRI. |
 | **Automatización WhatsApp** | 🟡 **95%** | Sala de envío (`SalaDeEnvio.tsx`): de a uno, con el enlace al comprobante en el mensaje. **Nunca se verificó en pantalla con datos reales.** Pendiente: envío 100% automático (§5) y el email con PDF adjunto, que es lo siguiente (§7). |
 | **Autocompletado de RUC desde el SRI** | 🟢 **Restaurado 19-nov-2026** | Proxy propio: Cloudflare Worker `sri-ruc-proxy` (`workers/sri-ruc-proxy/worker.js`, https://sri-ruc-proxy.santiagocordova.workers.dev/ruc/<ruc>), plan gratis. Sólo consulta el padrón público del SRI; CORS para santiagocordova.com, Vercel del proyecto y localhost. El servicio `movil-servicios` del SRI rechaza desde Cloudflare; responde el de catastro (el mismo que usa la página «Consulta de RUC»). Probado con un RUC real. Falta verlo en la web publicada. |
@@ -328,7 +328,7 @@ Dos cuidados al construirlas:
 | **WhatsApp Cloud API (Meta)** | evaluado, no empezado | §5 · necesita cuenta y plantilla |
 | **Verificar la sala de envío en pantalla** | nunca se hizo | necesita sesión para llegar a la matriz |
 | **Botones de un clic desde la ficha del cliente** | ideas anotadas | §6 |
-| **Exportador masivo de la matriz (Excel/PDF)** | pendiente | §3, único hueco de ese módulo |
+| ~~**Exportador masivo de la matriz (Excel/PDF)**~~ | **hecho 21-nov-2026** | §3. Nota: `ComplianceReportExport.tsx` (reporte imprimible viejo) no se usa en ningún lado y tiene un RUC equivocado (0105822994001); no confiar en él. |
 | **Correo `contacto@santiagocordova.com`** | pendiente (21-nov-2026) | Ya figura en los datos para Google (`index.html`) pero no existe. El dominio está en **Namecheap** y Santiago ya usa otros correos con él: antes de crear el reenvío hay que ver qué servicio de correo usa (los registros MX) para no romperlos. Él lo revisa desde la computadora. |
 | **Generador de Anexos (ATS / RDEP)** | fase 2 | §3 |
 

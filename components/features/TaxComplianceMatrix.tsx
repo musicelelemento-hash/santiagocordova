@@ -1028,6 +1028,84 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         });
     };
 
+    // ── Exportar la matriz a Excel (21-nov-2026) ─────────────────────────────
+    // Lo mismo que se ve en pantalla (filtros, modo y año), con las MISMAS reglas
+    // de las celdas: declarado = comprobante, Enviada o Pagada (cobrar no es
+    // declarar); vencido = venció y no está declarado. xlsx se carga a pedido.
+    const exportarExcel = async () => {
+        try {
+            const xlsx = await import('xlsx');
+            const columnasPeriodo = periods.map((p) => formatPeriodForDisplay(p));
+            const resumen = periods.map(() => ({ conObligacion: 0, declarados: 0, conComprobante: 0, pendientes: 0, vencidos: 0 }));
+            const filas: (string | number)[][] = [[
+                'N°', 'Cliente', 'RUC', '9.º dígito', 'Régimen', 'Frecuencia IVA', ...columnasPeriodo, 'Pendientes', 'Vencidos',
+            ]];
+
+            filteredClients.forEach((client, n) => {
+                let pendientes = 0;
+                let vencidos = 0;
+                const celdas = periods.map((p, i) => {
+                    if (isPeriodBeforeClientStart(client, p)) return 'No aplica';
+                    const obligaciones = getObligationsForPeriod(client, p);
+                    if (obligaciones.length === 0) return '—';
+                    const partes = obligaciones.map((ob) => {
+                        const d = findDeclarationForOb(client.declarations || [], p, ob.type);
+                        const conPdf = !!d?.proof_file;
+                        const declarado = conPdf || d?.status === DeclarationStatus.Enviada || d?.status === DeclarationStatus.Pagada;
+                        const cobrado = !!d?.is_paid || d?.status === DeclarationStatus.Pagada;
+                        const vencido = !declarado && isPast(getDueDateForPeriod(client, p) || new Date());
+                        resumen[i].conObligacion++;
+                        if (declarado) resumen[i].declarados++;
+                        if (conPdf) resumen[i].conComprobante++;
+                        if (!declarado) {
+                            if (vencido) { resumen[i].vencidos++; vencidos++; } else { resumen[i].pendientes++; pendientes++; }
+                        }
+                        const estado = declarado ? (conPdf ? 'Declarado' : 'Enviado sin PDF') : (vencido ? 'VENCIDO' : 'Pendiente');
+                        const texto = `${estado} · ${cobrado ? 'cobrado' : 'por cobrar'}`;
+                        return obligaciones.length > 1 ? `${ob.type}: ${texto}` : texto;
+                    });
+                    return partes.join(' / ');
+                });
+                filas.push([
+                    n + 1,
+                    client.name,
+                    client.ruc,
+                    getNinthDigit(client.ruc),
+                    String(client.regime || ''),
+                    String(client.taxProfile?.ivaFrequency || ''),
+                    ...celdas,
+                    pendientes,
+                    vencidos,
+                ]);
+            });
+
+            const hojaMatriz = xlsx.utils.aoa_to_sheet(filas);
+            hojaMatriz['!cols'] = [{ wch: 5 }, { wch: 38 }, { wch: 15 }, { wch: 9 }, { wch: 22 }, { wch: 14 }, ...periods.map(() => ({ wch: 26 })), { wch: 11 }, { wch: 10 }];
+            hojaMatriz['!freeze'] = { xSplit: 2, ySplit: 1 } as any;
+
+            const hojaResumen = xlsx.utils.aoa_to_sheet([
+                ['Período', 'Con obligación', 'Declarados', 'Con comprobante', 'Pendientes', 'Vencidos', '% declarado'],
+                ...periods.map((p, i) => {
+                    const r = resumen[i];
+                    return [formatPeriodForDisplay(p), r.conObligacion, r.declarados, r.conComprobante, r.pendientes, r.vencidos,
+                        r.conObligacion ? Math.round((r.declarados / r.conObligacion) * 100) + '%' : '—'];
+                }),
+                [],
+                [`Exportado el ${format(new Date(), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: es })} · ${filteredClients.length} clientes · modo ${matrixMode} · año ${selectedYear}`],
+            ]);
+            hojaResumen['!cols'] = [{ wch: 18 }, { wch: 15 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 12 }];
+
+            const libro = xlsx.utils.book_new();
+            xlsx.utils.book_append_sheet(libro, hojaMatriz, 'Matriz');
+            xlsx.utils.book_append_sheet(libro, hojaResumen, 'Resumen');
+            xlsx.writeFile(libro, `Matriz_${matrixMode}_${selectedYear}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+            toast.success(`Matriz exportada: ${filteredClients.length} clientes`);
+        } catch (err: any) {
+            console.error('Exportar matriz a Excel:', err);
+            toast.error(`No se pudo exportar la matriz: ${err?.message || err}`);
+        }
+    };
+
     // Check if client has uploaded all proofs for the displayed matrix periods
     const isClientCompletedForPeriod = (client: Client, p: string) => {
         if (isPeriodBeforeClientStart(client, p)) return true;
@@ -2211,6 +2289,15 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         title="Imprimir Reporte"
                     >
                         <LucideIcons.Printer size={16} />
+                    </button>
+
+                    <button
+                        onClick={exportarExcel}
+                        className="p-2.5 bg-[#0b1326]/80 text-slate-400 hover:text-[#4edea3] rounded-2xl border border-white/10 hover:border-[#04B17B]/40 transition-[color,border-color] no-print shadow-sm"
+                        title="Exportar la matriz a Excel (lo que se ve en pantalla)"
+                        aria-label="Exportar la matriz a Excel"
+                    >
+                        <LucideIcons.FileSpreadsheet size={16} />
                     </button>
                 </div>
             </div>
