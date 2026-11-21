@@ -4,6 +4,7 @@
 // La web valida contra la misma lista: screens/TelegramBotScreen.tsx → BAKU_COMMANDS.
 export const COMANDOS_MENU: { command: string; description: string }[] = [
     { command: 'menu', description: 'Menú principal' },
+    { command: 'hoy', description: 'Parte del día: qué vence y qué falta' },
     { command: 'cierre', description: 'Cierre del período: declarado × cobrado' },
     { command: 'cobranza', description: 'Deudores y cartera pendiente' },
     { command: 'lunes', description: 'Proponer la cobranza semanal por correo' },

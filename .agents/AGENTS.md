@@ -211,6 +211,21 @@ Primera corrida real (13-nov-2026, período 2026-10): 113 con obligación ·
 65 al día · 45 declarados sin cobrar ($237) · 2 cobrados sin comprobante ·
 1 sin declarar, vencido.
 
+**Parte del día de Baku** — 21-nov-2026, `telegram-bot/src/parte_diario.ts`.
+Lun–vie 07:45 le llega a Santiago un solo mensaje: vencen hoy / mañana / esta
+semana / ya vencidos (sin declarar), declarados sin comprobante, declarados con
+comprobante a los que falta avisar por WhatsApp (`isNotifiedWhatsApp` del
+historial, el que marca la sala de envío) y firmas que vencen en ≤15 días.
+A las 17:00 sólo escribe si algo vence hoy y sigue sin declarar. `/hoy` lo pide
+a mano. **No escribe a los clientes.** Reusa `clasificarCierre` (/cierre) y
+`calcularVencimiento` (traslado por fin de semana; por feriado sólo con la
+variable `FERIADOS_EC` en Render, AAAA-MM-DD separadas por coma — **falta
+cargarla con el calendario oficial**, la skill sri-ecuador lo tiene en «falta
+verificar»). `scripts/test-parte.js` (17 comprobaciones, fechas cruzadas con
+`scripts/sri.py` de la skill). **Anexos: no se listan** — la base no guarda por
+período qué anexo falta (sólo columnas anuales `anexo_*_status` que nadie
+evalúa); hace falta definir ese dato antes de avisar «falta el anexo».
+
 ### Propuesta · El estado `Pagada` no distingue «cobrado» de «declarado»
 
 **Quién la propone**: Claude · 13-nov-2026

@@ -6,9 +6,11 @@ import { esPopular, esEmprendedor } from './regimen';
 // /cierre — el cruce honorarios × SRI del período activo.
 //
 // La obligación ante el SRI y el cobro de honorarios son dos cosas distintas.
-// Y el estado 'Pagada' NO prueba una declaración: la web y el bot lo ponen al
-// cobrar, incluso sobre un período que nunca se declaró. Por eso a quien figura
-// cobrado sólo se lo da por declarado si hay comprobante guardado.
+// El estado 'Pagada' no siempre probó una declaración: hasta nov-2026 la web y
+// el bot lo ponían al cobrar, aunque el período no se hubiera declarado (desde
+// entonces cobrar sólo marca is_paid: estadoAlCobrar / markPaymentAsPaid). Quedan
+// filas viejas así, por eso a quien figura cobrado sólo se lo da por declarado
+// si hay comprobante guardado.
 
 export type Cuadrante = 'ok' | 'cobrar' | 'verificar' | 'pendiente';
 
@@ -20,6 +22,8 @@ export interface FilaCierre {
     vencido: boolean;
     honorario: number;
     sinComprobante: boolean;
+    /** La web lo marca en declaration_history al confirmar el envío en la sala de WhatsApp. */
+    avisadoWhatsApp: boolean;
     aviso?: string;
     cuadrante: Cuadrante;
 }
@@ -108,6 +112,7 @@ export function clasificarCierre(clients: any[], hoy: Date): Cierre {
         const enviada = delPeriodo.some(d => d.status === 'Enviada' || d.status === 'Realizada' || d.status === 'completado' || d.isRealizada === true);
         const cobrado = delPeriodo.some(d => d.is_paid === true || d.status === 'Pagada');
         const aviso = delPeriodo.map(d => FRENOS[String(d.status)]).find(Boolean);
+        const avisadoWhatsApp = delPeriodo.some(d => d.isNotifiedWhatsApp === true || d.is_notified_whatsapp === true);
 
         const cuadrante: Cuadrante = cobrado
             ? (comprobante ? 'ok' : 'verificar')
@@ -128,6 +133,7 @@ export function clasificarCierre(clients: any[], hoy: Date): Cierre {
             vencido: sinDeclarar && dueDay !== null && (!esMesDeDeclarar || dia > dueDay),
             honorario: Number(esSemestral ? (fee.semestral ?? 10) : (fee.monthly ?? 5)) || 0,
             sinComprobante: !comprobante,
+            avisadoWhatsApp,
             aviso,
             cuadrante,
         });
