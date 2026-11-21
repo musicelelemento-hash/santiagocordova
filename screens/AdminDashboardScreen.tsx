@@ -40,6 +40,7 @@ import { CampaignBanner, CampaignProgress } from '../components/ui/CampaignBanne
 import { Modal } from '../components/ui/Modal';
 import { fileToBase64 } from '../services/pdfExtraction';
 import { getClientServiceFee } from '../services/clientService';
+import { CountUp } from '../components/lujo/LujoWidgets';
 import { generateDeclarationWhatsAppMessage, getClientIvaFrequency } from '../services/sri';
 import { SriPasswordChangerModal } from '../components/features/SriPasswordChangerModal';
 
@@ -1472,18 +1473,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                     {/* ── TELEMETRY STRIP (4 LUXURY FISCAL KPI CARDS) ── */}
                     <div className="px-6 sm:px-10 pb-6 relative z-10 font-mono">
-                        <div className="p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-3xl border border-foreground/10 bg-surface-lowest backdrop-blur-xl">
+                        <div className="panel-cascada p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-3xl border border-foreground/10 bg-surface-lowest backdrop-blur-xl">
                             {/* KPI 1: Clientes */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
-                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
+                                className="panel-tarjeta-plana group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                             >
                                 <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-primary text-white shadow-lg shadow-primary/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                     <Users size={20} strokeWidth={2} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-1 font-mono">Total Clientes</p>
-                                    <p className="text-3xl font-black text-on-surface tracking-tight leading-none font-mono">{kpis.total}</p>
+                                    <p className="text-3xl font-black text-on-surface tracking-tight leading-none font-mono"><CountUp to={kpis.total} duration={1100} /></p>
                                     <p className="text-[10px] text-tertiary mt-1 font-mono">ir a expedientes →</p>
                                 </div>
                             </button>
@@ -1491,14 +1492,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* KPI 2: Facturación */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
-                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
+                                className="panel-tarjeta-plana group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                             >
                                 <div className="p-3.5 rounded-2xl bg-gradient-to-br from-tertiary to-tertiary text-white shadow-lg shadow-tertiary/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                     <TrendingUp size={20} strokeWidth={2} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-1 font-mono">Facturación Est.</p>
-                                    <p className="text-3xl font-black tracking-tight leading-none text-tertiary font-mono">${Math.round(kpis.projectedIncome).toLocaleString()}</p>
+                                    <p className="text-3xl font-black tracking-tight leading-none text-tertiary font-mono"><CountUp prefix="$" to={Math.round(kpis.projectedIncome)} duration={1300} /></p>
                                     <p className="text-[10px] text-on-surface-variant mt-1 font-mono">ingreso proyectado</p>
                                 </div>
                             </button>
@@ -1514,7 +1515,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 return (
                                     <button
                                         onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true } })}
-                                        className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
+                                        className="panel-tarjeta-plana group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-foreground/10 hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                                     >
                                         <div className={`p-3.5 rounded-2xl text-on-surface shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-300 ${
                                             hasMissing
@@ -1527,7 +1528,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-1 font-mono">Archivo Digital</p>
                                             <p className={`text-3xl font-black tracking-tight leading-none font-mono ${
                                                 hasMissing ? 'text-[#C9A96E]' : 'text-on-surface-variant'
-                                            }`}>{missingPdfCount}</p>
+                                            }`}><CountUp to={missingPdfCount} duration={1000} /></p>
                                             <p className="text-[10px] text-on-surface-variant mt-1 font-mono">{hasMissing ? 'sin comprobante' : 'bóveda completa ✓'}</p>
                                         </div>
                                     </button>
@@ -1537,7 +1538,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* KPI 4: Cartera por Cobrar */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'cobros' } })}
-                                className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-foreground/5 transition-colors text-left cursor-pointer"
+                                className="panel-tarjeta-plana group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-foreground/5 transition-colors text-left cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                 <div className="relative z-10">
@@ -1550,7 +1551,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div className="flex items-baseline gap-2 mb-3">
                                         <span className={`text-3xl font-black tracking-tight leading-none font-mono ${
                                             kpis.pendingCollectionsAmount > 0 ? 'text-rose-400' : 'text-tertiary'
-                                        }`}>${Math.round(kpis.pendingCollectionsAmount).toLocaleString()}</span>
+                                        }`}><CountUp prefix="$" to={Math.round(kpis.pendingCollectionsAmount)} duration={1300} /></span>
                                         <span className="text-xs text-on-surface-variant font-mono">{kpis.pendingCollectionsCount} c.</span>
                                     </div>
                                     {(() => {
@@ -1587,12 +1588,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 <>
                     {/* ── SUGGESTION HUB ELITE ── */}
                     {stitchSuggestions.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-300 relative z-30 px-4 sm:px-0">
+                        <div className="panel-cascada grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-300 relative z-30 px-4 sm:px-0">
                             {stitchSuggestions.map((s, idx) => (
                                 <div
                                     key={idx}
                                     onClick={s.action}
-                                    className="group relative overflow-hidden rounded-[2rem] cursor-pointer border border-foreground/10 bg-surface-low backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-foreground/20 shadow-xl"
+                                    className="panel-tarjeta group relative overflow-hidden rounded-[2rem] cursor-pointer border border-foreground/10 bg-surface-low backdrop-blur-2xl shadow-xl"
                                 >
                                     <div className={`absolute top-0 left-0 w-full h-1 ${
                                         s.priority === 'high' ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
@@ -2241,7 +2242,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 {/* Filas 1 y 2 (Dígitos 0 al 4 y 5 al 9) */}
                                 <div className="p-6 rounded-3xl border border-foreground/10 bg-surface-lowest backdrop-blur-2xl shadow-xl space-y-4">
                                     {/* Fila 1: Dígitos 0, 1, 2, 3, 4 */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                    <div className="panel-cascada grid grid-cols-2 sm:grid-cols-5 gap-3">
                                         {[
                                             { digit: '0', day: 28 },
                                             { digit: '1', day: 10 },
@@ -2308,7 +2309,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div className="w-full h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent my-2"></div>
 
                                     {/* Fila 2: Dígitos 5, 6, 7, 8, 9 */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                    <div className="panel-cascada grid grid-cols-2 sm:grid-cols-5 gap-3">
                                         {[
                                             { digit: '5', day: 18 },
                                             { digit: '6', day: 20 },
@@ -2379,11 +2380,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <Sparkles size={16} className="text-primary" />
                                     Command Actions Launcher
                                 </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="panel-cascada grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {/* Card 1: Declaraciones */}
                                     <button
                                         onClick={() => navigate('declaraciones')}
-                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-tertiary/50 hover:bg-tertiary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="panel-tarjeta group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-tertiary/50 hover:bg-tertiary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-tertiary to-tertiary text-white flex items-center justify-center shadow-lg shadow-tertiary/30 group-hover:scale-110 transition-transform">
@@ -2399,7 +2400,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     {/* Card 2: Clientes */}
                                     <button
                                         onClick={() => navigate('clients')}
-                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="panel-tarjeta group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
@@ -2415,7 +2416,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     {/* Card 3: Facturador SRI */}
                                     <button
                                         onClick={() => navigate('sri_facturacion')}
-                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="panel-tarjeta group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform font-bold">
@@ -2431,7 +2432,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     {/* Card 4: Firmas .P12 */}
                                     <button
                                         onClick={() => navigate('firmas')}
-                                        className="group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-tertiary/50 hover:bg-tertiary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
+                                        className="panel-tarjeta group p-5 rounded-2xl border border-foreground/10 border-t-foreground/20 bg-surface-lowest hover:border-tertiary/50 hover:bg-tertiary/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg cursor-pointer"
                                     >
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-tertiary to-tertiary text-white flex items-center justify-center shadow-lg shadow-tertiary/20 group-hover:scale-110 transition-transform">
@@ -2458,7 +2459,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="panel-cascada grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {[
                                         { label: 'Régimen General', filterId: 'general', regime: TaxRegime.General, barColor: 'bg-primary', textColor: 'text-primary', hoverText: 'group-hover:text-primary' },
                                         { label: 'RIMPE Emprendedor', filterId: 'rimpe_emp', regime: TaxRegime.RimpeEmprendedor, barColor: 'bg-tertiary', textColor: 'text-tertiary', hoverText: 'group-hover:text-tertiary' },
@@ -2474,7 +2475,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             <div
                                                 key={idx}
                                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: item.filterId } })}
-                                                className="p-5 rounded-2xl border border-foreground/10 bg-surface-lowest hover:bg-foreground/5 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-lg"
+                                                className="panel-tarjeta p-5 rounded-2xl border border-foreground/10 bg-surface-lowest hover:bg-foreground/5 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-lg"
                                             >
                                                 <div className={`absolute top-0 left-0 w-1.5 h-full ${item.barColor} opacity-70 group-hover:opacity-100 transition-opacity`}></div>
                                                 <div className="font-mono text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">

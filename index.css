@@ -1576,3 +1576,82 @@ h1, h2, h3, h4 {
 
 
 
+
+/* ── Movimiento del panel (21-nov-2026) ──────────────────────────────────
+   Dashboard y Declaraciones. Sólo transform/opacity/translate/scale/filter.
+   - .panel-cascada: los hijos directos entran escalonados.
+   - .panel-tarjeta: sube al hover (propiedad `translate`, no `transform`) y
+     un brillo esmeralda sigue al mouse (--cx/--cy los pone App.tsx).
+     El ::before va con z-index:-1 dentro de la tarjeta aislada: encima de su
+     fondo, debajo de su contenido.
+   - .panel-tarjeta-plana: igual pero sin elevación (para tiras con overflow).
+   - .panel-fila / .panel-celda: filas de la matriz.                        */
+@keyframes panelCascada {
+  from { opacity: 0; translate: 0 14px; filter: blur(4px); }
+  to   { opacity: 1; translate: 0 0;    filter: blur(0); }
+}
+@keyframes panelFila {
+  from { opacity: 0; translate: -8px 0; }
+  to   { opacity: 1; translate: 0 0; }
+}
+.panel-cascada > * {
+  /* backwards: al terminar no queda filter/translate puesto (un filter en un
+     ancestro descoloca los position:fixed de adentro, p. ej. modales). */
+  animation: panelCascada .6s cubic-bezier(.16,1,.3,1) backwards;
+  animation-delay: 720ms;
+}
+.panel-cascada > :nth-child(1)  { animation-delay: 60ms; }
+.panel-cascada > :nth-child(2)  { animation-delay: 120ms; }
+.panel-cascada > :nth-child(3)  { animation-delay: 180ms; }
+.panel-cascada > :nth-child(4)  { animation-delay: 240ms; }
+.panel-cascada > :nth-child(5)  { animation-delay: 300ms; }
+.panel-cascada > :nth-child(6)  { animation-delay: 360ms; }
+.panel-cascada > :nth-child(7)  { animation-delay: 420ms; }
+.panel-cascada > :nth-child(8)  { animation-delay: 480ms; }
+.panel-cascada > :nth-child(9)  { animation-delay: 540ms; }
+.panel-cascada > :nth-child(10) { animation-delay: 600ms; }
+.panel-cascada > :nth-child(11) { animation-delay: 660ms; }
+.panel-cascada > :nth-child(12) { animation-delay: 720ms; }
+
+/* Selector doble: gana a `transition-all` de Tailwind sin !important. */
+.panel-tarjeta.panel-tarjeta,
+.panel-tarjeta-plana.panel-tarjeta-plana {
+  position: relative;
+  isolation: isolate;
+  transition: translate .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, border-color .35s ease, background-color .35s ease;
+}
+.panel-tarjeta::before,
+.panel-tarjeta-plana::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* -1 + isolation:isolate en la tarjeta: el brillo queda sobre el fondo de la
+     tarjeta y debajo de su contenido (no tiñe el texto). */
+  z-index: -1;
+  opacity: 0;
+  transition: opacity .35s ease;
+  background: radial-gradient(260px circle at var(--cx, 50%) var(--cy, 0%), rgba(4,177,123,.14), transparent 65%);
+}
+.panel-tarjeta:hover {
+  translate: 0 -4px;
+  border-color: rgba(4,177,123,.4);
+  box-shadow: 0 18px 40px -18px rgba(4,177,123,.35);
+}
+.panel-tarjeta-plana:hover { border-color: rgba(4,177,123,.4); }
+.panel-tarjeta:hover::before,
+.panel-tarjeta-plana:hover::before { opacity: 1; }
+
+.panel-fila { animation: panelFila .45s cubic-bezier(.16,1,.3,1) backwards; animation-delay: calc(var(--i, 0) * 18ms); }
+.panel-fila:hover { box-shadow: inset 3px 0 0 #04B17B; background-color: rgba(4,177,123,0.04); }
+.panel-celda > * { transition: scale .25s cubic-bezier(.16,1,.3,1); }
+.panel-celda:hover > * { scale: 1.04; }
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-cascada > *, .panel-fila { animation: none !important; }
+  .panel-tarjeta.panel-tarjeta, .panel-tarjeta-plana.panel-tarjeta-plana,
+  .panel-tarjeta::before, .panel-tarjeta-plana::before, .panel-celda > * { transition: none !important; }
+  .panel-tarjeta:hover { translate: none; }
+  .panel-celda:hover > * { scale: none; }
+}
