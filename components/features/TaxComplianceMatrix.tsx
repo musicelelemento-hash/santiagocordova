@@ -12,7 +12,7 @@ import { descargarAnexoIceXml, descargarAnexoIceZip } from '../../utils/iceXml';
 import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
 import { SupplierCatalogService } from '../../services/supplierCatalogService';
 import { entrarAlSriSinDeclarar, subirAnexoIceAlSri } from '../../services/extensionBridge';
-import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
+import { arePeriodsEqual, getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart, estadoAlCobrar } from '../../services/complianceEngine';
 export { arePeriodsEqual };
 import { useToast } from '../../context/ToastContext';
 import { openClientInNewWindow } from '../../utils/windowManager';
@@ -1054,7 +1054,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const declarations = client.declarations || [];
             const isMissing = obligations.some(ob => {
                 const d = findDeclarationForOb(declarations, p, ob.type);
-                const isDone = !!d?.proof_file || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                const isDone = !!d?.proof_file || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada;
                 return !isDone;
             });
             if (isMissing) return p;
@@ -1098,7 +1098,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const declarations = client.declarations || [];
             const hasMissing = obligations.some(ob => {
                 const d = findDeclarationForOb(declarations, p, ob.type);
-                const isDone = !!d?.proof_file || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                const isDone = !!d?.proof_file || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada;
                 return !isDone;
             });
             if (hasMissing) missing.push(p);
@@ -1460,7 +1460,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         ...updatedHistory[idx],
                         is_paid: true,
                         paidAt: nowIso,
-                        status: DeclarationStatus.Pagada,
+                        status: estadoAlCobrar(updatedHistory[idx]),
                         updatedAt: nowIso
                     };
                 } else {
@@ -1468,7 +1468,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         ...pastDecl,
                         is_paid: true,
                         paidAt: nowIso,
-                        status: DeclarationStatus.Pagada,
+                        status: estadoAlCobrar(pastDecl),
                         updatedAt: nowIso
                     });
                 }
@@ -2708,7 +2708,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 const ob = obligations[0];
                                                 const d = findDeclarationForOb(declarations, p, ob.type);
                                                 const hasCellProof = !!d?.proof_file;
-                                                const isDone = hasCellProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                const isDone = hasCellProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada;
                                                 const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
                                                 const isCellCourtesy = isCourtesyClient(client, p);
                                                 const advanceFraction = advanceInfo.getPeriodAdvanceFraction(p);
@@ -2831,7 +2831,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         const freshClient = clients.find(c => c.id === client.id) || client;
                                                                         const updatedHistory = (freshClient.declarations || []).map(dh => {
                                                                             if (dh.period === d.period && (dh.type || 'IVA') === (d.type || 'IVA')) {
-                                                                                return { ...dh, is_paid: true, paidAt: nowIso, status: DeclarationStatus.Pagada, updatedAt: nowIso };
+                                                                                return { ...dh, is_paid: true, paidAt: nowIso, status: estadoAlCobrar(dh), updatedAt: nowIso };
                                                                             }
                                                                             return dh;
                                                                         });
@@ -2860,7 +2860,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         ...updatedHistory[idx],
                                                                         is_paid: true,
                                                                         paidAt: nowIso,
-                                                                        status: DeclarationStatus.Pagada,
+                                                                        status: estadoAlCobrar(updatedHistory[idx]),
                                                                         updatedAt: nowIso
                                                                     };
                                                                 } else {
@@ -2868,7 +2868,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         ...pastDecl,
                                                                         is_paid: true,
                                                                         paidAt: nowIso,
-                                                                        status: DeclarationStatus.Pagada,
+                                                                        status: estadoAlCobrar(pastDecl),
                                                                         updatedAt: nowIso
                                                                     });
                                                                 }
@@ -3334,7 +3334,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             {obligations.map(ob => {
                                                                 const d = findDeclarationForOb(declarations, p, ob.type);
                                                                 const hasProof = !!d?.proof_file;
-                                                                const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                                const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada;
                                                                 const isManualDone = false;
                                                                 const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
                                                                 const isTrulyInvoiced = !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
@@ -4558,7 +4558,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         const decls = modalData.client.declarations || [];
                                         const updatedDecls = decls.map(d => {
                                             if (arePeriodsEqual(d.period, modalData.period)) {
-                                                return { ...d, is_paid: true, status: DeclarationStatus.Pagada, paidAt: new Date().toISOString() };
+                                                return { ...d, is_paid: true, status: estadoAlCobrar(d), paidAt: new Date().toISOString() };
                                             }
                                             return d;
                                         });
