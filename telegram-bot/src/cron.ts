@@ -8,6 +8,7 @@ import { generateAiText } from './ai';
 import { proponerCobranzaSemanal } from './cobranza_semanal';
 import { revisarObligacionesAnualesEmpresas } from './empresas_recordatorios';
 import { registrarEjecucion } from './estado';
+import { enviarParte } from './parte_diario';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
 
@@ -194,4 +195,24 @@ export function startCronJobs(bot: Bot) {
     }, {
     timezone: "America/Guayaquil"
     });
+
+    // ☀️ Parte del día (lun–vie 07:45) y recordatorio de la tarde (17:00, sólo si algo vence hoy).
+    // Avisa sólo a Santiago; no escribe a los clientes (src/parte_diario.ts).
+    const adminParte = () => (process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180").replace(/['"]/g, '').split(',').map(id => id.trim())[0];
+    cron.schedule('45 7 * * 1-5', async () => {
+        registrarEjecucion('parte');
+        try {
+            await enviarParte(bot.api, adminParte(), 'manana');
+        } catch (error) {
+            console.error('❌ Error en el parte del día:', error);
+        }
+    }, { timezone: "America/Guayaquil" });
+    cron.schedule('0 17 * * 1-5', async () => {
+        registrarEjecucion('parte_tarde');
+        try {
+            await enviarParte(bot.api, adminParte(), 'tarde');
+        } catch (error) {
+            console.error('❌ Error en el recordatorio de la tarde:', error);
+        }
+    }, { timezone: "America/Guayaquil" });
 }

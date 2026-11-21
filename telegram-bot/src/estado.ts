@@ -16,6 +16,8 @@ export const AGENDA = [
     { id: 'sociedades', nombre: 'Obligaciones de sociedades', cron: '30 8 * * *', cuando: 'Todos los días 08:30' },
     { id: 'buzon', nombre: 'Buzón SRI', cron: '0 9,14,18 * * 1-5', cuando: 'Lun–Vie 09:00, 14:00, 18:00' },
     { id: 'lunes', nombre: 'Lunes financiero (cobranza)', cron: '0 8 * * 1', cuando: 'Lunes 08:00' },
+    { id: 'parte', nombre: 'Parte del día', cron: '45 7 * * 1-5', cuando: 'Lun–Vie 07:45' },
+    { id: 'parte_tarde', nombre: 'Recordatorio de vencimientos de hoy', cron: '0 17 * * 1-5', cuando: 'Lun–Vie 17:00 (sólo si algo vence hoy)' },
     { id: 'credenciales', nombre: 'Revisión de credenciales', cron: '0 9 * * 5', cuando: 'Viernes 09:00' },
 ] as const;
 

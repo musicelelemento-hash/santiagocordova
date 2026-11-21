@@ -17,6 +17,7 @@ import { startCronJobs, triggerProactiveReport, buildOperationalReportKeyboard }
 import { manejarCallbackCobro, proponerCobranzaSemanal } from './cobranza_semanal';
 import { COMANDOS_MENU } from './comandos';
 import { mostrarCierre, manejarCallbackCierre, limpiarCacheCierre } from './cierre';
+import { enviarParte } from './parte_diario';
 import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
@@ -920,6 +921,17 @@ bot.command(['lunes', 'cobranza_semanal'], async (ctx) => {
 
 bot.command('cierre', async (ctx) => {
     await mostrarCierre(ctx, false);
+});
+
+// /hoy — el parte del día a pedido (el mismo que llega lun–vie 07:45).
+bot.command('hoy', async (ctx) => {
+    try {
+        await ctx.replyWithChatAction('typing');
+        await enviarParte(ctx.api, ctx.chat.id, 'manana');
+    } catch (error: any) {
+        console.error('❌ /hoy:', error);
+        await ctx.reply('No pude armar el parte del día ahora. Probá /cierre mientras tanto.');
+    }
 });
 
 bot.command('comprobantes', async (ctx) => {
