@@ -509,7 +509,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             )}
 
             {/* Encabezado Premium Bóveda (Stitch Obsidian Glass) */}
-            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-white/10 border-t-white/20">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-white/10 border-t-white/20">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-[#00A896]/10 blur-[90px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
                 <div className="absolute bottom-0 left-0 w-60 h-60 bg-[#2B6AFF]/10 blur-[70px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/2"></div>
                 
@@ -639,7 +639,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             )}
 
             {/* Top Security Cards Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 panel-cascada">
                 {onOpenAnulacionSRI && (
                     <div className="p-6 bg-[#051424]/90 backdrop-blur-2xl rounded-3xl border border-rose-500/30 border-t-white/20 shadow-xl flex flex-col justify-between space-y-4 hover:border-rose-500/50 transition-all group">
                         <div className="space-y-3">
@@ -797,7 +797,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             )}
 
             {/* ── Contexto de Facturación & Cobro de Emisión al Vuelo (Stitch Obsidian Luxury) ── */}
-            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 border-t-white/20 shadow-2xl space-y-6">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 border-t-white/20 shadow-2xl space-y-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00A896]/20 to-[#2B6AFF]/20 border border-[#00A896]/30 flex items-center justify-center text-[#00A896] shadow-lg shadow-[#00A896]/15">
@@ -992,7 +992,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             />
 
             {/* Respaldo para Tramitar Firma Electrónica */}
-            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 border-t-white/20 shadow-xl space-y-6">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 border-t-white/20 shadow-xl space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 text-[#2B6AFF] flex items-center justify-center shadow-md shadow-[#2B6AFF]/10">
@@ -1064,7 +1064,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             </div>
 
             {/* Sección de Cifras y Comprobantes de Declaraciones en Bóveda */}
-            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl transition-all duration-500">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
                     <div>
                         <h3 className="text-xl sm:text-2xl font-display font-black text-white tracking-tight flex items-center gap-3">
@@ -1270,7 +1270,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             </div>
 
             {/* Document Repository - Modularized Section (Stitch Obsidian Container) */}
-            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl transition-all duration-500">
+            <div className="panel-tarjeta-plana bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
                     <div>
                         <h3 className="text-xl sm:text-2xl font-display font-black text-white tracking-tight flex items-center gap-3">
@@ -1322,7 +1322,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             .map((decl, idx) => (
                                 <div 
                                     key={idx} 
-                                    className="bg-white/80 dark:bg-[#0b1326]/80 rounded-3xl p-5 border border-slate-200/80 dark:border-white/10 dark:border-t-white/20 hover:border-[#00A896]/40 hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" 
+                                    className="panel-tarjeta bg-white/80 dark:bg-[#0b1326]/80 rounded-3xl p-5 border border-slate-200/80 dark:border-white/10 dark:border-t-white/20 shadow-sm cursor-pointer group relative overflow-hidden" 
                                     onClick={() => setPreviewItem(decl)}
                                 >
                                     <div className="aspect-[4/3] rounded-2xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200/60 dark:border-white/5 mb-4 flex items-center justify-center relative overflow-hidden group-hover:bg-[#00A896]/5 transition-all duration-500">

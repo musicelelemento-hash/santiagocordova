@@ -86,13 +86,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
     const { toast } = useToast();
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
+        <div className="space-y-8 panel-cascada pb-20">
             {/* Grid for Technical Parameters */}
             <div className="grid grid-cols-1 2xl:grid-cols-12 gap-8">
                 
                 {/* Left Column: Core Identity & Tax Profile */}
-                <div className="2xl:col-span-8 space-y-8">
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl relative overflow-hidden group transition-all duration-500">
+                <div className="2xl:col-span-8 space-y-8 panel-cascada">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all duration-1000 group-hover:scale-110 pointer-events-none">
                             <LucideIcons.ShieldCheck size={96} className="text-[#00A896]" />
                         </div>
@@ -247,7 +247,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         </div>
                     </div>
 
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl relative overflow-hidden transition-all duration-500">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl relative overflow-hidden">
                         <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3 mb-8">
                             <div className="p-3 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-2xl">
                                 <LucideIcons.GanttChartSquare size={22} />
@@ -259,8 +259,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
 
                 {/* Right Column: Technical Stats & Meta */}
-                <div className="2xl:col-span-4 space-y-8">
-                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl transition-all duration-500">
+                <div className="2xl:col-span-4 space-y-8 panel-cascada">
+                    <div className="panel-tarjeta-plana bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl">
                         <h3 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-6">Parámetros del Sistema</h3>
                         
                         <div className="space-y-6">

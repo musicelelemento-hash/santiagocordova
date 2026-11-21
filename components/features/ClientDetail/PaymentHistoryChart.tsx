@@ -73,7 +73,7 @@ export const PaymentHistoryChart: React.FC<PaymentHistoryChartProps> = memo(({ c
     const trendColor = avgScore >= 80 ? '#10b981' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
 
     return (
-        <div className="bg-white dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] p-8 shadow-architect border border-slate-100 dark:border-white/10 h-full relative overflow-hidden group transition-all duration-700">
+        <div className="panel-tarjeta-plana bg-white dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] p-8 shadow-architect border border-slate-100 dark:border-white/10 h-full relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-50 group-hover:opacity-80 transition-opacity"></div>
             
             <h4 className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 mb-8 uppercase tracking-[0.3em] flex items-center gap-2">

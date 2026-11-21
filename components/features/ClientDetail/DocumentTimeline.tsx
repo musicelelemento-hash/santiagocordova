@@ -44,7 +44,7 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                         <div className="w-2 h-2 bg-white rounded-full" />
                     </div>
 
-                    <div className="bg-white/60 dark:bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-slate-100/80 dark:border-white/8 hover:border-primary/30 dark:hover:border-primary/30 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-primary/5 transition-all duration-500 group/card relative overflow-hidden">
+                    <div className="panel-tarjeta-plana bg-white/60 dark:bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-slate-100/80 dark:border-white/8 hover:border-primary/30 dark:hover:border-primary/30 shadow-sm group/card relative overflow-hidden">
                         {/* Hover glow */}
                         <div className="absolute -right-16 -top-16 w-32 h-32 bg-primary/5 blur-[60px] rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
