@@ -978,7 +978,7 @@ const [appState, setAppState] = useState<AppState>(() => {
           }}
         />
         <div className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-500 ${(isSidebarCollapsed || !!clientToView) ? 'md:pl-[84px]' : 'md:pl-[280px]'}`}>
-          <header className="hidden md:flex items-center justify-between p-5 px-10 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/10 relative z-30 transition-all duration-500 no-print">
+          <header className="panel-barra hidden md:flex items-center justify-between p-5 px-10 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/10 relative z-30 transition-all duration-500 no-print">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white capitalize font-display">
                 {activeScreen === 'home' ? 'Centro de Control' : (navItems.find(i => i.screen === activeScreen)?.label ?? activeScreen.replace('_', ' '))}

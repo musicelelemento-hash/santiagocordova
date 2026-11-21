@@ -2396,8 +2396,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             })()}
 
             {/* ZENITH FINANCIAL STRIP - 3 Executive KPI Cards (Stitch Obsidian Luxury & Clean Light) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 font-mono">
-                <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
+            <div className="panel-cascada grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 font-mono">
+                <div className="panel-tarjeta p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-rose-500/15 text-rose-500 dark:text-rose-400 rounded-2xl border border-rose-500/30">
                             <LucideIcons.AlertTriangle size={20} />
@@ -2414,7 +2414,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </span>
                 </div>
 
-                <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="panel-tarjeta p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)]">
                             <LucideIcons.CheckCircle size={20} />
@@ -2431,7 +2431,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </span>
                 </div>
 
-                <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="panel-tarjeta p-4 sm:p-5 rounded-2xl sm:rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl border border-[#2B6AFF]/30">
                             <LucideIcons.Activity size={20} />
@@ -2691,8 +2691,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     {activeTab === 'advances' ? (
                         <div className="relative z-10 p-4 sm:p-6 space-y-6 max-h-[850px] overflow-y-auto no-scrollbar font-mono">
                             {/* Strip de KPIs de Adelantos */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+                            <div className="panel-cascada grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="panel-tarjeta p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
                                     <div>
                                         <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Total Adelantado / Saldo a Favor</p>
                                         <p className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
@@ -2703,7 +2703,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <LucideIcons.Sparkles size={22} />
                                     </div>
                                 </div>
-                                <div className="p-5 rounded-2xl bg-[#00A896]/10 border border-[#00A896]/20 flex items-center justify-between">
+                                <div className="panel-tarjeta p-5 rounded-2xl bg-[#00A896]/10 border border-[#00A896]/20 flex items-center justify-between">
                                     <div>
                                         <p className="text-[10px] font-bold text-[#00A896] uppercase tracking-widest">Clientes con Prepago</p>
                                         <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
@@ -2714,7 +2714,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <LucideIcons.Users size={22} />
                                     </div>
                                 </div>
-                                <div className="p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+                                <div className="panel-tarjeta p-5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
                                     <div>
                                         <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Períodos Prepagados</p>
                                         <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
@@ -2747,11 +2747,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     </button>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div className="panel-cascada grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     {advancesData.list.map(({ client, prepaidPeriods, totalPrepaid, advanceCredits, totalAdvanceBalance, freq }) => (
                                         <div
                                             key={client.id}
-                                            className="relative rounded-[2rem] p-5 sm:p-6 border bg-white dark:bg-[#051424]/95 border-slate-200 dark:border-white/10 shadow-lg flex flex-col justify-between"
+                                            className="panel-tarjeta-plana relative rounded-[2rem] p-5 sm:p-6 border bg-white dark:bg-[#051424]/95 border-slate-200 dark:border-white/10 shadow-lg flex flex-col justify-between"
                                         >
                                             <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-full bg-gradient-to-r from-amber-400 via-emerald-500 to-teal-500" />
 
@@ -2848,7 +2848,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             )}
                         </div>
                     ) : viewMode === 'clients' ? (
-                        <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
+                        <div className="panel-cascada relative z-10 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
                             {/* Banner Global de Liquidación en 1 Sola Acción */}
                             {allPastYearsDebtsSummary.clientsCount > 0 && (
                                 <div className="col-span-full p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-purple-900/30 to-purple-950/40 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg font-mono">
@@ -2897,7 +2897,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     return (
                                         <div
                                             key={profile.client.id}
-                                            className={`group/client relative rounded-[2rem] p-5 sm:p-6 border transition-all duration-300 backdrop-blur-2xl flex flex-col justify-between shadow-lg hover:shadow-xl ${
+                                            className={`panel-tarjeta-plana group/client relative rounded-[2rem] p-5 sm:p-6 border backdrop-blur-2xl flex flex-col justify-between shadow-lg hover:shadow-xl ${
                                                 hasDebt
                                                     ? 'bg-white dark:bg-[#051424]/95 border-slate-200 dark:border-white/10 hover:border-[#00A896]/40'
                                                     : 'bg-white dark:bg-[#051424]/80 border-slate-200 dark:border-white/5 opacity-90'
@@ -3127,7 +3127,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             )}
                         </div>
                     ) : viewMode === 'grid' ? (
-                        <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
+                        <div className="panel-cascada relative z-10 p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
                             {currentList.length === 0 ? (
                                 <div className="col-span-full py-24 flex flex-col items-center justify-center text-slate-500 font-mono">
                                     <div className="p-6 rounded-3xl bg-white/5 mb-4 border border-white/10">
@@ -3145,10 +3145,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <div
                                             key={key}
                                             onClick={() => activeTab !== 'collected' && (isSelected ? setSelectedItems(s => { const n = new Set(s); n.delete(key); return n; }) : setSelectedItems(s => new Set(s).add(key)))}
-                                            className={`group/card relative rounded-[2rem] p-5 sm:p-6 border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between backdrop-blur-2xl ${
+                                            className={`panel-tarjeta-plana group/card relative rounded-[2rem] p-5 sm:p-6 border cursor-pointer overflow-hidden flex flex-col justify-between backdrop-blur-2xl ${
                                                 isSelected
                                                     ? 'bg-[#051c2e] border-[#00A896] shadow-[0_0_20px_rgba(0,168,150,0.3)] ring-1 ring-[#00A896]'
-                                                    : 'bg-[#051424]/95 border-white/10 hover:border-white/20 hover:-translate-y-1 shadow-xl'
+                                                    : 'bg-[#051424]/95 border-white/10 hover:border-white/20 shadow-xl'
                                             }`}
                                         >
                                             {/* Top Accent Strip */}
@@ -3357,8 +3357,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                             </td>
                                         </tr>
                                     ) : (
-                                        matrixClientsData.map(({ client, fee, freq, totalUnpaidDebt, periodsStatus }) => (
-                                            <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group/row">
+                                        matrixClientsData.map(({ client, fee, freq, totalUnpaidDebt, periodsStatus }, idx) => (
+                                            <tr key={client.id} style={{ ['--i' as any]: Math.min(idx, 30) }} className="panel-fila hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group/row">
                                                 {/* Frozen Client Column */}
                                                 <td className="py-3 px-5 sticky left-0 z-10 bg-white dark:bg-[#051424] group-hover/row:bg-slate-50 dark:group-hover/row:bg-[#081b2e] border-r border-slate-200 dark:border-white/10 shadow-sm">
                                                     <div className="flex items-center gap-3">
@@ -3393,7 +3393,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 </td>
 
                                                 {/* Base Fee */}
-                                                <td className="py-3 px-3 text-center border-r border-slate-200 dark:border-white/5 font-bold text-slate-700 dark:text-slate-200">
+                                                <td className="panel-celda py-3 px-3 text-center border-r border-slate-200 dark:border-white/5 font-bold text-slate-700 dark:text-slate-200">
                                                     ${fee.toFixed(2)}
                                                 </td>
 
@@ -3405,7 +3405,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     const isNa = pStatus.status === 'na';
 
                                                     return (
-                                                        <td key={pStatus.key} className="py-2 px-2 text-center border-r border-slate-200 dark:border-white/5">
+                                                        <td key={pStatus.key} className="panel-celda py-2 px-2 text-center border-r border-slate-200 dark:border-white/5">
                                                             {isNa ? (
                                                                 <span className="text-slate-400 dark:text-slate-600 text-[10px] font-bold select-none">—</span>
                                                             ) : (

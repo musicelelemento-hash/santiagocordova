@@ -19,6 +19,7 @@ import { SalesComboModal } from '../components/features/SalesComboModal';
 import { VentaOcasionalForm } from '../components/features/VentaOcasionalForm';
 import { useToast } from '../context/ToastContext';
 import { SriPosTerminalModal } from '../components/features/SriPosTerminalModal';
+import { CountUp } from '../components/lujo/LujoWidgets';
 import { SriAccountingBatchModal } from '../components/features/SriAccountingBatchModal';
 import { DevolucionIvaModal } from '../components/features/DevolucionIvaModal';
 import { Store, HeartHandshake, ShieldCheck, FileMinus, FilePlus, Truck, FileSpreadsheet, Clock, Calendar } from 'lucide-react';
@@ -2444,10 +2445,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </div>
 
         {/* 4 Stats Grid Cards (Stitch Obsidian Luxury) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+        <div className="panel-cascada grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-[#00A896]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer panel-tarjeta group overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-[#00A896] transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Total Facturado</span>
@@ -2464,14 +2465,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-[#2B6AFF]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer panel-tarjeta group overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-[#2B6AFF] transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Facturas Emitidas</span>
               <FileText size={16} className="text-[#2B6AFF]" />
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{invoicesCount}</span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white"><CountUp to={invoicesCount} /></span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
             </div>
             <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
@@ -2481,14 +2482,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-indigo-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer panel-tarjeta group overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-indigo-400 transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Retenciones</span>
               <Receipt size={16} className="text-indigo-400" />
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{withholdingsCount}</span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white"><CountUp to={withholdingsCount} /></span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
             </div>
             <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
@@ -2498,14 +2499,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           <div 
             onClick={() => setActiveTab('historial')}
-            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer hover:border-amber-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+            className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-2 cursor-pointer panel-tarjeta group overflow-hidden"
           >
             <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-400 transition-colors">
               <span className="text-[10px] font-bold uppercase tracking-widest">Total Comprobantes</span>
               <Activity size={16} className="text-amber-400" />
             </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-black text-slate-900 dark:text-white">{totalIssued}</span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white"><CountUp to={totalIssued} /></span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">Total</span>
             </div>
             <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
@@ -2549,11 +2550,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {latestDocs.map(doc => (
+                    {latestDocs.map((doc, idx) => (
                       <tr 
                         key={doc.id} 
                         onClick={() => printRideDocument(doc)}
-                        className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                        style={{ ['--i' as any]: Math.min(idx, 30) }}
+                        className="panel-fila border-b border-slate-100 dark:border-white/5 last:border-0 cursor-pointer"
                       >
                         <td className="py-3 font-semibold pr-2">
                           <span className="uppercase text-[10px] font-black text-slate-800 dark:text-white block">
@@ -2566,7 +2568,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         </td>
                         <td className="py-3 text-slate-400 pr-2">{doc.fechaEmision}</td>
                         <td className="py-3 font-mono font-black text-[#00A896] pr-2">${doc.total.toFixed(2)}</td>
-                        <td className="py-3 text-center">
+                        <td className="panel-celda py-3 text-center">
                           <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
                             doc.estado === 'Autorizado'
                               ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 shadow-[0_0_6px_rgba(0,168,150,0.3)]'
@@ -2616,7 +2618,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           </div>
 
           {/* Quick Info & Telemetry Widgets (Stitch Obsidian Luxury) */}
-          <div className="lg:col-span-4 space-y-4 font-mono">
+          <div className="panel-cascada lg:col-span-4 space-y-4 font-mono">
             
             {/* Connection widget */}
             <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
@@ -2639,7 +2641,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             {/* Signature expiry warning */}
-            <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
+            <div className="panel-tarjeta-plana p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3">
               <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Vigencia Firma Electrónica (.p12)</span>
               {p12FileBase64 ? (
                 (() => {
@@ -2711,7 +2713,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             {/* Protocolo de Conectividad & Enlaces widget */}
-            <div className="p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3.5">
+            <div className="panel-tarjeta-plana p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] bg-white dark:bg-[#051424]/90 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-slate-200/40 dark:shadow-xl space-y-3.5">
               <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Guía & Portales SRI</span>
               
               {/* Quick links */}
@@ -4806,8 +4808,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-white/5 text-xs">
-                  {filteredHistory.map(row => (
-                    <tr key={row.id} className="hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors">
+                  {filteredHistory.map((row, idx) => (
+                    <tr key={row.id} style={{ ['--i' as any]: Math.min(idx, 30) }} className="panel-fila">
                       <td className="py-3.5 px-4 font-black uppercase tracking-wider font-premium">
                         {row.tipo === 'factura' ? (
                           <span className="text-sky-500">Factura</span>
@@ -4839,7 +4841,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md text-[8px] font-black">Prod</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="panel-celda py-3.5 px-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
                             row.estado === 'Autorizado'

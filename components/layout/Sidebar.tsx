@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import InstallAppButton from './InstallAppButton';
 import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, ArrowRightLeft, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { Screen, Theme } from '../../types';
@@ -61,6 +61,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onOpenSalesModal
 }) => {
 
+    // Indicador deslizante del ítem activo: se mide el botón activo y se mueve con translate.
+    const navRef = useRef<HTMLElement>(null);
+    const [indicador, setIndicador] = useState<{ y: number; ok: boolean }>({ y: 0, ok: false });
+    useLayoutEffect(() => {
+        const nav = navRef.current;
+        const el = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+        if (!nav || !el || el.dataset.firmas === '1') {
+            setIndicador(prev => (prev.ok ? { ...prev, ok: false } : prev));
+            return;
+        }
+        const y = el.offsetTop + (el.offsetHeight - 20) / 2;
+        setIndicador(prev => (prev.ok && prev.y === y ? prev : { y, ok: true }));
+    }, [activeScreen, isCollapsed, navItems.length]);
+
     const getCloudStatusIcon = () => {
         switch (cloudStatus) {
             case 'loading': case 'saving': return <RefreshCw size={14} className="animate-spin text-[#00A896]" />;
@@ -100,6 +114,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         groupedNav.push({ label: 'Módulos', items: remaining });
     }
 
+    // Posición de cada ítem para la entrada escalonada.
+    const ordenItems = new Map<string, number>();
+    groupedNav.forEach(g => g.items.forEach(i => ordenItems.set(i.screen, ordenItems.size)));
+
     const renderNavButton = ({ screen, icon: Icon, label, count, isSubItem, groupLabel }: NavItem) => {
         const isActive = activeScreen === screen;
         const isDark = theme === 'dark';
@@ -121,8 +139,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => onNavigate(screen)}
                     title={isCollapsed ? label : undefined}
                     aria-current={isActive ? 'page' : undefined}
+                    data-firmas={isFirmas ? '1' : undefined}
+                    style={{ ['--i' as any]: Math.min(ordenItems.get(screen) ?? 0, 24) }}
                     className={`
-                        group relative flex items-center rounded-2xl transition-all duration-300
+                        menu-entra group relative flex items-center rounded-2xl transition-[background-color,border-color,color,box-shadow] duration-300
                         ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-3.5 py-2.5 gap-3 w-full'}
                         ${isSubItem && !isCollapsed ? 'ml-3 w-[calc(100%-0.75rem)] border-l border-[#00A896]/30 rounded-l-none pl-3' : ''}
                         ${isActive
@@ -136,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     `}
                 >
                     {/* Left Active Glow Indicator */}
-                    {isActive && !isCollapsed && (
+                    {isActive && !isCollapsed && isFirmas && (
                         <div className={`
                             absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full
                             ${isFirmas
@@ -149,10 +169,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {/* Icon with Dynamic State Glow */}
                     <Icon
                         size={17}
-                        className={`transition-all duration-300 flex-shrink-0 ${
+                        className={`transition-[transform,color] duration-300 flex-shrink-0 ${
                             isActive 
                                 ? isDark ? 'text-[#00A896] scale-110' : 'text-white scale-110' 
-                                : 'group-hover:scale-105 group-hover:text-[#00A896]'
+                                : 'group-hover:scale-110 group-hover:translate-x-0.5 group-hover:text-[#00A896]'
                         }`}
                         strokeWidth={isActive ? 2.5 : 2}
                     />
@@ -245,7 +265,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             {/* Navigation Section */}
-            <nav className={`flex-1 overflow-y-auto py-4 no-scrollbar ${isCollapsed ? 'px-2.5 flex flex-col items-center gap-1' : 'px-3'}`}>
+            <nav ref={navRef} className={`relative flex-1 overflow-y-auto py-4 no-scrollbar ${isCollapsed ? 'px-2.5 flex flex-col items-center gap-1' : 'px-3'}`}>
+
+                {/* Píldora esmeralda que se desliza hasta el ítem activo (sólo transform/opacity) */}
+                <span
+                    aria-hidden="true"
+                    className="menu-indicador pointer-events-none absolute left-0 top-0 w-[3px] h-5 rounded-r-full bg-[#04B17B] shadow-[2px_0_10px_rgba(4,177,123,0.6)]"
+                    style={{ transform: `translateY(${indicador.y}px)`, opacity: indicador.ok ? 1 : 0 }}
+                />
 
                 {groupedNav.map((group, gIdx) => (
                     <div key={group.label} className={`${gIdx > 0 ? 'mt-4' : ''}`}>

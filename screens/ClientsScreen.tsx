@@ -23,6 +23,7 @@ import { useToast } from '../context/ToastContext';
 import { VirtualClientList } from '../components/features/VirtualClientList';
 import { VirtualClientTable } from '../components/features/VirtualClientTable';
 import { ClientCard } from '../components/features/ClientCard';
+import { CountUp } from '../components/lujo/LujoWidgets';
 import { extractDataFromDeclarationPdf, fileToBase64, extractDataFromSriPdf } from '../services/pdfExtraction';
 import { UnifiedStorageService } from '../services/unifiedStorageService';
 import { StoredFile } from '../types';
@@ -2087,7 +2088,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         className="pb-20"
                     >
                         {/* CINTA DE INTELIGENCIA Y KPIS DE LA VISTA (INTERACTIVA) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 px-1">
+                        <div className="panel-cascada grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 px-1">
                             {/* Clientes Activos */}
                             <button
                                 type="button"
@@ -2095,10 +2096,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     setQuickFilter(prev => prev === 'total' ? null : 'total');
                                     if (viewMode === 'analytics') setViewMode('list');
                                 }}
-                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                className={`text-left p-3.5 rounded-2xl border panel-tarjeta cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
                                     quickFilter === 'total'
                                         ? 'bg-primary/10 border-primary ring-2 ring-primary/40 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-primary/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-primary/50 hover:bg-surface-lowest'
                                 }`}
                                 title="Clic para filtrar y ver todos los clientes activos del despacho"
                             >
@@ -2112,7 +2113,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             <span className="text-[8px] font-black text-primary uppercase">Activo</span>
                                         )}
                                     </div>
-                                    <span className="text-base font-black font-mono text-slate-900 dark:text-white leading-none">{directoryStats.total}</span>
+                                    <span className="text-base font-black font-mono text-slate-900 dark:text-white leading-none"><CountUp to={directoryStats.total} duration={1100} /></span>
                                 </div>
                             </button>
 
@@ -2123,10 +2124,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     setQuickFilter(prev => prev === 'fact-proyectada' ? null : 'fact-proyectada');
                                     if (viewMode === 'analytics') setViewMode('list');
                                 }}
-                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                className={`text-left p-3.5 rounded-2xl border panel-tarjeta cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
                                     quickFilter === 'fact-proyectada'
                                         ? 'bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/40 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-emerald-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-emerald-500/50 hover:bg-surface-lowest'
                                 }`}
                                 title={`Clic para ver clientes con tarifa mensual configurada ($${directoryStats.totalMonthlyRevenue.toFixed(0)} proyectados)`}
                             >
@@ -2140,7 +2141,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             <span className="text-[8px] font-black text-emerald-500 uppercase">Activo</span>
                                         )}
                                     </div>
-                                    <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400 leading-none">${directoryStats.totalMonthlyRevenue.toFixed(0)}</span>
+                                    <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400 leading-none"><CountUp to={Math.round(directoryStats.totalMonthlyRevenue)} prefix="$" duration={1100} /></span>
                                 </div>
                             </button>
 
@@ -2151,10 +2152,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     setQuickFilter(prev => prev === 'al-dia' ? null : 'al-dia');
                                     if (viewMode === 'analytics') setViewMode('list');
                                 }}
-                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                className={`text-left p-3.5 rounded-2xl border panel-tarjeta cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
                                     quickFilter === 'al-dia'
                                         ? 'bg-teal-500/10 border-teal-500 ring-2 ring-teal-500/40 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-teal-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-teal-500/50 hover:bg-surface-lowest'
                                 }`}
                                 title={`Clic para ver los ${directoryStats.alDiaCount} clientes con declaraciones y honorarios al día`}
                             >
@@ -2168,7 +2169,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             <span className="text-[8px] font-black text-teal-500 uppercase">Activo</span>
                                         )}
                                     </div>
-                                    <span className="text-base font-black font-mono text-teal-600 dark:text-teal-400 leading-none">{directoryStats.alDiaCount}</span>
+                                    <span className="text-base font-black font-mono text-teal-600 dark:text-teal-400 leading-none"><CountUp to={directoryStats.alDiaCount} duration={1100} /></span>
                                 </div>
                             </button>
 
@@ -2179,10 +2180,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     setQuickFilter(prev => prev === 'con-deuda' ? null : 'con-deuda');
                                     if (viewMode === 'analytics') setViewMode('list');
                                 }}
-                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                className={`text-left p-3.5 rounded-2xl border panel-tarjeta cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
                                     quickFilter === 'con-deuda'
                                         ? 'bg-rose-500/10 border-rose-500 ring-2 ring-rose-500/40 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-rose-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-rose-500/50 hover:bg-surface-lowest'
                                 }`}
                                 title={`Clic para ver los ${directoryStats.conDeudaCount} clientes con valores pendientes de cobro`}
                             >
@@ -2196,7 +2197,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             <span className="text-[8px] font-black text-rose-500 uppercase">Activo</span>
                                         )}
                                     </div>
-                                    <span className="text-base font-black font-mono text-rose-600 dark:text-rose-400 leading-none">{directoryStats.conDeudaCount}</span>
+                                    <span className="text-base font-black font-mono text-rose-600 dark:text-rose-400 leading-none"><CountUp to={directoryStats.conDeudaCount} duration={1100} /></span>
                                 </div>
                             </button>
 
@@ -2207,10 +2208,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     setQuickFilter(prev => prev === 'claves-ok' ? null : 'claves-ok');
                                     if (viewMode === 'analytics') setViewMode('list');
                                 }}
-                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                className={`text-left p-3.5 rounded-2xl border panel-tarjeta cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
                                     quickFilter === 'claves-ok'
                                         ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/40 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-amber-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-amber-500/50 hover:bg-surface-lowest'
                                 }`}
                                 title={`Clic para ver los ${directoryStats.keysUpdatedCount} clientes con contraseña SRI registrada en bóveda`}
                             >
@@ -2235,10 +2236,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     setQuickFilter(prev => prev === 'firmas-vencen' ? null : 'firmas-vencen');
                                     if (viewMode === 'analytics') setViewMode('list');
                                 }}
-                                className={`text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
+                                className={`text-left p-3.5 rounded-2xl border panel-tarjeta cursor-pointer select-none group relative overflow-hidden flex items-center gap-3 shadow-xs ${
                                     quickFilter === 'firmas-vencen'
                                         ? 'bg-purple-500/10 border-purple-500 ring-2 ring-purple-500/40 shadow-md scale-[1.02]'
-                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-purple-500/50 hover:scale-[1.02] hover:bg-surface-lowest'
+                                        : 'bg-surface-lowest/70 backdrop-blur-md border-outline-variant/30 hover:border-purple-500/50 hover:bg-surface-lowest'
                                 }`}
                                 title={`Clic para ver los ${directoryStats.signaturesExpiringSoon} clientes con firma o facturador por vencer en <= 30 días`}
                             >
@@ -2252,7 +2253,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             <span className="text-[8px] font-black text-purple-500 uppercase">Activo</span>
                                         )}
                                     </div>
-                                    <span className="text-base font-black font-mono text-purple-600 dark:text-purple-400 leading-none">{directoryStats.signaturesExpiringSoon}</span>
+                                    <span className="text-base font-black font-mono text-purple-600 dark:text-purple-400 leading-none"><CountUp to={directoryStats.signaturesExpiringSoon} duration={1100} /></span>
                                 </div>
                             </button>
                         </div>
