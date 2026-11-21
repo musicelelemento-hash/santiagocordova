@@ -6,9 +6,9 @@ import IceConfigModal from './IceConfigModal';
 import { descargarAnexoIce } from '../../utils/iceXml';
 
 /**
- * Vista â€œclienteâ€: el mes explicado como se lo contarÃ­as a alguien que no sabe
- * de impuestos. Sin casilleros ni cÃ³digos: estado, cuÃ¡nto vendiÃ³, cuÃ¡nto
- * comprÃ³, cuÃ¡nto le toca pagar y el comprobante a mano.
+ * Vista “cliente”: el mes explicado como se lo contarías a alguien que no sabe
+ * de impuestos. Sin casilleros ni códigos: estado, cuánto vendió, cuánto
+ * compró, cuánto le toca pagar y el comprobante a mano.
  */
 
 interface Props {
@@ -35,7 +35,7 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
     const decl = declaraciones.find((d) => d.period === periodo) || null;
     const cifras = useMemo(() => extractDeclarationCifras(decl), [decl]);
 
-    // Ventas del anexo ICE (las publica la extensiÃ³n al generar el anexo).
+    // Ventas del anexo ICE (las publica la extensión al generar el anexo).
     const iceVentas: Record<string, any> = (client.taxProfile as any)?.ice_ventas || {};
     const periodosIce = Object.keys(iceVentas).sort().reverse();
     // Lo que no cambia mes a mes: código de producto, comprador y tipo de venta.
@@ -65,8 +65,8 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
         return (
             <div className="p-8 text-center text-slate-300">
                 <Sparkles className="mx-auto mb-3 text-[#C9A96E]" size={28} />
-                <p className="text-sm font-bold">TodavÃ­a no hay declaraciones de este cliente.</p>
-                <p className="mt-1 text-xs text-slate-500">Cuando se declare el primer mes, acÃ¡ va a aparecer explicado en simple.</p>
+                <p className="text-sm font-bold">Todavía no hay declaraciones de este cliente.</p>
+                <p className="mt-1 text-xs text-slate-500">Cuando se declare el primer mes, acá va a aparecer explicado en simple.</p>
             </div>
         );
     }
@@ -91,7 +91,7 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
             <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#0b1c2e] to-[#051424] p-5">
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">DeclaraciÃ³n de IVA</p>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Declaración de IVA</p>
                         <h3 className="font-display text-xl font-black text-white">{nombrePeriodo(periodo, true)}</h3>
                         <p className="mt-0.5 text-xs text-slate-400">{client.name}</p>
                     </div>
@@ -129,15 +129,15 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
                             <p className="font-mono text-sm font-black text-[#e6d3ab]">{dinero(iceDelPeriodo.ventaTotal)}</p>
                         </div>
                         <p className="mt-1 text-[10.5px] text-slate-400">
-                            {(iceDelPeriodo.productos || []).length} producto(s) Â· gramos de azÃºcar{' '}
+                            {(iceDelPeriodo.productos || []).length} producto(s) · gramos de azúcar{' '}
                             {Number(iceDelPeriodo.gramosAzucar || 0).toFixed(2)}
                             {Number(iceDelPeriodo.devolucionTotal || 0) > 0
-                                ? ` Â· devoluciones ${dinero(iceDelPeriodo.devolucionTotal)}`
+                                ? ` · devoluciones ${dinero(iceDelPeriodo.devolucionTotal)}`
                                 : ''}
                         </p>
                         {(iceDelPeriodo.productos || []).map((p: any) => (
                             <p key={p.codProdICE} className="mt-0.5 font-mono text-[9.5px] text-slate-500">
-                                {p.codProdICE} Â· {dinero(p.ventaICE)}
+                                {p.codProdICE} · {dinero(p.ventaICE)}
                             </p>
                         ))}
                         <button
@@ -183,7 +183,7 @@ const ClientMonthView: React.FC<Props> = ({ client }) => {
                     <p>IVA de tus ventas: <b className="font-mono text-slate-200">{dinero(cifras.montoIvaVentas)}</b></p>
                     <p>IVA de tus compras: <b className="font-mono text-slate-200">{dinero(cifras.montoIvaCompras)}</b></p>
                     <p>Retenciones de IVA: <b className="font-mono text-slate-200">{dinero(cifras.retIva)}</b></p>
-                    <p className="flex items-center gap-1"><CalendarDays size={11} /> {presentada ? 'Comprobante disponible en tu bÃ³veda' : 'Se presenta este mes'}</p>
+                    <p className="flex items-center gap-1"><CalendarDays size={11} /> {presentada ? 'Comprobante disponible en tu bóveda' : 'Se presenta este mes'}</p>
                 </div>
 
                 {comprobante && (
