@@ -1291,7 +1291,18 @@ const [appState, setAppState] = useState<AppState>(() => {
 
           <main className="flex-grow px-4 pt-20 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
-              <div key={activeScreen} className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700">
+              <div
+                key={activeScreen}
+                className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700"
+                onPointerMove={(e) => {
+                  if (e.pointerType !== 'mouse') return;
+                  const card = (e.target as HTMLElement).closest<HTMLElement>('.panel-tarjeta, .panel-tarjeta-plana');
+                  if (!card) return;
+                  const r = card.getBoundingClientRect();
+                  card.style.setProperty('--cx', `${e.clientX - r.left}px`);
+                  card.style.setProperty('--cy', `${e.clientY - r.top}px`);
+                }}
+              >
                 <Suspense fallback={<ScreenLoader />}>
                   {renderScreen()}
                 </Suspense>

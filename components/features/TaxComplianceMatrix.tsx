@@ -1,5 +1,6 @@
 
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { CountUp } from '../lujo/LujoWidgets';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
@@ -1721,9 +1722,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 />
             )}
             {/* Executive Stitch Glassmorphic KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="panel-cascada grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Card 1: Total Clientes */}
-                <div className="bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-[#2B6AFF]/40 transition-all shadow-2xl">
+                <div className="panel-tarjeta bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-[#2B6AFF]/40 transition-all shadow-2xl">
                     <div className="absolute top-0 right-0 w-28 h-28 bg-[#2B6AFF]/10 rounded-full blur-2xl group-hover:bg-[#2B6AFF]/20 transition-all" />
                     <div className="flex justify-between items-start relative z-10">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 font-mono">Total Clientes</span>
@@ -1732,7 +1733,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </div>
                     </div>
                     <div className="mt-3 relative z-10 flex items-baseline gap-2">
-                        <span className="text-3xl font-black text-white font-mono">{totalFiltered}</span>
+                        <span className="text-3xl font-black text-white font-mono"><CountUp to={totalFiltered} duration={1000} /></span>
                         <span className="text-[10px] font-bold text-slate-400 font-mono">
                             {matrixMode === 'RENTA' ? 'Renta Activa' : frequency}
                         </span>
@@ -1744,7 +1745,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 {/* Card 2: % Al Día */}
-                <div className="bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-[#00A896]/40 transition-all shadow-2xl">
+                <div className="panel-tarjeta bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-[#00A896]/40 transition-all shadow-2xl">
                     <div className="absolute top-0 right-0 w-28 h-28 bg-[#00A896]/10 rounded-full blur-2xl group-hover:bg-[#00A896]/20 transition-all" />
                     <div className="flex justify-between items-start relative z-10">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-[#00A896] font-mono">% Cumplimiento SRI</span>
@@ -1765,7 +1766,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 {/* Card 3: Pendientes del Periodo */}
-                <div className={`bg-[#051424]/90 backdrop-blur-2xl border rounded-3xl p-5 relative overflow-hidden group transition-all shadow-2xl ${
+                <div className={`panel-tarjeta bg-[#051424]/90 backdrop-blur-2xl border rounded-3xl p-5 relative overflow-hidden group shadow-2xl ${
                     pendingDeclarationsCount > 0 
                         ? 'border-amber-500/40 hover:border-amber-500/60' 
                         : 'border-white/10 border-t-white/20 hover:border-[#00A896]/40'
@@ -1797,7 +1798,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 {/* Card 4: Cloud Storage Sync (R2 / Supabase) */}
-                <div className="bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-sky-500/40 transition-all shadow-2xl flex flex-col justify-between">
+                <div className="panel-tarjeta bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-sky-500/40 transition-all shadow-2xl flex flex-col justify-between">
                     <div className="absolute top-0 right-0 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all" />
                     <div>
                         <div className="flex justify-between items-start relative z-10">
@@ -1807,7 +1808,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </div>
                         </div>
                         <div className="mt-3 relative z-10 flex items-baseline gap-2">
-                            <span className="text-3xl font-black text-sky-400 font-mono">{cloudStoredPdfsCount}</span>
+                            <span className="text-3xl font-black text-sky-400 font-mono"><CountUp to={cloudStoredPdfsCount} duration={1000} /></span>
                             <span className="text-[10px] font-bold text-slate-400 font-mono">PDFs Respaldados</span>
                         </div>
                     </div>
@@ -2215,7 +2216,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* Progress Summary mini-dashboard (Stitch Luxury Cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print font-mono">
+            <div className="panel-cascada grid grid-cols-1 md:grid-cols-4 gap-4 no-print font-mono">
                 {(() => {
                     const totalClients = filteredClients.length;
                     if (totalClients === 0) return null;
@@ -2232,31 +2233,31 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                     return (
                         <>
-                            <div className="p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex items-center gap-4 hover:translate-y-[-2px] transition-all">
+                            <div className="panel-tarjeta p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex items-center gap-4">
                                 <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-sm">
                                     <LucideIcons.CheckSquare size={20} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Declarados</p>
                                     <p className="text-2xl font-black text-white leading-none font-mono">
-                                        {declaredCount}
+                                        <CountUp to={declaredCount} duration={1000} />
                                         <span className="text-xs text-slate-400 font-normal ml-1">/ {denominator}</span>
                                     </p>
                                 </div>
                             </div>
-                            <div className="p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex items-center gap-4 hover:translate-y-[-2px] transition-all">
+                            <div className="panel-tarjeta p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex items-center gap-4">
                                 <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl border border-[#2B6AFF]/30 shadow-sm">
                                     <LucideIcons.Paperclip size={20} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respaldos</p>
                                     <p className="text-2xl font-black text-white leading-none font-mono">
-                                        {pdfCount}
+                                        <CountUp to={pdfCount} duration={1000} />
                                         <span className="text-xs text-slate-400 font-normal ml-1">/ {denominator}</span>
                                     </p>
                                 </div>
                             </div>
-                            <div className="md:col-span-2 p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex flex-col justify-center hover:translate-y-[-2px] transition-all">
+                            <div className="panel-tarjeta md:col-span-2 p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex flex-col justify-center">
                                 <div className="flex justify-between items-center mb-2">
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -2382,7 +2383,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
             {/* Mobile Cards vs Matrix Table View */}
             {viewLayout === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 font-sans mb-28">
+                <div className="panel-cascada grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 font-sans mb-28">
                     {/* Banner Global de Liquidación Años Anteriores */}
                     {clientsWithPastDebtsCount > 0 && (
                         <div className="col-span-full p-4 rounded-3xl bg-gradient-to-r from-purple-950/40 via-purple-900/30 to-purple-950/40 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl font-mono mb-2">
@@ -2430,7 +2431,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         return (
                             <div
                                 key={client.id}
-                                className={`relative rounded-3xl p-5 bg-[#051424]/90 backdrop-blur-2xl border transition-all duration-300 shadow-xl flex flex-col justify-between group ${
+                                className={`panel-tarjeta relative rounded-3xl p-5 bg-[#051424]/90 backdrop-blur-2xl border shadow-xl flex flex-col justify-between group ${
                                     client.ruc === highlightedRuc
                                         ? 'border-[#00A896] ring-2 ring-[#00A896]/60 shadow-[0_0_25px_rgba(0,168,150,0.3)]'
                                         : 'border-white/10 hover:border-white/20'
@@ -3032,10 +3033,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 </td>
                                             </tr>
                                         )}
-                                        <tr className={`transition-all duration-300 group/row border-b border-white/5 ${
+                                        <tr
+        style={{ ['--i' as any]: Math.min(idx, 30) }}
+        className={`transition-[background-color,box-shadow] duration-300 group/row border-b border-white/5 ${
         client.ruc === highlightedRuc
             ? 'bg-[#00A896]/15 ring-2 ring-[#00A896] border-[#00A896] shadow-[0_0_30px_rgba(0,168,150,0.4)] z-20 relative animate-pulse'
-            : 'hover:bg-white/[0.03]'
+            : 'panel-fila hover:bg-white/[0.03]'
     }`}>
                                             <td 
                                                 className="px-3 py-4 sticky left-0 bg-[#051424]/95 backdrop-blur-md z-20 border-r border-white/10 text-center"
@@ -3326,7 +3329,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 const declarations = client.declarations || [];
 
                                                 return (
-                                                    <td key={p} className="px-2 py-3 border-r border-white/5 group-hover/row:bg-white/[0.01] transition-colors">
+                                                    <td key={p} className="panel-celda px-2 py-3 border-r border-white/5 group-hover/row:bg-white/[0.01] transition-colors">
                                                         <div className="flex flex-wrap gap-1.5 items-center justify-center">
                                                             {obligations.map(ob => {
                                                                 const d = findDeclarationForOb(declarations, p, ob.type);
