@@ -142,10 +142,10 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={`
-                relative rounded-2xl transition-all duration-500 cursor-pointer overflow-hidden group/card
+                relative rounded-2xl panel-tarjeta cursor-pointer overflow-hidden group/card
                 bg-white/80 dark:bg-[#051424]/90
                 backdrop-blur-2xl border border-slate-200/80 dark:border-white/10 dark:border-t-white/20
-                ${isHovered ? '-translate-y-1 shadow-2xl shadow-slate-900/10 dark:shadow-2xl dark:shadow-black/60 dark:border-white/25' : 'shadow-sm shadow-slate-100 dark:shadow-none'}
+                ${isHovered ? 'shadow-2xl shadow-slate-900/10 dark:shadow-2xl dark:shadow-black/60 dark:border-white/25' : 'shadow-sm shadow-slate-100 dark:shadow-none'}
                 ${hasWorkOrder ? 'ring-1 ring-[#2B6AFF]/40 bg-blue-50/10' : ''}
                 ${isRefundAlertActive ? 'animate-heartbeat ring-1 ring-emerald-500/40' : ''}
             `}
