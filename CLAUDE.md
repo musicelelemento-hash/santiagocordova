@@ -21,7 +21,11 @@ React 18 + TypeScript estricto + Vite + Tailwind + Zustand + Supabase + Firebase
 Pedido por Santiago el 21-nov-2026: un modelo líder que piensa y revisa, y agentes más chicos que hacen el trabajo.
 - **Líder** (sesión principal): entiende el pedido, divide, decide, revisa lo que entregan los agentes, verifica y publica. La lógica delicada (cálculos SRI, cobros/`is_paid`, facturación, credenciales) la hace siempre el líder.
 - **`implementador`** (`.claude/agents/implementador.md`, Sonnet): cambios concretos ya decididos — animaciones, estilos, textos, refactors mecánicos en varias pantallas. No hace commit.
-- **`explorador`** (`.claude/agents/explorador.md`, Haiku): sólo lee y responde dónde está algo.
+- **`explorador`** (`.claude/agents/explorador.md`, Haiku): sólo lee y responde dónde está algo. Preferirlo al Explore integrado, que usa el modelo del líder.
+- **`verificador`** (`.claude/agents/verificador.md`, Haiku): corre typecheck/build/pruebas del bot según lo que cambió y da un veredicto corto. No arregla.
+- Ninguno puede lanzar otros agentes (`disallowedTools: Agent`) y tienen tope de pasos (`maxTurns`).
+- Encargo a un agente (guía de Anthropic, «multi-agent research system»): **objetivo, archivos/límites, piezas a usar, formato de entrega**. En paralelo sólo si cada uno tiene archivos propios; programar el mismo archivo entre varios no conviene.
+- Costo: un equipo gasta ~15× lo de una conversación; usarlo para trabajo repetido en muchas pantallas o barridos de muchos archivos, no para un arreglo puntual.
 - Lo que entrega un agente no se publica sin que el líder lo revise y corra typecheck/build.
 
 ## Regla de cobro (21-nov-2026)
