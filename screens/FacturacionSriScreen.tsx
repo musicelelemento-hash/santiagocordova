@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
-import { getActivePeriodsForClient, getObligationsForPeriod } from '../services/complianceEngine';
+import { getActivePeriodsForClient, getObligationsForPeriod, estadoAlCobrar } from '../services/complianceEngine';
 import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay, isFuturePeriod, getClientIvaFrequency } from '../services/sri';
 import { db } from '../services/db';
@@ -1498,7 +1498,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               const isAdv = adelantoPeriods.some(a => a.id.startsWith(d.period)) || isFuturePeriod(d.period);
               return {
                 ...d,
-                status: 'Pagada' as any,
+                status: estadoAlCobrar(d), // cobrar no es declarar: sube a Pagada sólo si ya estaba declarada
                 is_paid: true,
                 is_advance: isAdv || d.is_advance,
                 paidAt: new Date().toISOString(),
@@ -1517,7 +1517,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               updatedDeclarations.push({
                 period: spPeriod,
                 type: spType as any,
-                status: 'Pagada' as any,
+                status: DeclarationStatus.Pendiente, // cobro sin declaración previa (p. ej. adelanto)
                 is_paid: true,
                 is_advance: isAdv,
                 paidAt: new Date().toISOString(),
