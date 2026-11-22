@@ -18,6 +18,7 @@ export const AGENDA = [
     { id: 'lunes', nombre: 'Lunes financiero (cobranza)', cron: '0 8 * * 1', cuando: 'Lunes 08:00' },
     { id: 'parte', nombre: 'Parte del día', cron: '45 7 * * 1-5', cuando: 'Lun–Vie 07:45' },
     { id: 'parte_tarde', nombre: 'Recordatorio de vencimientos de hoy', cron: '0 17 * * 1-5', cuando: 'Lun–Vie 17:00 (sólo si algo vence hoy)' },
+    { id: 'recordatorios', nombre: 'Recordatorios de pendientes', cron: '*/2 * * * *', cuando: 'Cada 2 minutos (sólo avisa si a algo le tocó la hora)' },
     { id: 'credenciales', nombre: 'Revisión de credenciales', cron: '0 9 * * 5', cuando: 'Viernes 09:00' },
 ] as const;
 
@@ -33,6 +34,8 @@ const OFFSET_EC_MS = -5 * 60 * 60 * 1000;
 
 function campo(valor: string, n: number): boolean {
     if (valor === '*') return true;
+    const paso = valor.match(/^\*\/(\d+)$/);
+    if (paso) return n % Number(paso[1]) === 0;
     return valor.split(',').some((parte) => {
         const [a, b] = parte.split('-').map(Number);
         return b === undefined ? n === a : n >= a && n <= b;

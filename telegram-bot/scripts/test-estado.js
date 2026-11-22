@@ -18,7 +18,8 @@ ver('Buzón: viernes 18:30 → lunes 09:00 (salta el fin de semana)', r === '202
 r = e.proximaEjecucion('0 8 * * 1', viernes0200);
 ver('Lunes 08:00 → lunes 23-nov', r === '2026-11-23T13:00:00.000Z', r);
 const ag = e.agendaConFechas(viernes0200);
-ver('la agenda trae las 8 tareas con próxima fecha', ag.length === 8 && ag.every((t) => t.proxima), ag);
+ver('la agenda trae las 9 tareas con próxima fecha', ag.length === 9 && ag.every((t) => t.proxima), ag);
+ver('«cada 2 minutos» calcula la próxima', !!ag.find((t) => t.id === 'recordatorios')?.proxima);
 e.registrarEjecucion('backup');
 ver('registra la última ejecución', !!e.agendaConFechas().find((t) => t.id === 'backup').ultima);
 ver('CORS: acepta santiagocordova.com', e.origenPermitido('https://santiagocordova.com'));

@@ -64,3 +64,11 @@ respaldos_locales/
 
 .vercel
 .env*
+
+# Íconos de la app (22-nov-2026): *.png de arriba los dejaba fuera y el ícono
+# al instalar la web en el celular salía roto.
+!public/favicon-32.png
+!public/apple-touch-icon.png
+!public/icon-192.png
+!public/icon-512.png
+!public/icon-512-maskable.png
