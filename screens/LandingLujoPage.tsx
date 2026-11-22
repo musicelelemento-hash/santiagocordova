@@ -1703,7 +1703,7 @@ export const LandingLujoPage: React.FC<LandingLujoPageProps> = ({ onBack, onAdmi
               </a>
               <span className="inline-flex items-center gap-2.5 text-[13px]" style={{ color: '#9fadc0' }}>
                 <MapPin size={16} color="#2B6AFF" />
-                Pasaje · El Oro · Ecuador
+                Colón y Sucre · Pasaje, El Oro
               </span>
             </div>
           </div>

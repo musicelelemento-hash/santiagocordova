@@ -1,3 +1,4 @@
+import { crearPendiente, textoCuando, instanteEc } from './pendientes';
 import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
@@ -384,12 +385,16 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
     delete_client: async ({ ruc, confirm }: { ruc: string, confirm: boolean }, chatId: string) => {
         return await deleteClient(ruc, confirm);
     },
-    create_task: async ({ title, description, dueDate }: { title: string, description: string, dueDate: string }, chatId: string) => {
-        return await createTask(title, description, dueDate);
+    create_task: async ({ title, dueDate }: { title: string, description?: string, dueDate: string }, chatId: string) => {
+        // Mismo formato que «anota…» (src/pendientes.ts): así avisa a la hora.
+        try {
+            const fila = await crearPendiente({ titulo: title, ...vencimientoDesdeIa(dueDate) });
+            return `Pendiente guardado: «${fila.title}» para ${textoCuando(fila.due_date)}. Se avisa a la hora si tiene hora; si no, sale en el parte de la mañana.`;
+        } catch (e: any) {
+            return 'Error al crear el pendiente: ' + (e?.message || String(e));
+        }
     },
-    clear_tasks: async (args: any, chatId: string) => {
-        return await clearTasks();
-    },
+    // clear_tasks se quitó el 22-nov-2026: la IA podía borrar todos los pendientes de un saque.
     complete_task: async ({ taskId, action }: { taskId: string, action: 'complete' | 'delete' }, chatId: string) => {
         return await completeTask(taskId, action);
     },
@@ -701,8 +706,7 @@ const toolDefinitions = [
     { type: "function", function: { name: "web_search_sri", description: "Busca leyes SRI web.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
     { type: "function", function: { name: "escudo_fiscal", description: "Escaneo inconsistencias." } },
     { type: "function", function: { name: "delete_client", description: "Borra cliente.", parameters: { type: "object", properties: { ruc: { type: "string" }, confirm: { type: "boolean" } }, required: ["ruc", "confirm"] } } },
-    { type: "function", function: { name: "create_task", description: "Nueva tarea agenda.", parameters: { type: "object", properties: { title: { type: "string" }, description: { type: "string" }, dueDate: { type: "string" } }, required: ["title", "dueDate"] } } },
-    { type: "function", function: { name: "clear_tasks", description: "Borra todas las tareas.", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "create_task", description: "Anota un pendiente/recordatorio para Santiago. dueDate en hora de Ecuador: 'AAAA-MM-DD' (sin hora) o 'AAAA-MM-DDTHH:mm' (con hora, avisa a esa hora).", parameters: { type: "object", properties: { title: { type: "string" }, dueDate: { type: "string" } }, required: ["title", "dueDate"] } } },
     { type: "function", function: { name: "complete_task", description: "Completa o borra tarea.", parameters: { type: "object", properties: { taskId: { type: "string" }, action: { type: "string", enum: ["complete", "delete"] } }, required: ["taskId", "action"] } } },
     { type: "function", function: { name: "update_client_profile", description: "Update campos perfil.", parameters: { type: "object", properties: { ruc: { type: "string" }, updates: { type: "object" } }, required: ["ruc", "updates"] } } },
     { type: "function", function: { name: "save_memory", description: "Guarda memoria LP.", parameters: { type: "object", properties: { content: { type: "string" }, category: { type: "string", enum: ["preferencias", "semanal", "fiscal", "general"] }, monthsToKeep: { type: "number" } }, required: ["content"] } } },
@@ -1082,4 +1086,18 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
     }
 
     return "Se alcanzó el límite de pensamiento (loops) de Baku. Por favor, sé más específico. Baku.";
+}
+
+
+/** Fecha que manda la IA → ISO. 'AAAA-MM-DD' = sin hora (23:59 Ecuador); 'AAAA-MM-DDTHH:mm' = hora de Ecuador. */
+export function vencimientoDesdeIa(dueDate: string): { venceIso: string; conHora: boolean } {
+    const t = String(dueDate || '').trim();
+    let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return { venceIso: instanteEc(+m[1], +m[2] - 1, +m[3], 23, 59).toISOString(), conHora: false };
+    m = t.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (m && !/(Z|[+-]\d{2}:?\d{2})$/.test(t)) return { venceIso: instanteEc(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString(), conHora: true };
+    const ms = Date.parse(t);
+    if (!Number.isNaN(ms)) return { venceIso: new Date(ms).toISOString(), conHora: true };
+    const hoy = new Date(Date.now() - 5 * 3600000);
+    return { venceIso: instanteEc(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate(), 23, 59).toISOString(), conHora: false };
 }

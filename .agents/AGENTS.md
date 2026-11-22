@@ -333,56 +333,5 @@ Dos cuidados al construirlas:
 | **Generador de Anexos (ATS / RDEP)** | fase 2 | §3 |
 | **Pruebas automáticas de la web** | hecho 22-nov-2026 | `npm test` (vitest, carpeta `tests/`): vencimientos por 9.º dígito, períodos, RUC, clave de 49 dígitos, regla de cobro, clientes con RUC repetido, cortesía. Corren dentro de `npm run build` y en GitHub (`calidad.yml`, que ahora también corre `npm test` del bot). |
 | **Aviso de errores de la web** | código hecho 22-nov-2026, **falta crear la tabla** | `services/errorReporter.ts` anota los errores del panel (sólo con sesión, uno por mensaje, máx. 20 por pestaña) en `web_errors` (`database/web_errors.sql`); el parte diario de Baku los cuenta. Mientras la tabla no exista, no pasa nada. |
-
-### Por qué el email va antes que WhatsApp
-
-Lo caro ya está hecho: `telegram-bot/src/gmail.ts:100` envía por la API de
-Gmail y `telegram-bot/src/database_ops.ts` ya lee `sri_declaraciones`. Gmail da
-**500 envíos por día**, de sobra para 500 contribuyentes una vez al mes. Y es
-el único canal donde el comprobante viaja **adjunto**, sin que nadie haga clic.
-
-WhatsApp Cloud API es el único camino oficial a «un botón y salieron los 500»,
-pero necesita cuenta de Meta Business, número dedicado y plantilla aprobada, y
-Meta cobra por mensaje. **Verificar el precio actual antes de comprometerse**;
-no confiar en lo que recuerde una IA.
-
-### Por qué una pantalla muestra más o menos clientes (21-nov-2026)
-
-En la base (21-nov-2026): 140 = 130 activos + 5 inactivos + 5 en la papelera,
-sin RUC repetidos. Cada número de pantalla es un subconjunto distinto:
-
-| Dónde | Qué cuenta |
-| :--- | :--- |
-| Dashboard «N clientes activos» | activos (`!isDeleted && isActive`); cambia si se elige régimen/obligación |
-| Directorio «Todos (N)» | activos **+ inactivos** (no borrados) |
-| Copia del navegador | todos, papelera incluida |
-| Matriz «Total clientes» | lo que deja el Directorio (búsqueda, dígito, filtro rápido) **y** la frecuencia de IVA de la pestaña |
-| Cobranza | activos con honorario > 0 y que no son «cortesía» |
-
-**El síntoma «a veces se ocultan clientes»** venía de la búsqueda: se comparte
-con la barra superior, queda guardada en la sesión (`sessionStorage
-clients_search`) y entrar desde el Dashboard trae filtros puestos; la lista y la
-matriz mostraban un subconjunto sin decirlo. Ahora el Directorio muestra
-«Mostrando X de Y clientes activos · filtros: …» con «Quitar filtros».
-
-Regla de «cortesía» acotada el 22-nov-2026: la palabra (`cortesía`, `trueque`,
-`familia`, palabra completa) cuenta **sólo en la categoría o el alias**, ya no en
-las notas, y «cero» dejó de contar (web `clientService.isCourtesyClient` y bot
-`esClienteCortesia`, con pruebas). Verificado antes: no cambiaba a nadie. Sigue
-frágil: «solo plan» tiene tres definiciones distintas (ver
-`clientService.isCourtesyClient`, `ClientsScreen:581`, `AdminDashboard:2470`).
-
-### Lo que ya está y no hay que reconstruir
-
-- **La sala de envío** (`components/features/SalaDeEnvio.tsx`) — de a uno, con
-  el enlace al comprobante firmado por 30 días. Ver §5 para por qué existe.
-- **`linkDelComprobante()`** en `services/fileService.ts` — firma el enlace y
-  devuelve `null` cuando no hay nada compartible, que **no es un error**:
-  mandar «le adjunto el comprobante» sin adjuntar nada es peor que no mandarlo.
-- **`notification_count` se guarda en Supabase** — antes se reseteaba al
-  recargar y todos volvían a recibir el mensaje de bienvenida.
-- **Traer lo ya declarado ya existe en la extensión**
-  (`bajarTodosLosComprobantes()`, botón 🧾). Antes de escribirlo de nuevo acá,
-  mirar si alcanza con dispararlo por el puente.
-
----
+| **Inicio «Hoy» y menú simple** | hecho 22-nov-2026 | `screens/HoyScreen.tsx` es el inicio (una vez para todos; quien elija otro lo conserva): vencidos, vencen en 7 días, por cobrar, «Tus pendientes» y 4 atajos. El menú muestra sólo «Lo esencial» (`MENU_ESENCIAL` en `App.tsx`, grupo en `NAV_GROUPS`); «Más herramientas» despliega el resto (`sc_menu_completo`). Si la nube no respondió y el store puso `mockClients`, «Hoy» no muestra números (el resto de pantallas sí: pendiente aparte). |
+| **Pendientes con Baku** | hecho 22-nov-2026, sin prueba real en Telegram | «anota…», «recuérdame mañana a las 10…», `/anota`, `/pendientes`, «mis pendientes» (`telegram-bot/src/pendientes.ts`, sin IA). Tabla `tasks` (la misma de la web). Sin hora = 23:59 de Ecuador (sale en el parte de la mañana y la tarde pregunta «¿ya lo hiciste?»); con hora, aviso a esa hora (revisión cada 2 min) con ✅ Ya lo hice / ⏰ En 1 hora / 📅 Mañana. La regla de fecha está en dos copias (`services/pendientes.ts` de la web): las pruebas de ambos lados la fijan. Se quitó `clear_tasks` de la IA (podía borrar todo). |

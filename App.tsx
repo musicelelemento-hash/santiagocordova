@@ -5,7 +5,7 @@ import {
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
   Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp, Copy, Check,
   UserPlus, Pin, Bot, Activity,
-  Bell, ExternalLink } from 'lucide-react';
+  Bell, ExternalLink, MoreHorizontal } from 'lucide-react';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
@@ -27,9 +27,10 @@ import { recordScreenVisit, getMostUsedScreens, getDefaultStartScreen, setDefaul
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
-const VALID_SCREENS: Screen[] = ['notificaciones', 'home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
+const VALID_SCREENS: Screen[] = ['notificaciones', 'hoy', 'home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
 
 // Lazy-loaded heavy modules & admin screens
+const HoyScreen = React.lazy(() => import('./screens/HoyScreen').then(m => ({ default: m.HoyScreen })));
 const AdminDashboardScreen = React.lazy(() => import('./screens/AdminDashboardScreen').then(m => ({ default: m.AdminDashboardScreen })));
 const ClientsScreen = React.lazy(() => import('./screens/ClientsScreen').then(m => ({ default: m.ClientsScreen })));
 const LoopDeclaracionesScreen = React.lazy(() => import('./screens/LoopDeclaracionesScreen').then(m => ({ default: m.LoopDeclaracionesScreen })));
@@ -190,9 +191,11 @@ const [appState, setAppState] = useState<AppState>(() => {
     const s = new URLSearchParams(window.location.search).get('screen') as Screen | null;
     if (s && VALID_SCREENS.includes(s)) return s;
     const defaultScreen = getDefaultStartScreen();
-    return defaultScreen && VALID_SCREENS.includes(defaultScreen) ? defaultScreen : 'declaraciones';
+    return defaultScreen && VALID_SCREENS.includes(defaultScreen) ? defaultScreen : 'hoy';
   });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage<boolean>('sc_sidebar_collapsed', false);
+  // Menú simple (22-nov-2026): por defecto sólo «Lo esencial»; «Más herramientas» abre el resto.
+  const [menuCompleto, setMenuCompleto] = useLocalStorage<boolean>('sc_menu_completo', false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Sincronizar appState con la URL del navegador
@@ -627,6 +630,10 @@ const [appState, setAppState] = useState<AppState>(() => {
   };
 
   const navigate = (screen: Screen, options: any = {}) => {
+    if ((screen as string) === 'mas_herramientas') {
+      setMenuCompleto(v => !v);
+      return;
+    }
     // 'services' es una página pública de nivel superior, no un módulo del dashboard.
     // Desde el menú interno se abre el catálogo; con sesión activa se vuelve al panel vía "Administración".
     if (screen === 'services') {
@@ -697,6 +704,7 @@ const [appState, setAppState] = useState<AppState>(() => {
 
   const renderScreen = () => {
     switch (activeScreen) {
+      case 'hoy': return <HoyScreen navigate={navigate} />;
       case 'home': return (<><AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />{BUILD_BADGE && (<div className="fixed bottom-1 right-2 z-[9998] rounded bg-black/40 px-1.5 py-0.5 font-mono text-[8px] text-slate-500 pointer-events-none" title="Versión del build cargado">build {BUILD_BADGE}</div>)}</>);
       case 'telegram_bot': return <TelegramBotScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'clients': return (
@@ -784,8 +792,9 @@ const [appState, setAppState] = useState<AppState>(() => {
       .reduce((acc, c) => acc + getClientUndeclaredSummary(c).overduePeriodsCount, 0);
   }, [clients]);
 
-  const navItems = ([
-    { screen: 'home', icon: Home, label: 'Dashboard' },
+  const todosLosItems = ([
+    { screen: 'hoy', icon: Sun, label: 'Hoy' },
+    { screen: 'home', icon: Home, label: 'Panel completo' },
     { screen: 'telegram_bot', icon: Bot, label: 'Bot Telegram & Gestión' },
     { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: pendingDeclarationsCount },
     { screen: 'bucle', icon: Activity, label: 'Bucle Mensual' },
@@ -810,6 +819,11 @@ const [appState, setAppState] = useState<AppState>(() => {
     { screen: 'audit_log', icon: History, label: 'Auditoría' },
     { screen: 'migracion_zifact', icon: ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
     { screen: 'landing', icon: Globe, label: 'Sitio Público' },
+  ] as any[]);
+  const MENU_ESENCIAL = ['hoy', 'declaraciones', 'clients', 'cobranza', 'tasks', 'telegram_bot'];
+  const navItems = ([
+    ...(menuCompleto ? todosLosItems : todosLosItems.filter(i => MENU_ESENCIAL.includes(i.screen))),
+    { screen: 'mas_herramientas', icon: MoreHorizontal, label: menuCompleto ? 'Menú simple' : `Más herramientas (${todosLosItems.length - MENU_ESENCIAL.length})` },
   ] as any[]);
 
   if (appState === 'services') return (
@@ -973,7 +987,8 @@ const [appState, setAppState] = useState<AppState>(() => {
           navItems={navItems}
           activeScreen={activeScreen}
           onNavigate={(s) => {
-            setIsMobileDrawerOpen(false);
+            // «Más herramientas» sólo despliega el menú: el cajón sigue abierto.
+            if (s !== 'mas_herramientas') setIsMobileDrawerOpen(false);
             navigate(s as Screen);
           }}
         />

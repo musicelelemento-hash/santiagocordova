@@ -3,6 +3,7 @@ import { cargarCierre, type Cierre, type FilaCierre } from './cierre';
 import { calcularVencimiento, hoyEnEcuador, textoFecha } from './vencimientos';
 import { getSignaturesVaultList } from './database_ops';
 import { supabase } from './supabase';
+import { listarPendientes, pendientesDeHoy, textoCuando, type FilaPendiente } from './pendientes';
 
 /**
  * Parte diario de Baku (pedido por Santiago el 21-nov-2026): un solo mensaje
@@ -50,6 +51,8 @@ export interface Parte {
     sinAvisar: FilaCierre[];
     firmas: FirmaPorVencer[];
     conFeriados: boolean;
+    /** Pendientes de Santiago que tocan hoy o ya pasaron (src/pendientes.ts). */
+    misPendientes?: FilaPendiente[];
     /** Errores que anotó la web en las últimas 24 h (null = no se pudo saber). */
     erroresWeb?: ErroresWeb | null;
 }
@@ -159,6 +162,9 @@ export function textoParte(p: Parte, hoy: Date): string {
         bloques.push(`✍️ <b>Firmas por vencer (${p.firmas.length})</b>\n${lista(p.firmas.map((s) => `${esc(s.name)} · ${s.dias === 0 ? 'hoy' : `en ${s.dias} día${s.dias === 1 ? '' : 's'}`}`))}`);
     }
 
+    if (p.misPendientes && p.misPendientes.length) {
+        bloques.splice(1, 0, `📝 <b>Tus pendientes de hoy (${p.misPendientes.length})</b>\n${lista(p.misPendientes.map((t) => `${esc(t.title)} · ${esc(textoCuando(t.due_date))}`))}`);
+    }
     if (p.erroresWeb && p.erroresWeb.total > 0) {
         const e = p.erroresWeb;
         bloques.push(`🛠️ <b>La web anotó ${e.total} error${e.total === 1 ? '' : 'es'} en las últimas 24 h</b>\n${lista(e.mensajes.map((m) => esc(m.slice(0, 120))))}\n<i>Pásaselos a Claude para que los revise.</i>`);
@@ -175,7 +181,11 @@ export function textoParte(p: Parte, hoy: Date): string {
 
 /** Recordatorio de la tarde: sólo si algo vence hoy y sigue sin declarar. */
 export function textoTarde(p: Parte): string | null {
-    if (!p.vencenHoy.length) return null;
+    const mios = p.misPendientes || [];
+    if (!p.vencenHoy.length && !mios.length) return null;
+    if (!p.vencenHoy.length) {
+        return `📝 <b>¿Ya hiciste esto de hoy? (${mios.length})</b>\n${lista(mios.map((t) => esc(t.title)))}\n<i>Márcalos con ✅ en /pendientes.</i>`;
+    }
     return `⏰ <b>Quedan horas: vencen HOY y siguen sin declarar (${p.vencenHoy.length})</b>\n${lista(p.vencenHoy.map((i) => `${esc(i.name)} · ${esc(i.periodo)}`))}`;
 }
 
@@ -184,6 +194,7 @@ export function botonesParte(p: Parte): InlineKeyboard {
     if (p.vencenHoy.length || p.manana.length || p.semana.length || p.vencidos.length) {
         kb.text('📋 Ver sin declarar', 'baku_cierre:ver:pendiente:1').row();
     }
+    if (p.misPendientes && p.misPendientes.length) kb.text('📝 Mis pendientes', 'baku_tarea:lista').row();
     kb.url('🖥️ Abrir Declaraciones en la web', WEB_DECLARACIONES);
     return kb;
 }
@@ -191,9 +202,13 @@ export function botonesParte(p: Parte): InlineKeyboard {
 /** Carga datos frescos y arma el parte de hoy (hora de Ecuador). */
 export async function prepararParte(): Promise<{ parte: Parte; hoy: Date }> {
     const hoy = hoyEnEcuador();
-    const [cierre, firmas, erroresWeb] = await Promise.all([cargarCierre(true), getSignaturesVaultList(), cargarErroresWeb()]);
+    const [cierre, firmas, erroresWeb, mios] = await Promise.all([
+        cargarCierre(true), getSignaturesVaultList(), cargarErroresWeb(),
+        listarPendientes().catch(() => [] as FilaPendiente[]),
+    ]);
     const parte = armarParte(cierre, hoy, feriadosConfigurados(), firmas);
     parte.erroresWeb = erroresWeb;
+    parte.misPendientes = pendientesDeHoy(mios);
     return { parte, hoy };
 }
 

@@ -9,6 +9,7 @@ import { proponerCobranzaSemanal } from './cobranza_semanal';
 import { revisarObligacionesAnualesEmpresas } from './empresas_recordatorios';
 import { registrarEjecucion } from './estado';
 import { enviarParte } from './parte_diario';
+import { revisarRecordatorios } from './pendientes';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
 
@@ -205,6 +206,15 @@ export function startCronJobs(bot: Bot) {
             await enviarParte(bot.api, adminParte(), 'manana');
         } catch (error) {
             console.error('❌ Error en el parte del día:', error);
+        }
+    }, { timezone: "America/Guayaquil" });
+    // 📝 Recordatorios de pendientes con hora (cada 2 min, todos los días). Sólo a Santiago.
+    cron.schedule('*/2 * * * *', async () => {
+        registrarEjecucion('recordatorios');
+        try {
+            await revisarRecordatorios(bot.api, adminParte());
+        } catch (error) {
+            console.error('❌ Error en recordatorios de pendientes:', error);
         }
     }, { timezone: "America/Guayaquil" });
     cron.schedule('0 17 * * 1-5', async () => {

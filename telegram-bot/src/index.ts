@@ -18,6 +18,7 @@ import { manejarCallbackCobro, proponerCobranzaSemanal } from './cobranza_semana
 import { COMANDOS_MENU } from './comandos';
 import { mostrarCierre, manejarCallbackCierre, limpiarCacheCierre } from './cierre';
 import { enviarParte } from './parte_diario';
+import { intentarAnotar, mostrarPendientes, comandoAnota, manejarCallbackPendiente } from './pendientes_bot';
 import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
@@ -921,6 +922,14 @@ bot.command(['lunes', 'cobranza_semanal'], async (ctx) => {
 
 bot.command('cierre', async (ctx) => {
     await mostrarCierre(ctx, false);
+});
+
+// /pendientes y /anota — lo que Santiago le pide a Baku que le recuerde (src/pendientes.ts).
+bot.command('pendientes', async (ctx) => {
+    await mostrarPendientes(ctx);
+});
+bot.command('anota', async (ctx) => {
+    await comandoAnota(ctx, String(ctx.match || ''));
 });
 
 // /hoy — el parte del día a pedido (el mismo que llega lun–vie 07:45).
@@ -2463,6 +2472,7 @@ bot.on('callback_query:data', async (ctx) => {
 
     if (await manejarCallbackCobro(ctx, data, chatId)) return;
     if (await manejarCallbackCierre(ctx, data)) return;
+    if (await manejarCallbackPendiente(ctx, data)) return;
 
     if (data.startsWith(PREFIJO_BOTON_WEB)) {
         // Un atajo del menú empieza algo nuevo: no debe caer como respuesta de un diálogo a medias.
@@ -3716,6 +3726,17 @@ bot.on('callback_query:data', async (ctx) => {
 bot.on('message:text', async (ctx) => {
   const chatId = ctx.chat.id.toString();
   const text = ctx.message.text.trim();
+
+  // 0. «anota…» / «recuérdame…»: se guarda directo, sin IA, aunque haya un diálogo abierto.
+  if (await intentarAnotar(ctx, text)) {
+    pendingDialogs.delete(chatId);
+    return;
+  }
+  if (/^\s*(?:mis\s+pendientes|qu[eé]\s+tengo\s+(?:pendiente|que\s+hacer)|qu[eé]\s+me\s+falta\s+hacer)\b/i.test(text)) {
+    pendingDialogs.delete(chatId);
+    await mostrarPendientes(ctx);
+    return;
+  }
 
   // 1. Try direct command (zero AI tokens — instant, with inline keyboard disambiguation)
   // This is placed FIRST so users can escape stuck dialogs by using a shortcut command.

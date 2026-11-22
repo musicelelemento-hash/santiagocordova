@@ -100,5 +100,17 @@ ver('FERIADOS_EC ignora valores mal escritos', JSON.stringify(P.feriadosConfigur
     ver('el mensaje del error se escapa (HTML de Telegram)', P.textoParte(p, hoy).includes('&lt;script&gt;'));
 }
 
+{
+    // Pendientes de Santiago: salen primero en la mañana y la tarde pregunta si ya los hizo.
+    const hoy = new Date(2026, 10, 24);
+    const p = P.armarParte(clasificarCierre([clientes[6]], hoy), hoy, [], []);
+    ver('sin pendientes no hay bloque ni pregunta a la tarde', !P.textoParte(p, hoy).includes('Tus pendientes') && P.textoTarde(p) === null);
+    p.misPendientes = [{ id: 't1', title: 'Llamar al SRI', due_date: '2026-11-24T15:00:00.000Z', status: 'Pendiente' }];
+    const t = P.textoParte(p, hoy);
+    ver('con pendientes aparece «Tus pendientes de hoy» antes que el resto', t.includes('Tus pendientes de hoy (1)') && t.indexOf('Tus pendientes') < t.indexOf('Todo al día') || !t.includes('Todo al día'), t);
+    ver('la tarde pregunta «¿Ya hiciste esto de hoy?»', (P.textoTarde(p) || '').includes('¿Ya hiciste esto de hoy?'));
+    ver('botón «Mis pendientes» en el parte', JSON.stringify(P.botonesParte(p)).includes('baku_tarea:lista'));
+}
+
 console.log(mal ? `\n${mal} prueba(s) MAL` : '\nTodas las pruebas del parte diario OK');
 process.exit(mal ? 1 : 0);

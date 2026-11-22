@@ -36,10 +36,13 @@ interface SidebarProps {
 }
 
 // Groupings for nav items following Stitch Nueva Luz 3.0 Architecture
+// 22-nov-2026: «Lo esencial» arriba. Con el menú simple (por defecto) sólo se ve
+// ese grupo; «Más herramientas» muestra el resto (App.tsx → MENU_ESENCIAL).
 export const NAV_GROUPS: { label: string; screens: string[] }[] = [
-    { label: 'Operaciones Tributarias', screens: ['home', 'telegram_bot', 'declaraciones', 'bucle', 'clients', 'firmas'] },
-    { label: 'Facturación & Cobranza', screens: ['cobranza', 'sri_facturacion', 'caja_chica', 'facturadores', 'cotizaciones', 'refinanciacion', 'licencias'] },
-    { label: 'Taller & Comercial', screens: ['crm_pipeline', 'web_orders', 'tasks', 'calendar', '3d-studio'] },
+    { label: 'Lo esencial', screens: ['hoy', 'declaraciones', 'clients', 'cobranza', 'tasks', 'telegram_bot', 'mas_herramientas'] },
+    { label: 'Operaciones Tributarias', screens: ['home', 'bucle', 'firmas'] },
+    { label: 'Facturación & Cobranza', screens: ['sri_facturacion', 'caja_chica', 'facturadores', 'cotizaciones', 'refinanciacion', 'licencias'] },
+    { label: 'Taller & Comercial', screens: ['crm_pipeline', 'web_orders', 'calendar', '3d-studio'] },
     { label: 'Sistema & Auditoría', screens: ['reports', 'audit_log', 'settings', 'services'] },
 ];
 

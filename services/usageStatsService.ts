@@ -56,10 +56,17 @@ export const getMostUsedScreens = (limit: number = 5): ModuleUsageStat[] => {
  */
 export const getDefaultStartScreen = (): Screen => {
     try {
+        // 22-nov-2026: «Hoy» pasa a ser el inicio una vez para todos (antes era
+        // Declaraciones). Quien elija otro inicio después, lo conserva.
+        if (!localStorage.getItem('sc_inicio_hoy_v1')) {
+            localStorage.setItem('sc_inicio_hoy_v1', '1');
+            localStorage.setItem(STORAGE_KEY_DEFAULT_SCREEN, 'hoy');
+            return 'hoy';
+        }
         const saved = localStorage.getItem(STORAGE_KEY_DEFAULT_SCREEN) as Screen | null;
         if (saved) return saved;
     } catch {}
-    return 'declaraciones';
+    return 'hoy';
 };
 
 /**
