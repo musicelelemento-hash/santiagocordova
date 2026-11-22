@@ -9,6 +9,7 @@ import { Client } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { db } from '../services/db';
+import { sinLeadsDeEjemplo } from '../services/datosDeEjemplo';
 
 export type PipelineStage = 'prospecto' | 'cotizacion' | 'negociacion' | 'ganado' | 'perdido';
 
@@ -53,55 +54,13 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
     useEffect(() => {
         const loadLeads = async () => {
             try {
-                const stored = await db.getLocal('sc_crm_leads_history');
-                if (stored && Array.isArray(stored)) {
-                    setLeads(stored);
-                } else {
-                    // Datos iniciales de demostración
-                    const demoLeads: CrmLead[] = [
-                        {
-                            id: 'LEAD-001',
-                            nombre: 'Ing. Carlos Mendoza (Constructora)',
-                            ruc: '0701239876001',
-                            telefono: '0991234567',
-                            email: 'carlos@constructora.com',
-                            servicioInteres: 'Honorarios Mensuales',
-                            montoEstimado: 60.00,
-                            etapa: 'cotizacion',
-                            origen: 'WhatsApp',
-                            notas: ['Cliente requiere asesoría para declaración semestral de IVA y facturación SRI.'],
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        },
-                        {
-                            id: 'LEAD-002',
-                            nombre: 'Dra. Ana Lucia Torres (Clínica)',
-                            ruc: '0704445556001',
-                            telefono: '0987654321',
-                            servicioInteres: 'Firma Electrónica .p12',
-                            montoEstimado: 25.00,
-                            etapa: 'prospecto',
-                            origen: 'Recomendación',
-                            notas: ['Interesada en firma .p12 por 1 año para emitir facturas médicas.'],
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        },
-                        {
-                            id: 'LEAD-003',
-                            nombre: 'Comercial El Oro S.A.',
-                            ruc: '0790011223001',
-                            telefono: '0978980722',
-                            servicioInteres: 'Facturador Zifac/Ecuafact',
-                            montoEstimado: 50.00,
-                            etapa: 'negociacion',
-                            origen: 'Web',
-                            notas: ['Se envió proforma del plan anual de facturación electrónica.'],
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        }
-                    ];
-                    setLeads(demoLeads);
-                    await db.setLocal('sc_crm_leads_history', demoLeads);
+                // 22-nov-2026: en la nube (db.get/db.set → Supabase), no sólo en este
+                // navegador, y sin datos de ejemplo (antes se guardaban como reales).
+                const stored = await db.get<any[]>('sc_crm_leads_history');
+                const limpio = sinLeadsDeEjemplo(Array.isArray(stored) ? stored : []);
+                setLeads(limpio);
+                if (Array.isArray(stored) && limpio.length !== stored.length) {
+                    await db.set('sc_crm_leads_history', limpio);
                 }
             } catch (err) {
                 console.error("Error al cargar CRM leads:", err);
@@ -112,7 +71,7 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
 
     const saveLeadsToDb = async (newList: CrmLead[]) => {
         setLeads(newList);
-        await db.setLocal('sc_crm_leads_history', newList);
+        await db.set('sc_crm_leads_history', newList);
     };
 
     // Crear nuevo Lead
@@ -161,10 +120,17 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
 
     // Convertir Prospecto Ganado en Cliente Activo del Directorio
     const handleConvertToActiveClient = async (lead: CrmLead) => {
+        // 22-nov-2026: antes, sin RUC se inventaba uno al azar (070…001), que podía
+        // coincidir con un contribuyente real. Sin RUC válido no se convierte.
+        const ruc = String(lead.ruc || '').replace(/\D/g, '');
+        if (!/^\d{10}(\d{3})?$/.test(ruc)) {
+            toast.error(`Falta el RUC o la cédula de ${lead.nombre}. Agrégalo al prospecto y vuelve a convertirlo.`);
+            return;
+        }
         const newClient: Client = {
             id: `client-${Date.now()}`,
             name: lead.nombre,
-            ruc: lead.ruc || `070${Math.floor(Math.random() * 8999999) + 1000000}001`,
+            ruc,
             email: lead.email || '',
             phones: [lead.telefono],
             address: 'Pasaje, El Oro',

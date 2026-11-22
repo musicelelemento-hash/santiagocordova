@@ -9,6 +9,7 @@ import { Client } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { db } from '../services/db';
+import { sinCajaDeEjemplo } from '../services/datosDeEjemplo';
 
 export interface MovimientoCaja {
     id: string;
@@ -74,58 +75,15 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
     useEffect(() => {
         const loadCaja = async () => {
             try {
-                const stored = await db.getLocal('sc_caja_chica_history');
-                if (stored && Array.isArray(stored)) {
-                    setSesionesHistory(stored);
-                    const abierta = stored.find(s => s.estado === 'abierta');
-                    if (abierta) setCurrentSesion(abierta);
-                } else {
-                    // Datos iniciales de demostración
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    const demoSesion: SesionCaja = {
-                        id: `CAJA-${todayStr}`,
-                        fechaApertura: `${todayStr} 08:30:00`,
-                        montoInicial: 50.00,
-                        montoEfectivoCalculado: 75.00,
-                        montoTransferenciasCalculado: 50.00,
-                        montoTarjetasCalculado: 0,
-                        montoEgresosCalculado: 10.00,
-                        estado: 'abierta',
-                        movimientos: [
-                            {
-                                id: 'm1',
-                                tipo: 'ingreso',
-                                concepto: 'Cobro de Honorarios Contables - Enero 2026',
-                                monto: 35.00,
-                                formaPago: 'efectivo',
-                                nombreCliente: 'CORDOVA RAMIREZ ROBERTO SANTIAGO',
-                                fechaHora: `${todayStr} 09:15:00`,
-                                categoria: 'Honorarios'
-                            },
-                            {
-                                id: 'm2',
-                                tipo: 'ingreso',
-                                concepto: 'Emisión e Instalación Firma .p12',
-                                monto: 25.00,
-                                formaPago: 'transferencia',
-                                nombreCliente: 'FARMACIA POPULAR EL ORO',
-                                fechaHora: `${todayStr} 10:30:00`,
-                                categoria: 'Firmas'
-                            },
-                            {
-                                id: 'm3',
-                                tipo: 'egreso',
-                                concepto: 'Compra de Papel Bond y Toners de Imprenta',
-                                monto: 10.00,
-                                formaPago: 'efectivo',
-                                fechaHora: `${todayStr} 11:00:00`,
-                                categoria: 'Suministros Oficina'
-                            }
-                        ]
-                    };
-                    setSesionesHistory([demoSesion]);
-                    setCurrentSesion(demoSesion);
-                    await db.setLocal('sc_caja_chica_history', [demoSesion]);
+                // 22-nov-2026: en la nube (db.get/db.set → Supabase), no sólo en este
+                // navegador, y sin datos de ejemplo (antes se guardaban como reales).
+                const stored = await db.get<any[]>('sc_caja_chica_history');
+                const limpio = sinCajaDeEjemplo(Array.isArray(stored) ? stored : []);
+                setSesionesHistory(limpio);
+                const abierta = limpio.find((s: any) => s.estado === 'abierta');
+                if (abierta) setCurrentSesion(abierta);
+                if (Array.isArray(stored) && limpio.length !== stored.length) {
+                    await db.set('sc_caja_chica_history', limpio);
                 }
             } catch (err) {
                 console.error("Error al cargar caja chica:", err);
@@ -138,7 +96,7 @@ export const CajaChicaScreen: React.FC<CajaChicaScreenProps> = ({ navigate }) =>
         setSesionesHistory(newList);
         const abierta = newList.find(s => s.estado === 'abierta') || null;
         setCurrentSesion(abierta);
-        await db.setLocal('sc_caja_chica_history', newList);
+        await db.set('sc_caja_chica_history', newList);
     };
 
     // Apertura de caja chica
