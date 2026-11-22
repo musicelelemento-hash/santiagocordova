@@ -2,6 +2,7 @@ import { InlineKeyboard } from 'grammy';
 import { cargarCierre, type Cierre, type FilaCierre } from './cierre';
 import { calcularVencimiento, hoyEnEcuador, textoFecha } from './vencimientos';
 import { getSignaturesVaultList } from './database_ops';
+import { supabase } from './supabase';
 
 /**
  * Parte diario de Baku (pedido por Santiago el 21-nov-2026): un solo mensaje
@@ -17,7 +18,9 @@ import { getSignaturesVaultList } from './database_ops';
  *   - cuándo vence: calcularVencimiento, con traslado por fin de semana y por
  *     los feriados de FERIADOS_EC (Render). Sin esa variable, sólo fin de semana;
  *   - avisado por WhatsApp: isNotifiedWhatsApp que la web guarda en el historial;
- *   - firmas: getSignaturesVaultList.
+ *   - firmas: getSignaturesVaultList;
+ *   - errores de la web: tabla web_errors (últimas 24 h), que anota el panel
+ *     (services/errorReporter.ts de la web). Si la tabla no existe, no se dice nada.
  *
  * Anexos (ATS, RDEP, gastos personales…): la base no guarda por período qué
  * anexo falta, así que el parte no los lista. Ver la nota al pie del mensaje.
@@ -47,6 +50,14 @@ export interface Parte {
     sinAvisar: FilaCierre[];
     firmas: FirmaPorVencer[];
     conFeriados: boolean;
+    /** Errores que anotó la web en las últimas 24 h (null = no se pudo saber). */
+    erroresWeb?: ErroresWeb | null;
+}
+
+export interface ErroresWeb {
+    total: number;
+    /** Mensajes distintos, el más reciente primero. */
+    mensajes: string[];
 }
 
 const WEB_DECLARACIONES = 'https://santiagocordova.com/dashboard?screen=declaraciones';
@@ -148,6 +159,11 @@ export function textoParte(p: Parte, hoy: Date): string {
         bloques.push(`✍️ <b>Firmas por vencer (${p.firmas.length})</b>\n${lista(p.firmas.map((s) => `${esc(s.name)} · ${s.dias === 0 ? 'hoy' : `en ${s.dias} día${s.dias === 1 ? '' : 's'}`}`))}`);
     }
 
+    if (p.erroresWeb && p.erroresWeb.total > 0) {
+        const e = p.erroresWeb;
+        bloques.push(`🛠️ <b>La web anotó ${e.total} error${e.total === 1 ? '' : 'es'} en las últimas 24 h</b>\n${lista(e.mensajes.map((m) => esc(m.slice(0, 120))))}\n<i>Pásaselos a Claude para que los revise.</i>`);
+    }
+
     if (bloques.length === 1) bloques.push('✅ Todo al día: nada vence esta semana y no hay pendientes.');
 
     const notas: string[] = [];
@@ -175,8 +191,38 @@ export function botonesParte(p: Parte): InlineKeyboard {
 /** Carga datos frescos y arma el parte de hoy (hora de Ecuador). */
 export async function prepararParte(): Promise<{ parte: Parte; hoy: Date }> {
     const hoy = hoyEnEcuador();
-    const [cierre, firmas] = await Promise.all([cargarCierre(true), getSignaturesVaultList()]);
-    return { parte: armarParte(cierre, hoy, feriadosConfigurados(), firmas), hoy };
+    const [cierre, firmas, erroresWeb] = await Promise.all([cargarCierre(true), getSignaturesVaultList(), cargarErroresWeb()]);
+    const parte = armarParte(cierre, hoy, feriadosConfigurados(), firmas);
+    parte.erroresWeb = erroresWeb;
+    return { parte, hoy };
+}
+
+/** Agrupa filas de web_errors (más recientes primero) en total + mensajes distintos. */
+export function resumirErroresWeb(filas: { message: string | null }[], max = 3): ErroresWeb {
+    const mensajes: string[] = [];
+    for (const f of filas) {
+        const m = String(f.message || '').trim();
+        if (m && !mensajes.includes(m)) mensajes.push(m);
+        if (mensajes.length >= max) break;
+    }
+    return { total: filas.length, mensajes };
+}
+
+/** Errores de la web en las últimas 24 h. Nunca tira: si falla, devuelve null. */
+async function cargarErroresWeb(): Promise<ErroresWeb | null> {
+    try {
+        const desde = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        const { data, error } = await supabase
+            .from('web_errors')
+            .select('message')
+            .gte('created_at', desde)
+            .order('created_at', { ascending: false })
+            .limit(200);
+        if (error || !data) return null;
+        return resumirErroresWeb(data as { message: string | null }[]);
+    } catch {
+        return null;
+    }
 }
 
 /** Envía el parte de la mañana (o el de la tarde, que puede no enviarse) al chat dado. */

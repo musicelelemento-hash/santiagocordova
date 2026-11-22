@@ -4,6 +4,9 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { instalarAvisoDeErrores } from './services/errorReporter';
+
+instalarAvisoDeErrores();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
