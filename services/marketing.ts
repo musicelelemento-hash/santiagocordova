@@ -19,7 +19,7 @@
 export const MARCA = {
     nombre: 'SC Estrategias Fiscales',
     persona: 'Santiago Córdova',
-    cargo: 'Contador · Asesor tributario',
+    cargo: 'Asesor Tributario',
     whatsapp: '593978980722',
     telefonoVisible: '097 898 0722',
     direccion: 'Colón y Sucre · Pasaje, El Oro',

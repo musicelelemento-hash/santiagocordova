@@ -31,27 +31,8 @@ export async function triggerProactiveReport(bot: Bot, chatId?: string) {
         console.log(`⏰ Generando reporte proactivo operativo para chat ${targetChatId}...`);
         const operationalReport = await generateDailyOperationalReport();
 
-        let finalMessage = operationalReport;
-
-        // Opcional: intentar enriquecer con un briefing ejecutivo de IA si está disponible
-        try {
-            const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Redacta un saludo militar/ejecutivo matutino de máximo 2 líneas destacando la acción prioritaria del día para el despacho contable.`;
-            const prompt = `Reporte operativo consolidado:\n${operationalReport}\n\nGenera un saludo y recomendación ejecutiva concisa.`;
-            
-            // Timeout de 5s para que no bloquee ni cause demoras
-            const aiIntro = await Promise.race([
-                generateAiText({ prompt, systemInstruction: systemPrompt }),
-                new Promise<string>((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 5000))
-            ]);
-
-            if (aiIntro && aiIntro.trim().length > 10) {
-                const formattedIntro = convertMarkdownToTelegramHtml(aiIntro.trim());
-                finalMessage = `🫡 <b>BRIEFING EJECUTIVO:</b>\n${formattedIntro}\n\n${operationalReport}`;
-            }
-        } catch (aiError: any) {
-            console.warn("ℹ️ IA en reposo o con timeout. Enviando reporte nativo de Supabase:", aiError.message);
-            // Sin problemas: finalMessage ya tiene el reporte estructurado
-        }
+        // Sin «briefing» de IA (22-nov-2026): sumaba texto y hasta 5 s de espera.
+        const finalMessage = operationalReport;
 
         const reportKb = buildOperationalReportKeyboard();
 
@@ -189,7 +170,8 @@ export function startCronJobs(bot: Bot) {
     try {
     const mensaje = await revisarObligacionesAnualesEmpresas();
     if (!mensaje) return;
-    await bot.api.sendMessage(adminChatId, convertMarkdownToTelegramHtml(mensaje));
+    // parse_mode HTML: sin él, Telegram mostraba las etiquetas <i> tal cual.
+    await bot.api.sendMessage(adminChatId, convertMarkdownToTelegramHtml(mensaje), { parse_mode: 'HTML' });
     } catch (error) {
     console.error('❌ Error en recordatorios de sociedades:', error);
     }

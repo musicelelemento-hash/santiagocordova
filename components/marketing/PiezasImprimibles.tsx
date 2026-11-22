@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import { useAppStore } from '../../store/useAppStore';
-import { MARCA, SERVICIOS, FORMATOS, textoPrecio, enlaceWhatsApp, type Servicio, type Formato } from '../../services/marketing';
+import { MARCA, SERVICIOS, FORMATOS, DIA_POR_DIGITO, textoPrecio, enlaceWhatsApp, type Servicio, type Formato } from '../../services/marketing';
 
 /**
  * Tarjetas de presentación y volantes (22-nov-2026).
@@ -214,125 +214,224 @@ const Opciones: React.FC<{ nombre: string; valor: string; opciones: { id: string
     </div>
 );
 
+// ── Piezas compartidas ──────────────────────────────────────────────────────
+
+const DIGITOS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+/** Clave de acceso de factura electrónica (49 dígitos) sólo como textura: no valida. */
+const CLAVE_DEMO = '2211202601070578774500120010010000001231234567810';
+
+/** Check dibujado con SVG: el carácter ✓ lo descentraba html2canvas al exportar. */
+const Check: React.FC<{ lado: number; color: string }> = ({ lado, color }) => (
+    <svg aria-hidden="true" width={lado} height={lado} viewBox="0 0 24 24" style={{ flexShrink: 0, display: 'block' }}>
+        <circle cx="12" cy="12" r="12" fill={color} />
+        <path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const QrImg: React.FC<{ qr: string; lado: number }> = ({ qr, lado }) => (
+    qr
+        ? <img src={qr} alt="" width={lado} height={lado} style={{ display: 'block', width: lado, height: lado }} />
+        : <div style={{ width: lado, height: lado }} />
+);
+
 // ── Tarjeta ─────────────────────────────────────────────────────────────────
 
-const TarjetaFrente: React.FC<{ t: Tema; persona: string; cargo: string; telefono: string }> = ({ t, persona, cargo, telefono }) => (
-    <div style={{ width: '100%', height: '100%', background: t.fondoCss, color: t.texto, fontFamily: FUENTE_TITULAR, padding: '64px 72px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box', position: 'relative' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 16, background: `linear-gradient(180deg, ${C.azure}, ${C.emerald})` }} />
-        <div>
-            <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 4, textTransform: 'uppercase', color: t.acento }}>{MARCA.nombre}</div>
-            <div style={{ marginTop: 40, fontSize: 68, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1 }}>{persona}</div>
-            <div style={{ marginTop: 12, fontSize: 30, fontWeight: 600, color: t.suave }}>{cargo}</div>
+/** Marca de agua técnica: la clave de acceso repetida, girada y casi invisible. */
+const TexturaClave: React.FC<{ color: string; opacidad: number }> = ({ color, opacidad }) => (
+    <div
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-10%', top: -200, width: '130%', transform: 'rotate(-10deg)', transformOrigin: 'center', fontFamily: FUENTE_MONO, fontSize: 22, lineHeight: '42px', color, opacity: opacidad, whiteSpace: 'nowrap', overflow: 'hidden', pointerEvents: 'none' }}
+    >
+        {Array.from({ length: 24 }, (_, i) => (
+            <div key={i}>{CLAVE_DEMO.repeat(3).slice((i * 11) % 49)}</div>
+        ))}
+    </div>
+);
+
+interface DatosTarjeta { persona: string; cargo: string; empresa: string; telefono: string; web: string }
+
+const TarjetaFrente: React.FC<{ t: Tema; d: DatosTarjeta; qr: string; opacidadTextura: number }> = ({ t, d, qr, opacidadTextura }) => (
+    <div style={{ width: '100%', height: '100%', background: t.fondoCss, color: t.texto, fontFamily: FUENTE_TITULAR, padding: '52px 60px', display: 'flex', alignItems: 'stretch', gap: 40, boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
+        <TexturaClave color={t.texto} opacidad={opacidadTextura} />
+        <div style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 5, textTransform: 'uppercase', color: t.acento }}>{d.empresa}</div>
+            <div>
+                <div style={{ fontSize: 64, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1 }}>{d.persona}</div>
+                <div style={{ marginTop: 22, width: 150, height: 5, borderRadius: 3, background: `linear-gradient(90deg, ${C.azure}, ${C.emerald})` }} />
+                <div style={{ marginTop: 20, fontSize: 30, fontWeight: 600, color: t.suave }}>{d.cargo}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+                    <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: 3, textTransform: 'uppercase', color: t.acento }}>WhatsApp</span>
+                    <span style={{ fontFamily: FUENTE_MONO, fontSize: 36, fontWeight: 700 }}>{d.telefono}</span>
+                </div>
+                <div style={{ fontFamily: FUENTE_MONO, fontSize: 26, fontWeight: 500, color: t.suave }}>{d.web}</div>
+            </div>
         </div>
-        <div style={{ borderTop: `2px solid ${t.linea}`, paddingTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontFamily: FUENTE_MONO, fontSize: 38, fontWeight: 700, color: t.texto }}>WhatsApp {telefono}</div>
-            <div style={{ fontSize: 26, color: t.suave }}>{MARCA.direccion}</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: t.acento }}>{MARCA.web}</div>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ background: '#FFFFFF', padding: 14, borderRadius: 22, boxShadow: '0 10px 30px rgba(2,6,23,0.25)' }}>
+                <QrImg qr={qr} lado={210} />
+            </div>
+            <div style={{ marginTop: 14, fontSize: 20, fontWeight: 700, color: t.suave }}>WhatsApp</div>
         </div>
     </div>
 );
 
-const TarjetaReverso: React.FC<{ t: Tema; qr: string }> = ({ t, qr }) => (
-    <div style={{ width: '100%', height: '100%', background: t.fondoCss, color: t.texto, fontFamily: FUENTE_TITULAR, padding: '56px 72px', display: 'flex', alignItems: 'center', gap: 56, boxSizing: 'border-box', position: 'relative' }}>
-        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 16, background: `linear-gradient(180deg, ${C.emerald}, ${C.azure})` }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: 4, textTransform: 'uppercase', color: t.acento }}>{MARCA.nombre}</div>
-            <div style={{ marginTop: 28, fontSize: 52, fontWeight: 800, lineHeight: 1.15, letterSpacing: -0.5 }}>{MARCA.lema}</div>
-            <div style={{ marginTop: 36, display: 'inline-block', background: C.emerald, color: '#FFFFFF', fontSize: 28, fontWeight: 800, padding: '12px 26px', borderRadius: 999 }}>Escanea y escríbenos</div>
+const DATOS_FACTURA = [
+    'Nombre o razón social',
+    'RUC / C.I.',
+    'Correo',
+    'Teléfono',
+    'Dirección',
+];
+
+/**
+ * Siempre clara: se llena a mano con esfero, aunque el frente sea oscuro.
+ * La etiqueta va a la izquierda, sobre la misma línea (como un formulario):
+ * así cada renglón deja ~80 px (≈7 mm impreso) para escribir, no 45.
+ */
+const TarjetaReversoDatos: React.FC<{ qr: string; empresa: string; web: string }> = ({ qr, empresa, web }) => (
+    <div style={{ width: '100%', height: '100%', background: '#F8FAFC', color: C.navy, fontFamily: FUENTE_TITULAR, padding: '30px 56px 22px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, right: 0, height: 8, background: `linear-gradient(90deg, ${C.azure}, ${C.emerald})` }} />
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16 }}>
+            <div style={{ fontSize: 34, fontWeight: 800, lineHeight: '40px', letterSpacing: -0.5 }}>Mis datos para la factura</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#64748B' }}>La factura electrónica llega a tu correo</div>
         </div>
-        <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 24, boxShadow: '0 10px 30px rgba(2,6,23,0.25)', flexShrink: 0 }}>
-            {qr ? <img src={qr} alt="" width={340} height={340} style={{ display: 'block', width: 340, height: 340 }} /> : <div style={{ width: 340, height: 340 }} />}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 2, marginBottom: 12 }}>
+            {DATOS_FACTURA.map(etiqueta => (
+                <div key={etiqueta} style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'flex-end', gap: 14 }}>
+                    <div style={{ width: 200, flexShrink: 0, paddingBottom: 6, fontSize: 17, fontWeight: 700, color: '#475569', lineHeight: '20px' }}>{etiqueta}</div>
+                    <div style={{ flex: 1, height: '100%', borderBottom: '2px solid #94A3B8', boxSizing: 'border-box' }} />
+                </div>
+            ))}
+        </div>
+        <div style={{ height: 96, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
+            <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3, color: '#334155' }}>Pide siempre tu factura: te sirve para tus gastos personales.</div>
+                <div style={{ marginTop: 6, fontSize: 18, fontWeight: 800, color: C.azure }}>{empresa} · {web}</div>
+            </div>
+            <div style={{ background: '#FFFFFF', padding: 4, borderRadius: 10, border: '1px solid #CBD5E1', flexShrink: 0 }}>
+                <QrImg qr={qr} lado={86} />
+            </div>
         </div>
     </div>
 );
+
+const TarjetaReversoCalendario: React.FC<{ t: Tema; qr: string; empresa: string; telefono: string }> = ({ t, qr, empresa, telefono }) => (
+    <div style={{ width: '100%', height: '100%', background: t.fondoCss, color: t.texto, fontFamily: FUENTE_TITULAR, padding: '38px 56px 30px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, right: 0, height: 8, background: `linear-gradient(90deg, ${C.azure}, ${C.emerald})` }} />
+        <div style={{ fontSize: 44, fontWeight: 800, lineHeight: '52px', letterSpacing: -0.5 }}>¿Cuándo vence tu IVA?</div>
+        <div style={{ marginTop: 2, fontSize: 24, fontWeight: 600, color: t.suave }}>Mira el 9.º dígito de tu RUC</div>
+        <div style={{ flex: 1, minHeight: 0, marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gridTemplateRows: 'repeat(2, 1fr)', gap: 12 }}>
+            {DIGITOS.map(dg => (
+                <div key={dg} style={{ background: t.tarjetaBeneficio, borderRadius: 14, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontFamily: FUENTE_MONO, fontSize: 56, fontWeight: 800, lineHeight: 1, color: t.acento }}>{dg}</div>
+                    <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, color: t.texto }}>día {DIA_POR_DIGITO[dg]}</div>
+                </div>
+            ))}
+        </div>
+        <div style={{ marginTop: 10, fontSize: 18, fontWeight: 600, color: t.suave }}>Si cae en fin de semana, pasa al lunes.</div>
+        <div style={{ marginTop: 10, height: 84, borderTop: `2px solid ${t.linea}`, paddingTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+            <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 800 }}>{empresa}</div>
+                <div style={{ marginTop: 4, fontFamily: FUENTE_MONO, fontSize: 24, fontWeight: 700, color: t.acento }}>{telefono}</div>
+            </div>
+            <div style={{ background: '#FFFFFF', padding: 4, borderRadius: 10, flexShrink: 0 }}>
+                <QrImg qr={qr} lado={100} />
+            </div>
+        </div>
+    </div>
+);
+
+type Reverso = 'datos' | 'calendario';
+const REVERSOS: { id: Reverso; nombre: string }[] = [
+    { id: 'datos', nombre: 'Datos para factura' },
+    { id: 'calendario', nombre: 'Calendario del SRI' },
+];
 
 const TabTarjeta: React.FC = () => {
     const [persona, setPersona] = useState<string>(MARCA.persona);
-    const [cargo, setCargo] = useState<string>(MARCA.cargo);
+    const [cargo, setCargo] = useState<string>('Asesor Tributario');
+    const [empresa, setEmpresa] = useState<string>(MARCA.nombre);
     const [telefono, setTelefono] = useState<string>(MARCA.telefonoVisible);
+    const [web, setWeb] = useState<string>(MARCA.web);
     const [estilo, setEstilo] = useState<Estilo>('obsidiana');
+    const [reverso, setReverso] = useState<Reverso>('datos');
     const t = TEMAS[estilo];
-    const qr = useQr(enlaceWhatsApp('TARJ'));
+    const qrFrente = useQr(enlaceWhatsApp('TARJ'));
+    const qrFactura = useQr(enlaceWhatsApp('TARJ-F'));
+    const qrCalendario = useQr(enlaceWhatsApp('TARJ-C'));
     const { ancho, alto } = FORMATOS.tarjeta;
+    const datos: DatosTarjeta = { persona, cargo, empresa, telefono, web };
 
     return (
         <div className="space-y-5">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 <Campo id="tj-persona" label="Nombre en la tarjeta" value={persona} onChange={setPersona} />
                 <Campo id="tj-cargo" label="Cargo" value={cargo} onChange={setCargo} />
+                <Campo id="tj-empresa" label="Empresa" value={empresa} onChange={setEmpresa} />
                 <Campo id="tj-tel" label="Teléfono visible" value={telefono} onChange={setTelefono} mono />
+                <Campo id="tj-web" label="Web" value={web} onChange={setWeb} mono />
             </div>
-            <div>
-                <div className={claseLabel}>Estilo</div>
-                <Opciones nombre="Estilo de la tarjeta" valor={estilo} opciones={ESTILOS} onChange={v => setEstilo(v as Estilo)} />
+            <div className="flex flex-wrap gap-x-8 gap-y-4">
+                <div>
+                    <div className={claseLabel}>Estilo</div>
+                    <Opciones nombre="Estilo de la tarjeta" valor={estilo} opciones={ESTILOS} onChange={v => setEstilo(v as Estilo)} />
+                </div>
+                <div>
+                    <div className={claseLabel}>Reverso</div>
+                    <Opciones nombre="Reverso de la tarjeta" valor={reverso} opciones={REVERSOS} onChange={v => setReverso(v as Reverso)} />
+                </div>
             </div>
             <div className="flex flex-col gap-6 md:flex-row">
                 <Vista etiqueta="Frente" ancho={ancho} alto={alto} fondo={t.fondo} archivo="tarjeta-frente.png">
-                    <TarjetaFrente t={t} persona={persona} cargo={cargo} telefono={telefono} />
+                    <TarjetaFrente t={t} d={datos} qr={qrFrente} opacidadTextura={estilo === 'obsidiana' ? 0.08 : 0.06} />
                 </Vista>
-                <Vista etiqueta="Reverso" ancho={ancho} alto={alto} fondo={t.fondo} archivo="tarjeta-reverso.png">
-                    <TarjetaReverso t={t} qr={qr} />
-                </Vista>
+                {reverso === 'datos' ? (
+                    <Vista etiqueta="Reverso · datos para factura (siempre claro para escribir)" ancho={ancho} alto={alto} fondo="#F8FAFC" archivo="tarjeta-reverso-datos.png">
+                        <TarjetaReversoDatos qr={qrFactura} empresa={empresa} web={web} />
+                    </Vista>
+                ) : (
+                    <Vista etiqueta="Reverso · calendario del SRI" ancho={ancho} alto={alto} fondo={t.fondo} archivo="tarjeta-reverso-calendario.png">
+                        <TarjetaReversoCalendario t={t} qr={qrCalendario} empresa={empresa} telefono={telefono} />
+                    </Vista>
+                )}
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Para imprimir: tamaño 9 × 5 cm, 300 ppp. Pide a la imprenta corte con sangrado de 3 mm.</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Para imprimir: tamaño 9 × 5 cm, 300 ppp. Pide a la imprenta corte con sangrado de 3 mm. El reverso «Datos para factura» va en papel que se pueda escribir con esfero (nada de laminado brillante).</p>
         </div>
     );
 };
 
 // ── Volante ─────────────────────────────────────────────────────────────────
 
-interface VolanteProps {
-    t: Tema;
-    formato: Formato;
-    titular: string;
-    paraQuien: string;
-    beneficios: string[];
-    precio: string;
-    qr: string;
-    telefono: string;
-}
+type TipoVolante = Servicio | 'calendario' | 'requisitos';
+const esServicio = (x: TipoVolante): x is Servicio => x in SERVICIOS;
 
-const Volante: React.FC<VolanteProps> = ({ t, formato, titular, paraQuien, beneficios, precio, qr, telefono }) => {
+const REQUISITOS = [
+    'Tu RUC',
+    'Tu clave del SRI (la guardamos con cuidado)',
+    'Facturas de ventas del mes',
+    'Facturas de compras y gastos',
+    'Retenciones que te hicieron',
+];
+
+function medidas(formato: Formato) {
     const { ancho, alto } = FORMATOS[formato];
     const u = ancho / 100; // un 1 % del ancho
     const alta = alto / ancho > 1.3; // A5 e historia respiran más
-    const qrLado = Math.round(ancho * (alta ? 0.3 : 0.26));
-    const pad = ancho * 0.07;
+    return { ancho, alto, u, alta, qrLado: Math.round(ancho * (alta ? 0.3 : 0.26)), pad: ancho * 0.07 };
+}
 
+/** Marco común: barra, marca arriba, contenido centrado y pie de contacto. */
+const MarcoVolante: React.FC<{ t: Tema; formato: Formato; telefono: string; children: React.ReactNode }> = ({ t, formato, telefono, children }) => {
+    const { ancho, alto, u, alta, pad } = medidas(formato);
     return (
         <div style={{ width: ancho, height: alto, background: t.fondoCss, color: t.texto, fontFamily: FUENTE_TITULAR, boxSizing: 'border-box', padding: `${pad * (formato === 'historia' ? 1.9 : 1)}px ${pad}px`, display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <div style={{ position: 'absolute', left: 0, top: 0, right: 0, height: u * 1.4, background: `linear-gradient(90deg, ${C.azure}, ${C.emerald})` }} />
             <div style={{ fontSize: u * 2.7, fontWeight: 800, letterSpacing: u * 0.4, textTransform: 'uppercase', color: t.acento, marginTop: u * 1.5 }}>{MARCA.nombre}</div>
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: u * (alta ? 4 : 3) }}>
-                <div>
-                    <div style={{ fontSize: u * (alta ? 8 : 7.4), fontWeight: 800, lineHeight: 1.08, letterSpacing: -u * 0.15 }}>{titular}</div>
-                    <div style={{ marginTop: u * 2, fontSize: u * 3.2, fontWeight: 600, color: t.suave, lineHeight: 1.3 }}>{paraQuien}</div>
-                </div>
-
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: u * 1.8 }}>
-                    {beneficios.map((b, i) => (
-                        <li key={i} style={{ display: 'flex', alignItems: 'center', gap: u * 2.2, background: t.tarjetaBeneficio, borderRadius: u * 2, padding: `${u * 1.8}px ${u * 2.4}px` }}>
-                            {/* SVG y no el carácter ✓: html2canvas descentraba el glifo al exportar. */}
-                            <svg aria-hidden="true" width={u * 4.4} height={u * 4.4} viewBox="0 0 24 24" style={{ flexShrink: 0, display: 'block' }}>
-                                <circle cx="12" cy="12" r="12" fill={t.acento2} />
-                                <path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                            <span style={{ fontSize: u * 3.3, fontWeight: 600, lineHeight: 1.3 }}>{b}</span>
-                        </li>
-                    ))}
-                </ul>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: u * 3, borderTop: `2px solid ${t.linea}`, paddingTop: u * 3 }}>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ fontSize: u * 2.6, fontWeight: 700, color: t.suave, textTransform: 'uppercase', letterSpacing: u * 0.3 }}>Tu inversión</div>
-                        <div style={{ fontSize: u * (precio.length > 18 ? 6 : 8.2), fontWeight: 800, color: t.acento, lineHeight: 1.1, marginTop: u * 0.6 }}>{precio}</div>
-                        <div style={{ marginTop: u * 2.4, fontSize: u * 3, fontWeight: 700 }}>Escanea y escríbenos por WhatsApp</div>
-                    </div>
-                    <div style={{ background: '#FFFFFF', padding: u * 1.6, borderRadius: u * 2.4, flexShrink: 0 }}>
-                        {qr ? <img src={qr} alt="" width={qrLado} height={qrLado} style={{ display: 'block', width: qrLado, height: qrLado }} /> : <div style={{ width: qrLado, height: qrLado }} />}
-                    </div>
-                </div>
+                {children}
             </div>
 
             <div style={{ borderTop: `2px solid ${t.linea}`, paddingTop: u * 2.4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: u * 2, fontSize: u * 2.6, color: t.suave }}>
@@ -349,38 +448,131 @@ const Volante: React.FC<VolanteProps> = ({ t, formato, titular, paraQuien, benef
     );
 };
 
+const Encabezado: React.FC<{ t: Tema; u: number; alta: boolean; titular: string; subtitulo: string }> = ({ t, u, alta, titular, subtitulo }) => (
+    <div>
+        <div style={{ fontSize: u * (alta ? 8 : 7.4), fontWeight: 800, lineHeight: 1.08, letterSpacing: -u * 0.15 }}>{titular}</div>
+        {subtitulo && <div style={{ marginTop: u * 2, fontSize: u * 3.2, fontWeight: 600, color: t.suave, lineHeight: 1.3 }}>{subtitulo}</div>}
+    </div>
+);
+
+const ListaChecks: React.FC<{ t: Tema; u: number; items: string[]; fuente: number; vertical: number }> = ({ t, u, items, fuente, vertical }) => (
+    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: u * 1.8 }}>
+        {items.map((b, i) => (
+            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: u * 2.2, background: t.tarjetaBeneficio, borderRadius: u * 2, padding: `${vertical}px ${u * 2.4}px` }}>
+                <Check lado={u * 4.4} color={t.acento2} />
+                <span style={{ fontSize: fuente, fontWeight: 600, lineHeight: 1.3 }}>{b}</span>
+            </li>
+        ))}
+    </ul>
+);
+
+/** Franja inferior: mensaje principal (precio u otro), invitación y QR. */
+const FranjaQr: React.FC<{ t: Tema; u: number; qr: string; qrLado: number; etiqueta?: string; principal: string; principalPx: number }> = ({ t, u, qr, qrLado, etiqueta, principal, principalPx }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: u * 3, borderTop: `2px solid ${t.linea}`, paddingTop: u * 3 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+            {etiqueta && <div style={{ fontSize: u * 2.6, fontWeight: 700, color: t.suave, textTransform: 'uppercase', letterSpacing: u * 0.3 }}>{etiqueta}</div>}
+            <div style={{ fontSize: principalPx, fontWeight: 800, color: t.acento, lineHeight: 1.1, marginTop: etiqueta ? u * 0.6 : 0 }}>{principal}</div>
+            <div style={{ marginTop: u * 2.4, fontSize: u * 3, fontWeight: 700 }}>Escanea y escríbenos por WhatsApp</div>
+        </div>
+        <div style={{ background: '#FFFFFF', padding: u * 1.6, borderRadius: u * 2.4, flexShrink: 0 }}>
+            <QrImg qr={qr} lado={qrLado} />
+        </div>
+    </div>
+);
+
+interface VolanteProps {
+    t: Tema;
+    formato: Formato;
+    tipo: TipoVolante;
+    titular: string;
+    paraQuien: string;
+    beneficios: string[];
+    precio: string;
+    qr: string;
+    telefono: string;
+}
+
+const Volante: React.FC<VolanteProps> = ({ t, formato, tipo, titular, paraQuien, beneficios, precio, qr, telefono }) => {
+    const { u, alta, qrLado } = medidas(formato);
+
+    return (
+        <MarcoVolante t={t} formato={formato} telefono={telefono}>
+            {tipo === 'calendario' ? (
+                <>
+                    <Encabezado t={t} u={u} alta={alta} titular={titular} subtitulo="Mira el 9.º dígito de tu RUC" />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: u * 1.6 }}>
+                        {DIGITOS.map(dg => (
+                            <div key={dg} style={{ background: t.tarjetaBeneficio, borderRadius: u * 2, padding: `${u * (alta ? 2.4 : 1.6)}px 0`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <div style={{ fontFamily: FUENTE_MONO, fontSize: u * (alta ? 9 : 7.5), fontWeight: 800, lineHeight: 1, color: t.acento }}>{dg}</div>
+                                <div style={{ marginTop: u * 1, fontSize: u * (alta ? 3.2 : 2.8), fontWeight: 700 }}>día {DIA_POR_DIGITO[dg]}</div>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ fontSize: u * 2.8, fontWeight: 600, color: t.suave, textAlign: 'center' }}>Si cae en fin de semana, pasa al lunes.</div>
+                    <FranjaQr t={t} u={u} qr={qr} qrLado={qrLado} principal="Te avisamos antes de tu fecha" principalPx={u * 5.2} />
+                </>
+            ) : tipo === 'requisitos' ? (
+                <>
+                    <Encabezado t={t} u={u} alta={alta} titular={titular} subtitulo="" />
+                    <ListaChecks t={t} u={u} items={REQUISITOS} fuente={u * (alta ? 3.4 : 3)} vertical={u * (alta ? 1.9 : 1.4)} />
+                    <FranjaQr t={t} u={u} qr={qr} qrLado={qrLado} principal="Lo demás lo hacemos nosotros." principalPx={u * 5.2} />
+                </>
+            ) : (
+                <>
+                    <Encabezado t={t} u={u} alta={alta} titular={titular} subtitulo={paraQuien} />
+                    <ListaChecks t={t} u={u} items={beneficios} fuente={u * 3.3} vertical={u * 1.8} />
+                    <FranjaQr t={t} u={u} qr={qr} qrLado={qrLado} etiqueta="Tu inversión" principal={precio} principalPx={u * (precio.length > 18 ? 6 : 8.2)} />
+                </>
+            )}
+        </MarcoVolante>
+    );
+};
+
 const FORMATOS_VOLANTE: { id: Formato; nombre: string }[] = [
     { id: 'volanteA5', nombre: 'Volante A5 (imprimir)' },
     { id: 'post', nombre: 'Publicación 4:5' },
     { id: 'historia', nombre: 'Historia 9:16' },
 ];
 
+const TITULAR_CALENDARIO = '¿Cuándo vence tu IVA?';
+const TITULAR_REQUISITOS = '¿Qué necesito para declarar?';
+
+function titularDe(tipo: TipoVolante): string {
+    return esServicio(tipo) ? SERVICIOS[tipo].gancho : tipo === 'calendario' ? TITULAR_CALENDARIO : TITULAR_REQUISITOS;
+}
+
+function codigoDe(tipo: TipoVolante): string {
+    return esServicio(tipo) ? `${SERVICIOS[tipo].codigo}F` : tipo === 'calendario' ? 'CAL-F' : 'REQ-F';
+}
+
 const TabVolante: React.FC = () => {
     const tarifas = useAppStore(s => s.serviceFees);
-    const [servicio, setServicio] = useState<Servicio>('iva_mensual');
+    const [tipo, setTipo] = useState<TipoVolante>('iva_mensual');
     const [formato, setFormato] = useState<Formato>('post');
     const [estilo, setEstilo] = useState<Estilo>('obsidiana');
     const [titular, setTitular] = useState<string>(SERVICIOS.iva_mensual.gancho);
     const [telefono, setTelefono] = useState<string>(MARCA.telefonoVisible);
 
-    const ficha = SERVICIOS[servicio];
     const t = TEMAS[estilo];
-    const codigo = `${ficha.codigo}F`;
+    const codigo = codigoDe(tipo);
     const qr = useQr(enlaceWhatsApp(codigo));
     const { ancho, alto } = FORMATOS[formato];
+    const ficha = esServicio(tipo) ? SERVICIOS[tipo] : null;
 
-    const cambiarServicio = (id: Servicio) => {
-        setServicio(id);
-        setTitular(SERVICIOS[id].gancho);
+    const cambiarTipo = (id: TipoVolante) => {
+        setTipo(id);
+        setTitular(titularDe(id));
     };
 
     return (
         <div className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2">
                 <div className="min-w-0">
-                    <label htmlFor="vl-servicio" className={claseLabel}>Servicio</label>
-                    <select id="vl-servicio" value={servicio} onChange={e => cambiarServicio(e.target.value as Servicio)} className={claseInput}>
+                    <label htmlFor="vl-servicio" className={claseLabel}>Tipo de volante</label>
+                    <select id="vl-servicio" value={tipo} onChange={e => cambiarTipo(e.target.value as TipoVolante)} className={claseInput}>
                         {(Object.keys(SERVICIOS) as Servicio[]).map(id => <option key={id} value={id}>{SERVICIOS[id].nombre}</option>)}
+                        <option value="calendario">Calendario del SRI</option>
+                        <option value="requisitos">Qué necesito para declarar</option>
                     </select>
                 </div>
                 <Campo id="vl-tel" label="Teléfono visible" value={telefono} onChange={setTelefono} mono />
@@ -405,10 +597,20 @@ const TabVolante: React.FC = () => {
                 ancho={ancho}
                 alto={alto}
                 fondo={t.fondo}
-                archivo={`volante-${servicio}-${formato === 'volanteA5' ? 'a5' : formato}.png`}
+                archivo={`volante-${tipo}-${formato === 'volanteA5' ? 'a5' : formato}.png`}
                 maxAncho={460}
             >
-                <Volante t={t} formato={formato} titular={titular} paraQuien={ficha.paraQuien} beneficios={ficha.beneficios} precio={textoPrecio(servicio, tarifas)} qr={qr} telefono={telefono} />
+                <Volante
+                    t={t}
+                    formato={formato}
+                    tipo={tipo}
+                    titular={titular}
+                    paraQuien={ficha ? ficha.paraQuien : ''}
+                    beneficios={ficha ? ficha.beneficios : []}
+                    precio={esServicio(tipo) ? textoPrecio(tipo, tarifas) : ''}
+                    qr={qr}
+                    telefono={telefono}
+                />
             </Vista>
 
             {formato === 'volanteA5' ? (
