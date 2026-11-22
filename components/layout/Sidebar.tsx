@@ -39,7 +39,7 @@ interface SidebarProps {
 // 22-nov-2026: «Lo esencial» arriba. Con el menú simple (por defecto) sólo se ve
 // ese grupo; «Más herramientas» muestra el resto (App.tsx → MENU_ESENCIAL).
 export const NAV_GROUPS: { label: string; screens: string[] }[] = [
-    { label: 'Lo esencial', screens: ['hoy', 'declaraciones', 'clients', 'cobranza', 'firmas', 'tasks', 'telegram_bot', 'mas_herramientas'] },
+    { label: 'Lo esencial', screens: ['hoy', 'crecer', 'declaraciones', 'clients', 'cobranza', 'firmas', 'tasks', 'telegram_bot', 'mas_herramientas'] },
     { label: 'Operaciones Tributarias', screens: ['home', 'bucle', 'facturadores'] },
     { label: 'Facturación & Cobranza', screens: ['sri_facturacion', 'cotizaciones', 'caja_chica'] },
     { label: 'Clientes nuevos', screens: ['crm_pipeline', 'web_orders'] },

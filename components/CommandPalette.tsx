@@ -9,7 +9,7 @@ import {
     DollarSign, Briefcase, FileCheck, Layers, Award,
     LayoutGrid, Box, Coins, PiggyBank, ShoppingCart, ArrowRightLeft,
     Volume2
-} from 'lucide-react';
+, Sun, Rocket } from 'lucide-react';
 import { Client } from '../types';
 import { hapticAudio } from '../services/hapticAudioService';
 import { sendToSRIExtension, entrarAlSriSinDeclarar } from '../services/extensionBridge';
@@ -61,6 +61,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }, [isOpen]);
 
     const ALL_NAV_ITEMS = [
+        { id: 'nav-hoy', type: 'nav', label: 'Hoy (inicio)', screen: 'hoy', icon: <Sun size={18} className="text-[#04B17B]" /> },
+        { id: 'nav-crecer', type: 'nav', label: 'Crecer: anuncios, volantes y meta 3.000', screen: 'crecer', icon: <Rocket size={18} className="text-[#2B6AFF]" /> },
         { id: 'nav-dash', type: 'nav', label: 'Dashboard Principal', screen: 'home', icon: <LayoutDashboard size={18} className="text-[#00A896]" /> },
         { id: 'nav-declaraciones', type: 'nav', label: 'Declaraciones SRI (Matriz Fiscal)', screen: 'declaraciones', icon: <LayoutGrid size={18} className="text-[#00A896]" /> },
         { id: 'nav-clients', type: 'nav', label: 'Expedientes de Clientes', screen: 'clients', icon: <Users size={18} className="text-[#2B6AFF]" /> },
