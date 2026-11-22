@@ -74,3 +74,52 @@ describe('Anuncios y guiones', () => {
     expect(decodeURIComponent(enlaceWhatsApp(''))).not.toContain('[');
   });
 });
+
+import { extraerCodigo, resultadosPorCodigo, proximoVencimientoIva, respuestaVencimiento, respuestasRapidas } from '../services/marketing';
+
+describe('Medir qué anuncio trae clientes', () => {
+  it('lee el código del mensaje de WhatsApp', () => {
+    expect(extraerCodigo('Hola, quiero información sobre sus servicios [IVA-M1]')).toBe('IVA-M1');
+    expect(extraerCodigo('hola [iva-mf]')).toBe('IVA-MF');
+    expect(extraerCodigo('Hola, ¿cuánto cuesta?')).toBeNull();
+  });
+  it('cuenta prospectos y ganados por código', () => {
+    const r = resultadosPorCodigo([
+      { codigoCampana: 'IVA-M1', etapa: 'ganado' },
+      { codigoCampana: 'IVA-M1', etapa: 'prospecto' },
+      { codigoCampana: 'FIRMA2', etapa: 'prospecto' },
+      { etapa: 'ganado' },
+    ]);
+    expect(r[0]).toEqual({ codigo: 'IVA-M1', prospectos: 2, ganados: 1, tasa: 0.5 });
+    expect(r[r.length - 1].codigo).toBe('Sin código');
+  });
+});
+
+describe('¿Cuándo me vence?', () => {
+  it('si la fecha de este mes no pasó, es la de este mes', () => {
+    // 9.º dígito 9 → jueves 26-nov-2026; hoy 22-nov.
+    const v = proximoVencimientoIva('1712345690001', new Date(2026, 10, 22))!;
+    expect(v.fecha.getDate()).toBe(26);
+    expect(v.mesDeclarado).toBe('octubre');
+  });
+  it('si ya pasó, es la del mes siguiente (y declara el mes en curso)', () => {
+    // 9.º dígito 1 → 10-nov ya pasó → jueves 10-dic-2026.
+    const v = proximoVencimientoIva('1712345610001', new Date(2026, 10, 22))!;
+    expect(v.fecha.getMonth()).toBe(11);
+    expect(v.fecha.getDate()).toBe(10);
+    expect(v.mesDeclarado).toBe('noviembre');
+  });
+  it('el mismo día de vencimiento cuenta como «hoy»', () => {
+    expect(proximoVencimientoIva('1712345690001', new Date(2026, 10, 26, 18))!.fecha.getDate()).toBe(26);
+  });
+  it('fin de semana pasa al lunes; sin 9.º dígito no responde', () => {
+    // dígito 0 → sábado 28-nov-2026 → lunes 30.
+    expect(proximoVencimientoIva('1712345600001', new Date(2026, 10, 22))!.fecha.getDate()).toBe(30);
+    expect(respuestaVencimiento('1234')).toBeNull();
+  });
+  it('respuestas rápidas con el precio de Ajustes', () => {
+    const t = respuestasRapidas({ ivaMensual: 15, ivaSemestral: 25 }).find(x => x.id === 'precio')!.texto;
+    expect(t).toContain('$15 al mes');
+    expect(t).toContain('$25 por semestre');
+  });
+});

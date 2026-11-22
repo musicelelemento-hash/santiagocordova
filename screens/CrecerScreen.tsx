@@ -8,6 +8,7 @@ import { mockClients } from '../constants';
 
 const AnunciosYVideos = React.lazy(() => import('../components/marketing/AnunciosYVideos').then(m => ({ default: m.AnunciosYVideos })));
 const CalendarioContenidos = React.lazy(() => import('../components/marketing/CalendarioContenidos').then(m => ({ default: m.CalendarioContenidos })));
+const Responder = React.lazy(() => import('../components/marketing/Responder').then(m => ({ default: m.Responder })));
 const PiezasImprimibles = React.lazy(() => import('../components/marketing/PiezasImprimibles').then(m => ({ default: m.PiezasImprimibles })));
 
 /**
@@ -16,11 +17,12 @@ const PiezasImprimibles = React.lazy(() => import('../components/marketing/Pieza
  * mensual. La lógica está en services/marketing.ts (con pruebas).
  */
 
-type Pestana = 'meta' | 'anuncios' | 'calendario' | 'piezas';
+type Pestana = 'meta' | 'anuncios' | 'responder' | 'calendario' | 'piezas';
 
 const PESTANAS: { id: Pestana; texto: string; icono: React.ElementType }[] = [
     { id: 'meta', texto: 'Meta 3.000', icono: Target },
     { id: 'anuncios', texto: 'Anuncios y videos', icono: Megaphone },
+    { id: 'responder', texto: 'Responder', icono: MessageCircle },
     { id: 'calendario', texto: 'Qué publicar', icono: CalendarDays },
     { id: 'piezas', texto: 'Tarjetas y volantes', icono: CreditCard },
 ];
@@ -36,7 +38,7 @@ export const CrecerScreen: React.FC = () => {
             <header className="panel-cascada flex flex-col gap-1.5">
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>Crecer</h1>
                 <p className="text-[15px] text-slate-600 dark:text-slate-300 max-w-[62ch]">
-                    Todo para conseguir clientes nuevos: la meta medida, anuncios y videos para Meta, qué publicar cada día y tus tarjetas y volantes.
+                    Todo para conseguir clientes nuevos: la meta medida, anuncios y videos para Meta, respuestas rápidas para WhatsApp, qué publicar cada día y tus tarjetas y volantes.
                 </p>
             </header>
 
@@ -61,6 +63,7 @@ export const CrecerScreen: React.FC = () => {
             <Suspense fallback={<p className="py-10 text-center text-slate-500">Cargando…</p>}>
                 {pestana === 'meta' && <MetaTresMil irA={setPestana} />}
                 {pestana === 'anuncios' && <AnunciosYVideos />}
+                {pestana === 'responder' && <Responder />}
                 {pestana === 'calendario' && <CalendarioContenidos />}
                 {pestana === 'piezas' && <PiezasImprimibles />}
             </Suspense>

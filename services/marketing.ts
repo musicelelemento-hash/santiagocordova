@@ -398,3 +398,108 @@ export const FORMATOS = {
 } as const;
 
 export type Formato = keyof typeof FORMATOS;
+
+// ── Medir: qué anuncio trae clientes ────────────────────────────────────────
+
+/** Saca el código de campaña de un mensaje de WhatsApp: «… [IVA-M1]» → «IVA-M1». */
+export function extraerCodigo(mensaje: string | undefined | null): string | null {
+    const m = String(mensaje || '').toUpperCase().match(/\[([A-Z0-9][A-Z0-9-]{1,19})\]/);
+    return m ? m[1] : null;
+}
+
+export interface FilaResultado {
+    codigo: string;
+    prospectos: number;
+    ganados: number;
+    /** Ganados / prospectos (0–1). */
+    tasa: number;
+}
+
+/** Agrupa prospectos por código de campaña. Los sin código van al final como «Sin código». */
+export function resultadosPorCodigo(leads: { codigoCampana?: string; etapa: string }[]): FilaResultado[] {
+    const mapa = new Map<string, FilaResultado>();
+    for (const l of leads || []) {
+        const codigo = (l.codigoCampana || '').trim().toUpperCase() || 'Sin código';
+        const f = mapa.get(codigo) || { codigo, prospectos: 0, ganados: 0, tasa: 0 };
+        f.prospectos++;
+        if (l.etapa === 'ganado') f.ganados++;
+        mapa.set(codigo, f);
+    }
+    return Array.from(mapa.values())
+        .map(f => ({ ...f, tasa: f.prospectos ? f.ganados / f.prospectos : 0 }))
+        .sort((a, b) => (a.codigo === 'Sin código' ? 1 : b.codigo === 'Sin código' ? -1 : b.ganados - a.ganados || b.prospectos - a.prospectos));
+}
+
+// ── Responder rápido ────────────────────────────────────────────────────────
+
+/**
+ * Próximo vencimiento del IVA MENSUAL para un RUC/cédula: el de este mes si
+ * todavía no pasó (hoy cuenta), si no el del mes siguiente. Fin de semana → lunes.
+ * Devuelve null si el número no tiene 9.º dígito.
+ */
+export function proximoVencimientoIva(ruc: string, hoy: Date = new Date()): { fecha: Date; mesDeclarado: string; digito: number } | null {
+    const limpio = String(ruc || '').replace(/\D/g, '');
+    if (limpio.length < 9) return null;
+    const digito = Number(limpio[8]);
+    const y = hoy.getFullYear(), m = hoy.getMonth();
+    const inicioHoy = new Date(y, m, hoy.getDate()).getTime();
+    let fecha = diaHabil(y, m, DIA_POR_DIGITO[digito]);
+    let mesDeclarado = MESES[(m + 11) % 12];
+    if (fecha.getTime() < inicioHoy) {
+        fecha = diaHabil(y, m + 1, DIA_POR_DIGITO[digito]);
+        mesDeclarado = MESES[m];
+    }
+    return { fecha, mesDeclarado, digito };
+}
+
+export interface Respuesta {
+    id: string;
+    pregunta: string;
+    texto: string;
+}
+
+/** Respuestas listas para las preguntas que más llegan por WhatsApp. */
+export function respuestasRapidas(tarifas?: Tarifas): Respuesta[] {
+    const pm = precioDe('iva_mensual', tarifas);
+    const ps = precioDe('iva_semestral', tarifas);
+    const precios = [
+        pm !== null ? `IVA mensual: $${pm} al mes` : null,
+        ps !== null ? `IVA semestral: $${ps} por semestre` : null,
+    ].filter(Boolean).join('\n');
+    return [
+        {
+            id: 'saludo',
+            pregunta: 'Primer mensaje',
+            texto: `¡Hola! Gracias por escribir a ${MARCA.nombre}. Soy ${MARCA.persona.split(' ')[0]}. ¿Me ayudas con tu RUC o cédula y te digo exactamente qué declaras y cuándo te vence?`,
+        },
+        {
+            id: 'precio',
+            pregunta: '¿Cuánto cuesta?',
+            texto: `${precios || 'Te paso el precio según tu caso.'}\nIncluye: te avisamos antes de tu fecha, declaramos y te mandamos el comprobante por WhatsApp. Sin contratos largos.`,
+        },
+        {
+            id: 'necesito',
+            pregunta: '¿Qué necesito para empezar?',
+            texto: 'Solo tres cosas: tu RUC, tu clave del SRI (la guardamos con cuidado) y tus facturas de compras y ventas del mes. Si no tienes la clave, te ayudamos a recuperarla.',
+        },
+        {
+            id: 'confianza',
+            pregunta: '¿Dónde están? ¿Es seguro?',
+            texto: `Estamos en ${MARCA.direccion}. Puedes venir a la oficina o hacerlo todo por WhatsApp. Cada mes te llega el comprobante oficial del SRI para que veas que está hecho.`,
+        },
+        {
+            id: 'cierre',
+            pregunta: 'Cerrar',
+            texto: '¿Empezamos este mes? Mándame tu RUC y te confirmo tu fecha y lo que vamos a declarar.',
+        },
+    ];
+}
+
+/** Respuesta a «¿cuándo me vence?» para un RUC concreto. */
+export function respuestaVencimiento(ruc: string, hoy: Date = new Date()): string | null {
+    const v = proximoVencimientoIva(ruc, hoy);
+    if (!v) return null;
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const f = v.fecha;
+    return `El 9.º dígito de tu RUC es ${v.digito}, así que tu IVA de ${v.mesDeclarado} vence el ${dias[f.getDay()]} ${f.getDate()} de ${MESES[f.getMonth()]}. Con nosotros te avisamos antes y te mandamos el comprobante.`;
+}

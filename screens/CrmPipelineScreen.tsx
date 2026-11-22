@@ -10,6 +10,7 @@ import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { db } from '../services/db';
 import { sinLeadsDeEjemplo } from '../services/datosDeEjemplo';
+import { extraerCodigo, resultadosPorCodigo } from '../services/marketing';
 
 export type PipelineStage = 'prospecto' | 'cotizacion' | 'negociacion' | 'ganado' | 'perdido';
 
@@ -26,6 +27,8 @@ export interface CrmLead {
     notas: string[];
     createdAt: string;
     updatedAt: string;
+    /** Código del anuncio o volante de donde vino (p. ej. «IVA-M1»): ver «Crecer». */
+    codigoCampana?: string;
 }
 
 interface CrmPipelineScreenProps {
@@ -49,6 +52,8 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
     const [servicioForm, setServicioForm] = useState<CrmLead['servicioInteres']>('Honorarios Mensuales');
     const [montoForm, setMontoForm] = useState<number>(35.00);
     const [origenForm, setOrigenForm] = useState<CrmLead['origen']>('WhatsApp');
+    const [mensajeForm, setMensajeForm] = useState('');
+    const [codigoForm, setCodigoForm] = useState('');
 
     // Cargar leads de CRM desde IndexedDB
     useEffect(() => {
@@ -91,7 +96,8 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
             montoEstimado: montoForm,
             etapa: 'prospecto',
             origen: origenForm,
-            notas: [`Prospecto registrado desde ${origenForm}`],
+            codigoCampana: (codigoForm.trim() || extraerCodigo(mensajeForm) || '').toUpperCase() || undefined,
+            notas: [`Prospecto registrado desde ${origenForm}`, ...(mensajeForm.trim() ? [`Primer mensaje: ${mensajeForm.trim().slice(0, 500)}`] : [])],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -101,6 +107,8 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
         setIsCreateModalOpen(false);
         setNombreForm('');
         setTelefonoForm('');
+        setMensajeForm('');
+        setCodigoForm('');
         toast.success(`🎉 Prospecto ${newLead.nombre} agregado al embudo CRM.`);
     };
 
@@ -163,6 +171,9 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
         });
     }, [leads, searchTerm]);
 
+    // Sólo si al menos un prospecto trae código: sin datos, la tabla no aporta.
+    const resultados = useMemo(() => (leads.some(l => l.codigoCampana) ? resultadosPorCodigo(leads) : []), [leads]);
+
     const stages: Array<{ id: PipelineStage; label: string; color: string; bg: string }> = [
         { id: 'prospecto', label: '📥 1. Prospectos', color: 'text-indigo-400', bg: 'border-indigo-500/30 bg-indigo-500/5' },
         { id: 'cotizacion', label: '📑 2. Cotización Enviada', color: 'text-sky-400', bg: 'border-sky-500/30 bg-sky-500/5' },
@@ -217,6 +228,38 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                 />
             </div>
 
+            {/* ── QUÉ ANUNCIO TRAE CLIENTES (22-nov-2026) ── */}
+            {resultados.length > 0 && (
+                <section aria-labelledby="crm-anuncios" className="rounded-3xl border border-foreground/10 bg-surface-low p-4 sm:p-5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+                        <h3 id="crm-anuncios" className="text-sm font-black text-on-surface">Qué anuncio trae clientes</h3>
+                        <span className="text-[11px] text-on-surface-variant">Por el código entre corchetes del primer mensaje (ver Crecer → Anuncios).</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[420px] text-xs">
+                            <thead>
+                                <tr className="text-left text-on-surface-variant">
+                                    <th className="py-1.5 pr-3 font-bold">Código</th>
+                                    <th className="py-1.5 pr-3 font-bold text-right">Prospectos</th>
+                                    <th className="py-1.5 pr-3 font-bold text-right">Clientes</th>
+                                    <th className="py-1.5 font-bold text-right">Cierre</th>
+                                </tr>
+                            </thead>
+                            <tbody className="font-mono tabular-nums">
+                                {resultados.map(r => (
+                                    <tr key={r.codigo} className="border-t border-foreground/10">
+                                        <td className={`py-1.5 pr-3 font-bold ${r.codigo === 'Sin código' ? 'text-on-surface-variant font-sans' : 'text-indigo-400'}`}>{r.codigo}</td>
+                                        <td className="py-1.5 pr-3 text-right text-on-surface">{r.prospectos}</td>
+                                        <td className="py-1.5 pr-3 text-right text-tertiary font-bold">{r.ganados}</td>
+                                        <td className="py-1.5 text-right text-on-surface">{Math.round(r.tasa * 100)} %</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+
             {/* ── EMBUDO KANBAN CRM (5 COLUMNAS) ── */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
                 {stages.map(st => {
@@ -244,7 +287,7 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                                         className="p-4 rounded-2xl bg-surface-low border border-foreground/10 hover:border-indigo-500/40 transition-all space-y-3 shadow-md"
                                     >
                                         <div>
-                                            <span className="text-[9px] font-mono text-indigo-400 font-bold uppercase block">{lead.origen}</span>
+                                            <span className="text-[9px] font-mono text-indigo-400 font-bold uppercase block">{lead.origen}{lead.codigoCampana ? ` · ${lead.codigoCampana}` : ''}</span>
                                             <h4 className="font-bold text-on-surface text-xs truncate">{lead.nombre}</h4>
                                             {lead.ruc && <p className="text-[10px] text-on-surface-variant font-mono">RUC: {lead.ruc}</p>}
                                         </div>
@@ -316,6 +359,33 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
                                     value={telefonoForm}
                                     onChange={(e) => setTelefonoForm(e.target.value)}
                                     className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="crm-mensaje" className="text-[10px] font-bold text-on-surface-variant uppercase block">Mensaje que te llegó (opcional)</label>
+                            <textarea
+                                id="crm-mensaje"
+                                rows={2}
+                                placeholder="Pega aquí el primer mensaje de WhatsApp. Si trae un código como [IVA-M1], se detecta solo."
+                                value={mensajeForm}
+                                onChange={(e) => {
+                                    setMensajeForm(e.target.value);
+                                    const c = extraerCodigo(e.target.value);
+                                    if (c) setCodigoForm(c);
+                                }}
+                                className="w-full px-3 py-2 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface outline-none resize-y"
+                            />
+                            <div className="mt-1.5 flex items-center gap-2">
+                                <label htmlFor="crm-codigo" className="text-[10px] font-bold text-on-surface-variant uppercase shrink-0">Código del anuncio</label>
+                                <input
+                                    id="crm-codigo"
+                                    type="text"
+                                    placeholder="Ej: IVA-M1"
+                                    value={codigoForm}
+                                    onChange={(e) => setCodigoForm(e.target.value.toUpperCase())}
+                                    className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-surface-lowest border border-foreground/10 text-xs text-on-surface font-mono outline-none"
                                 />
                             </div>
                         </div>
