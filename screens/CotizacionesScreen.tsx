@@ -9,6 +9,7 @@ import { Client } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { db } from '../services/db';
+import { sinCotizacionesDeEjemplo } from '../services/datosDeEjemplo';
 
 export interface CotizacionItem {
     id: string;
@@ -72,37 +73,13 @@ export const CotizacionesScreen: React.FC<CotizacionesScreenProps> = ({ navigate
     useEffect(() => {
         const loadCotizaciones = async () => {
             try {
-                const stored = await db.getLocal('sc_cotizaciones_history');
-                if (stored && Array.isArray(stored)) {
-                    setCotizaciones(stored);
-                } else {
-                    // Datos iniciales de demostración PRO
-                    const demoData: Cotizacion[] = [
-                        {
-                            id: 'COT-1001',
-                            secuencial: 'COT-001',
-                            fechaEmision: new Date().toISOString().split('T')[0],
-                            fechaValidez: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
-                            rucCliente: '0705787745001',
-                            nombreCliente: 'CORDOVA RAMIREZ ROBERTO SANTIAGO',
-                            emailCliente: 'info@santiagocordova.com',
-                            telefonoCliente: '0978980722',
-                            direccionCliente: 'Pasaje, El Oro',
-                            items: [
-                                { id: 'i1', descripcion: 'Plan Anual Facturación Electrónica SRI (Ecuafact / Zifac)', cantidad: 1, precioUnitario: 50.00, aplicaIva: true, subtotal: 50.00 },
-                                { id: 'i2', descripcion: 'Emisión e Instalación de Firma Electrónica .p12 (Vigencia 1 Año)', cantidad: 1, precioUnitario: 25.00, aplicaIva: true, subtotal: 25.00 }
-                            ],
-                            subtotalZero: 0,
-                            subtotalIva: 75.00,
-                            ivaAmount: 11.25,
-                            total: 86.25,
-                            estado: 'Aprobada',
-                            notas: 'Incluye soporte técnico preferencial y configuración inicial de firmas.',
-                            createdAt: new Date().toISOString()
-                        }
-                    ];
-                    setCotizaciones(demoData);
-                    await db.setLocal('sc_cotizaciones_history', demoData);
+                // 22-nov-2026: en la nube (db.get/db.set → Supabase), no sólo en este
+                // navegador, y sin datos de ejemplo (antes se guardaban como reales).
+                const stored = await db.get<any[]>('sc_cotizaciones_history');
+                const limpio = sinCotizacionesDeEjemplo(Array.isArray(stored) ? stored : []);
+                setCotizaciones(limpio);
+                if (Array.isArray(stored) && limpio.length !== stored.length) {
+                    await db.set('sc_cotizaciones_history', limpio);
                 }
             } catch (err) {
                 console.error("Error al cargar cotizaciones:", err);
@@ -113,7 +90,7 @@ export const CotizacionesScreen: React.FC<CotizacionesScreenProps> = ({ navigate
 
     const saveCotizacionesToDb = async (newList: Cotizacion[]) => {
         setCotizaciones(newList);
-        await db.setLocal('sc_cotizaciones_history', newList);
+        await db.set('sc_cotizaciones_history', newList);
     };
 
     // Auto-completar cliente seleccionado

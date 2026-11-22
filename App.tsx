@@ -27,7 +27,7 @@ import { recordScreenVisit, getMostUsedScreens, getDefaultStartScreen, setDefaul
 import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
-const VALID_SCREENS: Screen[] = ['notificaciones', 'hoy', 'home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
+const VALID_SCREENS: Screen[] = ['hoy', 'home', 'telegram_bot', 'clients', 'declaraciones', 'bucle', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'firmas', 'facturadores', 'cotizaciones', 'caja_chica', 'crm_pipeline'];
 
 // Lazy-loaded heavy modules & admin screens
 const HoyScreen = React.lazy(() => import('./screens/HoyScreen').then(m => ({ default: m.HoyScreen })));
@@ -36,7 +36,6 @@ const ClientsScreen = React.lazy(() => import('./screens/ClientsScreen').then(m 
 const LoopDeclaracionesScreen = React.lazy(() => import('./screens/LoopDeclaracionesScreen').then(m => ({ default: m.LoopDeclaracionesScreen })));
 const ReportsScreen = React.lazy(() => import('./screens/ReportsScreen').then(m => ({ default: m.ReportsScreen })));
 const SettingsScreen = React.lazy(() => import('./screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
-const NotificationsScreen = React.lazy(() => import('./screens/NotificationsScreen'));
 const CobranzaScreen = React.lazy(() => import('./screens/CobranzaScreen').then(m => ({ default: m.CobranzaScreen })));
 const CalendarScreen = React.lazy(() => import('./screens/CalendarScreen').then(m => ({ default: m.CalendarScreen })));
 const WebOrdersScreen = React.lazy(() => import('./screens/WebOrdersScreen').then(m => ({ default: m.WebOrdersScreen })));
@@ -52,11 +51,8 @@ const FacturacionSriScreen = React.lazy(() => import('./screens/FacturacionSriSc
 const FirmasScreen = React.lazy(() => import('./screens/FirmasScreen').then(m => ({ default: m.FirmasScreen })));
 const FacturadoresScreen = React.lazy(() => import('./screens/FacturadoresScreen').then(m => ({ default: m.FacturadoresScreen })));
 const CotizacionesScreen = React.lazy(() => import('./screens/CotizacionesScreen').then(m => ({ default: m.CotizacionesScreen })));
-const LicenciasScreen = React.lazy(() => import('./screens/LicenciasScreen').then(m => ({ default: m.LicenciasScreen })));
-const RefinanciacionScreen = React.lazy(() => import('./screens/RefinanciacionScreen').then(m => ({ default: m.RefinanciacionScreen })));
 const CajaChicaScreen = React.lazy(() => import('./screens/CajaChicaScreen').then(m => ({ default: m.CajaChicaScreen })));
 const CrmPipelineScreen = React.lazy(() => import('./screens/CrmPipelineScreen').then(m => ({ default: m.CrmPipelineScreen })));
-const ThreeDStudioScreen = React.lazy(() => import('./screens/ThreeDStudioScreen').then(m => ({ default: m.ThreeDStudioScreen })));
 const TelegramBotScreen = React.lazy(() => import('./screens/TelegramBotScreen').then(m => ({ default: m.TelegramBotScreen })));
 const AdaptadorConvert = React.lazy(() => import('./components/features/AdaptadorConvert').then(m => ({ default: m.AdaptadorConvert })));
 const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalUploadModal').then(m => ({ default: m.GlobalUploadModal })));
@@ -748,7 +744,6 @@ const [appState, setAppState] = useState<AppState>(() => {
       case 'bucle': return <LoopDeclaracionesScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'calendar': return <CalendarScreen navigate={navigate} />;
       case 'reports': return <ReportsScreen navigate={navigate} />;
-      case 'notificaciones': return <NotificationsScreen navigate={(s) => navigate(s as Screen)} />;
       case 'cobranza': return <CobranzaScreen navigate={navigate} />;
       case 'web_orders': return <WebOrdersScreen navigate={navigate} />;
       case 'tasks': return <TasksScreen navigate={navigate} taskFilter={taskFilter} clearTaskFilter={() => setTaskFilter(null)} initialTaskData={initialTaskData} clearInitialTaskData={() => setInitialTaskData(null)} />;
@@ -775,11 +770,8 @@ const [appState, setAppState] = useState<AppState>(() => {
         return <FacturadoresScreen navigate={navigate} initialSearchTerm={term} />;
       }
       case 'cotizaciones': return <CotizacionesScreen navigate={navigate} />;
-      case 'licencias': return <LicenciasScreen navigate={navigate} />;
-      case 'refinanciacion': return <RefinanciacionScreen navigate={navigate} />;
       case 'caja_chica': return <CajaChicaScreen navigate={navigate} />;
       case 'crm_pipeline': return <CrmPipelineScreen navigate={navigate} />;
-      case '3d-studio': return <ThreeDStudioScreen />;
       case 'migracion_zifact': return <AdaptadorConvert />;
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
@@ -801,26 +793,21 @@ const [appState, setAppState] = useState<AppState>(() => {
     { screen: 'clients', icon: Users, label: 'Directorio Clientes' },
     { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
     { screen: 'crm_pipeline', icon: Kanban, label: 'CRM Embudo' },
-    { screen: '3d-studio', icon: Box, label: 'Studio 3D Alpha3D' },
     { screen: 'facturadores', icon: ShoppingBag, label: 'Facturadores & Llenado' },
     { screen: 'cotizaciones', icon: FileSpreadsheet, label: 'Cotizaciones' },
-    { screen: 'licencias', icon: Key, label: 'Licencias SaaS' },
-    { screen: 'refinanciacion', icon: Coins, label: 'Refinanciación' },
     { screen: 'caja_chica', icon: Wallet, label: 'Caja Chica TPV' },
-    { screen: 'notificaciones', icon: Bell, label: 'Notificaciones' },
     { screen: 'cobranza', icon: BarChart, label: 'Cobranza' },
     { screen: 'reports', icon: TrendingUp, label: 'Reportes IA' },
     { screen: 'sri_facturacion', icon: FileText, label: 'Facturador' },
     { screen: 'tasks', icon: CheckCircle, label: 'Tareas' },
-    { screen: 'calendar', icon: CalendarDays, label: 'Agenda' },
-    { screen: 'web_orders', icon: ShoppingCart, label: 'Tienda' },
+        { screen: 'web_orders', icon: ShoppingCart, label: 'Tienda' },
     { screen: 'services', icon: Globe, label: 'Servicios' },
     { screen: 'settings', icon: Settings, label: 'Ajustes' },
     { screen: 'audit_log', icon: History, label: 'Auditoría' },
-    { screen: 'migracion_zifact', icon: ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
+    { screen: 'migracion_zifact', icon: ArrowRightLeft, label: 'Conversor Excel', onClick: () => navigate('migracion_zifact') },
     { screen: 'landing', icon: Globe, label: 'Sitio Público' },
   ] as any[]);
-  const MENU_ESENCIAL = ['hoy', 'declaraciones', 'clients', 'cobranza', 'tasks', 'telegram_bot'];
+  const MENU_ESENCIAL = ['hoy', 'declaraciones', 'clients', 'cobranza', 'firmas', 'tasks', 'telegram_bot'];
   const navItems = ([
     ...(menuCompleto ? todosLosItems : todosLosItems.filter(i => MENU_ESENCIAL.includes(i.screen))),
     { screen: 'mas_herramientas', icon: MoreHorizontal, label: menuCompleto ? 'Menú simple' : `Más herramientas (${todosLosItems.length - MENU_ESENCIAL.length})` },

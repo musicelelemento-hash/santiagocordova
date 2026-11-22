@@ -324,6 +324,14 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                            {/* La Agenda salió del menú (22-nov-2026): es esta misma lista vista en calendario. */}
+                            <button
+                                type="button"
+                                onClick={() => navigate('calendar')}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-foreground/10 bg-surface-lowest text-[11px] font-bold uppercase tracking-wider text-on-surface-variant hover:text-on-surface transition-all"
+                            >
+                                <Calendar size={14} /> Ver en calendario
+                            </button>
                             <div className="flex p-1.5 bg-surface-lowest rounded-2xl border border-foreground/10 overflow-x-auto no-scrollbar">
                                 <button 
                                     onClick={() => setActiveTab('all')} 
