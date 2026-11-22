@@ -287,6 +287,9 @@ export function calendarioDelMes(y: number, m: number): Publicacion[] {
     return out.sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
 }
 
+/** «Declaración de IVA» → «declaración de IVA» (sólo la primera letra: las siglas quedan). */
+const enMinuscula = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+
 // ── Anuncios para Meta ──────────────────────────────────────────────────────
 
 export type Angulo = 'fecha' | 'tranquilidad' | 'cercania';
@@ -316,7 +319,7 @@ export function anunciosPara(servicio: Servicio, tarifas?: Tarifas): Anuncio[] {
         base('fecha', 1, f.gancho,
             `¿Sabes qué día vence tu declaración? Depende del 9.º dígito de tu RUC. Nosotros lo llevamos por ti y te avisamos antes.\n\n✅ ${f.beneficios.join('\n✅ ')}\n\n${precio}. Escríbenos por WhatsApp.`),
         base('tranquilidad', 2, 'Olvídate del SRI este mes',
-            `Declarar tarde cuesta un 3 % del impuesto por cada mes de retraso, más intereses. Con ${MARCA.nombre} tu ${f.nombre.toLowerCase()} sale a tiempo y te llega el comprobante a tu WhatsApp.\n\n${precio}.`),
+            `Declarar tarde cuesta un 3 % del impuesto por cada mes de retraso, más intereses. Con ${MARCA.nombre} tu ${enMinuscula(f.nombre)} sale a tiempo y te llega el comprobante a tu WhatsApp.\n\n${precio}.`),
         base('cercania', 3, 'Tu contador en Pasaje, El Oro',
             `Atención presencial en ${MARCA.direccion} y por WhatsApp. ${f.paraQuien}: te explicamos todo en palabras simples.\n\n${precio}. Pregunta sin compromiso.`),
     ];
@@ -376,7 +379,7 @@ export function guionesPara(servicio: Servicio): Guion[] {
             codigo: `${f.codigo}V2`,
             escenas: [
                 { desde: 0, hasta: 4, imagen: 'Escritorio lleno de facturas y papeles, luz fría.', textoEnPantalla: 'Antes: papeles, filas, claves perdidas', voz: 'Antes: papeles, filas y claves que nunca recuerdas.' },
-                { desde: 4, hasta: 10, imagen: 'El mismo escritorio ordenado, laptop abierta con panel azul, luz cálida.', textoEnPantalla: 'Ahora: todo al día', voz: `Ahora: ${f.nombre.toLowerCase()} al día, sin que tengas que pensar en el SRI.` },
+                { desde: 4, hasta: 10, imagen: 'El mismo escritorio ordenado, laptop abierta con panel azul, luz cálida.', textoEnPantalla: 'Ahora: todo al día', voz: `Ahora: ${enMinuscula(f.nombre)} al día, sin que tengas que pensar en el SRI.` },
                 { desde: 10, hasta: 15, imagen: 'Contador saludando a cámara en una oficina de Pasaje.', textoEnPantalla: f.gancho, voz: 'Escríbenos y empezamos este mes.' },
             ],
             prompt: `${estilo} Split transformation: first a messy desk covered in paper invoices under cold light, then the same desk tidy with an open laptop showing an abstract blue dashboard under warm light. End with a friendly accountant waving to camera in a modest office. Leave clean negative space for Spanish text overlays.`,

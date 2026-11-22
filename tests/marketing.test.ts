@@ -55,6 +55,11 @@ describe('Anuncios y guiones', () => {
     expect(decodeURIComponent(a[0].enlace)).toContain('[IVA-M1]');
     expect(a[0].texto).toContain('$15 al mes');
   });
+  it('las siglas no se pasan a minúsculas («IVA», no «iva»)', () => {
+    const t = anunciosPara('iva_mensual', {}).map(a => a.texto).join(' ');
+    expect(t).toContain('declaración de IVA mensual');
+    expect(t).not.toMatch(/\biva\b/);
+  });
   it('sin tarifa cargada dice «Consulta tu precio»', () => {
     expect(textoPrecio('firma', {})).toBe('Consulta tu precio');
   });

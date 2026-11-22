@@ -312,9 +312,13 @@ const Volante: React.FC<VolanteProps> = ({ t, formato, titular, paraQuien, benef
 
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: u * 1.8 }}>
                     {beneficios.map((b, i) => (
-                        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: u * 2.2, background: t.tarjetaBeneficio, borderRadius: u * 2, padding: `${u * 1.8}px ${u * 2.4}px` }}>
-                            <span aria-hidden="true" style={{ flexShrink: 0, width: u * 4.4, height: u * 4.4, borderRadius: '50%', background: t.acento2, color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: u * 2.8, fontWeight: 800, lineHeight: 1 }}>✓</span>
-                            <span style={{ fontSize: u * 3.3, fontWeight: 600, lineHeight: 1.3, paddingTop: u * 0.3 }}>{b}</span>
+                        <li key={i} style={{ display: 'flex', alignItems: 'center', gap: u * 2.2, background: t.tarjetaBeneficio, borderRadius: u * 2, padding: `${u * 1.8}px ${u * 2.4}px` }}>
+                            {/* SVG y no el carácter ✓: html2canvas descentraba el glifo al exportar. */}
+                            <svg aria-hidden="true" width={u * 4.4} height={u * 4.4} viewBox="0 0 24 24" style={{ flexShrink: 0, display: 'block' }}>
+                                <circle cx="12" cy="12" r="12" fill={t.acento2} />
+                                <path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span style={{ fontSize: u * 3.3, fontWeight: 600, lineHeight: 1.3 }}>{b}</span>
                         </li>
                     ))}
                 </ul>
