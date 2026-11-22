@@ -24,6 +24,7 @@ export function arePeriodsEqual(p1?: string, p2?: string): boolean {
     return false;
 }
 
+import { armarReporteDiario, rucValido } from './reporte_diario';
 import { validateSRIPDF } from './pdf-validator';
 import { supabase } from './supabase';
 import crypto from 'crypto';
@@ -3034,6 +3035,8 @@ export async function generateDailyOperationalReport(): Promise<string> {
         let verifiedKeyCount = 0;
 
         clients.forEach((c: any) => {
+            // Los inactivos no se declaran ni se cobran: fuera del reporte (22-nov-2026).
+            if (c.is_active === false) return;
             const regime = (c.regime || 'Régimen General').trim();
             const isPopular = esPopular(regime) || 
                               c.tax_profile?.ivaFrequency === 'Ninguno' || 
@@ -3164,97 +3167,27 @@ export async function generateDailyOperationalReport(): Promise<string> {
         debtorsList.sort((a, b) => b.debt - a.debt);
         upcomingDueThisWeek.sort((a, b) => a.dueDay - b.dueDay);
 
-        // Armar el mensaje HTML
-        let msg = `⚡ <b>REPORTE DIARIO OPERATIVO — BAKU 3.0</b>\n`;
-        msg += `📅 <i>${now.toLocaleDateString('es-EC', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</i>\n\n`;
-
-        // 1. Alerta de Credenciales
-        msg += `🔐 <b>ESTADO DE CLAVES SRI:</b>\n`;
-        if (verifiedKeyCount > 0) {
-            msg += `• 🟢 Operativas y Verificadas: <b>${verifiedKeyCount}</b> clientes (acceso comprobado por Nueva Luz)\n`;
-        }
-        if (missingKeyClients.length === 0) {
-            msg += `✅ <i>Todas las claves SRI registradas se encuentran operativas.</i>\n\n`;
-        } else {
-            msg += `🚨 <b>${missingKeyClients.length} Clientes con Observación de Clave:</b>\n`;
-            missingKeyClients.slice(0, 10).forEach(c => {
-                msg += `• <b>${c.name}</b> (<code>${c.ruc}</code>): <i>${c.reason}</i>\n`;
-            });
-            if (missingKeyClients.length > 10) {
-                msg += `<i>...y ${missingKeyClients.length - 10} clientes más con observaciones.</i>\n`;
-            }
-            msg += `\n`;
-        }
-
-        // 2. Declaraciones del Período Activo
-        msg += `📑 <b>DECLARACIONES IVA PERÍODO ${activeIvaPeriod}:</b>\n`;
-        msg += `• Al Día: <b>${alDiaMonthlyCount}</b> clientes\n`;
-        msg += `• Pendientes: <b>${pendingMonthlyDecl.length}</b> clientes\n`;
-        if (noAplicaMonthlyCount > 0) {
-            msg += `• No Aplica (Inicio posterior): <b>${noAplicaMonthlyCount}</b> clientes\n`;
-        }
-        if (pendingMonthlyDecl.length > 0) {
-            msg += `\n🚨 <b>Próximos pendientes de enviar:</b>\n`;
-            pendingMonthlyDecl.slice(0, 8).forEach(c => {
-                msg += `• <b>${c.name}</b> (Vence día ${c.dueDay})\n`;
-            });
-            if (pendingMonthlyDecl.length > 8) {
-                msg += `<i>...y ${pendingMonthlyDecl.length - 8} pendientes más.</i>\n`;
-            }
-        }
-        msg += `\n`;
-
-        // 2b. Contribuyentes Semestrales (RIMPE Emprendedor / IVA 0%)
-        msg += `🗓️ <b>CONTRIBUYENTES SEMESTRALES (${semestralClients.length} clientes — RIMPE Emprendedor / IVA 0%):</b>\n`;
-        msg += `• Ciclo Vigente: <b>${activeSemestreLabel} (${activeSemestre})</b>\n`;
-        msg += `• Al Día: <b>${alDiaSemestralCount}</b> clientes\n`;
-        msg += `• Pendientes: <b>${pendingSemestralDecl.length}</b> clientes\n`;
-        if (pendingSemestralDecl.length > 0 && (currentMonth === 1 || currentMonth === 7)) {
-            msg += `\n🚨 <b>Pendientes semestrales urgentes (vencen este mes):</b>\n`;
-            pendingSemestralDecl.slice(0, 6).forEach(c => {
-                msg += `• <b>${c.name}</b> (Vence día ${c.dueDay})\n`;
-            });
-            if (pendingSemestralDecl.length > 6) {
-                msg += `<i>...y ${pendingSemestralDecl.length - 6} semestrales más.</i>\n`;
-            }
-        } else {
-            msg += `ℹ️ <i>Próximo vencimiento de IVA semestral: ${currentMonth <= 6 ? 'JULIO' : 'ENERO'}.</i>\n`;
-        }
-        msg += `\n`;
-
-        // 3. Negocio Popular (como Silvio Stalin)
-        msg += `🏷️ <b>RIMPE NEGOCIO POPULAR (${popularClients.length} clientes):</b>\n`;
-        msg += `ℹ️ <i>Exentos de IVA mensual. Su declaración es de Impuesto a la Renta Anual (Gestión Manual).</i>\n\n`;
-
-        // 4. Vencimientos en los próximos 5 días
-        if (upcomingDueThisWeek.length > 0) {
-            msg += `⏰ <b>VENCIMIENTOS SRI EN LOS PRÓXIMOS 5 DÍAS:</b>\n`;
-            upcomingDueThisWeek.forEach(c => {
-                msg += `• Día ${c.dueDay}: <b>${c.name}</b> — ${c.status}\n`;
-            });
-            msg += `\n`;
-        }
-
-        // 5. Cobranza y Finanzas
-        msg += `💰 <b>CARTERA Y HONORARIOS:</b>\n`;
-        msg += `• Total por Cobrar: <b>$${totalDebt.toFixed(2)}</b> (${debtorsList.length} clientes)\n`;
-        if (debtorsList.length > 0) {
-            debtorsList.slice(0, 4).forEach(d => {
-                msg += `• ${d.name}: <b>$${d.debt.toFixed(2)}</b>\n`;
-            });
-        }
-        msg += `\n`;
-
-        // 6. Agenda / Tareas
-        if (tasks && tasks.length > 0) {
-            msg += `📋 <b>AGENDA DE TAREAS ACTIVAS:</b>\n`;
-            tasks.forEach(t => {
-                msg += `• [ ] <b>${t.title}</b>${t.due_date ? ` (Vence: ${t.due_date})` : ''}\n`;
-            });
-            msg += `\n`;
-        }
-
-        msg += `⚡ <i>Baku 3.0 · Asistente Fiscal Conectado a Supabase</i>`;
+        // Mensaje corto (22-nov-2026): sólo lo que pide acción arriba, una línea por
+        // tema y nada de listas de clientes al día. Ver src/reporte_diario.ts.
+        const msg = armarReporteDiario({
+            hoy: now,
+            periodoIva: activeIvaPeriod,
+            semestre: activeSemestre,
+            proximoSemestral: currentMonth <= 6 ? 'julio' : 'enero',
+            mensualAlDia: alDiaMonthlyCount,
+            mensualPendientes: pendingMonthlyDecl,
+            semestralAlDia: alDiaSemestralCount,
+            semestralPendientes: pendingSemestralDecl.length,
+            clavesVerificadas: verifiedKeyCount,
+            clavesConProblema: missingKeyClients,
+            proximos5: upcomingDueThisWeek.map(u => ({ name: u.name, dueDay: u.dueDay, alDia: u.status.includes('Al Día') })),
+            porCobrar: totalDebt,
+            deudores: debtorsList,
+            pendientesTareas: (tasks || []).length,
+            fichasRucDanado: clients
+                .filter((c: any) => c.is_active !== false && !rucValido(c.ruc))
+                .map((c: any) => ({ name: c.name, ruc: c.ruc })),
+        });
         return msg;
     } catch (e: any) {
         console.error("❌ Error en generateDailyOperationalReport:", e);

@@ -34,6 +34,34 @@ const diasHasta = (fecha: Date): number => {
 
 const fmt = (f: Date): string => `${f.getDate()} de ${MESES[f.getMonth()]} de ${f.getFullYear()}`;
 
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+export interface Hito { nombre: string; fecha: Date; dias: number }
+
+/**
+ * Aviso corto (22-nov-2026): una línea por sociedad. Antes salía una línea por
+ * obligación (VIMARBO ocupaba 5) y todos los días igual. Ahora:
+ *   - a diario sólo si algo vence en 7 días o menos (o hoy);
+ *   - lo ya vencido o más lejano se recuerda los lunes.
+ */
+export function armarAvisoSociedades(porEmpresa: { name: string; ruc: string; hitos: Hito[] }[], hoy: Date = new Date()): string | null {
+    const conAlgo = porEmpresa.filter(e => e.hitos.length);
+    if (!conAlgo.length) return null;
+    const urgente = conAlgo.some(e => e.hitos.some(h => h.dias >= 0 && h.dias <= 7));
+    if (!urgente && hoy.getDay() !== 1) return null;
+
+    const corta = (f: Date) => `${f.getDate()} ${MESES_CORTOS[f.getMonth()]}`;
+    const lineas = conAlgo.map(e => {
+        const vencidas = e.hitos.filter(h => h.dias < 0);
+        const proximas = e.hitos.filter(h => h.dias >= 0).sort((a, b) => a.dias - b.dias);
+        const partes: string[] = [];
+        if (proximas.length) partes.push(proximas.map(h => `${h.nombre} ${h.dias === 0 ? '⏰ HOY' : `en ${h.dias} d (${corta(h.fecha)})`}`).join(' · '));
+        if (vencidas.length) partes.push(`⚠️ ${vencidas.length} vencida${vencidas.length === 1 ? '' : 's'}: ${vencidas.map(h => h.nombre).join(', ')}`);
+        return `• *${e.name}* — ${partes.join(' · ')}`;
+    });
+    return ['🏢 *Sociedades: obligaciones anuales*', ...lineas, '', '_SCVS en el portal de la Superintendencia; REBEFICS siempre se presenta._'].join('\n');
+}
+
 export async function revisarObligacionesAnualesEmpresas(): Promise<string | null> {
     const { data, error } = await supabase
         .from('clients')
@@ -45,7 +73,7 @@ export async function revisarObligacionesAnualesEmpresas(): Promise<string | nul
     if (!sociedades.length) return null;
 
     const anio = new Date().getFullYear();
-    const lineas: string[] = [];
+    const porEmpresa: { name: string; ruc: string; hitos: Hito[] }[] = [];
 
     for (const c of sociedades) {
         const tp: any = c.tax_profile || {};
@@ -90,23 +118,15 @@ export async function revisarObligacionesAnualesEmpresas(): Promise<string | nul
             hitos.push({ nombre: 'SCVS · Copia del 101', fecha: treintaAbril, nota: 'adjuntar al paquete anual' });
         }
 
+        const cercanos: Hito[] = [];
         for (const h of hitos) {
             if (!h.fecha) continue;
             const dias = diasHasta(h.fecha);
             if (dias > 45) continue;
-            const estado = dias < 0 ? `⚠️ vencida hace ${Math.abs(dias)} día(s)` : dias === 0 ? '⏰ vence HOY' : `faltan ${dias} día(s)`;
-            lineas.push(`• *${c.name}* (${c.ruc}) — ${h.nombre}: ${fmt(h.fecha)} · ${estado}${h.nota ? `\n   _${h.nota}_` : ''}`);
+            cercanos.push({ nombre: h.nombre.replace(/^SCVS · /, 'SCVS '), fecha: h.fecha, dias });
         }
+        porEmpresa.push({ name: c.name, ruc: c.ruc, hitos: cercanos });
     }
 
-    if (!lineas.length) return null;
-
-    return [
-        '🏢 *OBLIGACIONES ANUALES DE SOCIEDADES*',
-        '',
-        ...lineas,
-        '',
-        '_Las anuales no dependen del mes: REBEFICS SIEMPRE se presenta (no admite “en cero”); 1021 y ADI pueden ir sin valores._',
-        '_SCVS: se presenta en el portal de la Superintendencia (no hay API); el paquete vence el 30 de abril._',
-    ].join('\n');
+    return armarAvisoSociedades(porEmpresa);
 }
