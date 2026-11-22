@@ -331,6 +331,8 @@ Dos cuidados al construirlas:
 | ~~**Exportador masivo de la matriz (Excel/PDF)**~~ | **hecho 21-nov-2026** | §3. Nota: `ComplianceReportExport.tsx` (reporte imprimible viejo) no se usa en ningún lado y tiene un RUC equivocado (0105822994001); no confiar en él. |
 | **Correo `contacto@santiagocordova.com`** | pendiente (21-nov-2026) | Ya figura en los datos para Google (`index.html`) pero no existe. El dominio está en **Namecheap** y Santiago ya usa otros correos con él: antes de crear el reenvío hay que ver qué servicio de correo usa (los registros MX) para no romperlos. Él lo revisa desde la computadora. |
 | **Generador de Anexos (ATS / RDEP)** | fase 2 | §3 |
+| **Pruebas automáticas de la web** | hecho 22-nov-2026 | `npm test` (vitest, carpeta `tests/`): vencimientos por 9.º dígito, períodos, RUC, clave de 49 dígitos, regla de cobro, clientes con RUC repetido, cortesía. Corren dentro de `npm run build` y en GitHub (`calidad.yml`, que ahora también corre `npm test` del bot). |
+| **Aviso de errores de la web** | código hecho 22-nov-2026, **falta crear la tabla** | `services/errorReporter.ts` anota los errores del panel (sólo con sesión, uno por mensaje, máx. 20 por pestaña) en `web_errors` (`database/web_errors.sql`); el parte diario de Baku los cuenta. Mientras la tabla no exista, no pasa nada. |
 
 ### Por qué el email va antes que WhatsApp
 
@@ -363,10 +365,11 @@ clients_search`) y entrar desde el Dashboard trae filtros puestos; la lista y la
 matriz mostraban un subconjunto sin decirlo. Ahora el Directorio muestra
 «Mostrando X de Y clientes activos · filtros: …» con «Quitar filtros».
 
-Reglas frágiles que siguen: «cortesía» en Cobranza también se decide por
-palabras en notas/alias (`cortesía`, `trueque`, `familia`, `cero`) — hoy no
-esconde a nadie (verificado), pero una nota con «cero» puede esconder un
-cliente; y «solo plan» tiene tres definiciones distintas (ver
+Regla de «cortesía» acotada el 22-nov-2026: la palabra (`cortesía`, `trueque`,
+`familia`, palabra completa) cuenta **sólo en la categoría o el alias**, ya no en
+las notas, y «cero» dejó de contar (web `clientService.isCourtesyClient` y bot
+`esClienteCortesia`, con pruebas). Verificado antes: no cambiaba a nadie. Sigue
+frágil: «solo plan» tiene tres definiciones distintas (ver
 `clientService.isCourtesyClient`, `ClientsScreen:581`, `AdminDashboard:2470`).
 
 ### Lo que ya está y no hay que reconstruir

@@ -1,6 +1,7 @@
 
 // FIX: Explicitly using React.Component and React namespace for types to resolve member recognition errors in class definition
 import React from 'react';
+import { reportarError } from '../../services/errorReporter';
 import { ShieldAlert, RefreshCw, Activity, Home, BarChart } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -35,6 +36,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   // FIX: Using React.ErrorInfo for proper type mapping
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("SC Pro System Error Caught:", error, errorInfo);
+    reportarError(error, this.props.compact ? 'pantalla' : 'app');
   }
 
   handleReload = () => {

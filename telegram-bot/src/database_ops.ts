@@ -94,8 +94,9 @@ export function esClienteCortesia(c: any): boolean {
     if (c.custom_service_fee === 0) return true;
     const f = c.fee_structure || {};
     if (f.monthly === 0 && f.semestral === 0 && f.annual === 0) return true;
-    const texto = `${c.tax_profile?.category || ''} ${c.tax_profile?.alias || ''} ${c.notes || ''}`.toLowerCase();
-    return /cortes[ií]a|trueque|familia/.test(texto);
+    // Sólo categoría o alias, nunca las notas (22-nov-2026, igual que la web).
+    const texto = `${c.tax_profile?.category || ''} ${c.tax_profile?.alias || ''}`.toLowerCase();
+    return /\b(cortes[ií]a|trueque|familia)\b/.test(texto);
 }
 
 

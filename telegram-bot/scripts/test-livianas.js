@@ -61,7 +61,8 @@ function ver(nombre, cond, detalle) {
 
     ver('cortesía: honorarios en 0', ops.esClienteCortesia({ fee_structure: { monthly: 0, semestral: 0, annual: 0 } }) === true);
     ver('cortesía: custom_service_fee 0', ops.esClienteCortesia({ custom_service_fee: 0 }) === true);
-    ver('cortesía: nota «familia»', ops.esClienteCortesia({ notes: 'Tío, es familia' }) === true);
+    ver('cortesía: una nota «familia» ya no esconde al cliente', ops.esClienteCortesia({ notes: 'Tío, es familia' }) === false);
+    ver('cortesía: alias «Familia» sí cuenta', ops.esClienteCortesia({ tax_profile: { alias: 'Familia' } }) === true);
     ver('cliente normal no es cortesía', ops.esClienteCortesia({ fee_structure: { monthly: 5 }, notes: 'paga puntual' }) === false);
     ver('SELECT liviano no pide archivos', !/declaration_history|vault|proof_file|ruc_certificate|signature_file|_proof\b/.test(ops.SELECT_CLIENTES_LIGERO), ops.SELECT_CLIENTES_LIGERO);
 

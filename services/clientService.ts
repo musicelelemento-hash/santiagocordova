@@ -17,8 +17,11 @@ export const isCourtesyClient = (client?: Partial<Client> | null, period?: strin
     if (period && period.includes('-S') && client.fee_structure?.semestral === 0) return true;
     if (period && period.length === 4 && !period.includes('-') && client.fee_structure?.annual === 0) return true;
 
-    const cat = `${client.category || ''} ${(client.taxProfile as any)?.category || ''} ${client.taxProfile?.alias || ''} ${client.notes || ''}`.toLowerCase();
-    return cat.includes('cortesía') || cat.includes('cortesia') || cat.includes('trueque') || cat.includes('familia') || cat.includes('cero');
+    // Por palabra sólo en la categoría o el alias, nunca en las notas (22-nov-2026):
+    // una nota como «saldo cero» o «es de la familia de X» escondía al cliente de
+    // Cobranza. «cero» dejó de contar. Lo explícito es el interruptor «Cortesía» de la ficha.
+    const cat = `${client.category || ''} ${(client.taxProfile as any)?.category || ''} ${client.taxProfile?.alias || ''}`.toLowerCase();
+    return /\b(cortes[ií]a|trueque|familia)\b/.test(cat);
 };
 
 export interface ClientAdvanceInfo {

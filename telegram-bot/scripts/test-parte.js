@@ -86,5 +86,19 @@ const nombres = (xs) => xs.map((x) => x.name).sort();
 
 ver('FERIADOS_EC ignora valores mal escritos', JSON.stringify(P.feriadosConfigurados(' 2026-12-25, 25/12/2026 ,2027-01-01')) === JSON.stringify(['2026-12-25', '2027-01-01']));
 
+{
+    // Errores de la web: agrupa mensajes repetidos y sólo aparece si hay alguno.
+    const hoy = new Date(2026, 10, 24);
+    const r = P.resumirErroresWeb([{ message: 'A falla' }, { message: 'A falla' }, { message: 'B falla' }, { message: null }]);
+    ver('errores web: cuenta todos y lista los distintos', r.total === 4 && JSON.stringify(r.mensajes) === JSON.stringify(['A falla', 'B falla']), r);
+    const p = P.armarParte(clasificarCierre([clientes[6]], hoy), hoy, [], []);
+    ver('sin errores web no aparece el bloque', !P.textoParte(p, hoy).includes('La web anotó'));
+    p.erroresWeb = r;
+    const t = P.textoParte(p, hoy);
+    ver('con errores web aparece el bloque y ya no dice «Todo al día»', t.includes('La web anotó 4 errores') && !t.includes('Todo al día'), t);
+    p.erroresWeb = { total: 1, mensajes: ['<script>'] };
+    ver('el mensaje del error se escapa (HTML de Telegram)', P.textoParte(p, hoy).includes('&lt;script&gt;'));
+}
+
 console.log(mal ? `\n${mal} prueba(s) MAL` : '\nTodas las pruebas del parte diario OK');
 process.exit(mal ? 1 : 0);
