@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck
+      - name: Pruebas (cálculos SRI, cobros, clientes)
+        run: npm test
       - name: Build
         run: npm run build
 
@@ -47,3 +49,6 @@ jobs:
       - name: Compilar (incluye la regla compartida)
         working-directory: telegram-bot
         run: npm run build
+      - name: Pruebas del bot
+        working-directory: telegram-bot
+        run: npm test
