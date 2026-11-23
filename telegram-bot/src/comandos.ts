@@ -5,6 +5,7 @@
 export const COMANDOS_MENU: { command: string; description: string }[] = [
     { command: 'menu', description: 'Menú principal' },
     { command: 'hoy', description: 'Parte del día: qué vence y qué falta' },
+    { command: 'clientes', description: 'Tus clientes con botones: por letra, dígito o tipo' },
     { command: 'semana', description: 'Resumen de la semana: cobros, clientes nuevos y anuncios' },
     { command: 'pendientes', description: 'Tus pendientes anotados' },
     { command: 'anota', description: 'Anotar un pendiente (ej.: /anota mañana 10am llamar al SRI)' },
