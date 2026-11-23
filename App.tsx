@@ -18,6 +18,7 @@ import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
 import { Modal } from './components/ui/Modal';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { AvisoCargaClientes } from './components/layout/AvisoCargaClientes';
 import { useAppStore } from './store/useAppStore';
 import { getClientIvaFrequency } from './services/sri';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
@@ -1296,6 +1297,7 @@ const [appState, setAppState] = useState<AppState>(() => {
 
           <main className="flex-grow px-4 pt-20 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
+              <div className="max-w-[1600px] mx-auto"><AvisoCargaClientes /></div>
               <div
                 key={activeScreen}
                 className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700"

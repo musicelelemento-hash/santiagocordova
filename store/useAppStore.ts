@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { db } from '../services/db';
 import { loadDataFromSheet } from '../services/sheetApi';
 import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemplates, BusinessProfile, TaxRegime, DeclarationStatus, Declaration, StoredFile, AuditLog, ClientNote, NoteCategory, SystemSettings } from '../types';
-import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
+import { mockTasks, INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
 import { SupabaseService } from '../services/supabaseClientService';
@@ -333,6 +333,14 @@ interface AppState {
   /** Motivo real del último fallo de sincronización (código + mensaje de PostgREST). */
   cloudErrorMessage: string;
   setCloudStatus: (status: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline', message?: string) => void;
+  /**
+   * Motivo por el que NO hay clientes en pantalla: no había copia en este
+   * navegador y la nube no los entregó (tras reintentar). null = sin problema.
+   * Antes, en ese caso, se mostraban clientes de EJEMPLO como si fueran reales.
+   */
+  clientesCargaError: string | null;
+  /** true mientras loadFromDB espera a la nube sin tener nada que mostrar. */
+  cargandoClientes: boolean;
 }
 
 const defaultBusinessProfile: BusinessProfile = {
@@ -372,6 +380,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoaded: false,
   cloudStatus: 'idle' as const,
   cloudErrorMessage: '',
+  clientesCargaError: null,
+  cargandoClientes: false,
   systemSettings: {
     combos: [
       { id: 'combo-talonario-amigo-100', name: 'Talonario Amigo (100 docs)', price: 40, costPrice: 12, category: 'talonario', isActive: true, accessUrl: 'https://talonarioamigo.santiagocordova.com', notes: 'Facturador propio Santiago Córdova - Rápido y fluido', documentCount: 100, validityPeriod: 'anual' },
@@ -1075,16 +1085,21 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       // ── FASE 2: Sincronización con la nube (background) ──────
       // Esto NO bloquea la UI — el usuario ya puede trabajar
-      const cloudRefresh = async () => {
+      // Devuelve qué pasó, para que la carga sin copia local sepa si reintentar:
+      // 'ok' = hay clientes · 'vacio' = la nube respondió sin clientes ·
+      // 'fallo' = ninguna fuente respondió (red, permisos, caída).
+      const cloudRefresh = async (): Promise<'ok' | 'vacio' | 'fallo'> => {
         try {
           const t1 = performance.now();
           
           // Audit logs en paralelo con datos de clientes y tareas
-          const [granularClients, cloudAuditLogs, cloudTasks] = await Promise.all([
-            (db as any).getAll('sc_pro_clients').catch(() => []),
+          const [clientesNube, cloudAuditLogs, cloudTasks] = await Promise.all([
+            db.getAllConEstado('sc_pro_clients').catch(() => ({ items: [] as any[], respondio: false })),
             SupabaseService.getAuditLogs(200).catch(() => []),
             (db as any).getAll('sc_pro_tasks').catch(() => [])
           ]);
+          const granularClients: any[] = clientesNube.items;
+          let algunaFuenteRespondio = clientesNube.respondio;
 
           // LEGACY FALLBACK: Solo si no hay suficientes clientes granulares
           let legacyClients: Client[] = [];
@@ -1093,6 +1108,7 @@ export const useAppStore = create<AppState>((set, get) => ({
               const oldBackup = await db.get<Client[]>('clients');
               if (oldBackup && Array.isArray(oldBackup)) {
                 legacyClients = oldBackup;
+                if (oldBackup.length > 0) algunaFuenteRespondio = true;
                 console.log(`☁️ Legacy fallback: ${legacyClients.length} clientes recuperados.`);
               }
             } catch (e) {
@@ -1252,26 +1268,56 @@ export const useAppStore = create<AppState>((set, get) => ({
               sendFullClientsMatrixToExtension(protectedClients);
               if (mergedTasks.length > 0) db.setLocal('tasks', mergedTasks);
               console.log(`☁️ Fase 2 (Nube): ${protectedClients.length} clientes protegidos y sincronizados en ${(performance.now() - t1).toFixed(0)}ms`);
-            } else {
-              set({ auditLogs: cloudAuditLogs || [] });
+              if (get().clientesCargaError) set({ clientesCargaError: null });
+              return 'ok';
             }
-          } else if (!localData) {
-            // Sin datos locales ni en la nube — usar mock
-            set({ clients: mockClients, isLoaded: true });
+            set({ auditLogs: cloudAuditLogs || [] });
+            return 'vacio';
           }
+          // (22-nov-2026) Antes, sin copia local ni nube, se ponían los clientes de
+          // EJEMPLO de constants.ts: el panel mostraba números inventados como si
+          // fueran de Santiago. Ahora la lista queda vacía y se avisa.
+          return algunaFuenteRespondio ? 'vacio' : 'fallo';
         } catch (cloudErr) {
           console.warn("⚠️ Cloud Fetch failed, using local data:", cloudErr);
+          return 'fallo';
         }
       };
 
       // Configuración de la nube: siempre, sin bloquear la pantalla.
       refrescarConfiguracion();
 
-      // Si no había datos locales, esperar a la nube
+      // Si no había datos locales, esperar a la nube (con reintentos).
       if (!localData) {
-        await cloudRefresh();
-        if (get().clients.length === 0) {
-          set({ clients: mockClients });
+        set({ cargandoClientes: true }); // el aviso, si estaba, sigue visible con «Reintentando…»
+        // En un navegador nuevo la primera lectura tarda ~30 s: el tope por
+        // intento es holgado. Si un intento vence el tope y llega tarde, igual
+        // pone los clientes (y borra el aviso): no se pierde.
+        const TOPE_MS = 60_000;
+        const ESPERAS_MS = [2_000, 5_000]; // 3 intentos en total
+        let resultado: 'ok' | 'vacio' | 'fallo' | 'tope' = 'fallo';
+        for (let intento = 0; intento <= ESPERAS_MS.length; intento++) {
+          if (intento > 0) {
+            console.warn(`☁️ Reintentando traer clientes de la nube (${intento + 1}/${ESPERAS_MS.length + 1})…`);
+            await new Promise((r) => setTimeout(r, ESPERAS_MS[intento - 1]));
+          }
+          resultado = await Promise.race([
+            cloudRefresh(),
+            new Promise<'tope'>((r) => setTimeout(() => r('tope'), TOPE_MS)),
+          ]);
+          // Pudo llegar por otra vía mientras tanto (escucha en vivo de Firebase).
+          if (resultado === 'ok' || get().clients.length > 0) break;
+        }
+        if (get().clients.length > 0) {
+          set({ cargandoClientes: false, clientesCargaError: null });
+        } else {
+          const motivo = resultado === 'vacio'
+            ? 'La nube respondió, pero sin clientes (puede ser la sesión o un permiso).'
+            : resultado === 'tope'
+              ? 'La nube no respondió a tiempo.'
+              : 'No hubo conexión con la nube.';
+          set({ cargandoClientes: false, clientesCargaError: motivo });
+          get().setCloudStatus('error', `No se pudieron traer los clientes: ${motivo}`);
         }
         if (!get().isLoaded) {
           // Sólo lo que haya localmente: si refrescarConfiguracion ya trajo la
@@ -1293,11 +1339,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     } catch (error) {
       console.error("Critical Load Error:", error);
+      // Sin clientes de ejemplo: lo que ya esté en pantalla se queda; si no hay
+      // nada, se avisa con «Reintentar» (ver clientesCargaError).
+      const sinClientes = get().clients.length === 0;
       set({
         isLoaded: true,
-        clients: mockClients,
-        reminderConfig: defaultReminderConfig,
-        serviceFees: INITIAL_SERVICE_FEES
+        cargandoClientes: false,
+        ...(sinClientes ? { clientesCargaError: 'Falló la carga de los datos.' } : {}),
+        ...(get().reminderConfig ? {} : { reminderConfig: defaultReminderConfig }),
+        ...(get().serviceFees ? {} : { serviceFees: INITIAL_SERVICE_FEES }),
       });
     }
   },

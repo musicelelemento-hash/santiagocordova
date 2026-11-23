@@ -369,6 +369,17 @@ export const db = {
     },
 
     getAll: async function (collectionName: string): Promise<any[]> {
+        return (await this.getAllConEstado(collectionName)).items;
+    },
+
+    /**
+     * Igual que getAll, pero además dice si ALGUNA fuente (Supabase o Firestore)
+     * respondió. getAll traga los errores y devuelve [] — y [] no distingue
+     * «no hay registros» de «la nube no contestó». loadFromDB necesita esa
+     * diferencia para no confundir un fallo de red con una base vacía.
+     */
+    getAllConEstado: async function (collectionName: string): Promise<{ items: any[]; respondio: boolean }> {
+        let fsLoaded = false;
         let sbResults: any[] = [];
         let fsResults: any[] = [];
         let sbLoaded = false;
@@ -404,6 +415,9 @@ export const db = {
                     // }
                     return data;
                 }));
+                // Sin red, Firestore contesta con su copia del navegador (vacía en
+                // un navegador nuevo) sin lanzar error: eso no es «la nube respondió».
+                fsLoaded = !snapshot.metadata.fromCache;
                 console.log(`📡 Firestore Loaded: ${fsResults.length} records.`);
             } catch (err) {
                 console.error(`Error fetching from Firestore (${collectionName}):`, err);
@@ -419,7 +433,7 @@ export const db = {
         // Overwrite with Supabase results (Primary)
         sbResults.forEach(item => mergedMap.set(item.id, item));
 
-        return Array.from(mergedMap.values());
+        return { items: Array.from(mergedMap.values()), respondio: sbLoaded || fsLoaded };
     },
 
     // -----------------------------------------------

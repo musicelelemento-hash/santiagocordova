@@ -45,6 +45,8 @@ export const INITIAL_SERVICE_FEES = {
     ]
 };
 
+// Sólo de muestra (desarrollo/demos). NUNCA usar como respaldo cuando la nube
+// falla: se veían como clientes reales (22-nov-2026). Hoy nada lo importa.
 export const mockClients: Client[] = [
     {
         id: uuidv4(),
