@@ -20,6 +20,7 @@ import { mostrarCierre, manejarCallbackCierre, limpiarCacheCierre } from './cier
 import { enviarParte } from './parte_diario';
 import { intentarAnotar, mostrarPendientes, comandoAnota, manejarCallbackPendiente } from './pendientes_bot';
 import { enviarResumenSemanal } from './resumen_semanal';
+import { manejarCallbackClientes, cargarItems, pantallaIndice } from './clientes_botones';
 import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
@@ -107,7 +108,7 @@ export function buildMainMenuKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
         .text('📋 Parte de hoy', 'baku_parte:hoy')
         .text('📝 Mis pendientes', 'baku_tarea:lista').row()
-        .text('🔎 Buscar cliente', 'baku_nav:search')
+        .text('👥 Clientes', 'bc:i')
         .text('💳 Cobrar', 'baku_nav:pay_quick').row()
         .text('📊 Cierre del mes', 'baku_cierre:resumen')
         .text('📅 Vencimientos', 'baku_nav:deadlines').row()
@@ -118,7 +119,7 @@ export function buildMasOpcionesKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
         .text('🏛️ SRI', 'baku_hub:sri')
         .text('💰 Finanzas', 'baku_hub:finances').row()
-        .text('👥 Clientes', 'baku_hub:clients_crm')
+        .text('👥 Portal y tarjeta', 'baku_hub:clients_crm')
         .text('🔐 Bóveda y facturación', 'baku_hub:vault_invoice').row()
         .text('🧰 Gestión', 'baku_hub:internal_mgmt')
         .text('⚡ Estado de Baku', 'baku_nav:status').row()
@@ -935,6 +936,17 @@ bot.command('cierre', async (ctx) => {
 });
 
 // /pendientes y /anota — lo que Santiago le pide a Baku que le recuerde (src/pendientes.ts).
+// /clientes — navegar los clientes con botones (por letra, dígito, tipo).
+bot.command('clientes', async (ctx) => {
+    try {
+        const p = pantallaIndice(await cargarItems(true));
+        await ctx.reply(p.texto, { parse_mode: 'HTML', reply_markup: p.kb });
+    } catch (e: any) {
+        console.error('❌ /clientes:', e);
+        await ctx.reply('No pude cargar los clientes ahora. Prueba de nuevo en un momento.');
+    }
+});
+
 bot.command('semana', async (ctx) => {
     try {
         await ctx.replyWithChatAction('typing');
@@ -2492,6 +2504,7 @@ bot.on('callback_query:data', async (ctx) => {
     if (await manejarCallbackCobro(ctx, data, chatId)) return;
     if (await manejarCallbackCierre(ctx, data)) return;
     if (await manejarCallbackPendiente(ctx, data)) return;
+    if (await manejarCallbackClientes(ctx, data, (c) => showClientProfileCard(chatId, c, ctx))) return;
 
     if (data.startsWith(PREFIJO_BOTON_WEB)) {
         // Un atajo del menú empieza algo nuevo: no debe caer como respuesta de un diálogo a medias.
