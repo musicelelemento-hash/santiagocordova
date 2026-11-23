@@ -790,7 +790,7 @@ const [appState, setAppState] = useState<AppState>(() => {
     { screen: 'hoy', icon: Sun, label: 'Hoy' },
     { screen: 'crecer', icon: Rocket, label: 'Crecer' },
     { screen: 'home', icon: Home, label: 'Panel completo' },
-    { screen: 'telegram_bot', icon: Bot, label: 'Bot Telegram & Gestión' },
+    { screen: 'telegram_bot', icon: Bot, label: 'Baku' },
     { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: pendingDeclarationsCount },
     { screen: 'bucle', icon: Activity, label: 'Bucle Mensual' },
     { screen: 'clients', icon: Users, label: 'Directorio Clientes' },

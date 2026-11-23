@@ -112,5 +112,23 @@ ver('FERIADOS_EC ignora valores mal escritos', JSON.stringify(P.feriadosConfigur
     ver('botón «Mis pendientes» en el parte', JSON.stringify(P.botonesParte(p)).includes('baku_tarea:lista'));
 }
 
+{
+    // 23-nov-2026: el parte reemplaza al reporte de las 03:30 → trae claves, fichas y estado.
+    const hoy = new Date(2026, 10, 24);
+    const p = P.armarParte(clasificarCierre([clientes[6]], hoy), hoy, [], []);
+    p.reporte = {
+        hoy, periodoIva: '2026-10', semestre: '2026-S1', proximoSemestral: 'enero', mensualAlDia: 51, mensualPendientes: [],
+        semestralAlDia: 62, semestralPendientes: 10, clavesVerificadas: 46,
+        clavesConProblema: [{ name: 'ARMIJOS NIEVES BRYAN', ruc: '0705832137001', reason: 'Clave rechazada por el SRI' }],
+        proximos5: [], porCobrar: 1186, deudores: [{ name: 'PINEDA NARVAEZ HENRY', debt: 65 }], pendientesTareas: 3, fichasRucDanado: [],
+    };
+    const t = P.textoParte(p, hoy);
+    ver('parte con reporte: trae «Claves y fichas» y «Estado»', t.includes('Claves y fichas') && t.includes('Claves del SRI que no entran') && t.includes('📊 <b>Estado</b>') && t.includes('$1.186'), t);
+    ver('con claves rotas ya no dice «Todo al día»', !t.includes('Todo al día'));
+    ver('el estado del parte no repite «Tus pendientes abiertos» (el parte tiene su bloque)', !t.includes('Tus pendientes abiertos'));
+    p.reporte.clavesConProblema = [];
+    ver('sin nada que atender: «Todo al día» + estado igual', P.textoParte(p, hoy).includes('Todo al día') && P.textoParte(p, hoy).includes('Estado'));
+}
+
 console.log(mal ? `\n${mal} prueba(s) MAL` : '\nTodas las pruebas del parte diario OK');
 process.exit(mal ? 1 : 0);

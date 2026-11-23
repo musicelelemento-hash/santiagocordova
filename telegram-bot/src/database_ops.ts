@@ -24,7 +24,7 @@ export function arePeriodsEqual(p1?: string, p2?: string): boolean {
     return false;
 }
 
-import { armarReporteDiario, rucValido } from './reporte_diario';
+import { armarReporteDiario, rucValido, type DatosReporte } from './reporte_diario';
 import { validateSRIPDF } from './pdf-validator';
 import { supabase } from './supabase';
 import crypto from 'crypto';
@@ -2984,18 +2984,32 @@ export function isPeriodBeforeClientStart(clientStartPeriod: string | undefined 
  * 5. Cartera vencida y honorarios pendientes de cobro (omitiendo períodos previos al inicio).
  * 6. Tareas de la agenda del día.
  */
+/** El reporte diario como texto (lo usan /reporte y el botón del hub). */
 export async function generateDailyOperationalReport(): Promise<string> {
-    console.log("📊 [Baku] Generando Reporte Diario Operativo desde Supabase...");
     try {
+        const datos = await datosReporteDiario();
+        if (!datos) return `⚡ <b>Baku</b>\n\nNo hay clientes activos registrados.`;
+        return armarReporteDiario(datos);
+    } catch (e: any) {
+        console.error("❌ Error en generateDailyOperationalReport:", e);
+        return `❌ Error generando el reporte: ${e.message}`;
+    }
+}
+
+/**
+ * Junta los datos del reporte diario (22-nov-2026: separado del texto para que el
+ * parte de la mañana los use sin repetir la consulta). Devuelve null sin clientes.
+ */
+export async function datosReporteDiario(): Promise<DatosReporte | null> {
+    console.log("📊 [Baku] Juntando datos del reporte diario desde Supabase...");
+    {
         const { data: clients, error } = await supabase
             .from('clients')
             .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);
 
         if (error) throw error;
-        if (!clients || clients.length === 0) {
-            return `⚡ <b>REPORTE DIARIO OPERATIVO — BAKU</b>\n\nNo hay clientes activos registrados en el sistema.`;
-        }
+        if (!clients || clients.length === 0) return null;
 
         // Tareas pendientes
         const { data: tasks } = await supabase
@@ -3169,7 +3183,7 @@ export async function generateDailyOperationalReport(): Promise<string> {
 
         // Mensaje corto (22-nov-2026): sólo lo que pide acción arriba, una línea por
         // tema y nada de listas de clientes al día. Ver src/reporte_diario.ts.
-        const msg = armarReporteDiario({
+        return {
             hoy: now,
             periodoIva: activeIvaPeriod,
             semestre: activeSemestre,
@@ -3187,11 +3201,7 @@ export async function generateDailyOperationalReport(): Promise<string> {
             fichasRucDanado: clients
                 .filter((c: any) => c.is_active !== false && !rucValido(c.ruc))
                 .map((c: any) => ({ name: c.name, ruc: c.ruc })),
-        });
-        return msg;
-    } catch (e: any) {
-        console.error("❌ Error en generateDailyOperationalReport:", e);
-        return `❌ Error generando reporte operativo: ${e.message}`;
+        };
     }
 }
 

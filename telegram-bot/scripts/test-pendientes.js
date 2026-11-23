@@ -35,6 +35,10 @@ caso('Baku, recuérdame hoy a las 6 pm cerrar caja', 'Cerrar caja', '2026-11-22 
 
 ver('«anota» solo no es un pedido', !P.esPedidoDeAnotar('anota'));
 ver('«anota la factura» sí es pedido', P.esPedidoDeAnotar('anota la factura'));
+ver('«anota el pago de Pérez» va al cobro, no a pendientes', !P.esPedidoDeAnotar('anota el pago de Pérez'));
+ver('«apunta que Gómez pagó» va al cobro', !P.esPedidoDeAnotar('apunta que Gómez pagó'));
+ver('«anota la declaración de Ruiz» va a declaraciones', !P.esPedidoDeAnotar('anota la declaración de Ruiz'));
+ver('«recuérdame pagar el IESS» sí es recordatorio', P.esPedidoDeAnotar('recuérdame pagar el IESS'));
 ver('una pregunta normal no es pedido', !P.esPedidoDeAnotar('¿cuánto me deben?'));
 ver('«recuérdame» con tilde y sin tilde', P.esPedidoDeAnotar('recuerdame llamar') && P.esPedidoDeAnotar('Recuérdame llamar'));
 

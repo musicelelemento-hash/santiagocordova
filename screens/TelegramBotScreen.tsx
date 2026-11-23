@@ -47,6 +47,42 @@ const accionDesconocida = (action: string): boolean => {
     return a.startsWith('/') && !BAKU_COMMANDS.includes(a.split(/\s+/)[0].toLowerCase());
 };
 
+const FRASES_BAKU: { titulo: string; frases: { texto: string; nota?: string; copia?: string }[] }[] = [
+    {
+        titulo: 'Pendientes',
+        frases: [
+            { texto: 'recuérdame mañana a las 10 llamar al SRI' },
+            { texto: 'anota el viernes mandar comprobantes' },
+            { texto: 'mis pendientes' },
+        ],
+    },
+    {
+        titulo: 'El día',
+        frases: [
+            { texto: '/hoy', nota: 'Qué vence y qué falta' },
+            { texto: '/cierre', nota: 'Declarado × cobrado del mes' },
+            { texto: '/vencimientos' },
+        ],
+    },
+    {
+        titulo: 'Clientes y cobros',
+        frases: [
+            { texto: '¿quién me debe?' },
+            { texto: 'Pérez López', nota: 'Escribe solo el nombre o el RUC: te muestra su ficha', copia: 'Pérez López' },
+            { texto: '/cobranza' },
+        ],
+    },
+];
+
+const BAKU_AUTOMATICOS: { cuando: string; que: string }[] = [
+    { cuando: '07:45 lun–vie', que: 'Parte de la mañana: lo que vence, lo que falta y tus pendientes.' },
+    { cuando: '17:00 lun–vie', que: 'Sólo si algo vence hoy o tienes pendientes del día.' },
+    { cuando: 'Lunes 08:00', que: 'Propuesta de cobranza de la semana (tú decides si se envía).' },
+    { cuando: 'A la hora que pediste', que: 'Tus recordatorios, con ✅ Ya lo hice / ⏰ En 1 hora / 📅 Mañana.' },
+    { cuando: 'Cuando llega algo del SRI', que: 'Resumen del buzón (lun–vie 9, 14 y 18 h).' },
+    { cuando: 'Sociedades', que: 'Sólo si una obligación anual vence en 7 días; lo vencido, los lunes.' },
+];
+
 export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, theme = 'dark' }) => {
     const { clients, updateClient } = useAppStore();
     const { toast } = useToast();
@@ -192,6 +228,27 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
         setTimeout(() => setCopiedText(null), 2000);
     };
 
+    const handleCopyPhrase = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.info(`"${text}" copiado para pegar en Telegram`);
+            return;
+        } catch { /* fallback abajo */ }
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (ok) { toast.info(`"${text}" copiado para pegar en Telegram`); return; }
+        } catch { /* sin permiso */ }
+        toast.warning(`No pude copiar solo. Selecciona y copia: ${text}`);
+    };
+
     const handleSavePassword = async (clientId: string, clientName: string) => {
         const newPass = editingPasswords[clientId];
         if (newPass === undefined) return;
@@ -266,38 +323,25 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-2">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium tracking-wide">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            BAKU TELEGRAM BOT V2.0 · LIVE SUPABASE SYNC
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-emerald-300 tracking-tight">
-                            Gestión Interna del Bot de Telegram
+                        <h1 className="font-['Manrope',sans-serif] text-3xl sm:text-4xl font-black text-white tracking-tight">
+                            Baku
                         </h1>
-                        <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-                            Centro de mando operativo: audita comandos interactivos, resuelve claves SRI faltantes en caliente y coordina el asistente inteligente con la web.
+                        <p className="text-slate-300 text-sm sm:text-base max-w-2xl leading-relaxed">
+                            Tu asistente en Telegram: te avisa lo que vence, te recuerda tus pendientes y te ayuda a cobrar.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
                         <a
-                            href="https://t.me"
+                            href="https://t.me/SantiagobBot"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-sm shadow-lg shadow-cyan-600/20 transition-all active:scale-95"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2B6AFF] hover:bg-[#2B6AFF]/90 text-white font-semibold text-sm shadow-lg shadow-[#2B6AFF]/20 transition-colors active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6E9BFF]"
                         >
                             <Send size={16} />
-                            Abrir Bot en Telegram
-                            <ExternalLink size={14} className="opacity-70" />
+                            Abrir Baku en Telegram
+                            <ExternalLink size={14} className="opacity-70" aria-hidden="true" />
                         </a>
-                        <button
-                            onClick={() => {
-                                toast.info('Datos en caliente sincronizados con Supabase y el Bot');
-                            }}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-sm transition-all"
-                        >
-                            <RefreshCw size={15} />
-                            Refrescar Estado
-                        </button>
                     </div>
                 </div>
 
@@ -345,6 +389,56 @@ export const TelegramBotScreen: React.FC<TelegramBotScreenProps> = ({ navigate, 
                     </div>
                 </div>
             </div>
+
+            {/* Cómo hablarle a Baku */}
+            <section aria-labelledby="baku-habla-titulo" className="space-y-4">
+                <div>
+                    <h2 id="baku-habla-titulo" className="font-['Manrope',sans-serif] text-lg font-bold text-white">Cómo hablarle a Baku</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">Escríbele como a una persona. También entiende notas de voz.</p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {FRASES_BAKU.map(g => (
+                        <div key={g.titulo} className="rounded-2xl bg-[#0F172A]/70 border border-slate-800 p-4 space-y-3">
+                            <h3 className="text-sm font-bold text-[#6E9BFF]">{g.titulo}</h3>
+                            <ul className="space-y-2">
+                                {g.frases.map(f => (
+                                    <li key={f.texto} className="flex items-start justify-between gap-3 rounded-xl bg-[#020617]/60 border border-slate-800/80 p-3">
+                                        <div className="min-w-0">
+                                            <div className="font-mono text-[13px] text-white break-words">{f.texto}</div>
+                                            {f.nota && <div className="text-[11px] text-slate-400 mt-0.5">{f.nota}</div>}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopyPhrase(f.copia ?? f.texto)}
+                                            aria-label={`Copiar: ${f.copia ?? f.texto}`}
+                                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg bg-[#2B6AFF]/10 border border-[#2B6AFF]/30 text-[#6E9BFF] hover:bg-[#2B6AFF]/20 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6E9BFF]"
+                                        >
+                                            <Copy size={13} aria-hidden="true" />
+                                            Copiar
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="rounded-2xl bg-[#0F172A]/70 border border-slate-800 p-4">
+                    <h3 className="text-sm font-bold text-[#04B17B] mb-3">Qué te manda Baku solo</h3>
+                    <ul className="space-y-2">
+                        {BAKU_AUTOMATICOS.map(a => (
+                            <li key={a.cuando} className="text-sm text-slate-300 leading-snug">
+                                <span className="font-mono text-[12px] text-white">{a.cuando}</span>
+                                <span className="text-slate-500"> · </span>
+                                {a.que}
+                            </li>
+                        ))}
+                    </ul>
+                    <p className="mt-3 pt-3 border-t border-slate-800 text-sm font-semibold text-white">
+                        Baku nunca escribe a tus clientes por su cuenta.
+                    </p>
+                </div>
+            </section>
 
             {/* Navigation Tabs */}
             <div className="flex border-b border-slate-800 gap-2 overflow-x-auto">
