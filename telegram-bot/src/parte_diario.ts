@@ -199,11 +199,15 @@ export function textoTarde(p: Parte): string | null {
 }
 
 export function botonesParte(p: Parte): InlineKeyboard {
+    // 23-nov-2026: un botón por cada cosa que el parte pide atender, de a dos por fila.
+    const acciones: [string, string][] = [];
+    if (p.vencenHoy.length || p.manana.length || p.semana.length || p.vencidos.length) acciones.push(['📋 Ver sin declarar', 'baku_cierre:ver:pendiente:1']);
+    if (p.misPendientes && p.misPendientes.length) acciones.push(['📝 Mis pendientes', 'baku_tarea:lista']);
+    if (p.reporte && p.reporte.clavesConProblema.some(c => /rechazada|bloqueada|caducada/i.test(c.reason))) acciones.push(['🔑 Claves que no entran', 'baku_nav:sri_keys']);
+    if (p.reporte && p.reporte.porCobrar > 0) acciones.push(['💳 Cobrar', 'baku_page_debt:1']);
     const kb = new InlineKeyboard();
-    if (p.vencenHoy.length || p.manana.length || p.semana.length || p.vencidos.length) {
-        kb.text('📋 Ver sin declarar', 'baku_cierre:ver:pendiente:1').row();
-    }
-    if (p.misPendientes && p.misPendientes.length) kb.text('📝 Mis pendientes', 'baku_tarea:lista').row();
+    acciones.forEach(([t, d], i) => { kb.text(t, d); if (i % 2 === 1) kb.row(); });
+    if (acciones.length % 2 === 1) kb.row();
     kb.url('🖥️ Abrir Declaraciones en la web', WEB_DECLARACIONES);
     return kb;
 }

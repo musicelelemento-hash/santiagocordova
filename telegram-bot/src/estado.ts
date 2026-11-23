@@ -17,6 +17,7 @@ export const AGENDA = [
     { id: 'lunes', nombre: 'Lunes financiero (cobranza)', cron: '0 8 * * 1', cuando: 'Lunes 08:00' },
     { id: 'parte', nombre: 'Parte de la mañana (vencimientos, claves, estado y pendientes)', cron: '45 7 * * 1-5', cuando: 'Lun–Vie 07:45' },
     { id: 'parte_tarde', nombre: 'Recordatorio de vencimientos de hoy', cron: '0 17 * * 1-5', cuando: 'Lun–Vie 17:00 (sólo si algo vence hoy)' },
+    { id: 'semana', nombre: 'Resumen de la semana', cron: '0 19 * * 0', cuando: 'Domingo 19:00' },
     { id: 'recordatorios', nombre: 'Recordatorios de pendientes', cron: '*/2 * * * *', cuando: 'Cada 2 minutos (sólo avisa si a algo le tocó la hora)' },
 ] as const;
 

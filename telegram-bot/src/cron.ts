@@ -10,6 +10,7 @@ import { revisarObligacionesAnualesEmpresas } from './empresas_recordatorios';
 import { registrarEjecucion } from './estado';
 import { enviarParte } from './parte_diario';
 import { revisarRecordatorios } from './pendientes';
+import { enviarResumenSemanal } from './resumen_semanal';
 
 // Generación de texto con cascada unificada (ver src/ai.ts).
 
@@ -156,6 +157,16 @@ export function startCronJobs(bot: Bot) {
             console.error('❌ Error en el parte del día:', error);
         }
     }, { timezone: "America/Guayaquil" });
+    // 🗓️ Resumen del domingo 19:00: cobros, declaraciones, clientes nuevos y prospectos por anuncio.
+    cron.schedule('0 19 * * 0', async () => {
+        registrarEjecucion('semana');
+        try {
+            await enviarResumenSemanal(bot.api, adminParte());
+        } catch (error) {
+            console.error('❌ Error en el resumen semanal:', error);
+        }
+    }, { timezone: "America/Guayaquil" });
+
     // 📝 Recordatorios de pendientes con hora (cada 2 min, todos los días). Sólo a Santiago.
     cron.schedule('*/2 * * * *', async () => {
         registrarEjecucion('recordatorios');
