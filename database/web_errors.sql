@@ -1,5 +1,5 @@
 -- Errores de la web (22-nov-2026).
--- ESTADO: escrita, todavía NO aplicada en Supabase (falta la aprobación).
+-- ESTADO: aplicada en Supabase el 23-nov-2026 (RLS activo, sólo INSERT con sesión).
 -- El panel anota acá los errores que antes sólo quedaban en la consola del
 -- navegador. Baku los cuenta en el parte diario (lee con la service key).
 -- Escribe sólo quien inició sesión; nadie (ni con sesión) puede leerlos desde
