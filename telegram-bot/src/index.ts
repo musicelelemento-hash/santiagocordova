@@ -19,6 +19,7 @@ import { COMANDOS_MENU } from './comandos';
 import { mostrarCierre, manejarCallbackCierre, limpiarCacheCierre } from './cierre';
 import { enviarParte } from './parte_diario';
 import { intentarAnotar, mostrarPendientes, comandoAnota, manejarCallbackPendiente } from './pendientes_bot';
+import { enviarResumenSemanal } from './resumen_semanal';
 import { agregarBotonesWeb, botonesActivos, ejecutarBotonWeb, PREFIJO_BOTON_WEB } from './botones_web';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
@@ -934,6 +935,15 @@ bot.command('cierre', async (ctx) => {
 });
 
 // /pendientes y /anota — lo que Santiago le pide a Baku que le recuerde (src/pendientes.ts).
+bot.command('semana', async (ctx) => {
+    try {
+        await ctx.replyWithChatAction('typing');
+        await enviarResumenSemanal(ctx.api, ctx.chat.id);
+    } catch (e: any) {
+        console.error('❌ /semana:', e);
+        await ctx.reply('No pude armar el resumen de la semana ahora. Prueba más tarde.');
+    }
+});
 bot.command('pendientes', async (ctx) => {
     await mostrarPendientes(ctx);
 });
@@ -4027,6 +4037,16 @@ bot.on('message:voice', async (ctx) => {
 
         console.log(`🎙️ [Voice STT] Mensaje transcrito de ${chatId}: "${transcribedText}"`);
         await ctx.reply(`🎙️ <i>"${transcribedText}"</i>`, { parse_mode: 'HTML' });
+
+        // 0. «recuérdame…» / «anota…» por voz: directo a pendientes, sin IA (23-nov-2026).
+        if (await intentarAnotar(ctx, transcribedText)) {
+            pendingDialogs.delete(chatId);
+            return;
+        }
+        if (/^\s*(?:mis\s+pendientes|qu[eé]\s+tengo\s+(?:pendiente|que\s+hacer))\b/i.test(transcribedText)) {
+            await mostrarPendientes(ctx);
+            return;
+        }
 
         // 1. Try direct command
         const directHandled = await tryDirectCommand(transcribedText, chatId, ctx);

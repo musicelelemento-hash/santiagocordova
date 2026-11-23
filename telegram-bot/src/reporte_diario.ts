@@ -37,7 +37,7 @@ export const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace
 /** «CEDENO LUNA JOSELYN BRIGITTE» → «Cedeno Luna». Para listas cortas. */
 export function nombreCorto(nombre: string): string {
     const palabras = String(nombre || '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
-    return palabras.map(p => (p.length <= 3 && /^[A-Z.]+$/.test(p) ? p : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())).join(' ') || '(sin nombre)';
+    return palabras.map(p => ((p.length <= 3 || p.includes('.')) && /^[A-Z.]+$/.test(p) ? p : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())).join(' ') || '(sin nombre)';
 }
 
 /** RUC de 13 dígitos terminado en 001, o cédula de 10. Lo demás es un dato dañado (p. ej. una fecha guardada como RUC). */
