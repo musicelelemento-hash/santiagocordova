@@ -37,7 +37,6 @@ cobranza, facturación) + Baku (bot de Telegram en Render) + extensión Nueva Lu
 
 ## Pendientes principales (detalle en HISTORIAL.md §7)
 - 🔴 **Seguridad**: la llave pública puede leer la tabla `clients` (claves SRI, firmas). Cerrarlo pide cambiar la extensión Nueva Luz (otro repo) para que inicie sesión.
-- Tabla `web_errors` sin crear (`database/web_errors.sql`).
 - Feriados 2027 en `FERIADOS_EC` (Render).
 - Correo `contacto@santiagocordova.com` (ver registros MX en Namecheap antes).
 - Pantallas que muestran clientes de ejemplo si la nube falla (`mockClients` en `useAppStore.ts`).
