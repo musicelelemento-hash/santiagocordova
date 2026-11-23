@@ -81,16 +81,9 @@ export function startCronJobs(bot: Bot) {
         timezone: "America/Guayaquil"
     });
 
-    // Ejecutar todos los días a las 03:30 AM hora de Ecuador
-    cron.schedule('30 3 * * *', async () => {
-        console.log("⏰ Ejecutando reporte proactivo de madrugada (03:30 AM)...");
-        registrarEjecucion('reporte');
-        await triggerProactiveReport(bot);
-    }, {
-        timezone: "America/Guayaquil"
-    });
-
-    console.log("✅ Baku Proactive CronJobs inicializado (Hora objetivo: 03:30 AM EC).");
+    // 23-nov-2026: el reporte de las 03:30 se dejó de mandar solo. Su contenido
+    // (claves, fichas, estado) va dentro del parte de las 07:45: UN mensaje por la
+    // mañana, no dos que decían casi lo mismo. A mano sigue con /reporte.
 
     // Lunes Financiero 08:00: Baku arma la lista de deudores y PREGUNTA. Los correos salen sólo con un botón.
     cron.schedule('0 8 * * 1', async () => {
@@ -130,35 +123,8 @@ export function startCronJobs(bot: Bot) {
         timezone: "America/Guayaquil"
     });
 
-    // 🔐 Viernes Credencial: Alerta de claves SRI por caducar cada Viernes a las 09:00 AM
-    cron.schedule('0 9 * * 5', async () => {
-        console.log("⏰ Ejecutando revisión de credenciales SRI (Viernes 09:00 AM)...");
-        registrarEjecucion('credenciales');
-        const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
-        const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
-        try {
-            const credReport = await getCredentialStatus();
-            // Only send if there are issues (report won't contain '✅ Credenciales SRI OK' if issues exist)
-            if (!credReport.startsWith('✅ Credenciales SRI OK')) {
-                const alertMsg = `🔐 *VIERNES CREDENCIAL — Alerta Automática*\n\n${credReport}\n\n_Santiago, revisa estas credenciales antes de que afecten las declaraciones. Baku._`;
-                const htmlAlertMsg = convertMarkdownToTelegramHtml(alertMsg);
-                
-                try {
-                    await bot.api.sendMessage(adminChatId, htmlAlertMsg, { parse_mode: 'HTML' });
-                } catch (htmlError) {
-                    console.warn("⚠️ Failed to send credentials alert with HTML, falling back to plain text:", htmlError);
-                    await bot.api.sendMessage(adminChatId, alertMsg);
-                }
-                console.log("✅ Alerta de credenciales enviada a Santiago.");
-            } else {
-                console.log("✅ Viernes Credencial: Sin alertas. Todas las claves OK.");
-            }
-        } catch (error) {
-            console.error("❌ Error en Viernes Credencial cron:", error);
-        }
-    }, {
-        timezone: "America/Guayaquil"
-    });
+    // 23-nov-2026: «Viernes credencial» retirado: las claves que no entran salen
+    // cada mañana en el parte (bloque «Claves y fichas»).
 
     console.log("✅ Baku Elite CronJobs inicializados: 03:30 AM (Reporte), 08:00 AM Lunes (Financiero), 09:00 AM Viernes (Credenciales), 00:00 AM (Backup).");
     // 🏢 Obligaciones anuales de sociedades: todos los días 08:30

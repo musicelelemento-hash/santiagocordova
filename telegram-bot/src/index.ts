@@ -99,20 +99,29 @@ bot.catch(async (err) => {
 // ⚡ CENTRO DE CONTROL CONTABLE INTERACTIVO — BAKU 3.0 (EXECUTIVE HUBS)
 // ═════════════════════════════════════════════════════════════════
 
-// Menú principal: arriba lo que más se usa (buscar, cierre, cobrar, vencimientos);
-// abajo los centros temáticos. Sin duplicados: «Matriz» y «Cierre» abrían lo mismo.
+// Menú principal (23-nov-2026): sólo lo de todos los días, en 3 filas de a 2.
+// Los centros temáticos (SRI, finanzas, clientes, bóveda, gestión, estado) van
+// en «Más opciones». Antes eran 10 botones de entrada sin prioridad.
 export function buildMainMenuKeyboard(): InlineKeyboard {
     return new InlineKeyboard()
+        .text('📋 Parte de hoy', 'baku_parte:hoy')
+        .text('📝 Mis pendientes', 'baku_tarea:lista').row()
         .text('🔎 Buscar cliente', 'baku_nav:search')
-        .text('📊 Cierre del mes', 'baku_cierre:resumen').row()
-        .text('💳 Cobrar honorarios', 'baku_nav:pay_quick')
+        .text('💳 Cobrar', 'baku_nav:pay_quick').row()
+        .text('📊 Cierre del mes', 'baku_cierre:resumen')
         .text('📅 Vencimientos', 'baku_nav:deadlines').row()
+        .text('➕ Más opciones', 'baku_hub:mas');
+}
+
+export function buildMasOpcionesKeyboard(): InlineKeyboard {
+    return new InlineKeyboard()
         .text('🏛️ SRI', 'baku_hub:sri')
-        .text('💰 Finanzas', 'baku_hub:finances')
-        .text('👥 Clientes', 'baku_hub:clients_crm').row()
-        .text('🔐 Bóveda y facturación', 'baku_hub:vault_invoice')
-        .text('🧰 Gestión', 'baku_hub:internal_mgmt').row()
-        .text('⚡ Estado de Baku', 'baku_nav:status');
+        .text('💰 Finanzas', 'baku_hub:finances').row()
+        .text('👥 Clientes', 'baku_hub:clients_crm')
+        .text('🔐 Bóveda y facturación', 'baku_hub:vault_invoice').row()
+        .text('🧰 Gestión', 'baku_hub:internal_mgmt')
+        .text('⚡ Estado de Baku', 'baku_nav:status').row()
+        .text('🔙 Menú', 'baku_nav:home');
 }
 
 // Encabezado con lo útil del día: qué dígitos del RUC vencen hoy (con el traslado
@@ -126,7 +135,7 @@ export function buildMainMenuText(ahora = new Date()): string {
         : `Hoy vence el IVA del 9.º dígito <b>${digitos.join('</b> y <b>')}</b>.`;
     return `⚡ <b>${BOT_NAME}</b> · ${fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1)}\n` +
            `${linea}\n\n` +
-           `Escríbeme lo que necesites (un nombre, un RUC, «¿quién me debe?», una nota de voz o una foto) o elige:`;
+           `Escríbeme como a una persona: «recuérdame mañana a las 10…», un nombre o RUC, «¿quién me debe?», una nota de voz o una foto. O elige:`;
 }
 
 export async function showMainMenu(ctx: any, isEdit: boolean = false) {
@@ -3161,8 +3170,24 @@ bot.on('callback_query:data', async (ctx) => {
     }
 
     // 🏛️ Baku 3.0 Hub Navigation
+    if (data === 'baku_parte:hoy') {
+        try {
+            await enviarParte(ctx.api, chatId, 'manana');
+        } catch (e: any) {
+            console.error('❌ botón Parte de hoy:', e);
+            await ctx.reply('No pude armar el parte ahora. Prueba /cierre mientras tanto.');
+        }
+        return;
+    }
+
     if (data.startsWith('baku_hub:')) {
         const hub = data.replace('baku_hub:', '');
+        if (hub === 'mas') {
+            const texto = '➕ <b>Más opciones</b>\nSRI, finanzas, clientes, bóveda y facturación, gestión y estado de Baku.';
+            try { await ctx.editMessageText(texto, { parse_mode: 'HTML', reply_markup: buildMasOpcionesKeyboard() }); }
+            catch { await ctx.reply(texto, { parse_mode: 'HTML', reply_markup: buildMasOpcionesKeyboard() }); }
+            return;
+        }
         if (hub === 'sri') {
             await showSriHub(ctx, true);
             return;

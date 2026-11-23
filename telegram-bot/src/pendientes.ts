@@ -81,7 +81,12 @@ const PREFIJO = /^\s*(?:baku[,:]?\s*)?(?:por\s+favor\s+)?(?:an[oó]ta(?:me|lo)?|
 
 /** ¿El mensaje es un pedido de anotar? (sin pasar por la IA). */
 export function esPedidoDeAnotar(texto: string): boolean {
-    return PREFIJO.test(texto) && texto.replace(PREFIJO, '').trim().length >= 2;
+    if (!PREFIJO.test(texto) || texto.replace(PREFIJO, '').trim().length < 2) return false;
+    // «anota el pago de Pérez» / «apunta que Gómez pagó» / «anota la declaración de…»
+    // son cobros o declaraciones, no recordatorios: los atiende su propio flujo.
+    // «recuérdame pagar el IESS» sí es un recordatorio (empieza con recuérdame).
+    if (/^\s*(?:baku[,:]?\s*)?(?:an[oó]ta|ap[uú]nta)/i.test(texto) && /(?:^|[^a-záéíóúñ])(?:pag(?:o|ó|ado|aron)|cancel[oó]|declaraci[oó]n|declar[oó])(?![a-záéíóúñ])/i.test(texto)) return false;
+    return true;
 }
 
 /**

@@ -1,7 +1,8 @@
 import { InlineKeyboard } from 'grammy';
 import { cargarCierre, type Cierre, type FilaCierre } from './cierre';
 import { calcularVencimiento, hoyEnEcuador, textoFecha } from './vencimientos';
-import { getSignaturesVaultList } from './database_ops';
+import { getSignaturesVaultList, datosReporteDiario } from './database_ops';
+import { lineasDeDatos, bloqueEstado, type DatosReporte } from './reporte_diario';
 import { supabase } from './supabase';
 import { listarPendientes, pendientesDeHoy, textoCuando, type FilaPendiente } from './pendientes';
 
@@ -51,6 +52,9 @@ export interface Parte {
     sinAvisar: FilaCierre[];
     firmas: FirmaPorVencer[];
     conFeriados: boolean;
+    /** Datos del reporte diario (claves, fichas, estado). 23-nov-2026: el parte
+     *  reemplaza al reporte de las 03:30, así llega UN solo mensaje por la mañana. */
+    reporte?: DatosReporte | null;
     /** Pendientes de Santiago que tocan hoy o ya pasaron (src/pendientes.ts). */
     misPendientes?: FilaPendiente[];
     /** Errores que anotó la web en las últimas 24 h (null = no se pudo saber). */
@@ -170,7 +174,12 @@ export function textoParte(p: Parte, hoy: Date): string {
         bloques.push(`🛠️ <b>La web anotó ${e.total} error${e.total === 1 ? '' : 'es'} en las últimas 24 h</b>\n${lista(e.mensajes.map((m) => esc(m.slice(0, 120))))}\n<i>Pásaselos a Claude para que los revise.</i>`);
     }
 
+    const datos = p.reporte ? lineasDeDatos(p.reporte) : [];
+    if (datos.length) bloques.push(`🔐 <b>Claves y fichas</b>\n${datos.map(l => `• ${l}`).join('\n')}`);
+
     if (bloques.length === 1) bloques.push('✅ Todo al día: nada vence esta semana y no hay pendientes.');
+
+    if (p.reporte) bloques.push(bloqueEstado(p.reporte, false));
 
     const notas: string[] = [];
     if (!p.conFeriados) notas.push('Fechas trasladadas por fin de semana; los feriados no están cargados (FERIADOS_EC).');
@@ -202,13 +211,15 @@ export function botonesParte(p: Parte): InlineKeyboard {
 /** Carga datos frescos y arma el parte de hoy (hora de Ecuador). */
 export async function prepararParte(): Promise<{ parte: Parte; hoy: Date }> {
     const hoy = hoyEnEcuador();
-    const [cierre, firmas, erroresWeb, mios] = await Promise.all([
+    const [cierre, firmas, erroresWeb, mios, reporte] = await Promise.all([
         cargarCierre(true), getSignaturesVaultList(), cargarErroresWeb(),
         listarPendientes().catch(() => [] as FilaPendiente[]),
+        datosReporteDiario().catch(() => null),
     ]);
     const parte = armarParte(cierre, hoy, feriadosConfigurados(), firmas);
     parte.erroresWeb = erroresWeb;
     parte.misPendientes = pendientesDeHoy(mios);
+    parte.reporte = reporte;
     return { parte, hoy };
 }
 

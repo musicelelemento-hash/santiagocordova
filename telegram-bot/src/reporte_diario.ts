@@ -68,19 +68,7 @@ export function armarReporteDiario(d: DatosReporte): string {
         urgente.push(`IVA de ${mesIva} sin declarar: <b>${d.mensualPendientes.length}</b> — ${lista(nombres, 3)}`);
     }
 
-    const rechazadas = d.clavesConProblema.filter(c => /rechazada|bloqueada|caducada/i.test(c.reason));
-    if (rechazadas.length) {
-        const bloq = rechazadas.filter(c => /bloqueada/i.test(c.reason)).length;
-        const det = bloq ? ` (${bloq} bloqueada${bloq === 1 ? '' : 's'})` : '';
-        urgente.push(`Claves del SRI que no entran: <b>${rechazadas.length}</b>${det} — ${lista(rechazadas.map(c => esc(nombreCorto(c.name))), 3)}`);
-    }
-
-    const danados = d.fichasRucDanado;
-    if (danados.length) {
-        urgente.push(`Fichas con RUC dañado: <b>${danados.length}</b> — ${lista(danados.map(c => esc(nombreCorto(c.name))), 3)}. Corrígelas en el Directorio.`);
-    }
-
-    const sinClave = d.clavesConProblema.filter(c => /sin clave/i.test(c.reason) && rucValido(c.ruc)).length;
+    urgente.push(...lineasDeDatos(d));
 
     const partes: string[] = [`⚡ <b>Baku · ${DIAS[h.getDay()]} ${h.getDate()} ${MESES[h.getMonth()]}</b>`];
 
@@ -88,17 +76,7 @@ export function armarReporteDiario(d: DatosReporte): string {
         ? `🔴 <b>Para atender</b>\n${urgente.map(u => `• ${u}`).join('\n')}`
         : '✅ <b>Nada urgente hoy.</b>');
 
-    const totalMensual = d.mensualAlDia + d.mensualPendientes.length;
-    const totalSemestral = d.semestralAlDia + d.semestralPendientes;
-    const mayores = d.deudores.slice(0, 3).map(x => `${esc(nombreCorto(x.name))} ${usd(x.debt)}`).join(' · ');
-    const estado = [
-        `IVA mensual (${mesIva}): <b>${d.mensualAlDia}/${totalMensual}</b> al día`,
-        `Semestral (${d.semestre}): <b>${d.semestralAlDia}/${totalSemestral}</b> al día · el próximo se declara en ${d.proximoSemestral}`,
-        `Claves: <b>${d.clavesVerificadas}</b> verificadas${sinClave ? ` · <b>${sinClave}</b> sin clave` : ''}`,
-        `Por cobrar: <b>${usd(d.porCobrar)}</b> (${d.deudores.length})${mayores ? ` · ${mayores}` : ''}`,
-    ];
-    if (d.pendientesTareas > 0) estado.push(`Tus pendientes abiertos: <b>${d.pendientesTareas}</b> (/pendientes)`);
-    partes.push(`📊 <b>Estado</b>\n${estado.join('\n')}`);
+    partes.push(bloqueEstado(d, true));
 
     if (d.proximos5.length) {
         const faltan = d.proximos5.filter(p => !p.alDia);
@@ -108,4 +86,39 @@ export function armarReporteDiario(d: DatosReporte): string {
     }
 
     return partes.join('\n\n');
+}
+
+/**
+ * Lo que pide acción y NO está en el parte de vencimientos: claves que no
+ * entran y fichas con RUC dañado. Lo usan el reporte y el parte de la mañana.
+ */
+export function lineasDeDatos(d: DatosReporte): string[] {
+    const out: string[] = [];
+    const rechazadas = d.clavesConProblema.filter(c => /rechazada|bloqueada|caducada/i.test(c.reason));
+    if (rechazadas.length) {
+        const bloq = rechazadas.filter(c => /bloqueada/i.test(c.reason)).length;
+        const det = bloq ? ` (${bloq} bloqueada${bloq === 1 ? '' : 's'})` : '';
+        out.push(`Claves del SRI que no entran: <b>${rechazadas.length}</b>${det} — ${lista(rechazadas.map(c => esc(nombreCorto(c.name))), 3)}`);
+    }
+    if (d.fichasRucDanado.length) {
+        out.push(`Fichas con RUC dañado: <b>${d.fichasRucDanado.length}</b> — ${lista(d.fichasRucDanado.map(c => esc(nombreCorto(c.name))), 3)}. Corrígelas en el Directorio.`);
+    }
+    return out;
+}
+
+/** «📊 Estado»: una línea por tema. `conPendientes` = agregar la línea de tus pendientes. */
+export function bloqueEstado(d: DatosReporte, conPendientes: boolean): string {
+    const mesIva = MESES_LARGOS[Number(d.periodoIva.slice(5, 7)) - 1] || d.periodoIva;
+    const sinClave = d.clavesConProblema.filter(c => /sin clave/i.test(c.reason) && rucValido(c.ruc)).length;
+    const totalMensual = d.mensualAlDia + d.mensualPendientes.length;
+    const totalSemestral = d.semestralAlDia + d.semestralPendientes;
+    const mayores = d.deudores.slice(0, 3).map(x => `${esc(nombreCorto(x.name))} ${usd(x.debt)}`).join(' · ');
+    const estado = [
+        `IVA mensual (${mesIva}): <b>${d.mensualAlDia}/${totalMensual}</b> al día`,
+        `Semestral (${d.semestre}): <b>${d.semestralAlDia}/${totalSemestral}</b> al día · el próximo se declara en ${d.proximoSemestral}`,
+        `Claves: <b>${d.clavesVerificadas}</b> verificadas${sinClave ? ` · <b>${sinClave}</b> sin clave` : ''}`,
+        `Por cobrar: <b>${usd(d.porCobrar)}</b> (${d.deudores.length})${mayores ? ` · ${mayores}` : ''}`,
+    ];
+    if (conPendientes && d.pendientesTareas > 0) estado.push(`Tus pendientes abiertos: <b>${d.pendientesTareas}</b> (/pendientes)`);
+    return `📊 <b>Estado</b>\n${estado.join('\n')}`;
 }

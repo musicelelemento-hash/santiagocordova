@@ -11,15 +11,13 @@ export const INICIO = new Date();
 
 /** Tareas automáticas de cron.ts (hora de Ecuador, UTC-5 sin horario de verano). */
 export const AGENDA = [
-    { id: 'reporte', nombre: 'Reporte de madrugada', cron: '30 3 * * *', cuando: 'Todos los días 03:30' },
     { id: 'backup', nombre: 'Copia a Google Sheets', cron: '0 0 * * *', cuando: 'Todos los días 00:00' },
     { id: 'sociedades', nombre: 'Obligaciones de sociedades', cron: '30 8 * * *', cuando: 'Todos los días 08:30' },
     { id: 'buzon', nombre: 'Buzón SRI', cron: '0 9,14,18 * * 1-5', cuando: 'Lun–Vie 09:00, 14:00, 18:00' },
     { id: 'lunes', nombre: 'Lunes financiero (cobranza)', cron: '0 8 * * 1', cuando: 'Lunes 08:00' },
-    { id: 'parte', nombre: 'Parte del día', cron: '45 7 * * 1-5', cuando: 'Lun–Vie 07:45' },
+    { id: 'parte', nombre: 'Parte de la mañana (vencimientos, claves, estado y pendientes)', cron: '45 7 * * 1-5', cuando: 'Lun–Vie 07:45' },
     { id: 'parte_tarde', nombre: 'Recordatorio de vencimientos de hoy', cron: '0 17 * * 1-5', cuando: 'Lun–Vie 17:00 (sólo si algo vence hoy)' },
     { id: 'recordatorios', nombre: 'Recordatorios de pendientes', cron: '*/2 * * * *', cuando: 'Cada 2 minutos (sólo avisa si a algo le tocó la hora)' },
-    { id: 'credenciales', nombre: 'Revisión de credenciales', cron: '0 9 * * 5', cuando: 'Viernes 09:00' },
 ] as const;
 
 export type IdTarea = typeof AGENDA[number]['id'];
