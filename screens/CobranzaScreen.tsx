@@ -154,7 +154,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         // 1. Obtener firma electrónica y clave (Local con Fallback Cloud automático)
         log("Cargando firma electrónica (.p12) desde almacenamiento seguro...");
         let p12Base64 = await db.getLocal('sc_sri_p12_base64');
-        let p12Password = await db.getLocal('sc_sri_p12_password') || localStorage.getItem('sc_sri_p12_password');
+        // 24-nov-2026: la clave del .p12 no se guarda en el navegador; se pide a la nube cada vez.
+        let p12Password: string = '';
+        try { localStorage.removeItem('sc_sri_p12_password'); await db.setLocal('sc_sri_p12_password', ''); } catch { /* nada que borrar */ }
 
         if (!p12Base64 || !p12Password) {
             log("Sincronizando firma electrónica desde la nube (Supabase emisor_settings)...");
@@ -164,8 +166,6 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     p12Base64 = remote.p12Base64;
                     p12Password = remote.p12Password;
                     await db.setLocal('sc_sri_p12_base64', p12Base64);
-                    await db.setLocal('sc_sri_p12_password', p12Password);
-                    localStorage.setItem('sc_sri_p12_password', p12Password);
                     if (remote.emisorRuc) localStorage.setItem('sc_emisor_ruc', remote.emisorRuc);
                     if (remote.emisorRazonSocial) localStorage.setItem('sc_emisor_razon', remote.emisorRazonSocial);
                     if (remote.emisorNombreComercial) localStorage.setItem('sc_emisor_comercial', remote.emisorNombreComercial);
@@ -356,7 +356,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             log("XML generado y firmado correctamente (SIMULADO).");
         } else {
             const activeBase64 = p12Base64 || (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
-            const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || '';
+            const activePassword = p12Password || '';
 
             // Intentar endpoint agrupado /facturacion/generar-firmar en Render
             let signedSuccess = false;
