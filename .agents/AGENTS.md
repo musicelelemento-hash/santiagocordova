@@ -37,7 +37,7 @@ cobranza, facturación) + Baku (bot de Telegram en Render) + extensión Nueva Lu
 
 ## Pendientes principales (detalle en HISTORIAL.md §7)
 - 🔴 **Seguridad**: la llave pública puede leer la tabla `clients` (claves SRI, firmas). Cerrarlo pide cambiar la extensión Nueva Luz (otro repo) para que inicie sesión.
-- `FERIADOS_EC` (Render) cargada 24-nov-2026 hasta oct-2027; falta noviembre 2027 (Difuntos/Cuenca: las fuentes no coinciden, confirmar con el decreto oficial).
+- `FERIADOS_EC` (Render) cargada 24-nov-2026 hasta el 2-nov-2027; faltan lun 1 / vie 5 de noviembre 2027 (Difuntos/Cuenca: las fuentes no coinciden, confirmar con el decreto oficial).
 - Correo `contacto@santiagocordova.com` (ver registros MX en Namecheap antes).
 - VIMARBO S.A.S.: paquete SCVS 2025 vencido (borradores generados; faltan estados financieros de la contabilidad).
 - Generador de anexos ATS/RDEP (fase 2).
