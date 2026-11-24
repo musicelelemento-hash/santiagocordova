@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { db } from '../services/db';
 import { loadDataFromSheet } from '../services/sheetApi';
 import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemplates, BusinessProfile, TaxRegime, DeclarationStatus, Declaration, StoredFile, AuditLog, ClientNote, NoteCategory, SystemSettings } from '../types';
-import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
+import { INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
 import { SupabaseService } from '../services/supabaseClientService';
@@ -308,6 +308,13 @@ interface AppState {
   setServiceFees: (fees: ServiceFeesConfig) => void;
   setReminderConfig: (config: ReminderConfig | ((prev: ReminderConfig) => ReminderConfig)) => void;
   loadFromDB: () => Promise<void>;
+  /**
+   * true cuando terminó de cargar y no llegó ningún cliente (ni del navegador ni
+   * de la nube). Antes se rellenaba con clientes de EJEMPLO que todas las
+   * pantallas mostraban como reales (24-nov-2026); ahora la lista queda vacía y
+   * App.tsx muestra «No pude traer tus clientes» con «Reintentar».
+   */
+  sinClientesDeLaNube: boolean;
   isLoaded: boolean;
   hydrateFromCloud: (data: any) => Promise<void>;
   exportData: () => Promise<Record<string, any>>;
@@ -372,6 +379,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoaded: false,
   cloudStatus: 'idle' as const,
   cloudErrorMessage: '',
+  sinClientesDeLaNube: false,
   systemSettings: {
     combos: [
       { id: 'combo-talonario-amigo-100', name: 'Talonario Amigo (100 docs)', price: 40, costPrice: 12, category: 'talonario', isActive: true, accessUrl: 'https://talonarioamigo.santiagocordova.com', notes: 'Facturador propio Santiago Córdova - Rápido y fluido', documentCount: 100, validityPeriod: 'anual' },
@@ -1244,7 +1252,8 @@ export const useAppStore = create<AppState>((set, get) => ({
               const mergedTasks = Array.from(cloudTaskMap.values());
 
               set({ 
-                clients: protectedClients, 
+                clients: protectedClients,
+                sinClientesDeLaNube: false, 
                 auditLogs: cloudAuditLogs || [],
                 ...(mergedTasks.length > 0 ? { tasks: mergedTasks } : {})
               });
@@ -1256,8 +1265,8 @@ export const useAppStore = create<AppState>((set, get) => ({
               set({ auditLogs: cloudAuditLogs || [] });
             }
           } else if (!localData) {
-            // Sin datos locales ni en la nube — usar mock
-            set({ clients: mockClients, isLoaded: true });
+            // Sin datos locales ni en la nube: lista vacía y aviso (nunca clientes de ejemplo).
+            set({ clients: [], isLoaded: true, sinClientesDeLaNube: true });
           }
         } catch (cloudErr) {
           console.warn("⚠️ Cloud Fetch failed, using local data:", cloudErr);
@@ -1271,7 +1280,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!localData) {
         await cloudRefresh();
         if (get().clients.length === 0) {
-          set({ clients: mockClients });
+          set({ sinClientesDeLaNube: true });
         }
         if (!get().isLoaded) {
           // Sólo lo que haya localmente: si refrescarConfiguracion ya trajo la
@@ -1295,7 +1304,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error("Critical Load Error:", error);
       set({
         isLoaded: true,
-        clients: mockClients,
+        clients: [],
+        sinClientesDeLaNube: true,
         reminderConfig: defaultReminderConfig,
         serviceFees: INITIAL_SERVICE_FEES
       });

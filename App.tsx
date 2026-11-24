@@ -95,6 +95,7 @@ const App: React.FC = () => {
     updateClient,
     cloudStatus: storeCloudStatus,
     cloudErrorMessage,
+    sinClientesDeLaNube,
   } = useAppStore();
 
   // 📅 Publicar el resumen del mes a la extensión (la línea del popup usa estos números).
@@ -1308,6 +1309,18 @@ const [appState, setAppState] = useState<AppState>(() => {
                   card.style.setProperty('--cy', `${e.clientY - r.top}px`);
                 }}
               >
+                {/* 24-nov-2026: si no llegó ningún cliente, se dice y se ofrece reintentar
+                    (antes se mostraban clientes de EJEMPLO como si fueran reales). */}
+                {sinClientesDeLaNube && clients.length === 0 && (
+                  <div role="alert" className="mx-4 sm:mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-[14px] text-amber-900 dark:text-amber-100">
+                    <span className="flex-1 min-w-[200px]"><b>No pude traer tus clientes de la nube.</b> Puede ser la conexión. Tus datos no se tocaron.</span>
+                    <button
+                      type="button"
+                      onClick={() => { useAppStore.setState({ sinClientesDeLaNube: false }); loadFromDB(); }}
+                      className="rounded-xl bg-amber-500 hover:bg-amber-600 px-4 py-2 text-[13px] font-bold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                    >Reintentar</button>
+                  </div>
+                )}
                 <Suspense fallback={<ScreenLoader />}>
                   {renderScreen()}
                 </Suspense>
