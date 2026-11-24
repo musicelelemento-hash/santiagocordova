@@ -226,9 +226,11 @@ el 24-nov-2026**: 2026-12-25, 2027-01-01, 02-08, 02-09 (Carnaval), 03-26
 (Viernes Santo), 04-30 (1-may sábado → viernes), 05-24, 08-09 (10-ago martes →
 lunes), 10-08 (9-oct sábado → viernes). Fechas en que coinciden El Universo,
 El Diario y otras fuentes con el calendario 2025-2030 del Viceministerio de
-Turismo y con la regla de traslados. **Falta noviembre 2027** (2-nov martes,
-3-nov miércoles: unas fuentes dicen descanso lun 1 y mar 2, otras mueven Cuenca
-al vie 5) — confirmar con el decreto. Faltar un feriado es el lado seguro: Baku
+Turismo y con la regla de traslados. Noviembre 2027: se cargó sólo el
+**mar 2** (descanso en todas las versiones). Falta decidir **lun 1 o vie 5**:
+la mayoría (El Universo, Vistazo, La Prensa) dice lun 1 y mar 2; ecuadorec.com
+y otros mueven Cuenca al vie 5 — confirmar con el decreto del cronograma 2027
+(a mediados de nov-2026 todavía no estaba publicado). Faltar un feriado es el lado seguro: Baku
 avisa un día antes; agregar uno de más lo haría avisar tarde.) `scripts/test-parte.js` (17 comprobaciones, fechas cruzadas con
 `scripts/sri.py` de la skill). **Anexos: no se listan** — la base no guarda por
 período qué anexo falta (sólo columnas anuales `anexo_*_status` que nadie
