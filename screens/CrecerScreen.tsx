@@ -4,7 +4,6 @@ import { useAppStore } from '../store/useAppStore';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { getClientIvaFrequency } from '../services/sri';
 import { calcularCamino, SUPUESTOS_INICIALES, Supuestos } from '../services/marketing';
-import { mockClients } from '../constants';
 
 const AnunciosYVideos = React.lazy(() => import('../components/marketing/AnunciosYVideos').then(m => ({ default: m.AnunciosYVideos })));
 const CalendarioContenidos = React.lazy(() => import('../components/marketing/CalendarioContenidos').then(m => ({ default: m.CalendarioContenidos })));
@@ -78,7 +77,7 @@ type Editables = Omit<Supuestos, 'actuales'>;
 const MetaTresMil: React.FC<{ irA: (p: Pestana) => void }> = ({ irA }) => {
     const clients = useAppStore(s => s.clients);
     const serviceFees = useAppStore(s => s.serviceFees);
-    const deEjemplo = clients === mockClients || clients.length === 0;
+    const deEjemplo = clients.length === 0; // sin clientes todavía: «…» en vez de un 0 engañoso
 
     const base = useMemo(() => {
         let mensual = 0, semestral = 0;

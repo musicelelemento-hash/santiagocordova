@@ -39,7 +39,6 @@ cobranza, facturación) + Baku (bot de Telegram en Render) + extensión Nueva Lu
 - 🔴 **Seguridad**: la llave pública puede leer la tabla `clients` (claves SRI, firmas). Cerrarlo pide cambiar la extensión Nueva Luz (otro repo) para que inicie sesión.
 - Feriados 2027 en `FERIADOS_EC` (Render).
 - Correo `contacto@santiagocordova.com` (ver registros MX en Namecheap antes).
-- Pantallas que muestran clientes de ejemplo si la nube falla (`mockClients` en `useAppStore.ts`).
 - Facturador SRI guarda la clave del .p12 en el navegador (`FacturacionSriScreen.tsx`).
 - VIMARBO S.A.S.: paquete SCVS 2025 vencido (borradores generados; faltan estados financieros de la contabilidad).
 - Generador de anexos ATS/RDEP (fase 2).

@@ -7,7 +7,6 @@ import { getClientsOverdue, getClientsExpiringInDays, getClientDebtSummary } fro
 import { isCourtesyClient } from '../services/clientService';
 import { venceEn, diasHastaViernes, textoCuando, estaVencido, ordenarAbiertos, partesEc } from '../services/pendientes';
 import { db } from '../services/db';
-import { mockClients } from '../constants';
 
 /**
  * «Hoy» (22-nov-2026): el inicio tranquilo del panel. Pedido de Santiago: «soy
@@ -75,11 +74,10 @@ export const HoyScreen: React.FC<{ navigate: (s: Screen, o?: any) => void }> = (
 
     // Sin clientes todavía = la nube no respondió (en un navegador nuevo tarda ~30 s).
     // Mejor «cargando» que un 0 que parece «todo al día».
-    // Si la nube no respondió, el store rellena con clientes de EJEMPLO (mockClients):
-    // sus números no son los de Santiago, así que tampoco se muestran.
-    const isLoaded = useAppStore(s => s.isLoaded);
-    const deEjemplo = clients === mockClients;
-    const cargando = clients.length === 0 || deEjemplo;
+    // Sin clientes = todavía no llegaron o la nube no respondió (sinClientesDeLaNube).
+    // Nunca se muestran clientes de ejemplo (24-nov-2026).
+    const sinNube = useAppStore(s => s.sinClientesDeLaNube);
+    const cargando = clients.length === 0;
     const abiertos = useMemo(() => ordenarAbiertos(tasks || []), [tasks]);
     const atencion = cargando ? -1 : (sri.vencidos > 0 ? 1 : 0) + (sri.semana > 0 ? 1 : 0) + abiertos.filter(t => estaVencido(t.dueDate) || textoCuando(t.dueDate).startsWith('hoy')).length;
 
@@ -131,7 +129,7 @@ export const HoyScreen: React.FC<{ navigate: (s: Screen, o?: any) => void }> = (
                     {saludo}, Santiago
                 </h1>
                 <p className="text-[15px] text-slate-600 dark:text-slate-300">
-                    {atencion < 0 ? (deEjemplo && isLoaded ? 'No pude traer tus clientes de la nube todavía; los números aparecen cuando lleguen.' : 'Trayendo tus clientes…') : atencion === 0 ? 'Todo tranquilo por ahora. Nada urgente.' : atencion === 1 ? 'Hay una cosa que mirar hoy.' : `Hay ${atencion} cosas que mirar hoy.`}
+                    {atencion < 0 ? (sinNube ? 'No pude traer tus clientes de la nube. Toca «Reintentar» arriba.' : 'Trayendo tus clientes…') : atencion === 0 ? 'Todo tranquilo por ahora. Nada urgente.' : atencion === 1 ? 'Hay una cosa que mirar hoy.' : `Hay ${atencion} cosas que mirar hoy.`}
                 </p>
             </header>
 
