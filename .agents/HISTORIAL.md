@@ -221,9 +221,15 @@ historial, el que marca la sala de envío) y firmas que vencen en ≤15 días.
 A las 17:00 sólo escribe si algo vence hoy y sigue sin declarar. `/hoy` lo pide
 a mano. **No escribe a los clientes.** Reusa `clasificarCierre` (/cierre) y
 `calcularVencimiento` (traslado por fin de semana; por feriado sólo con la
-variable `FERIADOS_EC` en Render, AAAA-MM-DD separadas por coma — **falta
-cargarla con el calendario oficial**, la skill sri-ecuador lo tiene en «falta
-verificar»). `scripts/test-parte.js` (17 comprobaciones, fechas cruzadas con
+variable `FERIADOS_EC` en Render, AAAA-MM-DD separadas por coma — **cargada
+el 24-nov-2026**: 2026-12-25, 2027-01-01, 02-08, 02-09 (Carnaval), 03-26
+(Viernes Santo), 04-30 (1-may sábado → viernes), 05-24, 08-09 (10-ago martes →
+lunes), 10-08 (9-oct sábado → viernes). Fechas en que coinciden El Universo,
+El Diario y otras fuentes con el calendario 2025-2030 del Viceministerio de
+Turismo y con la regla de traslados. **Falta noviembre 2027** (2-nov martes,
+3-nov miércoles: unas fuentes dicen descanso lun 1 y mar 2, otras mueven Cuenca
+al vie 5) — confirmar con el decreto. Faltar un feriado es el lado seguro: Baku
+avisa un día antes; agregar uno de más lo haría avisar tarde.) `scripts/test-parte.js` (17 comprobaciones, fechas cruzadas con
 `scripts/sri.py` de la skill). **Anexos: no se listan** — la base no guarda por
 período qué anexo falta (sólo columnas anuales `anexo_*_status` que nadie
 evalúa); hace falta definir ese dato antes de avisar «falta el anexo».
