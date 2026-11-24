@@ -207,7 +207,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const [p12FileBase64, setP12FileBase64] = useState('');
   const [p12FileName, setP12FileName] = useState('');
-  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || '');
+  // 24-nov-2026: la clave del .p12 vive sólo en la nube (emisor_settings, protegida por sesión) y en memoria.
+  const [p12Password, setP12Password] = useState('');
   const [p12StartDate, setP12StartDate] = useState('');
   const [p12ExpiryDate, setP12ExpiryDate] = useState('');
   const [p12SubjectName, setP12SubjectName] = useState('');
@@ -238,6 +239,30 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
   };
 
+  // Antes la clave del .p12 se copiaba en texto plano a localStorage e IndexedDB
+  // (24-nov-2026): ahora se borra de ahí y vive sólo en la nube + memoria.
+  const borrarClaveLocal = async () => {
+    try { localStorage.removeItem('sc_sri_p12_password'); } catch { /* sin almacenamiento: nada que borrar */ }
+    try { await db.setLocal('sc_sri_p12_password', ''); } catch { /* idem */ }
+  };
+  /** Copia vieja que pudo quedar en este navegador (sólo para subirla a la nube y borrarla). */
+  const claveLocalVieja = async (): Promise<string> => {
+    try { return (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || ''; } catch { return ''; }
+  };
+  /** Sube la clave vieja a la nube y sólo la borra del navegador si la nube la confirma. */
+  const migrarClaveVieja = async (vieja: string) => {
+    try {
+      await SupabaseService.upsertEmisorConfig({ p12Password: vieja });
+      const enNube = (await SupabaseService.getEmisorConfig())?.p12Password;
+      if (enNube) await borrarClaveLocal();
+    } catch { /* sin nube: se queda la copia vieja y se reintenta la próxima vez */ }
+  };
+  /** Clave para firmar: la de memoria o, si no está, la de la nube. */
+  const claveParaFirmar = async (): Promise<string> => {
+    if (p12Password) return p12Password;
+    try { return (await SupabaseService.getEmisorConfig())?.p12Password || ''; } catch { return ''; }
+  };
+
   // Carga asíncrona de firma electrónica y emisor desde Supabase con respaldo en IndexedDB / localStorage
   useEffect(() => {
     const loadSignatureAndEmisor = async () => {
@@ -252,7 +277,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             setIsEditingSignature(false);
           }
           if (remote.p12FileName) { setP12FileName(remote.p12FileName); localStorage.setItem('sc_sri_p12_filename', remote.p12FileName); }
-          if (remote.p12Password) { setP12Password(remote.p12Password); localStorage.setItem('sc_sri_p12_password', remote.p12Password); }
+          if (remote.p12Password) {
+            setP12Password(remote.p12Password);
+          } else {
+            // La nube no tiene la clave pero este navegador sí (versión vieja): se sube sólo la clave.
+            const vieja = await claveLocalVieja();
+            if (vieja) {
+              setP12Password(vieja);
+              await migrarClaveVieja(vieja);
+            }
+          }
+          if (remote.p12Password) await borrarClaveLocal();
           if (remote.p12StartDate) setP12StartDate(remote.p12StartDate);
           if (remote.p12ExpiryDate) setP12ExpiryDate(remote.p12ExpiryDate);
           if (remote.p12SubjectName) setP12SubjectName(remote.p12SubjectName);
@@ -281,7 +316,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       try {
         const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
         const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
-        const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || '';
+        const password = await claveLocalVieja();
         const start = (await db.getLocal('sc_sri_p12_start')) || localStorage.getItem('sc_sri_p12_start') || '';
         const expiry = (await db.getLocal('sc_sri_p12_expiry')) || localStorage.getItem('sc_sri_p12_expiry') || '';
         const subject = (await db.getLocal('sc_sri_p12_subject')) || localStorage.getItem('sc_sri_p12_subject') || '';
@@ -292,6 +327,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         setP12FileBase64(base64);
         setP12FileName(name);
         setP12Password(password);
+        if (password) await migrarClaveVieja(password);
         setP12StartDate(start);
         setP12ExpiryDate(expiry);
         setP12SubjectName(subject);
@@ -309,8 +345,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const handlePasswordChange = async (val: string) => {
     setP12Password(val);
-    await db.setLocal('sc_sri_p12_password', val);
-    localStorage.setItem('sc_sri_p12_password', val);
     await saveEmisorConfigToSupabase({ p12Password: val });
   };
 
@@ -328,10 +362,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         setIsEditingSignature(false);
         await db.setLocal('sc_sri_p12_base64', base64Data);
         await db.setLocal('sc_sri_p12_filename', file.name);
-        await db.setLocal('sc_sri_p12_password', p12Password);
         localStorage.setItem('sc_sri_p12_base64', base64Data);
         localStorage.setItem('sc_sri_p12_filename', file.name);
-        localStorage.setItem('sc_sri_p12_password', p12Password);
 
         // Try to extract expiry/subject from the binary DER data embedded in the .p12
         try {
@@ -890,7 +922,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const fetchSignatureVigencia = async () => {
     const storedBase64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || p12FileBase64;
-    const storedPassword = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || p12Password;
+    const storedPassword = await claveParaFirmar();
     if (!storedBase64) return;
     
     try {
@@ -1741,7 +1773,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       } else {
         // Sign endpoint - Obtener firma y clave desde estado, IndexedDB o localStorage
         const activeBase64 = p12FileBase64 || (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
-        const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || '';
+        const activePassword = await claveParaFirmar();
         
         if (!activeBase64) {
           throw new Error('No se encontró el archivo de Firma Electrónica (.p12). Vaya a Configuración de API & Emisor y vuelva a subir su archivo de firma .p12.');
@@ -2809,11 +2841,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   }
                   await db.setLocal('sc_sri_p12_base64', p12FileBase64);
                   await db.setLocal('sc_sri_p12_filename', p12FileName);
-                  await db.setLocal('sc_sri_p12_password', p12Password);
                   localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
                   localStorage.setItem('sc_sri_p12_filename', p12FileName);
-                  localStorage.setItem('sc_sri_p12_password', p12Password);
-                  
+                  await borrarClaveLocal();
+
                   await saveEmisorConfigToSupabase({
                     p12Base64: p12FileBase64,
                     p12FileName,
@@ -2824,7 +2855,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     p12OwnerName
                   });
                   setIsEditingSignature(false);
-                  alert(`✅ Firma electrónica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. Estarán disponibles automáticamente en todas tus computadoras.`);
+                  alert('✅ Firma electrónica (.p12) y su clave guardadas en la nube, protegidas con tu sesión. Estarán disponibles en todas tus computadoras.');
                 }}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 active:scale-95"
               >
@@ -2958,12 +2989,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   }
                   await db.setLocal('sc_sri_p12_base64', p12FileBase64);
                   await db.setLocal('sc_sri_p12_filename', p12FileName);
-                  await db.setLocal('sc_sri_p12_password', p12Password);
                   localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
                   localStorage.setItem('sc_sri_p12_filename', p12FileName);
-                  localStorage.setItem('sc_sri_p12_password', p12Password);
+                  await borrarClaveLocal();
+                  // Antes este botón guardaba sólo en el navegador (24-nov-2026).
+                  await saveEmisorConfigToSupabase({
+                    p12Base64: p12FileBase64,
+                    p12FileName,
+                    p12Password,
+                    p12StartDate,
+                    p12ExpiryDate,
+                    p12SubjectName,
+                    p12OwnerName
+                  });
                   setIsEditingSignature(false);
-                  alert('✅ Firma electrónica guardada y lista para facturación.');
+                  alert('✅ Firma electrónica guardada en la nube y lista para facturación.');
                 }}
                 className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
               >
@@ -3679,7 +3719,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           value={p12Password}
                           onChange={(e) => {
                             setP12Password(e.target.value);
-                            localStorage.setItem('sc_sri_p12_password', e.target.value);
                           }}
                           placeholder="Escriba la clave..."
                           className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:border-primary text-slate-800 dark:text-slate-100 transition-all"
@@ -3702,11 +3741,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           }
                           await db.setLocal('sc_sri_p12_base64', p12FileBase64);
                           await db.setLocal('sc_sri_p12_filename', p12FileName);
-                          await db.setLocal('sc_sri_p12_password', p12Password);
                           localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
                           localStorage.setItem('sc_sri_p12_filename', p12FileName);
-                          localStorage.setItem('sc_sri_p12_password', p12Password);
-                          
+                          await borrarClaveLocal();
+
                           await saveEmisorConfigToSupabase({
                             p12Base64: p12FileBase64,
                             p12FileName,
@@ -3717,7 +3755,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             p12OwnerName
                           });
                           setIsEditingSignature(false);
-                          alert(`✅ Firma electrónica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. Estarán disponibles automáticamente en todas tus computadoras.`);
+                          alert('✅ Firma electrónica (.p12) y su clave guardadas en la nube, protegidas con tu sesión. Estarán disponibles en todas tus computadoras.');
                         }}
                         className="w-full mt-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2 font-premium"
                       >
