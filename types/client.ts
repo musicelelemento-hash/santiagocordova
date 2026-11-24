@@ -224,6 +224,8 @@ export interface TaxProfile {
     atsRazonSocial?: string;
     /** Últimos accesos al SRI (los escribe la extensión). */
     loginAuditoria?: Array<{ cuando?: string; evento?: string; motivo?: string; origen?: string; sesionAbierta?: boolean }>;
+    /** ATS descargado para subir (ZIP) y todavía sin acuse registrado. */
+    atsZipDescargado?: { periodo?: string; cuando?: string };
     sriCredencial?: SriCredencialEstado;
     alias?: string;
     quickNote?: string;
