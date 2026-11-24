@@ -11,6 +11,11 @@
 ## Stack
 React 18 + TypeScript estricto + Vite + Tailwind + Zustand + Supabase + Firebase + Google Gemini AI + react-three-fiber. Backend adicional en Google Apps Script y Laravel (`VITE_FACTURACION_API_URL`).
 
+## En la nube (claude.ai/code)
+- El hook `SessionStart` (`.claude/hooks/nube.cjs`) instala dependencias de la web y de `telegram-bot` solo en la nube.
+- `.env.local` no existe ahí: nombres en `docs/VARIABLES_ENTORNO.md`, valores como variables del entorno. Sin ellas, `typecheck`, `build` y `npm test` igual corren; lo que llame a Supabase/Gemini no.
+- La extensión Nueva Luz es otro repo (`musicelelemento-hash/santiagocordova.com`): si el pedido la toca, abrir la sesión con los dos repos.
+
 ## Reglas de trabajo
 - Antes de dar un cambio por cerrado: mínimo `npm run typecheck`; `npm run build` si se tocó algo crítico (cálculos SRI, cobranza, facturación).
 - `.env.local` nunca se commitea (ya cubierto por `.gitignore`) ni se imprime su contenido.
