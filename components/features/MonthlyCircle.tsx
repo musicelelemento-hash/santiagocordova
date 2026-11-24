@@ -10,15 +10,15 @@ import { DeclarationStatus } from '../../types';
 import { clienteRequiereAts, esRucSociedad } from '../../services/sri';
 
 /**
- * CÍRCULO MENSUAL — el orden que importa.
+ * CÃRCULO MENSUAL â€” el orden que importa.
  *
  *   1. Extraer comprobantes (compras) del mes
- *   2. Declarar el IVA (104) — ahí quedan confirmadas las VENTAS y las retenciones
+ *   2. Declarar el IVA (104) â€” ahÃ­ quedan confirmadas las VENTAS y las retenciones
  *   3. Generar el ATS con esas compras + las ventas confirmadas
- *   4. Subirlo al SRI (popup → 📤)
+ *   4. Subirlo al SRI (popup â†’ ðŸ“¤)
  *   5. Guardar el acuse
  *
- * La web guía: cada paso dice qué falta y con qué botón se resuelve.
+ * La web guÃ­a: cada paso dice quÃ© falta y con quÃ© botÃ³n se resuelve.
  */
 interface Props {
     client: Client;
@@ -43,25 +43,25 @@ const MonthlyCircle: React.FC<Props> = ({ client }) => {
     const [generando, setGenerando] = useState(false);
 
     const sociedad = esRucSociedad(client.ruc);
-    // ATS sólo si su RUC/obligaciones lo exigen (editable en la ficha).
+    // ATS sÃ³lo si su RUC/obligaciones lo exigen (editable en la ficha).
     const requiereAts = clienteRequiereAts(client);
     const compras = useMemo(() => SupplierCatalogService.getClientPurchases(client, periodo), [client, periodo]);
     const facturas = compras?.invoices || [];
 
-    // El IVA declarado de ese período (con sus ventas y CEP).
+    // El IVA declarado de ese perÃ­odo (con sus ventas y CEP).
     const declaracionIva = (client.declarations || []).find(
         (d) => (d.period === periodo || d.period === `${periodo}:IVA`) && (!d.type || d.type === 'IVA'),
     );
 
-    // Ventas confirmadas en el 104: la extensión las deja en metadata del comprobante.
+    // Ventas confirmadas en el 104: la extensiÃ³n las deja en metadata del comprobante.
     const ventasDeclaradas = useMemo(() => {
         const meta: any = (declaracionIva as any)?.proof_file?.metadata || (declaracionIva as any) || {};
         const total = Number(meta.ventas15 || 0) + Number(meta.ventas5 || 0) + Number(meta.ventas8 || 0) + Number(meta.ventas0 || 0);
         return Number.isFinite(total) ? total : 0;
     }, [declaracionIva]);
 
-    /** Ventas capturadas del formulario 104 por la extensión (con IVA y sin IVA).
- *  Sirven aunque la cuenta esté bloqueada y no se haya podido declarar. */
+    /** Ventas capturadas del formulario 104 por la extensiÃ³n (con IVA y sin IVA).
+ *  Sirven aunque la cuenta estÃ© bloqueada y no se haya podido declarar. */
 const ventasCapturadas = useMemo(() => {
     const v: any = (client.taxProfile as any)?.ventasPorPeriodo?.[periodo] || null;
     if (!v) return null;
@@ -77,6 +77,7 @@ const ventasCapturadas = useMemo(() => {
 const ventasBaseEfectiva = ventasDeclaradas > 0 ? ventasDeclaradas : (ventasCapturadas?.total || 0);
 
 const [acuse, setAcuse] = useState<any>(null);
+const registrarAtsAutoRef = React.useRef(false);
     React.useEffect(() => {
         const leer = () => {
             try {
@@ -95,8 +96,19 @@ const [acuse, setAcuse] = useState<any>(null);
 
 
 
+    // Cuando la extensiÃ³n captura el acuse del ATS, se registra solo:
+    // antes habÃ­a que tocar Â«Marcar presentadoÂ» a mano.
+    React.useEffect(() => {
+        if (!acuse || registrarAtsAutoRef.current) return;
+        const ya = (client.declarations || []).some((d) => d.period === periodo && d.type === 'ATS');
+        if (ya) return;
+        registrarAtsAutoRef.current = true;
+        void registrarAts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [acuse, periodo]);
+
     const generar = async () => {
-        // Sin compras NO se bloquea: un mes en cero lleva el ATS con <compras> vacío.
+        // Sin compras NO se bloquea: un mes en cero lleva el ATS con <compras> vacÃ­o.
         const sinCompras = facturas.length === 0;
         setGenerando(true);
         try {
@@ -150,38 +162,38 @@ const [acuse, setAcuse] = useState<any>(null);
             titulo: 'Extraer comprobantes del mes',
             detalle: facturas.length
                 ? `${facturas.length} factura(s) de compra con sus claves de acceso.`
-                : 'Abrí SRI → Comprobantes recibidos del mes → extractor 📄 de la extensión.',
+                : 'AbrÃ­ SRI â†’ Comprobantes recibidos del mes â†’ extractor ðŸ“„ de la extensiÃ³n.',
             hecho: facturas.length > 0,
             icono: Download,
-            accion: facturas.length ? null : () => toast.info('SRI → Comprobantes recibidos → mes → botón 📄 de la extensión.'),
-            boton: facturas.length ? '' : 'Cómo extraer',
+            accion: facturas.length ? null : () => toast.info('SRI â†’ Comprobantes recibidos â†’ mes â†’ botÃ³n ðŸ“„ de la extensiÃ³n.'),
+            boton: facturas.length ? '' : 'CÃ³mo extraer',
         },
         {
             numero: 2,
             titulo: 'Declarar el IVA (104)',
             detalle: declaracionIva
-                ? `Declarada${declaracionIva.transactionId ? ` · CEP ${declaracionIva.transactionId}` : ''}. Las ventas confirmadas ya quedaron en la declaración.`
+                ? `Declarada${declaracionIva.transactionId ? ` Â· CEP ${declaracionIva.transactionId}` : ''}. Las ventas confirmadas ya quedaron en la declaraciÃ³n.`
                 : (ventasCapturadas
-            ? `Formulario 104 prellenado · ventas con IVA ${ventasCapturadas.conIva.toFixed(2)} · sin IVA ${ventasCapturadas.sinIva.toFixed(2)}${ventasCapturadas.base5 || ventasCapturadas.base8 ? ` · 5% ${ventasCapturadas.base5.toFixed(2)} · 8% ${ventasCapturadas.base8.toFixed(2)}` : ''}.`
-            : 'El formulario llega con las VENTAS prellenadas desde Facturación Electrónica: confirmá y revisá notas de crédito.'),
+            ? `Formulario 104 prellenado Â· ventas con IVA ${ventasCapturadas.conIva.toFixed(2)} Â· sin IVA ${ventasCapturadas.sinIva.toFixed(2)}${ventasCapturadas.base5 || ventasCapturadas.base8 ? ` Â· 5% ${ventasCapturadas.base5.toFixed(2)} Â· 8% ${ventasCapturadas.base8.toFixed(2)}` : ''}.`
+            : 'El formulario llega con las VENTAS prellenadas desde FacturaciÃ³n ElectrÃ³nica: confirmÃ¡ y revisÃ¡ notas de crÃ©dito.'),
             hecho: !!declaracionIva,
             icono: Calculator,
-            accion: declaracionIva ? null : () => { if (!entrarAlSriSinDeclarar(client)) { toast.error('Falta la clave SRI del cliente.'); return; } toast.info('Entrando al SRI: andá a Declaraciones → IVA y confirmá el 104.'); },
+            accion: declaracionIva ? null : () => { if (!entrarAlSriSinDeclarar(client)) { toast.error('Falta la clave SRI del cliente.'); return; } toast.info('Entrando al SRI: andÃ¡ a Declaraciones â†’ IVA y confirmÃ¡ el 104.'); },
             boton: declaracionIva ? '' : 'Entrar al SRI',
         },
         {
             numero: 3,
             titulo: 'Generar el ATS con lo declarado',
-            detalle: ventasDeclaradas > 0 ? `Compras del paso 1 + ventas declaradas en el 104: ${ventasDeclaradas.toFixed(2)}.` : 'Compras del paso 1. Declará el IVA (paso 2) para incluir las ventas en el ATS.',
+            detalle: ventasDeclaradas > 0 ? `Compras del paso 1 + ventas declaradas en el 104: ${ventasDeclaradas.toFixed(2)}.` : 'Compras del paso 1. DeclarÃ¡ el IVA (paso 2) para incluir las ventas en el ATS.',
             hecho: atsGenerado || !!acuse,
             icono: FileSpreadsheet,
             accion: () => void generar(),
-            boton: generando ? 'Generando…' : 'Generar ATS',
+            boton: generando ? 'Generandoâ€¦' : 'Generar ATS',
         },
         {
             numero: 4,
             titulo: 'Subir el ATS al SRI',
-            detalle: 'Popup de la extensión → menú ⋮ → 📤 Subir ZIP del anexo… (adjunta, Cargar y Aceptar).',
+            detalle: 'Popup de la extensiÃ³n â†’ menÃº â‹® â†’ ðŸ“¤ Subir ZIP del anexoâ€¦ (adjunta, Cargar y Aceptar).',
             hecho: !!acuse,
             icono: Upload,
             accion: () => abrirAnexoSri(client, 'ATS'),
@@ -191,12 +203,12 @@ const [acuse, setAcuse] = useState<any>(null);
             numero: 5,
             titulo: 'Guardar el acuse',
             detalle: acuse
-                ? `${acuse.mensaje || 'Anexo recibido'}${acuse.acuse ? ` · acuse ${acuse.acuse}` : ''}`
-                : 'Al subirlo, la extensión guarda el mensaje y el acuse del portal.',
+                ? `${acuse.mensaje || 'Anexo recibido'}${acuse.acuse ? ` Â· acuse ${acuse.acuse}` : ''}`
+                : 'Al subirlo, la extensiÃ³n guarda el mensaje y el acuse del portal.',
             hecho: !!acuse,
             icono: CheckCircle2,
             accion: acuse ? () => void registrarAts() : null,
-            boton: acuse ? (registrando ? 'Guardando…' : 'Marcar presentado') : '',
+            boton: acuse ? (registrando ? 'Guardandoâ€¦' : 'Marcar presentado') : '',
         },
     ];
 
@@ -207,7 +219,7 @@ const [acuse, setAcuse] = useState<any>(null);
         {
             numero: 0,
             titulo: 'Comprobante del IVA guardado',
-            detalle: declaracionIva ? 'Queda en la bóveda del cliente.' : 'La extensión lo guarda al enviar el IVA.',
+            detalle: declaracionIva ? 'Queda en la bÃ³veda del cliente.' : 'La extensiÃ³n lo guarda al enviar el IVA.',
             hecho: !!declaracionIva,
             icono: CheckCircle2,
             accion: null,
@@ -221,7 +233,7 @@ const [acuse, setAcuse] = useState<any>(null);
         <div className="mb-4 rounded-2xl border border-sky-500/25 bg-sky-500/[0.04] px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-sky-300">
-                    <Building2 size={13} /> Círculo mensual · {nombrePeriodo(periodo)}
+                    <Building2 size={13} /> CÃ­rculo mensual Â· {nombrePeriodo(periodo)}
                 </p>
                 <div className="flex items-center gap-2">
                     <span className="font-mono text-[9px] text-slate-400">{hechos}/{pasos.length} pasos</span>
@@ -237,9 +249,9 @@ const [acuse, setAcuse] = useState<any>(null);
 
             <p className="mt-1 text-[10px] text-slate-500">
                 {requiereAts ? (
-                <>Orden correcto: <b className="text-slate-300">IVA primero</b> (ahí se confirman las ventas y retenciones), después el ATS con las compras y las ventas ya declaradas.</>
+                <>Orden correcto: <b className="text-slate-300">IVA primero</b> (ahÃ­ se confirman las ventas y retenciones), despuÃ©s el ATS con las compras y las ventas ya declaradas.</>
             ) : (
-                <>Este cliente <b className="text-slate-300">no presenta ATS</b> según sus obligaciones: el mes se cierra con el IVA y su comprobante. Si el SRI se lo agrega, activalo en la ficha → Obligaciones.</>
+                <>Este cliente <b className="text-slate-300">no presenta ATS</b> segÃºn sus obligaciones: el mes se cierra con el IVA y su comprobante. Si el SRI se lo agrega, activalo en la ficha â†’ Obligaciones.</>
             )}
             </p>
 
@@ -272,11 +284,11 @@ const [acuse, setAcuse] = useState<any>(null);
                 <p className="mt-1.5 text-[9px] text-slate-500">
                     {client.taxProfile?.requiresIce && (
             <p className="mt-1.5 text-[9px] text-amber-500/90">
-                También presenta <b>ICE</b>: el formulario y el anexo se manejan desde la herramienta de ICE en el SRI.
+                TambiÃ©n presenta <b>ICE</b>: el formulario y el anexo se manejan desde la herramienta de ICE en el SRI.
             </p>
         )}
 
-        {requiereAts ? (<>Sociedad: suma <b className="text-slate-300">ATS + IVA mensual</b> y las anuales (REBEFICS/1021/ADI) en su panel.</>) : (<>Sin ATS activo. Podés activarlo en la ficha → Obligaciones si el SRI lo exige.</>)}
+        {requiereAts ? (<>Sociedad: suma <b className="text-slate-300">ATS + IVA mensual</b> y las anuales (REBEFICS/1021/ADI) en su panel.</>) : (<>Sin ATS activo. PodÃ©s activarlo en la ficha â†’ Obligaciones si el SRI lo exige.</>)}
                 </p>
             )}
         </div>

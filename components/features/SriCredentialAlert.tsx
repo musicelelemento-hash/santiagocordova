@@ -7,6 +7,8 @@ import { guardarClaveCliente } from '../../services/sriPasswords';
 import { useToast } from '../../context/ToastContext';
 
 /** Portal oficial del SRI para generar o recuperar la clave. */
+export const SRI_AGENDA_CITA = 'https://www.sri.gob.ec/agendamiento';
+
 export const SRI_RECUPERAR_CLAVE =
     'https://srienlinea.sri.gob.ec/sri-generacion-claves-web-internet/publico/opciones-clave.jsf?pathMPT=Cita%20previa&actualMPT=Generar%20o%20recuperar%20clave';
 
@@ -88,11 +90,37 @@ const SriCredentialAlert: React.FC<{ client: Client }> = ({ client }) => {
                     </p>
 
                     {esBloqueo && (
-                        <ol className="mt-1.5 list-decimal space-y-0.5 pl-4 text-[10px] opacity-90">
-                            <li>Entrá a <b>Recuperar clave</b> del SRI (te llega al correo registrado o por preguntas de seguridad).</li>
-                            <li>Cuando la tengas, cargala acá con <b>Actualizar clave</b>.</li>
-                            <li>Recién ahí volvé a correr el bucle con este cliente.</li>
-                        </ol>
+                        <div className="mt-2 rounded-xl border border-white/10 bg-black/15 p-2.5">
+                            <p className="text-[10px] font-black uppercase tracking-wider opacity-90">Cómo desbloquear (elegí una)</p>
+                            <div className="mt-1.5 flex flex-wrap gap-2">
+                                <a
+                                    href={SRI_RECUPERAR_CLAVE}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 rounded-lg bg-[#00A896]/15 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#00A896] hover:bg-[#00A896]/25"
+                                >
+                                    <ExternalLink size={11} /> A · Recuperar en línea
+                                </a>
+                                <a
+                                    href={SRI_AGENDA_CITA}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider hover:bg-white/10"
+                                >
+                                    <ExternalLink size={11} /> B · Cita en agencia
+                                </a>
+                            </div>
+                            <ol className="mt-2 list-decimal space-y-0.5 pl-4 text-[10px] opacity-90">
+                                <li><b>A</b>: SRI en Línea → «¿Olvidó su clave?» → preguntas o token al correo/celular → creá una clave nueva.</li>
+                                <li><b>B</b>: si no tenés correo/celular al día, agencia del SRI con <b>cédula del representante legal</b>, RUC y nombramiento.</li>
+                                <li>Si el portal dijera «cuenta inactiva», no es la clave: es el <b>RUC suspendido</b> → hay que reactivar el RUC.</li>
+                                <li><b>No reintentes más de una vez</b>: cada intento fallido afirma el bloqueo.</li>
+                            </ol>
+                            <p className="mt-1.5 text-[10px] opacity-90">
+                                <b>Dónde poner la clave nueva:</b> acá abajo con «Actualizar clave», o en la extensión con
+                                el botón <b>✏️ Nueva Clave</b> del popup. Al guardarla se limpian el bloqueo y el tope de intentos.
+                            </p>
+                        </div>
                     )}
                     {esCaducada && (
                         <p className="mt-1 text-[10px] opacity-90">
@@ -114,7 +142,7 @@ const SriCredentialAlert: React.FC<{ client: Client }> = ({ client }) => {
                             onClick={() => setAbierto((v) => !v)}
                             className="inline-flex items-center gap-1 rounded-lg border border-white/20 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider hover:bg-white/10"
                         >
-                            <KeyRound size={11} /> Actualizar clave
+                            <KeyRound size={11} /> Actualizar clave nueva
                         </button>
                         <button
                             type="button"
@@ -132,7 +160,7 @@ const SriCredentialAlert: React.FC<{ client: Client }> = ({ client }) => {
                                 type="password"
                                 value={nueva}
                                 onChange={(e) => setNueva(e.target.value)}
-                                placeholder="Nueva clave SRI"
+                                placeholder="Pegá la clave NUEVA del SRI"
                                 autoComplete="new-password"
                                 className="w-44 rounded-lg border border-white/15 bg-black/30 px-2 py-1 font-mono text-[11px] outline-none"
                             />

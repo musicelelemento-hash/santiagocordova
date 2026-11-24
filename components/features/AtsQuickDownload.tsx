@@ -4,6 +4,7 @@ import type { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { esRucSociedad } from '../../services/sri';
 import { SupplierCatalogService } from '../../services/supplierCatalogService';
+import { useAppStore } from '../../store/useAppStore';
 import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
 
 /**
@@ -12,6 +13,7 @@ import { atsDesdeCompras, descargarAts } from '../../utils/atsXml';
  */
 const AtsQuickDownload: React.FC<{ client: Client }> = ({ client }) => {
     const { toast } = useToast();
+    const updateClient = useAppStore((s) => s.updateClient);
     const [generando, setGenerando] = useState(false);
     const ahora = new Date();
     const inicial = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
@@ -42,7 +44,11 @@ const AtsQuickDownload: React.FC<{ client: Client }> = ({ client }) => {
                 return;
             }
             await descargarAts(datos);
-            toast.success(facturas.length ? `ATS de ${periodo} descargado (XML + ZIP).` : `ATS de ${periodo} descargado SIN compras (mes en cero).`);
+            try {
+                const tp: any = client.taxProfile || {};
+                await updateClient(client.id, { taxProfile: { ...tp, atsZipDescargado: { periodo, cuando: new Date().toISOString() } } } as any);
+            } catch { /* la marca es un extra */ }
+            toast.success(`ATS de ${periodo} listo (XML + ZIP). Subilo en Anexos → Envío; el acuse se registra solo.`);
         } catch (e: any) {
             toast.error(`No se pudo generar el ATS: ${e?.message || e}`);
         } finally {
