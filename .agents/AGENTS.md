@@ -36,7 +36,7 @@ cobranza, facturación) + Baku (bot de Telegram en Render) + extensión Nueva Lu
 9. Datos de clientes (actas, RUC, nombres) no se suben al repositorio.
 
 ## Pendientes principales (detalle en HISTORIAL.md §7)
-- 🔴 **Seguridad**: la llave pública puede leer la tabla `clients` (claves SRI, firmas). Cerrarlo pide cambiar la extensión Nueva Luz (otro repo) para que inicie sesión.
+- 🔴 **Seguridad**: la llave pública puede leer la tabla `clients` (claves SRI, firmas). Cerrarlo pide cambiar la extensión Nueva Luz (otro repo) para que inicie sesión. Auditoría del paso 4 y la migración de cierre ya están preparadas (`docs/CIERRE_ANON_AUDITORIA.md`, `docs/MIGRACION_CERRAR_ANON.sql`), **sin ejecutar** hasta que la extensión tenga sesión (ver `docs/ENCARGO_SESION_LOCAL.md`).
 - `FERIADOS_EC` (Render) cargada 24-nov-2026 hasta el 2-nov-2027; faltan lun 1 / vie 5 de noviembre 2027 (Difuntos/Cuenca: las fuentes no coinciden, confirmar con el decreto oficial).
 - Correo `contacto@santiagocordova.com` (ver registros MX en Namecheap antes).
 - VIMARBO S.A.S.: paquete SCVS 2025 vencido (borradores generados; faltan estados financieros de la contabilidad).
