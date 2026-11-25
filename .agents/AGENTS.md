@@ -40,4 +40,4 @@ cobranza, facturación) + Baku (bot de Telegram en Render) + extensión Nueva Lu
 - `FERIADOS_EC` (Render) cargada 24-nov-2026 hasta el 2-nov-2027; faltan lun 1 / vie 5 de noviembre 2027 (Difuntos/Cuenca: las fuentes no coinciden, confirmar con el decreto oficial).
 - Correo `contacto@santiagocordova.com` (ver registros MX en Namecheap antes).
 - VIMARBO S.A.S.: paquete SCVS 2025 vencido (borradores generados; faltan estados financieros de la contabilidad).
-- Generador de anexos ATS/RDEP (fase 2).
+- Generador de **RDEP** (retenciones por relación de dependencia): no empezado. El de **ATS** ya está hecho (`utils/atsXml.ts`, botón en la ficha de la sociedad) — ver `docs/ATS_XML.md` §6 por los 2 detalles menores que quedan.

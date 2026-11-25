@@ -149,9 +149,27 @@ La extensión **01** ya extrae las compras del mes desde el portal
 
 ## 6 · Pendiente
 
-1. Volcar las compras extraídas al JSON (mapear `codSustento`, `parteRel`, retenciones).
-2. Validador de códigos contra `Catalogo_ATS.xls` (catálogo en formato antiguo).
-3. Botón **“Generar ATS”** en la web (mismo patrón que el APS) y subida por ZIP desde la extensión.
-4. Los campos de ventas (`<ventas>` por comprobante) para empresas que facturan: en los
-   ejemplos de VIMARBO el módulo de ventas va en cero porque las facturas electrónicas
-   no se repiten en el ATS; solo se informa `ventasEstablecimiento`.
+> Revisado el 25-nov-2026 contra el código: los puntos 1 y 3 ya estaban hechos
+> y este doc seguía diciendo que faltaban.
+
+1. ~~Volcar las compras extraídas al JSON~~ — **hecho**: `atsDesdeCompras()`
+   (`utils/atsXml.ts`) mapea `codSustento` (01 con crédito / 02 sin crédito,
+   según `tieneCreditoTributario`), `parteRel` (fijo `NO`: no hay dato de parte
+   relacionada en el modelo todavía) y bloquea la generación si falta la clave
+   de acceso (`faltantes`).
+2. **Validador de códigos contra el catálogo real** — sigue pendiente. No está
+   en el repo ni lo encontré confirmado en una fuente oficial por web (busqué
+   el 25-nov-2026 y el SRI no lo publica en una página indexable); hace falta
+   el `Catalogo_ATS.xls` que menciona este doc, que Santiago tiene en su
+   computadora. Sin ese catálogo no hay que inventar los códigos: hoy
+   `codSustento` sólo distingue 01/02 a mano, que es lo único que usan los 7
+   ATS validados de VIMARBO.
+3. ~~Botón «Generar ATS» en la web~~ — **hecho**: `CompanyAnnexActions.tsx`
+   (pestaña Historial de la ficha de cada sociedad), con selector de período y
+   aviso de comprobantes sin clave de acceso. **Falta**: la subida por ZIP
+   desde la extensión (la web sólo descarga XML + ZIP para subir a mano).
+4. Los campos de ventas (`<ventas>` por comprobante) para empresas que
+   facturan — sigue pendiente, sin cambios: `AtsDatos` sólo modela
+   `ventasEstablecimiento` (el resumen en cero). Para VIMARBO no hace falta
+   (no repite sus facturas electrónicas en el ATS); sólo urge si aparece un
+   cliente sociedad que sí tenga que detallar ventas ahí.
