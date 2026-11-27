@@ -1639,7 +1639,7 @@ RUC: ${client.ruc}
                                                 </button>
                                             </div>
 
-                                            <div className="grid grid-cols-3 gap-1.5">
+                                            <div className="grid grid-cols-2 gap-1.5">
                                                 <button
                                                     onClick={() => handleSendWhatsAppBillingNotice(client, selectedPeriod)}
                                                     className="px-2 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1 transition-all cursor-pointer truncate"
@@ -1657,16 +1657,10 @@ RUC: ${client.ruc}
                                                     <Mail size={11} />
                                                     <span>Resend</span>
                                                 </button>
-
-                                                <button
-                                                    onClick={() => setEditingFacturadorClient(client)}
-                                                    className="px-2 py-2 bg-foreground/5 hover:bg-foreground/10 text-on-surface-variant hover:text-on-surface border border-foreground/10 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1 transition-all cursor-pointer truncate"
-                                                    title="Configurar Facturador, Credenciales y Plan"
-                                                >
-                                                    <Sliders size={11} />
-                                                    <span>Editar</span>
-                                                </button>
                                             </div>
+                                            {/* "Editar" vivía acá duplicando el engranaje del header (misma
+                                                acción, setEditingFacturadorClient): ese ya queda arriba, visible
+                                                sin bajar por toda la tarjeta. */}
                                         </div>
                                     </div>
                                 );
