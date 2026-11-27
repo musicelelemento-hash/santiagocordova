@@ -335,6 +335,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
     const [visibleSriPasswords, setVisibleSriPasswords] = useState<{ [id: string]: boolean }>({});
     const [visibleSigPasswords, setVisibleSigPasswords] = useState<{ [id: string]: boolean }>({});
+    const [expandedCredentials, setExpandedCredentials] = useState<{ [id: string]: boolean }>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('todos');
     const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
@@ -545,6 +546,10 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
 
     const toggleSigPasswordVisibility = (id: string) => {
         setVisibleSigPasswords(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const toggleCredentialsExpanded = (id: string) => {
+        setExpandedCredentials(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
     const handleCopyPassword = (id: string, passwordText?: string) => {
@@ -1327,6 +1332,7 @@ RUC: ${client.ruc}
                                 const pwdVisible = visiblePasswords[client.id] || false;
                                 const sriPwdVisible = visibleSriPasswords[client.id] || false;
                                 const sigPwdVisible = visibleSigPasswords[client.id] || false;
+                                const credsExpanded = expandedCredentials[client.id] || false;
 
                                 const providerUrl = config.url || (
                                     config.programName?.toLowerCase().includes('talonario') ? 'https://talonarioamigo.santiagocordova.com' :
@@ -1457,8 +1463,23 @@ RUC: ${client.ruc}
                                                 <DocProgressBar used={usedDocs} total={totalDocs} isSriGratuito={isSri} />
                                             </div>
 
-                                            {/* Cockpit Táctico de Credenciales */}
-                                            <div className="p-3 bg-surface-lowest border border-foreground/10 rounded-2xl space-y-1.5 text-[10px]">
+                                            {/* Cockpit Táctico de Credenciales — colapsado por defecto: era lo
+                                                que más ocupaba de la tarjeta (hasta 3 claves + copiar ficha)
+                                                para un dato que no hace falta ver en cada pasada por la lista. */}
+                                            <div className="rounded-2xl border border-foreground/10 overflow-hidden">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleCredentialsExpanded(client.id)}
+                                                    className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-surface-lowest hover:bg-foreground/5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant transition-all cursor-pointer"
+                                                >
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Key size={12} className="text-amber-400" />
+                                                        Credenciales
+                                                    </span>
+                                                    {credsExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                                </button>
+                                                {credsExpanded && (
+                                            <div className="p-3 bg-surface-lowest border-t border-foreground/10 space-y-1.5 text-[10px]">
                                                 {/* User */}
                                                 <div className="flex items-center justify-between gap-1">
                                                     <span className="text-on-surface-variant flex items-center gap-1">
@@ -1571,6 +1592,8 @@ RUC: ${client.ruc}
                                                     <ClipboardCopy size={11} />
                                                     <span>Copiar Ficha Completa Nivel Contador</span>
                                                 </button>
+                                            </div>
+                                                )}
                                             </div>
 
                                             {/* Widget Métrico del Período */}
