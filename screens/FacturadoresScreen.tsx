@@ -986,7 +986,8 @@ RUC: ${client.ruc}
                         </div>
                     </div>
 
-                    {/* ── 4 TARJETAS EJECUTIVAS KPI ── */}
+                    {/* ── 4 TARJETAS EJECUTIVAS KPI (no aportan nada en Análisis, que ya trae sus propias tarjetas) ── */}
+                    {viewMode !== 'analytics' && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-foreground/10 font-mono">
                         {/* Card 1: Total Facturadores */}
                         <div 
@@ -1064,6 +1065,7 @@ RUC: ${client.ruc}
                             </div>
                         </div>
                     </div>
+                    )}
                 </div>
             </div>
 
@@ -1164,7 +1166,13 @@ RUC: ${client.ruc}
 
                         {/* 3. Expedientes & Renovaciones KYC */}
                         <button
-                            onClick={() => setViewMode('kyc_renewals')}
+                            onClick={() => {
+                                setViewMode('kyc_renewals');
+                                // Si venía filtrando por software o por cupo/vencimiento del
+                                // plan, ese filtro no existe acá (se ocultó el chip) y dejaría
+                                // la lista filtrada sin forma visible de volver a "Todos".
+                                setFilterStatus(prev => (['talonario', 'ecuafact', 'zifact', 'sri_gratuito', 'por_vencer', 'agotados'].includes(prev) ? 'todos' : prev));
+                            }}
                             className={`px-5 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
                                 viewMode === 'kyc_renewals'
                                     ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/25 border border-foreground/20 scale-[1.02]'
@@ -1231,7 +1239,8 @@ RUC: ${client.ruc}
                 </div>
             </div>
 
-            {/* ── BARRA DE BÚSQUEDA Y FILTRADO SEGMENTADO ── */}
+            {/* ── BARRA DE BÚSQUEDA Y FILTRADO SEGMENTADO (Análisis no lista clientes, no la necesita) ── */}
+            {viewMode !== 'analytics' && (
             <div className="px-4 sm:px-0">
                 <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-surface-low p-4 rounded-[2rem] border border-foreground/10 backdrop-blur-2xl shadow-xl font-mono">
                     <div className="relative w-full lg:max-w-md">
@@ -1267,7 +1276,11 @@ RUC: ${client.ruc}
                             { id: 'externos', label: 'Externos', count: kpis.externos, icon: <User size={12} className="text-sky-400" />, activeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
                             { id: 'por_vencer', label: 'Por Vencer', count: kpis.porVencer, icon: <Clock size={12} className="text-amber-400" />, activeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
                             { id: 'agotados', label: 'Cupo Bajo', count: kpis.agotados, icon: <AlertOctagon size={12} className="text-rose-400" />, activeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
-                        ].map(tab => (
+                        ].filter(tab =>
+                            // En Expedientes KYC lo que importa es la documentación de identidad,
+                            // no el software de facturación ni el cupo/vencimiento del plan.
+                            viewMode !== 'kyc_renewals' || !['talonario', 'ecuafact', 'zifact', 'sri_gratuito', 'por_vencer', 'agotados'].includes(tab.id)
+                        ).map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setFilterStatus(tab.id as any)}
@@ -1287,6 +1300,7 @@ RUC: ${client.ruc}
                     </div>
                 </div>
             </div>
+            )}
 
             {/* ── VISTA 1: ⚡ CENTRO DE LLENADO DE FACTURAS ── */}
             {viewMode === 'filling_center' && (
