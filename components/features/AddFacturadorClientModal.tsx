@@ -334,7 +334,7 @@ export const AddFacturadorClientModal: React.FC<AddFacturadorClientModalProps> =
                                     <input
                                         type="text"
                                         required
-                                        placeholder="Ej: Armijos K..."
+                                        placeholder="Ej: María Rodríguez"
                                         value={newName}
                                         onChange={(e) => setNewName(e.target.value)}
                                         className="w-full px-3 py-2 bg-surface-lowest border border-foreground/10 rounded-xl text-on-surface text-xs uppercase outline-none focus:border-tertiary"
@@ -450,7 +450,7 @@ export const AddFacturadorClientModal: React.FC<AddFacturadorClientModalProps> =
                                 <div>
                                     <div className="font-bold text-xs text-sky-400">👤 Externo / Otro Contador</div>
                                     <div className="text-[10px] text-on-surface-variant mt-0.5">
-                                        Tiene otro contador (ej: Armijos K, Naula). Solo compra plan, firma o llenado.
+                                        Tiene otro contador. Solo compra plan, firma o llenado.
                                     </div>
                                 </div>
                             </label>
@@ -498,8 +498,8 @@ export const AddFacturadorClientModal: React.FC<AddFacturadorClientModalProps> =
                                 <option value="sri_gratuito">Facturador SRI Gratuito (Ilimitado por Ley)</option>
                                 <option value="unit">Tarifa Unitaria ($2.00 por factura llenada - Ocasional)</option>
                                 <option value="pack_5">Paquete Pequeño ($5.00 hasta 5 facturas en el mes)</option>
-                                <option value="monthly_combo_10">Combo Mensual $10 (Declaración $5 + Facturas $5 - ej. Camba Paola)</option>
-                                <option value="semestral_batch">Lote Semestral Acumulado (Por secuencial y fecha - ej. Wilmer)</option>
+                                <option value="monthly_combo_10">Combo Mensual $10 (Declaración $5 + Facturas $5)</option>
+                                <option value="semestral_batch">Lote Semestral Acumulado (Por secuencial y fecha)</option>
                             </select>
                         </div>
                     </div>

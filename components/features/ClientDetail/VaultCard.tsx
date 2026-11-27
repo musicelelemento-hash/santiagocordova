@@ -33,6 +33,8 @@ export const VaultCard: React.FC<VaultCardProps> = ({
     const [showPassword, setShowPassword] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [copied, setCopied] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string>('');
     const hasData = !!(file || value);
 
     // Auto-hide password timer (12s countdown for security)
@@ -110,10 +112,15 @@ export const VaultCard: React.FC<VaultCardProps> = ({
                                 <p className="text-[13px] font-black text-slate-900 dark:text-white truncate max-w-[120px] sm:max-w-[200px] uppercase tracking-tight font-display">
                                     {file.name}
                                 </p>
+                            ) : isUploading ? (
+                                <p className="text-[9px] font-mono font-bold text-[#00A896] uppercase tracking-widest animate-pulse">Subiendo…</p>
                             ) : (
                                 <p className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest italic opacity-60">NO_ENTRY</p>
                             )}
                         </div>
+                        {uploadError && (
+                            <p className="mt-1 text-[9px] font-mono font-bold text-rose-400 max-w-[220px]">⚠️ {uploadError}</p>
+                        )}
                     </div>
                 </div>
 
@@ -155,20 +162,37 @@ export const VaultCard: React.FC<VaultCardProps> = ({
                             </button>
                         </>
                     ) : (
-                        <label className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-white/5 hover:bg-[#00A896] hover:text-white text-slate-600 dark:text-slate-300 cursor-pointer transition-all rounded-xl active:scale-95 border border-slate-200 dark:border-white/10 shadow-sm">
-                            <LucideIcons.UploadCloud size={16} strokeWidth={2.5} />
-                            <input 
-                                type="file" 
-                                accept="image/*,application/pdf,.p12,.pfx" 
-                                className="hidden" 
+                        <label
+                            className={`w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 transition-all rounded-xl active:scale-95 border border-slate-200 dark:border-white/10 shadow-sm ${
+                                isUploading ? 'cursor-wait opacity-70' : 'cursor-pointer hover:bg-[#00A896] hover:text-white'
+                            }`}
+                        >
+                            {isUploading ? (
+                                <LucideIcons.Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
+                            ) : (
+                                <LucideIcons.UploadCloud size={16} strokeWidth={2.5} />
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*,application/pdf,.p12,.pfx"
+                                className="hidden"
+                                disabled={isUploading}
                                 onChange={async (e) => {
                                     const f = e.target.files?.[0];
-                                    if (f && onUpload) {
+                                    e.target.value = '';
+                                    if (!f || !onUpload) return;
+                                    setUploadError('');
+                                    setIsUploading(true);
+                                    try {
                                         const category = f.name.toLowerCase().endsWith('.p12') || f.name.toLowerCase().endsWith('.pfx') ? 'firmas' : 'comprobantes';
                                         const uploadedFile = await UnifiedStorageService.uploadFile(f, f.name, category);
                                         onUpload(uploadedFile);
+                                    } catch (err: any) {
+                                        setUploadError(err?.message || 'No se pudo subir el archivo. Probá de nuevo.');
+                                    } finally {
+                                        setIsUploading(false);
                                     }
-                                }} 
+                                }}
                             />
                         </label>
                     )}

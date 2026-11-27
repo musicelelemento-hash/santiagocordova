@@ -449,6 +449,14 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         if (!files || files.length === 0) return;
 
         setIsProcessing(true);
+        try {
+            await handleFilesSelectedInner(files);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleFilesSelectedInner = async (files: FileList) => {
         await new Promise(res => setTimeout(res, 500));
 
         const newQueueItems: P12ItemQueue[] = [];
@@ -500,7 +508,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }
 
         setQueue(prev => [...prev, ...newQueueItems]);
-        setIsProcessing(false);
 
         if (newQueueItems.length > 0) {
             if (discardedDuplicatesCount > 0) {

@@ -340,6 +340,8 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
     const directVaultUploadInputRef = useRef<HTMLInputElement>(null);
     const [vaultUploadTarget, setVaultUploadTarget] = useState<'idCardFront' | 'idCardBack' | 'idCardSelfie' | 'rucPdf' | 'signatureFile' | 'ecuafactSignedRequest' | 'vault'>('vault');
+    const [isUploadingVault, setIsUploadingVault] = useState(false);
+    const [pendingSignatureNudge, setPendingSignatureNudge] = useState<Client | null>(null);
 
     // ── Estados de Depuración & Selección Múltiple ──
     const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
@@ -476,7 +478,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         } else if (filterStatus === 'planta') {
             list = list.filter(c => !c.hasExternalAccountant && c.clientType !== 'solo_plan' && c.requiresDeclarations !== false);
         } else if (filterStatus === 'externos') {
-            // Requisito solicitado: clientes externos como Armijos K o Naula que tienen otro contador
+            // Requisito solicitado: clientes externos que tienen otro contador
             list = list.filter(c => c.hasExternalAccountant || c.clientType === 'solo_plan' || c.requiresDeclarations === false);
         } else if (filterStatus === 'por_vencer') {
             list = list.filter(c => {
@@ -650,49 +652,57 @@ RUC: ${client.ruc}
         const file = acceptedFiles[0];
         if (!file || !selectedVaultClient) return;
 
+        setIsUploadingVault(true);
         toast.info(`Subiendo ${file.name} a la Nube...`);
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const content = e.target?.result as string;
-            
-            try {
-                const extension = file.name.split('.').pop();
-                const path = `${selectedVaultClient.id}/${vaultUploadTarget}_${Date.now()}.${extension}`;
-                const { url, path: storagePath } = await SupabaseService.uploadFileToStorage('clients-vault', path, content);
 
-                const storedFile: any = {
-                    id: uuidv4(),
-                    name: file.name,
-                    size: file.size,
-                    type: file.name.endsWith('.p12') ? 'p12' : file.type.includes('pdf') ? 'pdf' : 'image',
-                    url: url,
-                    bucketPath: storagePath,
-                    uploadedAt: new Date().toISOString()
-                };
+        try {
+            const content = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.onerror = () => reject(reader.error || new Error('No se pudo leer el archivo.'));
+                reader.readAsDataURL(file);
+            });
 
-                const updates: Partial<Client> = {};
-                if (vaultUploadTarget === 'idCardFront') updates.idCardFront = storedFile;
-                else if (vaultUploadTarget === 'idCardBack') updates.idCardBack = storedFile;
-                else if (vaultUploadTarget === 'idCardSelfie') updates.idCardSelfie = storedFile;
-                else if (vaultUploadTarget === 'rucPdf') {
-                    updates.rucPdf = storedFile;
-                    updates.rucCertificate = storedFile;
-                    updates.rucCertificateIssueDate = new Date().toISOString();
-                }
-                else if (vaultUploadTarget === 'signatureFile') updates.signatureFile = storedFile;
-                else if (vaultUploadTarget === 'ecuafactSignedRequest') updates.ecuafactSignedRequest = storedFile;
-                else {
-                    updates.vault = [...(selectedVaultClient.vault || []), storedFile];
-                }
+            const extension = file.name.split('.').pop();
+            const path = `${selectedVaultClient.id}/${vaultUploadTarget}_${Date.now()}.${extension}`;
+            const { url, path: storagePath } = await SupabaseService.uploadFileToStorage('clients-vault', path, content);
 
-                updateClient(selectedVaultClient.id, updates);
-                toast.success(`✅ ${file.name} guardado en la nube (Storage).`);
-                setSelectedVaultClient(prev => prev ? { ...prev, ...updates } : null);
-            } catch (err) {
-                toast.error("Error subiendo el archivo a la nube.");
+            const storedFile: any = {
+                id: uuidv4(),
+                name: file.name,
+                size: file.size,
+                type: file.name.endsWith('.p12') ? 'p12' : file.type.includes('pdf') ? 'pdf' : 'image',
+                url: url,
+                bucketPath: storagePath,
+                uploadedAt: new Date().toISOString()
+            };
+
+            const updates: Partial<Client> = {};
+            if (vaultUploadTarget === 'idCardFront') updates.idCardFront = storedFile;
+            else if (vaultUploadTarget === 'idCardBack') updates.idCardBack = storedFile;
+            else if (vaultUploadTarget === 'idCardSelfie') updates.idCardSelfie = storedFile;
+            else if (vaultUploadTarget === 'rucPdf') {
+                updates.rucPdf = storedFile;
+                updates.rucCertificate = storedFile;
+                updates.rucCertificateIssueDate = new Date().toISOString();
             }
-        };
-        reader.readAsDataURL(file);
+            else if (vaultUploadTarget === 'signatureFile') updates.signatureFile = storedFile;
+            else if (vaultUploadTarget === 'ecuafactSignedRequest') updates.ecuafactSignedRequest = storedFile;
+            else {
+                updates.vault = [...(selectedVaultClient.vault || []), storedFile];
+            }
+
+            await updateClient(selectedVaultClient.id, updates);
+            toast.success(`✅ ${file.name} guardado en la nube (Storage).`);
+            setSelectedVaultClient(prev => prev ? { ...prev, ...updates } : null);
+            if (vaultUploadTarget === 'signatureFile') {
+                setPendingSignatureNudge(prev => (prev?.id === selectedVaultClient.id ? null : prev));
+            }
+        } catch (err: any) {
+            toast.error(err?.message || "Error subiendo el archivo a la nube.");
+        } finally {
+            setIsUploadingVault(false);
+        }
     }, [selectedVaultClient, vaultUploadTarget, updateClient, toast]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, maxFiles: 1 });
@@ -776,7 +786,7 @@ RUC: ${client.ruc}
         const comboFee = currentRec.declarationFeeLinked ? (currentRec.declarationFeeLinked + 5.00) : (systemSettings.defaultMonthlyComboFee ?? 10.00);
 
         if (mode === 'monthly_combo_10') {
-            return comboFee; // $10 flat combo (Declaración $5 + Facturas $5 - ej: Camba Paola)
+            return comboFee; // $10 flat combo (Declaración $5 + Facturas $5)
         } else if (mode === 'pack_5') {
             if (newCount <= 5) return pack5Fee; // $5 flat hasta 5 facturas
             return pack5Fee + (newCount - 5) * 1.00; // $1 extra por factura adicional
@@ -945,7 +955,7 @@ RUC: ${client.ruc}
                                 FACTURADORES & <span className="bg-gradient-to-r from-tertiary via-tertiary to-primary bg-clip-text text-transparent">LLENADO</span>
                             </h1>
                             <p className="mt-2.5 text-xs sm:text-sm text-on-surface-variant font-sans font-medium max-w-2xl">
-                                Control de facturadores, timbres y planes anuales. Llenado por cuenta de clientes (Pinea, Wilmer, Camba Paola), avisos automáticos por <strong>Resend</strong> y expedientes de renovación.
+                                Control de facturadores, timbres y planes anuales. Llenado por cuenta de clientes, avisos automáticos por <strong>Resend</strong> y expedientes de renovación.
                             </p>
                         </div>
 
@@ -1014,7 +1024,7 @@ RUC: ${client.ruc}
                             <div className="text-3xl font-black text-sky-400 font-mono mt-2">{kpis.externos}</div>
                             <div className="text-[10px] font-medium text-on-surface-variant mt-1 flex items-center gap-1.5 font-sans">
                                 <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-                                <span>Armijos K, Naula, etc.</span>
+                                <span>Clientes con contador propio</span>
                             </div>
                         </div>
 
@@ -1286,7 +1296,7 @@ RUC: ${client.ruc}
                             <Sparkles className="mx-auto text-tertiary/40 mb-3" size={32} />
                             <div className="text-xs font-bold text-on-surface-variant uppercase">No se encontraron clientes para facturación</div>
                             <p className="text-xs text-on-surface-variant max-w-md mx-auto font-sans">
-                                Ajusta los filtros de búsqueda o usa el botón "Vincular Cliente" para registrar a Pinea, Wilmer, Camba Paola u otros clientes.
+                                Ajusta los filtros de búsqueda o usa el botón "Vincular Cliente" para registrar clientes nuevos.
                             </p>
                         </div>
                     ) : (
@@ -1948,7 +1958,7 @@ RUC: ${client.ruc}
                                     </h3>
                                 </div>
                                 <p className="text-xs text-on-surface-variant font-sans mt-0.5">
-                                    Control riguroso de cédula frontal, reverso, selfie y <strong>Certificado de RUC (caduca cada 3 meses / 90 días)</strong> para clientes de planta y externos (Armijos K, Naula).
+                                    Control riguroso de cédula frontal, reverso, selfie y <strong>Certificado de RUC (caduca cada 3 meses / 90 días)</strong> para clientes de planta y externos.
                                 </p>
                             </div>
                             <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-500/30">
@@ -2184,6 +2194,36 @@ RUC: ${client.ruc}
                 className="hidden"
             />
 
+            {/* Recordatorio: facturador vinculado sin firma .p12 todavía */}
+            {pendingSignatureNudge && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] flex items-center gap-3 px-4 py-3 rounded-2xl border border-amber-500/40 bg-surface-low/95 backdrop-blur-xl shadow-2xl max-w-md">
+                    <AlertTriangle size={18} className="text-amber-400 shrink-0" />
+                    <p className="text-xs text-on-surface font-sans">
+                        <strong>{pendingSignatureNudge.name}</strong> quedó vinculado sin firma .p12.
+                    </p>
+                    <button
+                        type="button"
+                        disabled={isUploadingVault}
+                        onClick={() => {
+                            setSelectedVaultClient(pendingSignatureNudge);
+                            setVaultUploadTarget('signatureFile');
+                            directVaultUploadInputRef.current?.click();
+                        }}
+                        className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 text-black text-[10px] font-bold uppercase tracking-wider hover:bg-amber-400 transition-all cursor-pointer disabled:opacity-60"
+                    >
+                        {isUploadingVault ? 'Subiendo…' : 'Subir ahora'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPendingSignatureNudge(null)}
+                        className="shrink-0 p-1 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-foreground/10 transition-all cursor-pointer"
+                        title="Recordar más tarde"
+                    >
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
+
             {/* ── FAB CONTEXTUAL FLOTANTE ── */}
             {viewMode === 'filling_center' && (
                 <button
@@ -2252,6 +2292,17 @@ RUC: ${client.ruc}
             <AddFacturadorClientModal
                 isOpen={isAddClientModalOpen}
                 onClose={() => setIsAddClientModalOpen(false)}
+                onSuccess={(client) => {
+                    setIsAddClientModalOpen(false);
+                    if (!client.signatureFile) {
+                        // El cliente quedó vinculado, pero sin firma .p12 todavía: en vez de
+                        // un "listo" que invita a olvidarse del paso que falta, queda un
+                        // recordatorio visible con un botón directo para subirla ahora.
+                        setPendingSignatureNudge(client);
+                    } else {
+                        setPendingSignatureNudge(null);
+                    }
+                }}
             />
 
             {/* Modal: Envíos Ejecutivos Resend Email */}

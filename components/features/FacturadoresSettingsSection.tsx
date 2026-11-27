@@ -618,7 +618,7 @@ export const FacturadoresSettingsSection: React.FC<FacturadoresSettingsSectionPr
                             Tarifas de Llenado de Facturas (Servicio a Clientes)
                         </h3>
                         <p className="text-xs text-on-surface-variant font-sans mt-0.5">
-                            Valores predeterminados aplicables al facturar por cuenta de clientes como Pinea, Wilmer o Camba Paola.
+                            Valores predeterminados aplicables al facturar por cuenta de clientes.
                         </p>
                     </div>
                 </div>
@@ -670,7 +670,7 @@ export const FacturadoresSettingsSection: React.FC<FacturadoresSettingsSectionPr
                         </p>
                     </div>
 
-                    {/* Combo Mensual $10 (Camba Paola) */}
+                    {/* Combo Mensual $10 */}
                     <div className="p-4 bg-surface-low border border-foreground/10 rounded-2xl space-y-2">
                         <div className="text-[10px] font-bold text-tertiary uppercase">Combo Mensual Declaración + Facturas</div>
                         <div className="relative">
